@@ -1,0 +1,38 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.9/schema.json",
+
+  // Lint only: no formatter, no whole-repo reformat
+  // diff, no editor config to keep in sync.
+  "formatter": { "enabled": false },
+  "assist": { "enabled": false },
+
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+
+  "linter": {
+    "enabled": true,
+    "rules": { "preset": "recommended" }
+  },
+
+  "overrides": [
+    {
+      // The core's determinism claim, enforced by the linter rather than by
+      // review: no clock, no randomness. (Date/Math.random are the two ways
+      // two replicas silently disagree about the same document.)
+      "includes": ["src/**"],
+      "linter": {
+        "rules": {
+          "suspicious": { "noConsole": "error" }
+        }
+      }
+    },
+    {
+      "includes": ["test/**", "scripts/**"],
+      "linter": {
+        "rules": {
+          "style": { "noNonNullAssertion": "off" },
+          "suspicious": { "noConsole": "off", "noExplicitAny": "off" }
+        }
+      }
+    }
+  ]
+}

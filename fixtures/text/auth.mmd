@@ -1,0 +1,11 @@
+%% Twin of the "auth" graph in fixtures/spike/graphs.json (terminal -> stadium).
+flowchart TD
+  start([Request arrives]) --> check{Valid token?}
+  check -->|no| reject[401 Unauthorized]
+  check -->|yes| rate{Rate limited?}
+  rate -->|yes| queue[Queue request]
+  rate -->|no| allow[Open room]
+  queue --> allow
+  allow --> audit[Write audit log]
+  reject --> audit
+  audit --> done([Done])

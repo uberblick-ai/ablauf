@@ -1,0 +1,43 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>ablauf demo — drag, snap, render</title>
+<style>
+  body { font: 14px/1.5 system-ui, sans-serif; margin: 0; padding: 16px; color: #1f2430; }
+  h1 { font-size: 16px; margin: 0 0 12px; }
+  #bar { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-bottom: 12px; }
+  #stage { overflow: auto; border: 1px solid #d7dbe3; max-height: 78vh; }
+  #chart { position: relative; width: max-content; touch-action: none; user-select: none; cursor: grab; }
+  #ghost { position: absolute; display: none; box-sizing: border-box;
+           border: 2px dashed #2f6feb; background: rgba(47, 111, 235, 0.08); pointer-events: none; }
+  #status { position: fixed; right: 16px; bottom: 16px; width: 340px; max-height: 40vh; overflow: auto;
+            background: #fff; border: 1px solid #d7dbe3; border-radius: 6px; padding: 10px 12px; }
+  #golden { font-weight: 600; }
+  .pass { color: #1a7f37; }
+  .fail { color: #b42318; }
+  #warnings { white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 12px; margin: 8px 0 0; }
+  #freeze { font-size: 12px; color: #5b6472; margin: 8px 0 0; }
+</style>
+
+<h1>ablauf — drag a node, watch <code>snap</code> place it</h1>
+
+<div id="bar">
+  <label>fixture
+    <select id="fixture">
+      <option value="auth">auth</option>
+      <option value="deploy">deploy</option>
+    </select>
+  </label>
+  <label><input type="checkbox" id="cold" /> cold start (empty store)</label>
+  <label><input type="checkbox" id="grid" /> debug grid</label>
+  <button type="button" id="reset">reset store</button>
+</div>
+
+<div id="stage"><div id="chart"><div id="paper"></div><div id="ghost"></div></div></div>
+
+<div id="status">
+  <div>golden (D21): <span id="golden">checking…</span></div>
+  <p id="freeze"></p>
+  <pre id="warnings"></pre>
+</div>
+
+<script type="module" src="./demo.js"></script>

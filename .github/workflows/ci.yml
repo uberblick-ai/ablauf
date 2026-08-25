@@ -1,0 +1,81 @@
+name: CI
+
+# The gates a PR has to pass. Same tasks a human runs locally (mise run …),
+# so "green locally" and "green in CI" cannot mean different things.
+#
+# No secrets: nothing here needs network access beyond the package registry.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    name: lint + typecheck + test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # Installs the toolchain pinned in mise.toml (node, pnpm) and caches it.
+      - uses: jdx/mise-action@3c2e0cf82a5b2e5249f0d3635a4d83d0ae861518 # v4
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.pnpm-store
+          key: pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-
+
+      - run: mise run install
+        env:
+          PNPM_STORE_DIR: ~/.pnpm-store
+
+      - run: mise run lint
+      - run: mise run typecheck
+      - run: mise run test
+
+  # The acceptance job — parse → snap → render, twice, byte-identical. The
+  # second run is the gate: it compares every artifact's sha256 against the
+  # manifest the first run left behind and fails on any drift, which is how the
+  # README's "deterministic" stops being a claim CI takes on trust (D5).
+  #
+  # `out/acceptance/` is uploaded on success and on failure alike: the SVGs and
+  # `gallery.html` are what a reviewer looks at either way, and the gallery is a
+  # review surface only — nothing here diffs or screenshots it.
+  acceptance:
+    name: acceptance (twice, byte-identical)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: jdx/mise-action@3c2e0cf82a5b2e5249f0d3635a4d83d0ae861518 # v4
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.pnpm-store
+          key: pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-
+
+      - run: mise run install
+        env:
+          PNPM_STORE_DIR: ~/.pnpm-store
+
+      - name: first run — writes the artifacts and the manifest
+        run: mise run acceptance
+
+      - name: second run — the byte-comparison
+        run: mise run acceptance
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        if: always()
+        with:
+          name: acceptance
+          path: out/acceptance
+          if-no-files-found: error

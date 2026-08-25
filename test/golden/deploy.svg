@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1128" height="1289" viewBox="0 0 1128 1289">
+<title>Deploy pipeline</title>
+<defs><marker id="ablauf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5a6580"/></marker><marker id="ablauf-arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c2410c"/></marker></defs>
+<rect x="0" y="0" width="1128" height="1289" fill="#ffffff"/>
+<path d="M560,88 L560,115 L390,115 L390,142" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M560,88 L560,115 L730,115 L730,142" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M390,198 L390,223 L560,223 L560,248" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M730,198 L730,223 L560,223 L560,248" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M642,285 L953,285" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="785.5" y="275" width="24" height="20" rx="4" fill="#ffffff"/>
+<text x="797.5" y="289.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#5a6580">no</text>
+<path d="M1030,313 L1030,1142" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M560,322 L560,372" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="544.5" y="337" width="31" height="20" rx="4" fill="#ffffff"/>
+<text x="560" y="351.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#5a6580">yes</text>
+<path d="M560,428 L560,472" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M560,528 L560,568" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M650.5,605 L957.5,605" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="788.5" y="595" width="31" height="20" rx="4" fill="#ffffff"/>
+<text x="804" y="609.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#5a6580">yes</text>
+<path d="M1030,633 L1030,1142" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M560,642 L560,687" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="548" y="654.5" width="24" height="20" rx="4" fill="#ffffff"/>
+<text x="560" y="668.8" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#5a6580">no</text>
+<path d="M560,743 L560,787" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M560,843 L560,887" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M560,943 L560,983" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M646,1020 L770,1020" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="696" y="1010" width="24" height="20" rx="4" fill="#ffffff"/>
+<text x="708" y="1024.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#5a6580">no</text>
+<path d="M830,1048 L830,1095 L1030,1095 L1030,1142" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M560,1057 L560,1093" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="544.5" y="1065" width="31" height="20" rx="4" fill="#ffffff"/>
+<text x="560" y="1079.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#5a6580">yes</text>
+<path d="M560,1167 L560,1189.5 L400,1189.5 L400,1212" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="464.5" y="1179.5" width="31" height="20" rx="4" fill="#ffffff"/>
+<text x="480" y="1193.8" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#5a6580">yes</text>
+<path d="M667,1130 L812.3,1130 L812.3,1170 L957.5,1170" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="727.6" y="1120" width="24" height="20" rx="4" fill="#ffffff"/>
+<text x="739.6" y="1134.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#5a6580">no</text>
+<path d="M336,1240 L190,1240" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="483" y="32" width="154" height="56" rx="28" fill="#e6f6ec" stroke="#33405a" stroke-width="2"/>
+<text x="560" y="65" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#16203a">Push to branch</text>
+<rect x="330" y="142" width="120" height="56" rx="0" fill="#eef2f8" stroke="#33405a" stroke-width="2"/>
+<text x="390" y="175" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#16203a">Lint</text>
+<rect x="670" y="142" width="120" height="56" rx="0" fill="#eef2f8" stroke="#33405a" stroke-width="2"/>
+<text x="730" y="175" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#16203a">Unit tests</text>
+<polygon points="560,248 642,285 560,322 478,285" fill="#fdf3dd" stroke="#33405a" stroke-width="2"/>
+<text x="560" y="290" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#16203a">All green?</text>
+<rect x="953" y="257" width="154" height="56" rx="0" fill="#eef2f8" stroke="#33405a" stroke-width="2"/>
+<text x="1030" y="290" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#16203a">Report failure</text>
+<rect x="957.5" y="1142" width="145" height="56" rx="0" fill="#eef2f8" stroke="#33405a" stroke-width="2"/>
+<text x="1030" y="1175" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#16203a">Notify author</text>
+<rect x="496" y="372" width="128" height="56" rx="0" fill="#eef2f8" stroke="#33405a" stroke-width="2"/>
+<text x="560" y="405" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#16203a">Build image</text>
+<rect x="487.5" y="472" width="145" height="56" rx="0" fill="#eef2f8" stroke="#33405a" stroke-width="2"/>
+<text x="560" y="505" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#16203a">Security scan</text>
+<polygon points="560,568 650.5,605 560,642 469.5,605" fill="#fdf3dd" stroke="#33405a" stroke-width="2"/>
+<text x="560" y="610" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#16203a">Vulns found?</text>
+<rect x="957.5" y="577" width="145" height="56" rx="0" fill="#eef2f8" stroke="#33405a" stroke-width="2"/>
+<text x="1030" y="610" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#16203a">Block release</text>
+<rect x="500" y="687" width="120" height="56" rx="0" fill="#eef2f8" stroke="#33405a" stroke-width="2"/>
+<text x="560" y="720" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#16203a">Push image</text>
+<rect x="483" y="787" width="154" height="56" rx="0" fill="#eef2f8" stroke="#33405a" stroke-width="2"/>
+<text x="560" y="820" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#16203a">Deploy staging</text>
+<rect x="496" y="887" width="128" height="56" rx="0" fill="#eef2f8" stroke="#33405a" stroke-width="2"/>
+<text x="560" y="920" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#16203a">Smoke tests</text>
+<polygon points="560,983 646,1020 560,1057 474,1020" fill="#fdf3dd" stroke="#33405a" stroke-width="2"/>
+<text x="560" y="1025" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#16203a">Smoke pass?</text>
+<rect x="770" y="992" width="120" height="56" rx="0" fill="#eef2f8" stroke="#33405a" stroke-width="2"/>
+<text x="830" y="1025" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#16203a">Rollback</text>
+<polygon points="560,1093 667,1130 560,1167 453,1130" fill="#fdf3dd" stroke="#33405a" stroke-width="2"/>
+<text x="560" y="1135" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#16203a">Manual approval?</text>
+<rect x="336" y="1212" width="128" height="56" rx="0" fill="#eef2f8" stroke="#33405a" stroke-width="2"/>
+<text x="400" y="1245" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#16203a">Deploy prod</text>
+<rect x="70" y="1212" width="120" height="56" rx="28" fill="#e6f6ec" stroke="#33405a" stroke-width="2"/>
+<text x="130" y="1245" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#16203a">Released</text>
+</svg>

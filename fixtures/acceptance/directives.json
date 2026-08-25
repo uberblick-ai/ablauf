@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "note": "Input to scripts/acceptance.mjs. Each set mutates one committed .mmd fixture and then asks the snap pass for the new positions. `expectWarnings` is the exact list of warnings the run must produce, spelled `code(id,...)` from each warning's own `{code, ids, message}` — sorted, and with multiplicity: two `unresolvable-anchor` warnings are two entries, and a set whose warning moves to another node fails the gate as loudly as one that grows or loses a warning.",
+  "sets": [
+    {
+      "id": "auth-add-leaf",
+      "fixture": "auth",
+      "title": "Room auth flow + metrics leaf",
+      "what": "Adds a leaf node and places it with one `rel` directive.",
+      "ops": [
+        { "op": "addNode", "id": "metrics", "label": "Emit metrics", "kind": "process" },
+        { "op": "addEdge", "from": "audit", "to": "metrics" }
+      ],
+      "directives": [{ "id": "metrics", "rel": { "of": "audit", "dir": "below-right" } }],
+      "expectWarnings": []
+    },
+    {
+      "id": "auth-add-branch",
+      "fixture": "auth",
+      "title": "Room auth flow + MFA branch",
+      "what": "Adds a three-node branch; the second and third directives chain off a node this same pass is placing, and the third one lands on the `queue` node's box and is resolved to the nearest free cell (D19).",
+      "ops": [
+        { "op": "addNode", "id": "mfa", "label": "MFA required?", "kind": "decision" },
+        { "op": "addNode", "id": "challenge", "label": "Send challenge", "kind": "process" },
+        { "op": "addNode", "id": "verify", "label": "Verify code", "kind": "process" },
+        { "op": "addEdge", "from": "check", "to": "mfa", "label": "yes" },
+        { "op": "addEdge", "from": "mfa", "to": "challenge", "label": "yes" },
+        { "op": "addEdge", "from": "challenge", "to": "verify" },
+        { "op": "addEdge", "from": "verify", "to": "rate" },
+        { "op": "addEdge", "from": "mfa", "to": "rate", "label": "no" }
+      ],
+      "directives": [
+        { "id": "mfa", "rel": { "of": "check", "dir": "right", "steps": 2 } },
+        { "id": "challenge", "rel": { "of": "mfa", "dir": "below" } },
+        { "id": "verify", "rel": { "of": "challenge", "dir": "below" } }
+      ],
+      "expectWarnings": ["displaced(verify)"]
+    },
+    {
+      "id": "deploy-hostile",
+      "fixture": "deploy",
+      "title": "Deploy pipeline + a hostile directive set",
+      "what": "The deliberately bad set (D7, D8): a directive for an id the chart has no node for, an absurd coordinate a million px into the gutter, and two `rel` directives anchored on each other. None of it may move a frozen node, and all of it has to be reported.",
+      "ops": [
+        { "op": "addNode", "id": "stray", "label": "Stray step", "kind": "process" },
+        { "op": "addNode", "id": "loopa", "label": "Loop A", "kind": "process" },
+        { "op": "addNode", "id": "loopb", "label": "Loop B", "kind": "process" },
+        { "op": "addEdge", "from": "notify", "to": "stray" },
+        { "op": "addEdge", "from": "stray", "to": "loopa" },
+        { "op": "addEdge", "from": "loopa", "to": "loopb" }
+      ],
+      "directives": [
+        { "id": "ghost", "at": { "x": 200, "y": 200 } },
+        { "id": "stray", "at": { "x": -1000000, "y": -1000000 } },
+        { "id": "loopa", "rel": { "of": "loopb", "dir": "right" } },
+        { "id": "loopb", "rel": { "of": "loopa", "dir": "left" } }
+      ],
+      "expectWarnings": ["min-clamped(stray)", "unknown-node(ghost)", "unresolvable-anchor(loopa)", "unresolvable-anchor(loopb)"],
+      "expectViewportShift": { "x": 1, "y": 0 },
+      "shiftWhy": "Pre-existing, and only the viewport-relative check sees it: the snap pass clamps a movable node's bare box to x >= MARGIN, landing `stray` at exactly x=20, while the renderer's content bounds include its 2px stroke (x=19). The viewBox origin therefore extends to -1 and the whole picture moves 1px right on screen at 0px store drift — the D18 complaint in miniature. The fix is in src/ (clamp against the stroked box, or bound the render origin by the bare one) and is the owner's call, so the exact shift is pinned here instead of tolerated."
+    },
+    {
+      "id": "auth-del-extreme",
+      "fixture": "auth",
+      "title": "Room auth flow − the leftmost node",
+      "what": "Deletes `reject`, the leftmost node in the fixture (x=140, 230px left of the next one) — the exact case D18 names. The content bounds shrink, every remaining node is frozen and no directive is given, so a renderer that derived its origin from the content would shift the whole picture on screen at 0px *store* drift. The gate measures the drift viewport-relative, so it sees that.",
+      "ops": [{ "op": "delNode", "id": "reject" }],
+      "directives": [],
+      "expectWarnings": ["orphan(reject)"]
+    }
+  ]
+}

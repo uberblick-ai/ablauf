@@ -1,0 +1,28 @@
+[tools]
+node = "26"
+pnpm = "10"
+
+[tasks.install]
+description = "Install dependencies (frozen lockfile, like CI)"
+run = "pnpm install --frozen-lockfile"
+
+[tasks.acceptance]
+description = "End-to-end gate: parse → snap → render, hashed; run twice to check for drift"
+run = "pnpm acceptance"
+
+[tasks.lint]
+run = "pnpm lint"
+
+[tasks.typecheck]
+run = "pnpm typecheck"
+
+[tasks.test]
+run = "pnpm test"
+
+[tasks.build]
+run = "pnpm build"
+
+[tasks.demo]
+description = "Build, then serve the repo root and print the demo URL"
+depends = ["build"]
+run = "node demo/serve.mjs"

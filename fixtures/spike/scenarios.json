@@ -1,0 +1,130 @@
+[
+  {
+    "id": "auth-01-add-leaf",
+    "base": "auth",
+    "mutation": "add leaf node",
+    "note": "New terminal-ish sink hanging off an existing node.",
+    "ops": [
+      { "op": "addNode", "id": "metrics", "label": "Emit metrics", "kind": "process" },
+      { "op": "addEdge", "from": "audit", "to": "metrics" }
+    ]
+  },
+  {
+    "id": "auth-02-add-midchain",
+    "base": "auth",
+    "mutation": "add node mid-chain",
+    "note": "Splices a node into the allow -> audit edge.",
+    "ops": [
+      { "op": "delEdge", "from": "allow", "to": "audit" },
+      { "op": "addNode", "id": "warm", "label": "Warm cache", "kind": "process" },
+      { "op": "addEdge", "from": "allow", "to": "warm" },
+      { "op": "addEdge", "from": "warm", "to": "audit" }
+    ]
+  },
+  {
+    "id": "auth-03-delete-node",
+    "base": "auth",
+    "mutation": "delete node",
+    "note": "Removes queue; rate -> allow already exists so the graph stays connected.",
+    "ops": [{ "op": "delNode", "id": "queue" }]
+  },
+  {
+    "id": "auth-04-relabel",
+    "base": "auth",
+    "mutation": "relabel (id stable)",
+    "note": "CONTROL: the correct answer is zero movement.",
+    "ops": [
+      { "op": "relabel", "id": "reject", "label": "403 Forbidden" },
+      { "op": "relabel", "id": "audit", "label": "Append to audit trail" }
+    ]
+  },
+  {
+    "id": "auth-05-cross-edge",
+    "base": "auth",
+    "mutation": "add cross edge",
+    "note": "CONTROL-ish: no new nodes; at most a small nudge is warranted.",
+    "ops": [{ "op": "addEdge", "from": "queue", "to": "audit", "label": "timeout" }]
+  },
+  {
+    "id": "auth-06-add-branch",
+    "base": "auth",
+    "mutation": "add 3-node branch",
+    "note": "A whole new sub-branch off an existing decision.",
+    "ops": [
+      { "op": "addNode", "id": "mfa", "label": "MFA required?", "kind": "decision" },
+      { "op": "addNode", "id": "challenge", "label": "Send challenge", "kind": "process" },
+      { "op": "addNode", "id": "verify", "label": "Verify code", "kind": "process" },
+      { "op": "addEdge", "from": "check", "to": "mfa", "label": "yes" },
+      { "op": "addEdge", "from": "mfa", "to": "challenge", "label": "yes" },
+      { "op": "addEdge", "from": "challenge", "to": "verify" },
+      { "op": "addEdge", "from": "verify", "to": "rate" },
+      { "op": "addEdge", "from": "mfa", "to": "rate", "label": "no" }
+    ]
+  },
+
+  {
+    "id": "deploy-01-add-leaf",
+    "base": "deploy",
+    "mutation": "add leaf node",
+    "ops": [
+      { "op": "addNode", "id": "changelog", "label": "Post changelog", "kind": "process" },
+      { "op": "addEdge", "from": "done", "to": "changelog" }
+    ]
+  },
+  {
+    "id": "deploy-02-add-midchain",
+    "base": "deploy",
+    "mutation": "add node mid-chain",
+    "note": "Splices a node into stage -> smoke.",
+    "ops": [
+      { "op": "delEdge", "from": "stage", "to": "smoke" },
+      { "op": "addNode", "id": "migrate", "label": "Run migrations", "kind": "process" },
+      { "op": "addEdge", "from": "stage", "to": "migrate" },
+      { "op": "addEdge", "from": "migrate", "to": "smoke" }
+    ]
+  },
+  {
+    "id": "deploy-03-delete-node",
+    "base": "deploy",
+    "mutation": "delete node",
+    "note": "Removes the security scan step; vuln loses its feeder, build reconnects.",
+    "ops": [
+      { "op": "delNode", "id": "scan" },
+      { "op": "addEdge", "from": "build", "to": "vuln" }
+    ]
+  },
+  {
+    "id": "deploy-04-relabel",
+    "base": "deploy",
+    "mutation": "relabel (id stable)",
+    "note": "CONTROL: the correct answer is zero movement.",
+    "ops": [
+      { "op": "relabel", "id": "publish", "label": "Push to registry" },
+      { "op": "relabel", "id": "notify", "label": "Notify author + on-call" },
+      { "op": "relabel", "id": "gate", "label": "CI green?" }
+    ]
+  },
+  {
+    "id": "deploy-05-cross-edge",
+    "base": "deploy",
+    "mutation": "add cross edge",
+    "note": "CONTROL-ish: a long backward edge across the chart.",
+    "ops": [{ "op": "addEdge", "from": "rollback", "to": "stage", "label": "retry" }]
+  },
+  {
+    "id": "deploy-06-add-branch",
+    "base": "deploy",
+    "mutation": "add 3-node branch",
+    "ops": [
+      { "op": "addNode", "id": "canary", "label": "Canary 5%", "kind": "process" },
+      { "op": "addNode", "id": "canaryok", "label": "Canary healthy?", "kind": "decision" },
+      { "op": "addNode", "id": "halt", "label": "Halt rollout", "kind": "process" },
+      { "op": "delEdge", "from": "approve", "to": "prod" },
+      { "op": "addEdge", "from": "approve", "to": "canary", "label": "yes" },
+      { "op": "addEdge", "from": "canary", "to": "canaryok" },
+      { "op": "addEdge", "from": "canaryok", "to": "prod", "label": "yes" },
+      { "op": "addEdge", "from": "canaryok", "to": "halt", "label": "no" },
+      { "op": "addEdge", "from": "halt", "to": "notify" }
+    ]
+  }
+]

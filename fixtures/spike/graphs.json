@@ -1,0 +1,74 @@
+{
+  "auth": {
+    "title": "Room auth flow (8 nodes)",
+    "canvas": { "w": 1040, "h": 820 },
+    "nodes": [
+      { "id": "start", "label": "Request arrives", "kind": "terminal" },
+      { "id": "check", "label": "Valid token?", "kind": "decision" },
+      { "id": "reject", "label": "401 Unauthorized", "kind": "process" },
+      { "id": "rate", "label": "Rate limited?", "kind": "decision" },
+      { "id": "queue", "label": "Queue request", "kind": "process" },
+      { "id": "allow", "label": "Open room", "kind": "process" },
+      { "id": "audit", "label": "Write audit log", "kind": "process" },
+      { "id": "done", "label": "Done", "kind": "terminal" }
+    ],
+    "edges": [
+      { "from": "start", "to": "check" },
+      { "from": "check", "to": "reject", "label": "no" },
+      { "from": "check", "to": "rate", "label": "yes" },
+      { "from": "rate", "to": "queue", "label": "yes" },
+      { "from": "rate", "to": "allow", "label": "no" },
+      { "from": "queue", "to": "allow" },
+      { "from": "allow", "to": "audit" },
+      { "from": "reject", "to": "audit" },
+      { "from": "audit", "to": "done" }
+    ]
+  },
+  "deploy": {
+    "title": "Deploy pipeline (18 nodes)",
+    "canvas": { "w": 1280, "h": 1300 },
+    "nodes": [
+      { "id": "push", "label": "Push to branch", "kind": "terminal" },
+      { "id": "lint", "label": "Lint", "kind": "process" },
+      { "id": "unit", "label": "Unit tests", "kind": "process" },
+      { "id": "gate", "label": "All green?", "kind": "decision" },
+      { "id": "fail", "label": "Report failure", "kind": "process" },
+      { "id": "notify", "label": "Notify author", "kind": "process" },
+      { "id": "build", "label": "Build image", "kind": "process" },
+      { "id": "scan", "label": "Security scan", "kind": "process" },
+      { "id": "vuln", "label": "Vulns found?", "kind": "decision" },
+      { "id": "block", "label": "Block release", "kind": "process" },
+      { "id": "publish", "label": "Push image", "kind": "process" },
+      { "id": "stage", "label": "Deploy staging", "kind": "process" },
+      { "id": "smoke", "label": "Smoke tests", "kind": "process" },
+      { "id": "smokeok", "label": "Smoke pass?", "kind": "decision" },
+      { "id": "rollback", "label": "Rollback", "kind": "process" },
+      { "id": "approve", "label": "Manual approval?", "kind": "decision" },
+      { "id": "prod", "label": "Deploy prod", "kind": "process" },
+      { "id": "done", "label": "Released", "kind": "terminal" }
+    ],
+    "edges": [
+      { "from": "push", "to": "lint" },
+      { "from": "push", "to": "unit" },
+      { "from": "lint", "to": "gate" },
+      { "from": "unit", "to": "gate" },
+      { "from": "gate", "to": "fail", "label": "no" },
+      { "from": "fail", "to": "notify" },
+      { "from": "gate", "to": "build", "label": "yes" },
+      { "from": "build", "to": "scan" },
+      { "from": "scan", "to": "vuln" },
+      { "from": "vuln", "to": "block", "label": "yes" },
+      { "from": "block", "to": "notify" },
+      { "from": "vuln", "to": "publish", "label": "no" },
+      { "from": "publish", "to": "stage" },
+      { "from": "stage", "to": "smoke" },
+      { "from": "smoke", "to": "smokeok" },
+      { "from": "smokeok", "to": "rollback", "label": "no" },
+      { "from": "rollback", "to": "notify" },
+      { "from": "smokeok", "to": "approve", "label": "yes" },
+      { "from": "approve", "to": "prod", "label": "yes" },
+      { "from": "approve", "to": "notify", "label": "no" },
+      { "from": "prod", "to": "done" }
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+%% Twin of the "deploy" graph in fixtures/spike/graphs.json (terminal -> stadium).
+flowchart TD
+  push([Push to branch]) --> lint[Lint] & unit[Unit tests]
+  lint & unit --> gate{All green?}
+  gate -->|no| fail[Report failure]
+  fail --> notify[Notify author]
+  gate -->|yes| build[Build image]
+  build --> scan[Security scan]
+  scan --> vuln{Vulns found?}
+  vuln -->|yes| block[Block release]
+  block --> notify
+  vuln -->|no| publish[Push image]
+  publish --> stage[Deploy staging]
+  stage --> smoke[Smoke tests]
+  smoke --> smokeok{Smoke pass?}
+  smokeok -->|no| rollback[Rollback]
+  rollback --> notify
+  smokeok -->|yes| approve{Manual approval?}
+  approve -->|yes| prod[Deploy prod]
+  approve -->|no| notify
+  prod --> done([Released])
