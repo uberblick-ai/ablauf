@@ -1,3 +1,8 @@
 node_modules/
 dist/
 out/
+
+# Claude Code runtime — the skill itself (.claude/skills/) is versioned;
+# these are per-machine state the loop and sessions create.
+.claude/worktrees/
+.claude/settings.local.json
