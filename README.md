@@ -64,7 +64,8 @@ they are separate. A measurement spike behind this design showed why:
 freezing alone gives 0px drift on unchanged nodes across 12 graph mutations,
 and the placement of *new* nodes is the only part a model actually improves.
 ablauf ships steps 1 and 3 as code; step 2 is a written procedure any LLM
-session can follow (planned as `agent/`, not shipped yet). No model
+session can follow —
+[`agent/layout-preserving-edit.md`](agent/layout-preserving-edit.md). No model
 dependency, no API key, no inference cost in the library.
 
 ## What was tried and rejected

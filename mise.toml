@@ -13,6 +13,10 @@ run = "pnpm acceptance"
 [tasks.lint]
 run = "pnpm lint"
 
+[tasks.agent-check]
+description = "Cross-check agent/ against the layout-store spec's vocabulary"
+run = "pnpm agent-check"
+
 [tasks.typecheck]
 run = "pnpm typecheck"
 

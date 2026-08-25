@@ -11,6 +11,7 @@
     "node": ">=26"
   },
   "files": [
+    "agent",
     "dist",
     "docs/spec"
   ],
@@ -20,6 +21,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "acceptance": "pnpm build && node scripts/acceptance.mjs",
+    "agent-check": "node scripts/check-agent-pack.mjs",
     "lint": "biome lint --error-on-warnings .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

@@ -41,6 +41,10 @@ jobs:
       - run: mise run typecheck
       - run: mise run test
 
+      # The enablement pack may only teach vocabulary docs/spec/layout-store.md
+      # defines, and must show every directive form (agent/README.md).
+      - run: mise run agent-check
+
   # The acceptance job — parse → snap → render, twice, byte-identical. The
   # second run is the gate: it compares every artifact's sha256 against the
   # manifest the first run left behind and fails on any drift, which is how the
