@@ -55,9 +55,7 @@
         { "id": "loopa", "rel": { "of": "loopb", "dir": "right" } },
         { "id": "loopb", "rel": { "of": "loopa", "dir": "left" } }
       ],
-      "expectWarnings": ["min-clamped(stray)", "unknown-node(ghost)", "unresolvable-anchor(loopa)", "unresolvable-anchor(loopb)"],
-      "expectViewportShift": { "x": 1, "y": 0 },
-      "shiftWhy": "Pre-existing, and only the viewport-relative check sees it: the snap pass clamps a movable node's bare box to x >= MARGIN, landing `stray` at exactly x=20, while the renderer's content bounds include its 2px stroke (x=19). The viewBox origin therefore extends to -1 and the whole picture moves 1px right on screen at 0px store drift — the D18 complaint in miniature. The fix is in src/ (clamp against the stroked box, or bound the render origin by the bare one) and is the owner's call, so the exact shift is pinned here instead of tolerated."
+      "expectWarnings": ["min-clamped(stray)", "unknown-node(ghost)", "unresolvable-anchor(loopa)", "unresolvable-anchor(loopb)"]
     },
     {
       "id": "auth-del-extreme",

@@ -79,7 +79,11 @@ placements were its fixed canvas. The rendered canvas is derived from the
 content bounding box plus a margin, so "bounds" means only "no negative
 space": movable nodes are clamped to a minimum x/y, never a maximum. This
 also removes the failure mode behind both snap-pass bugs — the overlap
-resolver can always search further out.
+resolver can always search further out. Width and height grow with everything
+*painted* — stroke extents, highlight rings and edge-label chips included — so
+nothing is clipped on the far edge, while on the near edge the `MARGIN` gutter
+absorbs the half-stroke a box paints outside itself and the origin is measured
+from the boxes (D18).
 
 **D10. No runtime intelligence in the library (owner, 2026-08-25).** v1 is
 contracts plus enablement: formats, safety code, rendering, and the
@@ -114,11 +118,16 @@ Deriving the SVG origin from content bounds re-translates the whole picture
 whenever the extreme node changes: deleting the leftmost node in the `auth`
 fixture shifts every remaining node 230px on screen at 0px store drift — the
 exact complaint this project exists to prevent, invisible to every
-store-drift gate. So the origin is fixed: the viewBox starts at
-`(min(0, contentMinX - margin), min(0, contentMinY - margin))` — `(0, 0)` in
-every normal case, since movable nodes are min-clamped; only a frozen node
-carried below the bound extends it, with a warning. Width and height still
-grow with content — D9 stands. `toSvg` exposes its origin and dimensions so
+store-drift gate. So the origin is fixed, and it is measured from the node
+**boxes** — geometry, not ink: the viewBox starts at
+`(min(0, minBoxX - margin), min(0, minBoxY - margin))` — `(0, 0)` in every
+normal case, and exactly because movable nodes are min-clamped to that same
+bound; only a frozen node carried below it extends the origin, with a warning.
+Measuring the origin from painted extents instead reintroduces the complaint
+one pixel at a time: a clamped box's stroke reaches into the gutter, the origin
+follows it to -1, and the whole picture moves right at 0px store drift. The
+gutter is what holds that stroke; the far edge still grows with painted ink —
+D9 stands. `toSvg` exposes its origin and dimensions so
 hosts never re-derive the SVG↔store transform by hand.
 
 **D19. Overlap resolution is nearest-free, and order rules are explicit.** A

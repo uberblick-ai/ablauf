@@ -25,6 +25,7 @@ import {
   boxOf,
   parse,
   sizeOf,
+  snap,
   svgMeta,
   toSvg,
 } from "../src/index.js";
@@ -201,7 +202,8 @@ describe("D9: the canvas grows, it is never clamped", () => {
   it("fits the decorations too: a long edge label grows the canvas around it", () => {
     // The chip behind an edge label is drawn from the label's own length, so a
     // long label between two short nodes reaches past every node box in the
-    // picture. Bounds taken from node boxes alone would crop it.
+    // picture. Width and height are taken from everything painted, so the far
+    // edge grows around it; a canvas sized from node boxes alone would crop it.
     const long = "a label far wider than either of the two boxes it sits between";
     const pos = { a: { x: 200, y: 100 }, b: { x: 200, y: 400 } };
     const before = svgMeta(pair("ok"), pos);
@@ -214,30 +216,38 @@ describe("D9: the canvas grows, it is never clamped", () => {
     );
     const [x = 0, y = 0, w = 0, h = 0] = found?.slice(1).map(Number) ?? [];
     expect(found).not.toBeNull();
-    expect(x).toBeGreaterThanOrEqual(meta.originX);
     expect(y).toBeGreaterThanOrEqual(meta.originY);
     expect(x + w).toBeLessThanOrEqual(meta.originX + meta.width);
     expect(y + h).toBeLessThanOrEqual(meta.originY + meta.height);
+    // The *near* edge is the origin's, and the origin is measured from node
+    // boxes (D18): this chip is wider than the gutter in front of the leftmost
+    // box, so it really is cropped on the left rather than translating the
+    // whole picture. Pinned so the trade-off cannot change unnoticed.
+    expect(x).toBeLessThan(meta.originX);
   });
 
-  it("fits the stroke: half a node's outline paints outside its own box", () => {
+  it("fits the stroke on the far edge: half a node's outline paints outside its box", () => {
     // One 120x56 box at (0, 0) with no margin: the 2px stroke straddles the
-    // outline, so the picture really runs -1..121 by -1..57. Bounds taken from
-    // the bare box put the canvas edge through the middle of the stroke.
+    // outline, so the picture really runs -1..121 by -1..57. The far edge is
+    // taken from the stroked box and reaches 121/57, so nothing is cropped as
+    // the canvas grows. The near edge is the origin, measured from the *box*
+    // (D18) — the gutter (zero here, `MARGIN` in a real render) is what holds
+    // the outer half of the stroke.
     const one: Graph = { direction: "TD", nodes: [node("a")], edges: [] };
     const meta = svgMeta(one, { a: { x: 60, y: 28 } }, { margin: 0 });
-    expect(meta).toEqual({ originX: -1, originY: -1, width: 122, height: 58 });
-    expect(attrs(toSvg(one, { a: { x: 60, y: 28 } }, { margin: 0 })).viewBox).toBe("-1 -1 122 58");
+    expect(meta).toEqual({ originX: 0, originY: 0, width: 121, height: 57 });
+    expect(attrs(toSvg(one, { a: { x: 60, y: 28 } }, { margin: 0 })).viewBox).toBe("0 0 121 57");
   });
 
   it("fits a highlight ring's stroke, which sticks out further still", () => {
-    // The ring is 7px outside the box on every side, and stroked the same way:
-    // -8..128 by -8..64.
+    // The ring is 7px outside the box on every side, and stroked the same way,
+    // so the far edge reaches 128/64 — again from the ink, while the origin
+    // stays on the box.
     const one: Graph = { direction: "TD", nodes: [node("a")], edges: [] };
     const opts = { margin: 0, highlight: ["a"] };
     const meta = svgMeta(one, { a: { x: 60, y: 28 } }, opts);
-    expect(meta).toEqual({ originX: -8, originY: -8, width: 136, height: 72 });
-    expect(attrs(toSvg(one, { a: { x: 60, y: 28 } }, opts)).viewBox).toBe("-8 -8 136 72");
+    expect(meta).toEqual({ originX: 0, originY: 0, width: 128, height: 64 });
+    expect(attrs(toSvg(one, { a: { x: 60, y: 28 } }, opts)).viewBox).toBe("0 0 128 64");
   });
 
   it("nothing is scaled to fit: width and height are the viewBox's own", () => {
@@ -272,6 +282,25 @@ describe("D18: the render origin is stable", () => {
 
   it("the origin is (0, 0) whenever the content stays out of the gutter", () => {
     expect(svgMeta(graph, positions)).toMatchObject({ originX: 0, originY: 0 });
+  });
+
+  it("a node the snap pass clamped to the bound does not move the origin", () => {
+    // The clamp puts a movable node's *box* at exactly MARGIN, and the 2px
+    // stroke it paints reaches one pixel further into the gutter. An origin
+    // measured from painted ink follows it to -1, and every node in the chart
+    // is then drawn 1px right at 0px store drift — D18's complaint in miniature.
+    const { positions: clamped } = snap(graph, positions, [
+      { id: "done", at: { x: -400, y: -400 } },
+    ]);
+    const done = graph.nodes.find((n) => n.id === "done") as Node;
+    expect(boxOf(done, clamped.done as Position).x).toBe(MARGIN);
+    expect(svgMeta(graph, clamped)).toMatchObject({ originX: 0, originY: 0 });
+    // And the picture proves it: every other node is drawn where it was.
+    const before = nodeCoords(toSvg(graph, positions));
+    const after = nodeCoords(toSvg(graph, clamped));
+    for (const n of graph.nodes) {
+      if (n.id !== "done") expect(after.get(n.label), n.id).toBe(before.get(n.label));
+    }
   });
 
   it("only content carried past the bound extends the origin", () => {
