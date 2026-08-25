@@ -10,11 +10,14 @@
 //     highlight rings, edge-label chips — plus a margin, so a node at y=4000
 //     makes a taller SVG and nothing is ever clipped or scaled to fit.
 //   * The origin does not move (D18). The viewBox origin is
-//     `(min(0, contentMinX - margin), min(0, contentMinY - margin))` — (0, 0) in
-//     every normal case, since movable nodes are min-clamped. Translating the
-//     picture to its content bounds instead would shift every node on screen
-//     whenever the extreme node changed, which turns "0px store drift" into a
-//     lie on the only surface the user looks at.
+//     `(min(0, minBoxX - margin), min(0, minBoxY - margin))`, measured from the
+//     node *boxes* — geometry, not ink — and so (0, 0) in every normal case,
+//     since movable nodes are min-clamped to exactly that bound. Translating
+//     the picture to its content bounds instead would shift every node on
+//     screen whenever the extreme node changed, which turns "0px store drift"
+//     into a lie on the only surface the user looks at; measuring the origin
+//     from painted extents does the same thing 1px at a time, because a
+//     clamped box's stroke reaches into the gutter.
 //
 // Determinism (D5, D21): fixed element order, fixed attribute order, fixed
 // precision, literal theme tokens, no generated ids beyond the two arrow
@@ -250,7 +253,9 @@ const ringOf = (b: Box): Rect => ({
 /**
  * A stroke straddles the path it follows, so half of its width paints *outside*
  * the rectangle the geometry names: a 2px-stroked box at x=0 wets the pixel at
- * x=-1. Bounds taken from the bare rectangle crop exactly that half (D9).
+ * x=-1. The far edge is taken from the stroked rectangle, so that half is never
+ * cropped as the canvas grows (D9); the near edge is not, because the `MARGIN`
+ * gutter already holds it and the origin is measured from boxes (D18).
  */
 const stroked = (r: Rect, width: number): Rect => {
   const half = width / 2;
@@ -259,9 +264,10 @@ const stroked = (r: Rect, width: number): Rect => {
 
 /**
  * Every box the renderer paints, in document order: node boxes, the rings
- * around highlighted ones, and the edge-label chips. The canvas comes from this
- * rather than from node boxes alone — a long label between two short nodes
- * reaches well past every box in the picture, and D9 says nothing is clipped.
+ * around highlighted ones, and the edge-label chips. The canvas *size* comes
+ * from this rather than from node boxes alone — a long label between two short
+ * nodes reaches well past every box in the picture, and D9 says nothing is
+ * clipped. The *origin* does not: it comes from the boxes (D18, `metaOf`).
  * Boxes and rings are stroked and so contribute their outline too; the chip is
  * a bare fill, so its own rectangle is all of it.
  */
@@ -288,23 +294,36 @@ const painted = (
 };
 
 /**
- * The canvas. Integers on all four numbers — the origin floored, the far edge
- * ceiled — so the exported transform is exact and rounding can only ever grow
- * the canvas, never crop it.
+ * The canvas, from two different measurements on purpose.
+ *
+ * The far edge is the bounding box of everything *painted*, so nothing is
+ * clipped as the canvas grows (D9). The origin is measured from the node
+ * *boxes* — the same geometry the snap pass clamps — so a movable node clamped
+ * to exactly `MARGIN` leaves the origin at (0, 0) (D18) instead of dragging it
+ * to -1 with the outer half of its stroke and shifting the whole picture on
+ * screen at 0px store drift. The gutter is what absorbs that stroke; only a
+ * *box* carried past the bound, which is a frozen node (D17), pushes the origin
+ * negative, and `min(0, …)` is what lets it.
+ *
+ * Integers on all four numbers — the origin floored, the far edge ceiled — so
+ * the exported transform is exact and rounding can only ever grow the canvas,
+ * never crop it.
  */
-const metaOf = (rects: readonly Rect[], margin: number): SvgMeta => {
+const metaOf = (rects: readonly Rect[], nodeBoxes: readonly Rect[], margin: number): SvgMeta => {
+  // Nothing painted: an empty chart is a margin-sized square of paper.
+  if (rects.length === 0) return { originX: 0, originY: 0, width: 2 * margin, height: 2 * margin };
   let minX = Number.POSITIVE_INFINITY;
   let minY = Number.POSITIVE_INFINITY;
+  for (const b of nodeBoxes) {
+    minX = Math.min(minX, b.x);
+    minY = Math.min(minY, b.y);
+  }
   let maxX = Number.NEGATIVE_INFINITY;
   let maxY = Number.NEGATIVE_INFINITY;
   for (const r of rects) {
-    minX = Math.min(minX, r.x);
-    minY = Math.min(minY, r.y);
     maxX = Math.max(maxX, r.x + r.w);
     maxY = Math.max(maxY, r.y + r.h);
   }
-  // Nothing painted: an empty chart is a margin-sized square of paper.
-  if (minX > maxX) return { originX: 0, originY: 0, width: 2 * margin, height: 2 * margin };
   finite("the content bounds", minX, minY, maxX, maxY);
   const originX = Math.min(0, Math.floor(minX - margin));
   const originY = Math.min(0, Math.floor(minY - margin));
@@ -326,7 +345,8 @@ export const svgMeta = (
 ): SvgMeta => {
   const { theme, margin } = resolve(opts);
   const box = boxes(graph, positions, false);
-  return metaOf(painted(graph, box, theme, new Set(opts.highlight ?? [])), margin);
+  const hot = new Set(opts.highlight ?? []);
+  return metaOf(painted(graph, box, theme, hot), [...box.values()], margin);
 };
 
 const shape = (node: Node, b: Box, theme: Theme): string => {
@@ -424,7 +444,7 @@ export const toSvg = (
   const { theme, margin } = resolve(opts);
   const box = boxes(graph, positions, true);
   const hot = new Set(opts.highlight ?? []);
-  const meta = metaOf(painted(graph, box, theme, hot), margin);
+  const meta = metaOf(painted(graph, box, theme, hot), [...box.values()], margin);
 
   const parts: string[] = [];
   if (opts.title !== undefined) parts.push(el("title", {}, esc(opts.title)));

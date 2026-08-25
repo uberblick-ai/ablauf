@@ -115,10 +115,10 @@ for (const set of readJson("fixtures/acceptance/directives.json").sets) {
     `got [${got.join(", ")}]`,
   );
 
-  // D6: the freeze rule in the *store*, first and with no exception of its own,
-  // so the pinned `expectViewportShift` below can never mask a stored position
-  // that moved. The baseline is the committed store, re-read rather than the
-  // `prev` handed to the pass — tampering with that input has to show as drift.
+  // D6: the freeze rule in the *store*, first, so a stored position that moved
+  // can never be mistaken for the viewport check below passing. The baseline is
+  // the committed store, re-read rather than the `prev` handed to the pass —
+  // tampering with that input has to show as drift.
   const named = new Set(set.directives.map((d) => d.id));
   const frozen = graph.nodes.filter((n) => prev[n.id] !== undefined && !named.has(n.id));
   const committed = store.snapshot();
@@ -127,20 +127,21 @@ for (const set of readJson("fixtures/acceptance/directives.json").sets) {
     .map((n) => `${n.id}: stored ${JSON.stringify(positions[n.id])}, was ${JSON.stringify(committed[n.id])}`);
   check(moved.length === 0, `${set.id}: all ${frozen.length} frozen nodes byte-identical in the store`, moved.join("\n      "));
 
-  // D6/D18: every pre-existing node at 0px drift, measured in the viewport.
-  // `expectViewportShift` is the one declared exception — exact, not a
-  // tolerance, so what `shiftWhy` documents in the fixture cannot grow, change
-  // axis or reach another set without failing this gate.
-  const { x: sx, y: sy } = set.expectViewportShift ?? { x: 0, y: 0 };
+  // D6/D18: every pre-existing node at 0px drift, measured in the viewport, on
+  // every set with no exception of any kind. There used to be one — a declared
+  // (1, 0)px shift on `deploy-hostile`, where a min-clamped node's stroke
+  // dragged the render origin to -1 — and both the declaration and the
+  // mechanism that allowed it are gone with that fix (D18: the origin is
+  // measured from node boxes). A shift here is a bug, not something to declare.
   const before = nodeCoords(baseSvg);
   const after = nodeCoords(svg);
   const drifted = frozen
     .map((n) => [n.id, before.get(n.label) ?? [], after.get(n.label) ?? []])
-    .filter(([, b, a]) => a[0] !== b[0] + sx || a[1] !== b[1] + sy)
+    .filter(([, b, a]) => a[0] !== b[0] || a[1] !== b[1])
     .map(([id, b, a]) => `${id}: drawn at ${a}, was ${b}`);
   check(
     drifted.length === 0,
-    `${set.id}: all ${frozen.length} frozen nodes at ${sx || sy ? `the declared (${sx}, ${sy})px` : "0px"} viewport drift in the rendered SVG`,
+    `${set.id}: all ${frozen.length} frozen nodes at 0px viewport drift in the rendered SVG`,
     drifted.join("\n      "),
   );
 
