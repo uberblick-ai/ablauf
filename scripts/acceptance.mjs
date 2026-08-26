@@ -108,15 +108,19 @@ const backwardThroughBox = (graph, positions, svg) => {
  *
  * Both are boxed in on *both* sides, so no single corridor exists at any x.
  * `verify --> rate` leaves through `verify`'s left anchor with `queue` in the
- * same row to its left and `challenge` in the row above it, so the leg out and
- * the leg in cannot be cleared by the same corridor. `notify --> stray` is the
- * hostile set (D7: a bad directive set degrades to ugly, never to scrambled):
- * `stray` is min-clamped into the top-left corner and entered through its right
- * anchor, and `push` sits in that same row between them. Clearing either needs
- * a staircase, which is the obstacle-avoiding pass this repo defers on purpose.
+ * same row to its left, and the only corridor that would clear `queue` runs back
+ * through `verify` itself, so the leg out and the leg in cannot be cleared by
+ * the same one. Its *second* crossing is gone: `rate` is a decision with three
+ * inbounds, so this edge now ends at `rate`'s entry junction (D23) and its
+ * vertical run comes down well clear of `queue` instead of along its edge.
+ * `notify --> stray` is the hostile set (D7: a bad directive set degrades to
+ * ugly, never to scrambled): `stray` is min-clamped into the top-left corner and
+ * entered through its right anchor, and `push` sits in that same row between
+ * them. Clearing either needs a staircase, which is the obstacle-avoiding pass
+ * this repo defers on purpose.
  */
 const KNOWN_BLOCKED = {
-  "auth-add-branch": ["verify->rate segment 0 through queue", "verify->rate segment 1 through queue"],
+  "auth-add-branch": ["verify->rate segment 0 through queue"],
   "deploy-hostile": [
     "notify->stray segment 0 through fail",
     "notify->stray segment 0 through block",

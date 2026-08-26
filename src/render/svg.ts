@@ -23,6 +23,11 @@
 //     is what puts a decision's branches on distinct vertices and keeps an
 //     in-edge and an out-edge from being drawn on top of each other. It moves
 //     no node and reads no label — it is still the spike's dumb router.
+//   * A decision has one entry, at its top vertex (D23, the single-entry rule):
+//     every inbound edge routes to a junction on the vertical above it and the
+//     trunk from there into the vertex is drawn once, so two inbounds merge
+//     into one line instead of fanning onto the diamond's sloped boundary —
+//     which leaves the other three vertices to the exits.
 //   * A backward edge whose dogleg would cross a box takes a gutter instead
 //     (D24): one corridor-choice rule for one edge class, not the deferred
 //     obstacle-avoiding routing pass.
@@ -193,6 +198,7 @@ const SIDES = ["top", "right", "bottom", "left"] as const;
 type Side = (typeof SIDES)[number];
 /** How many endpoints have claimed each side of one node. */
 type Fill = Record<Side, number>;
+const fill = (): Fill => ({ top: 0, right: 0, bottom: 0, left: 0 });
 const upright = (side: Side): boolean => side === "top" || side === "bottom";
 
 /**
@@ -252,7 +258,7 @@ const aim = (kind: NodeKind, b: Box, ox: number, oy: number): Aim => {
  * order, since a side that is not clear can never be approached from outside.
  */
 const selfAim = (want: Side): Aim => {
-  const score: Fill = { top: 0, right: 0, bottom: 0, left: 0 };
+  const score = fill();
   const clear: Record<Side, boolean> = { top: false, right: false, bottom: false, left: false };
   score[want] = 1;
   clear[want] = true;
@@ -317,6 +323,27 @@ const claim = (used: Fill, { score, clear }: Aim, off: Barred): Side => {
 const options = ({ clear }: Aim): number => SIDES.filter((side) => clear[side]).length;
 
 /**
+ * D23's claim-then-fan over one set of four sides. Endpoints resolve **fewest
+ * options first**, with declaration order breaking the tie, and whatever ended
+ * up sharing a side is then spaced along it at `1/(n+1) … n/(n+1)` in that same
+ * declaration order. `used` and `seen` come in pre-loaded, which is how a
+ * decision's top vertex is held for its entry (below).
+ *
+ * It runs twice per node: once over the node's own four anchors, and once over
+ * the four ways into a decision's entry junction, because that is the same
+ * question asked about a point instead of a box.
+ */
+const assign = (end: (i: number) => End, list: readonly number[], used: Fill, seen: Fill): void => {
+  const order = [...list].sort((i, j) => options(end(i).aim) - options(end(j).aim) || i - j);
+  for (const i of order) end(i).side = claim(used, end(i).aim, end(i).off);
+  for (const i of list) {
+    const e = end(i);
+    seen[e.side] += 1;
+    e.f = seen[e.side] / (used[e.side] + 1);
+  }
+};
+
+/**
  * The spike's dogleg router, connecting two assigned anchors (D23) instead of
  * one fixed port per side. Two anchors on the same axis keep the spike's shapes
  * exactly — an elbow between two vertical anchors, a mirrored one between two
@@ -367,6 +394,52 @@ const outward = ({ x, y }: Pt, side: Side, d: number): Pt =>
         : { x: x + d, y };
 
 /**
+ * A decision's **entry junction** (D23, the single-entry rule): a point on the
+ * vertical above its top vertex, `depth` half-`MARGIN` steps out — the same step
+ * out of a box D24's gutter and D25's loop take. Every inbound edge routes here
+ * and then runs the trunk down into the vertex, so two or more of them arrive as
+ * one drawn line instead of fanning onto the diamond's slopes, and the other
+ * three vertices are left to the exits.
+ *
+ * `depth` is 1 for every entry that comes into the junction on a side of its own
+ * and counts up for the ones that share a side, because two legs into one point
+ * from the same direction would be drawn on top of each other — a doubled line
+ * rather than a merge.
+ *
+ * The step is a constant rather than a search over what is standing above: a
+ * junction derived from the sources' own positions would move the trunk, and
+ * every merging edge with it, whenever one unrelated source moved. This is not
+ * obstacle avoidance any more than D23 or D26 is.
+ */
+const junctionOf = (b: Box, depth: number): Pt => ({ x: b.cx, y: b.y - STUB * depth });
+
+/** A point as a zero-size box, so `aim` can score the ways into it. */
+const atPoint = (p: Pt): Box => ({ x: p.x, y: p.y, w: 0, h: 0, cx: p.x, cy: p.y });
+
+/**
+ * How an entry sees its decision's junction: the unscaled scoring a diamond
+ * already gets (D23), with the way in **from below** struck out. A junction
+ * sits above the top vertex, so an entry arriving from underneath it has the
+ * whole diamond in the way — and D24's gutter, whose stub steps back along that
+ * same normal, lands its last turn *on* the vertex and swallows the trunk. A
+ * source below the diamond therefore climbs to the junction beside it instead,
+ * on the left or the right: its own x picks the side, and an exact tie goes
+ * clockwise, as everywhere else in D23.
+ *
+ * Struck out in both ways `claim` can pick a side: `clear` is what a free
+ * anchor is chosen from, and the score is pinned to the top's — never strictly
+ * greater than it — so the fallback that ignores `clear` cannot pick it either.
+ * Equality rather than an epsilon, because the two are exact negatives of each
+ * other and D21 wants no tolerance anywhere.
+ */
+const entryAim = (j: Pt, ox: number, oy: number): Aim => {
+  const seen = aim("decision", atPoint(j), ox, oy);
+  seen.clear.bottom = false;
+  seen.score.bottom = seen.score.top;
+  return seen;
+};
+
+/**
  * Does the axis-aligned segment `a`–`b` pass through the **interior** of `r`?
  * Strict on all four sides, because that is where the anchors are: an edge
  * leaving a box's border, or running along it, is not crossing it. For a
@@ -390,15 +463,27 @@ const blocked = (pts: readonly Pt[], obstacles: readonly Rect[]): boolean => {
   return false;
 };
 
-/** Drop repeated points and the middle of a straight run: one shape, one spelling. */
+/**
+ * Drop repeated points and the middle of a straight run: one shape, one
+ * spelling. The pop is a `while` and the repeat test is asked again after it,
+ * because dropping one point exposes the one before it: a route that turns
+ * twice on the same line, or one that ends where its own previous turn already
+ * stood, left a **zero-length segment** in the single-pass version — the pop
+ * removed the point the repeat test had just been asked about, and the push
+ * then duplicated the new last one. That is what hid the trunk of an entry
+ * whose gutter leg arrived on the diamond's vertex.
+ */
 const simplify = (pts: readonly Pt[]): Pt[] => {
   const out: Pt[] = [];
   for (const p of pts) {
-    const a = out[out.length - 2];
-    const b = out[out.length - 1];
-    if (b && b.x === p.x && b.y === p.y) continue;
-    if (a && b && ((a.x === b.x && b.x === p.x) || (a.y === b.y && b.y === p.y))) out.pop();
-    out.push(p);
+    let b = out[out.length - 1];
+    while (b !== undefined && !(b.x === p.x && b.y === p.y)) {
+      const a = out[out.length - 2];
+      if (!a || !((a.x === b.x && b.x === p.x) || (a.y === b.y && b.y === p.y))) break;
+      out.pop();
+      b = out[out.length - 1];
+    }
+    if (b === undefined || b.x !== p.x || b.y !== p.y) out.push(p);
   }
   return out;
 };
@@ -460,8 +545,22 @@ const selfLoop = (s: Pt, sSide: Side, t: Pt, tSide: Side): Pt[] => {
   return simplify([s, os, corner, ot, t]);
 };
 
-/** One end of one edge, at the node it attaches to. Filled in by `routeAll`. */
-type End = { kind: NodeKind; b: Box; aim: Aim; off: Barred; side: Side; f: number };
+/**
+ * One end of one edge, at the node it attaches to. Filled in by `routeAll`.
+ *
+ * `junction` is set on the arriving end of every edge into a decision (D23): the
+ * end attaches *there* rather than at an anchor of the box, and `side`/`f` then
+ * say which way it comes into the junction rather than where it sits on a side.
+ */
+type End = {
+  kind: NodeKind;
+  b: Box;
+  aim: Aim;
+  off: Barred;
+  side: Side;
+  f: number;
+  junction?: Pt;
+};
 
 /**
  * Every edge's polyline, in document order — `null` for an edge whose endpoints
@@ -471,9 +570,10 @@ type End = { kind: NodeKind; b: Box; aim: Aim; off: Barred; side: Side; f: numbe
  * The anchors are assigned here rather than per edge, because the assignment is
  * a property of the whole graph: that is the difference between a decision's two
  * branches leaving distinct vertices and both leaving the bottom one (D23). Each
- * node resolves its own endpoints, and in four passes, because each needs the
- * one before it — collect the endpoints, step the mirror-image ties aside, claim
- * a side for each, then space out whatever ended up sharing one.
+ * node resolves its own endpoints in passes, because each needs the one before
+ * it — collect the endpoints, step the mirror-image ties aside, claim a side for
+ * each and space out whatever ended up sharing one, then step apart the entries
+ * that came into a decision's junction the same way. Only then can it route.
  */
 const routeAll = (graph: Graph, box: Map<string, Box>): (Pt[] | null)[] => {
   const nodes = new Map(graph.nodes.map((n) => [n.id, n]));
@@ -500,16 +600,30 @@ const routeAll = (graph: Graph, box: Map<string, Box>): (Pt[] | null)[] => {
     const half = { side: "top" as Side, f: 0.5 };
     const self = e.from === e.to;
     const sAim = self ? selfAim("right") : aim(from.kind, a, b.cx, b.cy);
-    const tAim = self ? selfAim("top") : aim(to.kind, b, a.cx, a.cy);
     add(e.from, { kind: from.kind, b: a, aim: sAim, off: barred(), ...half });
-    add(e.to, { kind: to.kind, b, aim: tAim, off: barred(), ...half });
+    // A decision's entry is its top vertex, and an inbound edge gets there
+    // through the junction above it (D23) — so this end aims at *that point*,
+    // unscaled, the way `aim` already scores a diamond. A self-loop is not an
+    // entry: it keeps D25's rule, which is out of the single-entry rule's scope.
+    const j = self || to.kind !== "decision" ? undefined : junctionOf(b, 1);
+    const tAim = self
+      ? selfAim("top")
+      : j
+        ? entryAim(j, a.cx, a.cy)
+        : aim(to.kind, b, a.cx, a.cy);
+    add(e.to, { kind: to.kind, b, aim: tAim, off: barred(), ...half, ...(j && { junction: j }) });
   }
 
   for (const node of graph.nodes) {
     const list = attached.get(node.id);
     if (list === undefined) continue;
     const mine = (i: number): End => ends[i] as End;
-    const used: Fill = { top: 0, right: 0, bottom: 0, left: 0 };
+    // The ends that arrive at this node's entry junction, and the rest. The
+    // entries are resolved on the junction's four sides rather than the box's,
+    // and they hold the top vertex between them — one claim, however many merge.
+    const entries = list.filter((i) => mine(i).junction !== undefined);
+    const own = list.filter((i) => mine(i).junction === undefined);
+    const held = entries.length === 0 ? 0 : 1;
 
     // 2. Step aside from a tie between mirror images (D23). Two endpoints whose
     //    counterparts sit mirrored about the side they both want have exactly
@@ -521,8 +635,8 @@ const routeAll = (graph: Graph, box: Map<string, Box>): (Pt[] | null)[] => {
     //    nothing and the pair fans onto the shared side, which is symmetric
     //    already. Declaration order still decides everything that is not this
     //    exact tie.
-    for (const i of list) {
-      for (const j of list) {
+    for (const i of own) {
+      for (const j of own) {
         if (j <= i) continue;
         const a = mine(i);
         const b = mine(j);
@@ -535,27 +649,31 @@ const routeAll = (graph: Graph, box: Map<string, Box>): (Pt[] | null)[] => {
       }
     }
 
-    // 3. Claim, fewest options first (D23): an endpoint whose counterpart is
-    //    straight above has exactly one side it can be approached from, and
-    //    would otherwise lose it to a diagonal neighbour that had a second
-    //    choice — three arrows into one node, two of them stacked on its top.
-    const order = [...list].sort((i, j) => options(mine(i).aim) - options(mine(j).aim) || i - j);
-    for (const i of order) mine(i).side = claim(used, mine(i).aim, mine(i).off);
+    // 3 + 4. Claim a side each, fewest options first, then space out whatever
+    //    ended up sharing one (D23, `assign`) — over this node's own four
+    //    anchors, with the top vertex already held when there is an entry, and
+    //    then over the junction's four sides for the entries themselves.
+    assign(mine, own, { ...fill(), top: held }, { ...fill(), top: held });
+    assign(mine, entries, fill(), fill());
 
-    // 4. Space out the sides that ended up shared. `n` endpoints on one side sit
-    //    at 1/(n+1) … n/(n+1) along it — the midpoint when `n` is 1 — in
-    //    declaration order, so a fan reads left to right as the text does.
-    const seen: Fill = { top: 0, right: 0, bottom: 0, left: 0 };
-    for (const i of list) {
+    // 5. Step the entries that came into the junction on the *same* side apart
+    //    (D23). Two of them at one point would share the whole leg into it,
+    //    which is a doubled line rather than a merge; nested junctions leave
+    //    them sharing only the trunk below, which is the one line they mean.
+    const depth = fill();
+    for (const i of entries) {
       const end = mine(i);
-      seen[end.side] += 1;
-      end.f = seen[end.side] / (used[end.side] + 1);
+      depth[end.side] += 1;
+      end.junction = junctionOf(end.b, depth[end.side]);
     }
   }
 
-  const at = (end: End): Pt => port(end.b, end.kind, end.side, end.f);
+  const at = (end: End): Pt => end.junction ?? port(end.b, end.kind, end.side, end.f);
+  /** The trunk a decision's entries share (D23): junction into the top vertex. */
+  const trunk = (end: End): Pt[] =>
+    end.junction === undefined ? [] : [port(end.b, end.kind, "top", 0.5)];
 
-  // 5. Route. Every box, in document order (D21), is what a backward edge's
+  // 6. Route. Every box, in document order (D21), is what a backward edge's
   //    corridor has to clear — forward edges keep the blind dogleg, which is
   //    the deferred router's problem and not this rule's (D24).
   const obstacles: Box[] = [];
@@ -576,9 +694,15 @@ const routeAll = (graph: Graph, box: Map<string, Box>): (Pt[] | null)[] => {
     // is answered against the boxes, not against the other edges.
     const forward = t.b.cy >= s.b.cy;
     const plain = dogleg(at(s), s.side, at(t), t.side, forward ? t.f : 0.5);
-    if (forward || !blocked(plain, obstacles)) return plain;
-    const around = gutterRoute(at(s), s.side, at(t), t.side, obstacles);
-    return around && !blocked(around, obstacles) ? around : plain;
+    const around =
+      forward || !blocked(plain, obstacles)
+        ? null
+        : gutterRoute(at(s), s.side, at(t), t.side, obstacles);
+    const leg = around && !blocked(around, obstacles) ? around : plain;
+    // An edge into a decision stops at the junction; the trunk from there into
+    // the top vertex is the segment its fellow entries share on purpose (D23),
+    // and `simplify` folds it into the leg when the two run in a line.
+    return t.junction === undefined ? leg : simplify([...leg, ...trunk(t)]);
   });
 };
 
