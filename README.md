@@ -33,7 +33,10 @@ That pair — semantic text plus a positions sidecar — is all the renderer
 consumes. The two blocks above, rendered:
 
 <p align="center">
-  <img src="docs/assets/readme-v1.svg" width="400" alt="The example rendered by ablauf: Request arrives flows into the Valid token? decision, no goes to 401 Unauthorized, yes goes to Rate limited?, no goes to Open room">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme-v1-dark.svg">
+    <img src="docs/assets/readme-v1.svg" width="400" alt="The example rendered by ablauf: Request arrives flows into the Valid token? decision, no goes to 401 Unauthorized, yes goes to Rate limited?, no goes to Open room">
+  </picture>
 </p>
 
 - The **semantic text** is a strict mermaid-flowchart subset — every LLM
@@ -73,7 +76,7 @@ only the new nodes, with one directive apiece:
 
 | v1 — the base chart | v2 — queue branch added | v3 — audit trail added |
 | :---: | :---: | :---: |
-| ![The base chart](docs/assets/readme-v1.svg) | ![The same chart with a queue branch off the rate limiter; every existing node unmoved](docs/assets/readme-v2.svg) | ![The same chart with an audit-log step and a Done terminal appended; every existing node unmoved](docs/assets/readme-v3.svg) |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme-v1-dark.svg"><img src="docs/assets/readme-v1.svg" alt="The base chart"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme-v2-dark.svg"><img src="docs/assets/readme-v2.svg" alt="The same chart with a queue branch off the rate limiter; every existing node unmoved"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme-v3-dark.svg"><img src="docs/assets/readme-v3.svg" alt="The same chart with an audit-log step and a Done terminal appended; every existing node unmoved"></picture> |
 
 The promise **across** versions of a chart is deliberately not byte-equality —
 the canvas grows (v2 is 178px wider than v1, v3 another 240px taller), new

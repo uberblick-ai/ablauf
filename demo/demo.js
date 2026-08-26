@@ -7,13 +7,22 @@
 // through `snap`. The page never writes a coordinate of its own into the
 // store — it writes back what `snap` returned, which is the only thing that
 // keeps the store on the grid, in bounds and free of movable overlaps.
-import { boxOf, jsonStore, parse, snap, svgMeta, toSvg } from "../dist/index.js";
+import { DARK_THEME, boxOf, jsonStore, parse, snap, svgMeta, toSvg } from "../dist/index.js";
 
 const NAMES = ["auth", "deploy"];
 // Must match test/render.test.ts: the goldens were rendered with these titles.
 const TITLES = { auth: "Room auth flow", deploy: "Deploy pipeline" };
 const $ = (id) => document.getElementById(id);
 const text = async (url) => (await fetch(url)).text();
+
+/**
+ * The reader's colour scheme, which is the only input to which theme is drawn:
+ * dark is a second render with a second palette, not an adaptive SVG
+ * (`src/render/theme.ts`, D5/D21). Listening for `change` re-renders live, so a
+ * host toggling its scheme never shows a stale palette — this page's own chrome
+ * follows the same query in CSS (`index.html`).
+ */
+const dark = matchMedia("(prefers-color-scheme: dark)");
 
 const seeds = JSON.parse(await text("../fixtures/spike/positions.json"));
 const graphs = {};
@@ -36,7 +45,7 @@ const draw = (directives) => {
   const result = snap(graph, store.snapshot(), directives);
   for (const [id, p] of Object.entries(result.positions)) store.set(id, p);
   positions = result.positions;
-  const opts = { title: TITLES[name], debugGrid: $("grid").checked };
+  const opts = { title: TITLES[name], debugGrid: $("grid").checked, ...(dark.matches ? { theme: DARK_THEME } : {}) };
   meta = svgMeta(graph, positions, opts);
   $("paper").innerHTML = toSvg(graph, positions, opts);
   $("warnings").textContent = result.warnings.length
@@ -157,6 +166,9 @@ $("fixture").addEventListener("change", (event) => {
 });
 $("cold").addEventListener("change", seed);
 $("grid").addEventListener("change", () => draw([]));
+// A re-render, not a reload: the store, the drag state and the golden row all
+// survive a scheme change, because only the palette changed.
+dark.addEventListener("change", () => draw([]));
 $("reset").addEventListener("click", seed);
 
 seed();
