@@ -6,7 +6,8 @@
 // JSON shortcut — this is the fresh-clone path), load the committed positions
 // as a layout store, apply the
 // committed directive sets from `fixtures/acceptance/directives.json` (hostile
-// one included), render every result to SVG, write it all to `out/acceptance/`
+// one included), render every result to SVG — twice, once per shipped theme,
+// the dark twin under a `-dark` name — write it all to `out/acceptance/`
 // with a `manifest.json` of sha256 hashes, and compare that against the last
 // *successful* run's. CI runs this twice for exactly that reason. There is no
 // PNG and no rasteriser (D20): the browser is the rasteriser when a human opens
@@ -22,7 +23,7 @@
 // its own failure with its own message.
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { DEFAULT_THEME, MARGIN, boxOf, jsonStore, overlaps, parse, snap, toSvg } from "../dist/index.js";
+import { DARK_THEME, DEFAULT_THEME, MARGIN, boxOf, jsonStore, overlaps, parse, snap, toSvg } from "../dist/index.js";
 import { FIXTURES, ROOT, TITLES, applyOps, read, readJson } from "./graph.mjs";
 import { galleryHtml } from "./gallery.mjs";
 
@@ -44,6 +45,17 @@ const emit = (name, text) => {
   return text;
 };
 const emitJson = (name, value) => emit(name, `${JSON.stringify(value, null, 2)}\n`);
+/**
+ * One picture, both shipped themes, both hashed: dark is a second render and
+ * never an adaptive SVG (`src/render/theme.ts`, D5/D21), so the twin has to
+ * carry its own bytes onto the drift gate. Every assertion below runs on the
+ * light one — the goldens and the coordinate probes are written in its palette,
+ * and the two renders differ in nothing but colour.
+ */
+const emitBoth = (name, graph, positions, opts) => {
+  emit(`${name}-dark.svg`, toSvg(graph, positions, { ...opts, theme: DARK_THEME }));
+  return emit(`${name}.svg`, toSvg(graph, positions, opts));
+};
 const sha256 = (text) => createHash("sha256").update(text, "utf8").digest("hex");
 /** A warning's full identity: its code *and* the nodes it names (D7/D8). */
 const identity = (w) => `${w.code}(${w.ids.join(",")})`;
@@ -144,7 +156,7 @@ const base = new Map();
 for (const name of FIXTURES) {
   const graph = parse(read(`fixtures/text/${name}.mmd`));
   const store = jsonStore({ version: 1, nodes: stored[name] });
-  const svg = emit(`${name}.svg`, toSvg(graph, store.snapshot(), { title: TITLES[name] }));
+  const svg = emitBoth(name, graph, store.snapshot(), { title: TITLES[name] });
   emitJson(`${name}.layout.json`, store.toJSON());
   check(
     svg === read(`test/golden/${name}.svg`),
@@ -165,7 +177,7 @@ for (const name of FIXTURES) {
 for (const s of readJson("fixtures/scenarios/scenarios.json").scenarios) {
   const graph = parse(read(`fixtures/scenarios/${s.id}.mmd`));
   const store = jsonStore({ version: 1, nodes: s.positions });
-  const svg = emit(`${s.id}.svg`, toSvg(graph, store.snapshot(), { title: s.title }));
+  const svg = emitBoth(s.id, graph, store.snapshot(), { title: s.title });
   const routed = backwardThroughBox(graph, store.snapshot(), svg);
   check(routed.length === 0, `${s.id}: no backward edge routed through a box (D24)`, routed.join(", "));
 }
@@ -180,7 +192,7 @@ for (const set of readJson("fixtures/acceptance/directives.json").sets) {
 
   const graph = applyOps(baseGraph, set.ops);
   const { positions, warnings } = snap(graph, prev, set.directives);
-  const svg = emit(`${set.id}.svg`, toSvg(graph, positions, { title: set.title }));
+  const svg = emitBoth(set.id, graph, positions, { title: set.title });
   emitJson(`${set.id}.json`, { id: set.id, fixture: set.fixture, positions, warnings });
 
   // The hostile set's warnings are asserted, not ignored — and the clean sets

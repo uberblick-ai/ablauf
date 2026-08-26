@@ -2,20 +2,32 @@
 <meta charset="utf-8" />
 <title>ablauf demo — drag, snap, render</title>
 <style>
-  body { font: 14px/1.5 system-ui, sans-serif; margin: 0; padding: 16px; color: #1f2430; }
+  /* The chrome follows the reader's scheme through custom properties; the
+     picture itself is a second render with DARK_THEME, in demo.js. `--page` is
+     DARK_THEME.background, so the stage and the SVG's own canvas are one
+     surface. */
+  :root { color-scheme: light;
+          --page: #fff; --ink: #1f2430; --muted: #5b6472; --line: #d7dbe3;
+          --pass: #1a7f37; --fail: #b42318; --ghost: #2f6feb; --ghost-fill: rgba(47, 111, 235, 0.08); }
+  @media (prefers-color-scheme: dark) {
+    :root { color-scheme: dark;
+            --page: #12151c; --ink: #e7edf7; --muted: #96a3ba; --line: #2a3444;
+            --pass: #56d38a; --fail: #f0776a; --ghost: #6b9bff; --ghost-fill: rgba(107, 155, 255, 0.14); }
+  }
+  body { font: 14px/1.5 system-ui, sans-serif; margin: 0; padding: 16px; background: var(--page); color: var(--ink); }
   h1 { font-size: 16px; margin: 0 0 12px; }
   #bar { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-bottom: 12px; }
-  #stage { overflow: auto; border: 1px solid #d7dbe3; max-height: 78vh; }
+  #stage { overflow: auto; border: 1px solid var(--line); max-height: 78vh; }
   #chart { position: relative; width: max-content; touch-action: none; user-select: none; cursor: grab; }
   #ghost { position: absolute; display: none; box-sizing: border-box;
-           border: 2px dashed #2f6feb; background: rgba(47, 111, 235, 0.08); pointer-events: none; }
+           border: 2px dashed var(--ghost); background: var(--ghost-fill); pointer-events: none; }
   #status { position: fixed; right: 16px; bottom: 16px; width: 340px; max-height: 40vh; overflow: auto;
-            background: #fff; border: 1px solid #d7dbe3; border-radius: 6px; padding: 10px 12px; }
+            background: var(--page); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; }
   #golden { font-weight: 600; }
-  .pass { color: #1a7f37; }
-  .fail { color: #b42318; }
+  .pass { color: var(--pass); }
+  .fail { color: var(--fail); }
   #warnings { white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 12px; margin: 8px 0 0; }
-  #freeze { font-size: 12px; color: #5b6472; margin: 8px 0 0; }
+  #freeze { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
 </style>
 
 <h1>ablauf — drag a node, watch <code>snap</code> place it</h1>
