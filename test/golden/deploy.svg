@@ -4,8 +4,8 @@
 <rect x="0" y="0" width="1128" height="1289" fill="#ffffff"/>
 <path d="M483,60 L390,60 L390,142" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
 <path d="M637,60 L730,60 L730,142" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
-<path d="M390,198 L390,285 L478,285" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
-<path d="M730,198 L730,223 L560,223 L560,248" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M390,198 L390,238 L560,238 L560,248" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M730,198 L730,238 L560,238 L560,248" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
 <path d="M642,285 L953,285" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
 <rect x="785.5" y="275" width="24" height="20" rx="4" fill="#ffffff"/>
 <text x="797.5" y="289.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#5a6580">no</text>

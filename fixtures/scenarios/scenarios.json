@@ -64,7 +64,7 @@
     {
       "id": "s6-overlapping-span",
       "title": "S6 — five-edge diamond with an overlapping-span back edge",
-      "note": "`route` has five endpoints, one more than it has anchors, so the fifth fans out along its preferred side (D23); `svc3 --> retry` is a backward edge whose endpoints' x-ranges overlap, so no corridor exists between them (D24).",
+      "note": "`route` has five endpoints, one more than it has anchors: its two inbounds merge at a junction above the top vertex and enter as one line, which leaves the left, bottom and right vertices to the three exits (D23, the single-entry rule); `svc3 --> retry` is a backward edge whose endpoints' x-ranges overlap, so no corridor exists between them (D24).",
       "positions": {
         "in": { "x": 400, "y": 60 },
         "retry": { "x": 700, "y": 60 },

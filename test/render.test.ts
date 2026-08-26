@@ -146,8 +146,17 @@ const crossings = (line: Pt[], text: string, at: Record<string, [number, number]
  * (D23/D26). Crossing at a point is fine and unavoidable; sharing a run is the
  * defect — a doubled line the reader cannot take apart, and an arrowhead
  * stranded in the middle of somebody else's edge.
+ *
+ * One overlap is not a defect, and it is scoped exactly (D23, the single-entry
+ * rule): the **trunk** from a decision's entry junctions down into its top
+ * vertex is drawn by every edge that merges there, because it is one line with
+ * a junction on it. That exemption asks three things — both edges end at the
+ * same *diamond*, the shared run is vertical on that diamond's own centre x, and
+ * it lies inside the half-`MARGIN` per inbound edge above the vertex, which is
+ * as far out as the outermost junction can sit. A shared run anywhere else, or
+ * into anything else, still counts.
  */
-const retraced = (graph: Graph, svg: string): string[] => {
+const retraced = (graph: Graph, at: Record<string, Position>, svg: string): string[] => {
   const lines = polylines(svg);
   const segments = (pts: Pt[]): [Pt, Pt][] =>
     pts.slice(1).map((p, i) => [pts[i] as Pt, p] as [Pt, Pt]);
@@ -157,13 +166,30 @@ const retraced = (graph: Graph, svg: string): string[] => {
     (a[0] === b[0] && c[0] === d[0] && a[0] === c[0] && spans(a[1], b[1], c[1], d[1])) ||
     (a[1] === b[1] && c[1] === d[1] && a[1] === c[1] && spans(a[0], b[0], c[0], d[0]));
 
+  const trunk = (i: number, j: number, [a, b]: [Pt, Pt], [c, d]: [Pt, Pt]): boolean => {
+    const [ei, ej] = [graph.edges[i], graph.edges[j]];
+    if (ei === undefined || ei.to !== ej?.to) return false;
+    const target = graph.nodes.find((n) => n.id === ei.to);
+    const centre = at[ei.to];
+    if (target?.kind !== "decision" || centre === undefined) return false;
+    const box = boxOf(target, centre);
+    if (a[0] !== box.cx || a[0] !== b[0]) return false;
+    const inbound = graph.edges.filter((e) => e.to === ei.to && e.from !== e.to).length;
+    return (
+      Math.max(Math.min(a[1], b[1]), Math.min(c[1], d[1])) >= box.y - (inbound * MARGIN) / 2 &&
+      Math.min(Math.max(a[1], b[1]), Math.max(c[1], d[1])) <= box.y
+    );
+  };
+
   const doubled: string[] = [];
   for (let i = 0; i < lines.length; i++) {
     for (let j = i + 1; j < lines.length; j++) {
       for (const p of segments(lines[i] ?? [])) {
         for (const q of segments(lines[j] ?? [])) {
           const [ei, ej] = [graph.edges[i], graph.edges[j]];
-          if (retraces(p, q)) doubled.push(`${ei?.from}->${ei?.to} × ${ej?.from}->${ej?.to}`);
+          if (retraces(p, q) && !trunk(i, j, p, q)) {
+            doubled.push(`${ei?.from}->${ei?.to} × ${ej?.from}->${ej?.to}`);
+          }
         }
       }
     }
@@ -348,9 +374,14 @@ describe("D23: one endpoint per anchor", () => {
     ]);
   });
 
-  it("fans a five-edge diamond's surplus along its preferred side, on the outline", () => {
-    // S6 (defined in #14). `route` is 164x74 at (400, 190) and carries five
-    // endpoints: two in, three out.
+  it("merges a five-edge diamond's two entries above its top vertex", () => {
+    // S6 (defined in #14). `route` is 164x74 at (400, 190) — top vertex
+    // (400, 153), left (318, 190), bottom (400, 227), right (482, 190) — and
+    // carries five endpoints: two in, three out, one more than it has anchors.
+    // The two inbounds used to contest the anchors with the exits, which put
+    // one of each on the upper- and lower-right slopes. They now meet at the
+    // junction half a MARGIN above the top vertex and enter as one line (D23),
+    // which leaves all three exits a vertex of their own.
     const lines = routes(
       `flowchart TD
   in([Request]) --> route{Route?}
@@ -368,16 +399,24 @@ describe("D23: one endpoint per anchor", () => {
         svc3: [640, 330],
       },
     );
-    const at = [lines[0]?.at(-1), lines[1]?.at(-1), lines[2]?.[0], lines[3]?.[0], lines[4]?.[0]];
-    expect(new Set(at.map(String)).size).toBe(5);
-    expect(at[0]).toEqual([400, 153]); // in → top vertex
-    expect(at[2]).toEqual([318, 190]); // a → left vertex
-    expect(at[3]).toEqual([400, 227]); // b → bottom vertex
-    // The right side carries two — `retry -->` claimed it and `--> svc3` fanned
-    // onto it — and both sit on the diamond's slanted edges, not off the box.
-    expect([at[1], at[4]]).toEqual([
-      [454.7, 177.7],
-      [454.7, 202.3],
+    // `in` is straight above, so its leg and the trunk are one straight line;
+    // `retry` comes in from the right and turns onto the junction at (400, 143).
+    expect(lines[0]).toEqual([
+      [400, 88],
+      [400, 153],
+    ]);
+    expect(lines[1]).toEqual([
+      [636, 60],
+      [518, 60],
+      [518, 143],
+      [400, 143],
+      [400, 153],
+    ]);
+    // a → left vertex, b → bottom vertex, c → right vertex.
+    expect([lines[2]?.[0], lines[3]?.[0], lines[4]?.[0]]).toEqual([
+      [318, 190],
+      [400, 227],
+      [482, 190],
     ]);
   });
 
@@ -390,13 +429,14 @@ describe("D23: one endpoint per anchor", () => {
   rate -->|yes| queue[Queue request]
   rate -->|no| allow[Open room]
   queue --> start`);
-    const svg = toSvg(graph, {
+    const at = {
       start: { x: 320, y: 60 },
       rate: { x: 320, y: 190 },
       queue: { x: 620, y: 190 },
       allow: { x: 320, y: 330 },
-    });
-    expect(retraced(graph, svg)).toEqual([]);
+    };
+    const svg = toSvg(graph, at);
+    expect(retraced(graph, at, svg)).toEqual([]);
     // And the loop back really leaves upward and enters the far side, rather
     // than reversing back down the edge it came in on.
     expect(polylines(svg)[3]).toEqual([
@@ -620,7 +660,7 @@ describe("D25: a self-loop loops outside its node", () => {
 describe("D26: distinct edges share no segment", () => {
   it.each(FIXTURES)("%s: no two edges are drawn on top of each other", (name) => {
     const { graph, positions } = fixture(name);
-    expect(retraced(graph, toSvg(graph, positions, { title: titleOf(name) }))).toEqual([]);
+    expect(retraced(graph, positions, toSvg(graph, positions, { title: titleOf(name) }))).toEqual([]);
   });
 
   // The whole legibility ladder, straight off disk — the same eight charts the
@@ -635,7 +675,7 @@ describe("D26: distinct edges share no segment", () => {
 
   it.each(scenarios.map((s) => [s.id, s] as const))("%s: no two edges share a run", (id, s) => {
     const graph = parse(readFileSync(new URL(`fixtures/scenarios/${id}.mmd`, ROOT), "utf8"));
-    expect(retraced(graph, toSvg(graph, s.positions, { title: s.title }))).toEqual([]);
+    expect(retraced(graph, s.positions, toSvg(graph, s.positions, { title: s.title }))).toEqual([]);
   });
 
   it("gives the deploy fixture's two merge edges two corridors", () => {
@@ -659,6 +699,17 @@ describe("D26: distinct edges share no segment", () => {
       [1054.2, 972.3],
       [1054.2, 1142],
     ]);
+  });
+
+  it("still flags a shared run into a node that is not a decision", () => {
+    // The single-entry exemption is scoped to a diamond's entry trunk (D23),
+    // and this is the shape that proves the scoping: two sources in one column
+    // into one target, the *lower* declared first — D26's own documented limit,
+    // where the corridors are laid out in declaration order and the two runs
+    // overlap for 48px. Into a process node that is a defect, and it stays one.
+    const graph = parse("flowchart TD\n  a[A] --> c[C]\n  b[B] --> c");
+    const at = { a: { x: 200, y: 200 }, b: { x: 200, y: 60 }, c: { x: 200, y: 400 } };
+    expect(retraced(graph, at, toSvg(graph, at))).toEqual(["a->c × b->c"]);
   });
 
   it("leaves an unfanned edge on the midpoint the spike drew", () => {

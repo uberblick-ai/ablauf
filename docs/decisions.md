@@ -148,8 +148,8 @@ last one wins, with a warning; directive-list order is otherwise not
 significant, because movable nodes are resolved in graph document order, so
 two nodes claiming the same spot settle by document order, not list order.
 
-**D23. One endpoint per anchor; a diamond's exits leave through distinct
-vertices (owner, 2026-08-26).** Every node has four anchors — the side
+**D23. One endpoint per anchor; a diamond has one entry, at its top vertex, and
+its exits leave through the others (owner, 2026-08-26).** Every node has four anchors — the side
 midpoints, which on a decision node *are* its four vertices — and each edge
 endpoint claims one, first come first served, in the order the next two
 paragraphs fix. An endpoint prefers the side that best faces its counterpart: the dot
@@ -200,9 +200,51 @@ settled by the resolution order above, and a third endpoint that does not
 mirror can still claim an anchor between two that do — the symmetry is a
 property of symmetric input, not something the router imposes.
 
+A **decision node takes the single-entry rule** the owner cited, and it is the
+one place two edges may be drawn as one line (owner, 2026-08-26). A diamond's
+entry is its **top vertex**; every inbound edge routes to a **junction** on the
+vertical above that vertex and then runs the trunk down into it, so two or more
+inbounds arrive as one drawn line with a junction on it — a merge — instead of
+fanning onto the diamond's slopes. The review case is S6: `retry --> route`
+arrived at (454.7, 177.7), a fanned point on the upper-right slope, while
+`--> svc3` left the lower-right one and the right *vertex* sat unused. The top
+vertex is therefore held for the entry however many edges merge there, which
+leaves the left, bottom and right vertices to the exits and puts the boundary
+fan back where the convention wants it: only past three exits.
+
+The junction is half a `MARGIN` above the vertex — the same step out of a box
+D24's gutter and D25's loop take — and an entry reaches it under D23's ordinary
+rules: the best-facing clear side of the junction, treated as a point, and then
+the dogleg and the per-edge corridor of D26. Two entries that come in on the
+*same* side of the junction would share the whole leg into it, which is a
+doubled line and not a merge, so they nest: the *k*-th on a side steps its own
+junction `k` half-`MARGIN`s up the vertical, and what they share is only the
+trunk below it. That trunk is the **scoped exception** to "no two distinct edges
+share a segment" (D26): the retrace detector exempts a shared run only when it
+is vertical, on that diamond's own centre x, inside the band the junctions can
+occupy, and between two edges into *that* diamond. Everything else, everywhere
+else, is still a violation — a shared run into a node that is not a decision
+included, which is pinned by its own test.
+
+Scope, deliberately: **decisions only** — merging into any other shape stays
+distinct anchors, which is the S5/S7 rendering the owner approved. The entry
+vertex is the top one because the charts are `TD`, and the renderer does not read
+`graph.direction` at all; an `LR` chart mirroring this rule is a change to make
+when `LR` layouts are real, not a guess to encode now. A **backward** inbound
+keeps D24 for its leg up to the junction — the gutter question is asked about
+that leg exactly as before, and only its far end moved — and a **self-loop** on a
+diamond is not an entry at all and keeps D25. Nothing here avoids obstacles
+either: the entry is out of the diamond's own slopes, which is why S6 stopped
+crossing `route` and the acceptance branch set stopped crossing `mfa` and `rate`,
+but that is a consequence, not a rule.
+
 Determinism (D5/D21) comes from three fixed orders and nothing else: edges in
 declaration order, sides in a clockwise list, and a resolution order that is a
-count plus that declaration order. The step-aside pass adds no fourth: it walks
+count plus that declaration order. The entry junction adds no fourth either: its
+distance is a constant, its side is the same preference test asked about a point,
+and its nesting is that same declaration order counted per side — no search over
+what is standing above it, which is also what keeps one unrelated source moving
+from dragging the trunk and every merging edge with it. The step-aside pass adds no fifth: it walks
 the same declaration order over pairs, and its test is exact equality between
 two endpoints' scores — arithmetic on the stored coordinates, with no tolerance
 and nothing measured. The snap pass writes integer centres (`src/geometry.ts`),
@@ -321,7 +363,11 @@ at one, and a chart reads worse with two edges drawn as one than with one edge
 crossing a box it was already crossing. The retrace detector over both goldens
 and all eight scenarios of the legibility ladder (`test/render.test.ts`) is a
 **corpus pin, not a proof**: it fails the day one of those charts starts
-drawing two edges as one, and it says nothing about the layouts above.
+drawing two edges as one, and it says nothing about the layouts above. It carries
+exactly one exemption, and D23 scopes it: the trunk a decision's entries share
+below their junctions is one line with a junction on it, not two lines drawn on
+top of each other. Nothing else is exempt — a shared run into a node that is not
+a decision is still a violation, and a test says so.
 Determinism (D5/D21) is one multiply-add on a fraction D23 already fixed: no
 search, no measurement, no approximated math.
 
