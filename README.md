@@ -70,13 +70,14 @@ algorithm:
    properties of the pipeline, tested as such.
 
 Here is that rule as pictures: the chart above, then the same chart after two
-edits — a queue branch spliced onto the rate limiter, then an audit trail
+edits — a retry queue put beside the rate limiter, taking its `yes` branch in
+from the side and looping back up to where requests arrive, then an audit trail
 appended at the bottom. Each edit adds nodes and edges to the text and places
 only the new nodes, with one directive apiece:
 
-| v1 — the base chart | v2 — queue branch added | v3 — audit trail added |
+| v1 — the base chart | v2 — retry queue added | v3 — audit trail added |
 | :---: | :---: | :---: |
-| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme-v1-dark.svg"><img src="docs/assets/readme-v1.svg" alt="The base chart"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme-v2-dark.svg"><img src="docs/assets/readme-v2.svg" alt="The same chart with a queue branch off the rate limiter; every existing node unmoved"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme-v3-dark.svg"><img src="docs/assets/readme-v3.svg" alt="The same chart with an audit-log step and a Done terminal appended; every existing node unmoved"></picture> |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme-v1-dark.svg"><img src="docs/assets/readme-v1.svg" alt="The base chart"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme-v2-dark.svg"><img src="docs/assets/readme-v2.svg" alt="The same chart with a Queue request box added in the rate limiter's own row, its yes branch entering from the left and a retry edge looping back up into Request arrives; every existing node unmoved"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme-v3-dark.svg"><img src="docs/assets/readme-v3.svg" alt="The same chart again, retry loop and all, with a Write audit log step and a Done terminal appended below Open room; every existing node unmoved"></picture> |
 
 The promise **across** versions of a chart is deliberately not byte-equality —
 the canvas grows (v2 is 178px wider than v1, v3 another 240px taller), new

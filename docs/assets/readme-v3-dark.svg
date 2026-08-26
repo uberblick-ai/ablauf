@@ -12,10 +12,10 @@
 <path d="M380,337 L380,512" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
 <rect x="368" y="414.5" width="24" height="20" rx="4" fill="#12151c"/>
 <text x="380" y="428.8" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#96a3ba">no</text>
-<path d="M474.5,300 L580,300 L580,392" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
-<rect x="511.8" y="290" width="31" height="20" rx="4" fill="#12151c"/>
-<text x="527.3" y="304.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#96a3ba">yes</text>
-<path d="M580,448 L580,540 L440,540" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M474.5,300 L507.5,300" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="475.5" y="290" width="31" height="20" rx="4" fill="#12151c"/>
+<text x="491" y="304.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#96a3ba">yes</text>
+<path d="M580,272 L580,60 L461,60" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
 <path d="M380,568 L380,632" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
 <path d="M380,688 L380,752" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
 <rect x="299" y="32" width="162" height="56" rx="28" fill="#162b22" stroke="#8ea3c4" stroke-width="2"/>
@@ -28,8 +28,8 @@
 <text x="380" y="305" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">Rate limited?</text>
 <rect x="320" y="512" width="120" height="56" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
 <text x="380" y="545" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">Open room</text>
-<rect x="507.5" y="392" width="145" height="56" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
-<text x="580" y="425" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">Queue request</text>
+<rect x="507.5" y="272" width="145" height="56" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
+<text x="580" y="305" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">Queue request</text>
 <rect x="299" y="632" width="162" height="56" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
 <text x="380" y="665" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">Write audit log</text>
 <rect x="320" y="752" width="120" height="56" rx="28" fill="#162b22" stroke="#8ea3c4" stroke-width="2"/>
