@@ -277,8 +277,10 @@ scenarios, 2026-08-26).** The dogleg parks its corridor at the midpoint between
 the two nodes and is blind to what is standing there: `fix --> push` in the
 review's S4 scenario ran the width of the chart straight through `Unit tests`,
 and where two endpoints' x-ranges overlap the corridor lands *inside both boxes*
-and the arrow reads reversed. So: an edge whose dogleg would cross the interior
-of any node box is re-routed through a gutter instead. Both ends first
+and the arrow reads reversed. So: a **backward** edge whose dogleg would cross
+the interior of any node box, and a **forward** edge whose dogleg's *vertical*
+run — the one in its own column — would cross one, are re-routed through a gutter
+instead — the asymmetry is why, below. Both ends first
 step half a `MARGIN` out along their anchor's outward normal, so the route
 leaves and arrives the way the arrowhead points; those two turn points fix the
 **band**, the y-range the corridor spans, and every positioned box whose own
