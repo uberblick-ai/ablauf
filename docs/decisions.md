@@ -204,10 +204,15 @@ Determinism (D5/D21) comes from three fixed orders and nothing else: edges in
 declaration order, sides in a clockwise list, and a resolution order that is a
 count plus that declaration order. The step-aside pass adds no fourth: it walks
 the same declaration order over pairs, and its test is exact equality between
-two endpoints' scores — the integer arithmetic the anchors already come from,
-with no tolerance and nothing measured. Nothing here avoids obstacles — that
-stays deferred (below), and a fallback anchor can still route across whatever
-happens to be in the way, except for the one edge class D24 names.
+two endpoints' scores — arithmetic on the stored coordinates, with no tolerance
+and nothing measured. The snap pass writes integer centres (`src/geometry.ts`),
+so a grid-placed mirror is always detected exactly; a host that stores sub-pixel
+centres of its own gets the mirror only where the two differences come out
+bit-identical, which is a boundary on the *symmetry*, never on determinism — the
+same positions still draw the same picture everywhere. Nothing here avoids
+obstacles — that stays deferred (below), and a fallback anchor can still route
+across whatever happens to be in the way, except for the one edge class D24
+names.
 
 **D24. A backward edge whose corridor is occupied takes a gutter (owner-reviewed
 scenarios, 2026-08-26).** The dogleg parks its corridor at the midpoint between
