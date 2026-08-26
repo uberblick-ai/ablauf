@@ -111,6 +111,22 @@ sees it. Two ways out, and a host should pick deliberately:
   first-materialisation protocol — and a test that starts two replicas from an
   empty layout, not from a seeded one.
 
+Neither the key shape nor the first-materialisation protocol is ablauf's to
+choose; it hands over `writes` and never learns what the storage looks like.
+
+**Two tests, before claiming concurrent drags survive.** Both states a real
+document passes through, and reading the code proves neither:
+
+1. **An already-materialised layout.** The block's positions exist on both
+   replicas. A drags one node, B drags another, no sync in between; after sync,
+   both drags are present. This is the case persisting only `writes` fixes.
+2. **Two replicas from an empty layout.** Neither replica has any layout for the
+   block yet; both drag a node, both materialise the layout, then sync. Both
+   nodes must survive. This is the case a nested map does not give you for free,
+   and the one a seeded fixture never reaches.
+
+Passing (1) while skipping (2) is exactly how a lost node ships.
+
 **Orphans.** ablauf keeps positions for ids the chart no longer contains, on
 purpose: delete a node, re-add it under the same id, and it returns to where it
 was. `snap` reports them as `orphan` warnings and never removes them;

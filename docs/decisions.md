@@ -148,6 +148,24 @@ last one wins, with a warning; directive-list order is otherwise not
 significant, because movable nodes are resolved in graph document order, so
 two nodes claiming the same spot settle by document order, not list order.
 
+**D27. `snap` returns the full picture and the minimal write set (owner,
+2026-08-26).** `SnapResult` carries `positions` — every graph node's centre,
+what a host renders — and `writes`, the subset whose stored entry is missing,
+not a finite point, or numerically different. Hosts render `positions` and
+persist only `writes`. The reason is keyed CRDT storage: rewriting a node whose
+stored coordinate is already correct is a *competing write*, and a competing
+write can defeat a concurrent drag of that node on another replica. Measured
+against Yjs 13.6.32 with two synced replicas: A drags `n1` while B drags `n2`,
+both writing back the full `positions` — B's drag is lost; each writing only
+what changed — both survive. So the safe write set is computed once, in the
+pipeline, rather than left as a rule every host has to rediscover. `writes` is
+derived from the already-final `positions` and the `prev` snapshot the call
+received, iterating graph nodes in document order (D21), so orphans and unknown
+ids can never reach it and a directive that resolves back to a node's existing
+coordinate produces no write. It changes nothing about the freeze rule (D6):
+a frozen node is emitted verbatim in `positions` and is simply absent from
+`writes`, which is the same fact stated twice.
+
 **D23. One endpoint per anchor; a diamond has one entry, at its top vertex, and
 its exits leave through the others (owner, 2026-08-26).** Every node has four anchors — the side
 midpoints, which on a decision node *are* its four vertices — and each edge

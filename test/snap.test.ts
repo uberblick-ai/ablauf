@@ -342,6 +342,7 @@ describe("the spec and the code agree", () => {
     expect(SPEC).toContain("emitted verbatim");
     expect(SPEC).toContain("Frozen overlaps are preserved");
     expect(SPEC).toContain("The host-integration contract");
+    expect(SPEC).toContain("`positions` and `writes`");
   });
 });
 
@@ -485,6 +486,71 @@ describe("safety properties", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// the write set (D27)
+// ---------------------------------------------------------------------------
+// `positions` is the whole picture; `writes` is the subset a host persists.
+// Determinism and permutation-invariance need no test of their own here: the
+// two property-4 assertions above compare whole `SnapResult`s, so `writes` is
+// on that gate with everything else.
+
+describe("the write set", () => {
+  it("is exactly the missing, invalid and changed entries, for arbitrary input", () => {
+    fc.assert(
+      fc.property(aCase(fc.array(aDirective, { maxLength: 12 })), ([graph, prev, directives]) => {
+        const { positions, writes } = run(graph, prev, directives);
+        const want: string[] = [];
+        for (const n of graph.nodes) {
+          const was = prev[n.id];
+          const p = positions[n.id] as Position;
+          const unchanged = isPosition(was) && was.x === p.x && was.y === p.y;
+          expect(Object.hasOwn(writes, n.id), `${n.id} in writes`).toBe(!unchanged);
+          if (unchanged) continue;
+          want.push(n.id);
+          expect(Object.getOwnPropertyDescriptor(writes, n.id)?.value, `${n.id} write`).toEqual(p);
+        }
+        // Keyed by graph node, in graph document order (D21): an orphan or an
+        // unknown id has no way in, and `prev`'s key order has no say.
+        expect(Object.keys(writes)).toEqual(want);
+      }),
+      { numRuns: 500 },
+    );
+  });
+
+  it("a directive that resolves to where the node already is writes nothing", () => {
+    const graph = chart([
+      ["a", "A"],
+      ["b", "B"],
+    ]);
+    const prev = { a: { x: 400, y: 300 }, b: { x: 400, y: 520 } };
+    for (const d of [{ id: "b", at: { x: 400, y: 520 } }, { id: "b", delta: { dx: 0, dy: 0 } }]) {
+      const out = snap(graph, prev, [d as Directive]);
+      expect(out.positions).toEqual(prev);
+      expect(out.writes).toEqual({});
+    }
+  });
+
+  it("orphans and unknown ids never reach it", () => {
+    const graph = chart([["a", "A"]]);
+    const out = snap(graph, { a: { x: 400, y: 300 }, ghost: { x: 1, y: 2 } }, [
+      { id: "zz", at: { x: 0, y: 0 } },
+    ]);
+    expect(out.warnings.map((w) => w.code)).toEqual(["orphan", "unknown-node"]);
+    expect(out.positions).toEqual({ a: { x: 400, y: 300 } });
+    expect(out.writes).toEqual({});
+  });
+
+  it("an entry that is not a finite point is a write, at the emitted position", () => {
+    const graph = chart([
+      ["a", "A"],
+      ["b", "B"],
+    ]);
+    const out = snap(graph, { a: { x: 400, y: 300 }, b: { x: Number.NaN, y: 0 } } as never, []);
+    expect(out.warnings.map((w) => w.code)).toEqual(["invalid-position"]);
+    expect(out.writes).toEqual({ b: out.positions.b });
+  });
+});
+
 describe("regressions", () => {
   // The spike's two bugs, both of the same shape: the overlap resolver trading
   // an overlap for an off-canvas node (D8, D9).
@@ -576,7 +642,10 @@ describe("the host-integration contract", () => {
     const out = snap(graph, store.snapshot(), [{ id: "b", at: { x: 400, y: 300 } }]);
     expect(out.positions.a).toEqual({ x: 400, y: 300 });
     expect(overlaps(boxOf(graph.nodes[1] as Node, out.positions.b as Position), boxOf(graph.nodes[0] as Node, { x: 400, y: 300 }))).toBe(false);
-    for (const [id, p] of Object.entries(out.positions)) store.set(id, p);
+    // Render `positions`; persist `writes` (D27). Only `b` moved, so only `b`
+    // is written — and the store still reaches the document the full loop did.
+    expect(Object.keys(out.writes)).toEqual(["b"]);
+    for (const [id, p] of Object.entries(out.writes)) store.set(id, p);
     expect(store.snapshot()).toEqual(out.positions);
   });
 
