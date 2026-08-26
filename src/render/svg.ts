@@ -413,8 +413,31 @@ const outward = ({ x, y }: Pt, side: Side, d: number): Pt =>
  */
 const junctionOf = (b: Box, depth: number): Pt => ({ x: b.cx, y: b.y - STUB * depth });
 
-/** A point as a zero-size box, so `aim` can score the four ways into it. */
+/** A point as a zero-size box, so `aim` can score the ways into it. */
 const atPoint = (p: Pt): Box => ({ x: p.x, y: p.y, w: 0, h: 0, cx: p.x, cy: p.y });
+
+/**
+ * How an entry sees its decision's junction: the unscaled scoring a diamond
+ * already gets (D23), with the way in **from below** struck out. A junction
+ * sits above the top vertex, so an entry arriving from underneath it has the
+ * whole diamond in the way — and D24's gutter, whose stub steps back along that
+ * same normal, lands its last turn *on* the vertex and swallows the trunk. A
+ * source below the diamond therefore climbs to the junction beside it instead,
+ * on the left or the right: its own x picks the side, and an exact tie goes
+ * clockwise, as everywhere else in D23.
+ *
+ * Struck out in both ways `claim` can pick a side: `clear` is what a free
+ * anchor is chosen from, and the score is pinned to the top's — never strictly
+ * greater than it — so the fallback that ignores `clear` cannot pick it either.
+ * Equality rather than an epsilon, because the two are exact negatives of each
+ * other and D21 wants no tolerance anywhere.
+ */
+const entryAim = (j: Pt, ox: number, oy: number): Aim => {
+  const seen = aim("decision", atPoint(j), ox, oy);
+  seen.clear.bottom = false;
+  seen.score.bottom = seen.score.top;
+  return seen;
+};
 
 /**
  * Does the axis-aligned segment `a`–`b` pass through the **interior** of `r`?
@@ -440,15 +463,27 @@ const blocked = (pts: readonly Pt[], obstacles: readonly Rect[]): boolean => {
   return false;
 };
 
-/** Drop repeated points and the middle of a straight run: one shape, one spelling. */
+/**
+ * Drop repeated points and the middle of a straight run: one shape, one
+ * spelling. The pop is a `while` and the repeat test is asked again after it,
+ * because dropping one point exposes the one before it: a route that turns
+ * twice on the same line, or one that ends where its own previous turn already
+ * stood, left a **zero-length segment** in the single-pass version — the pop
+ * removed the point the repeat test had just been asked about, and the push
+ * then duplicated the new last one. That is what hid the trunk of an entry
+ * whose gutter leg arrived on the diamond's vertex.
+ */
 const simplify = (pts: readonly Pt[]): Pt[] => {
   const out: Pt[] = [];
   for (const p of pts) {
-    const a = out[out.length - 2];
-    const b = out[out.length - 1];
-    if (b && b.x === p.x && b.y === p.y) continue;
-    if (a && b && ((a.x === b.x && b.x === p.x) || (a.y === b.y && b.y === p.y))) out.pop();
-    out.push(p);
+    let b = out[out.length - 1];
+    while (b !== undefined && !(b.x === p.x && b.y === p.y)) {
+      const a = out[out.length - 2];
+      if (!a || !((a.x === b.x && b.x === p.x) || (a.y === b.y && b.y === p.y))) break;
+      out.pop();
+      b = out[out.length - 1];
+    }
+    if (b === undefined || b.x !== p.x || b.y !== p.y) out.push(p);
   }
   return out;
 };
@@ -571,7 +606,11 @@ const routeAll = (graph: Graph, box: Map<string, Box>): (Pt[] | null)[] => {
     // unscaled, the way `aim` already scores a diamond. A self-loop is not an
     // entry: it keeps D25's rule, which is out of the single-entry rule's scope.
     const j = self || to.kind !== "decision" ? undefined : junctionOf(b, 1);
-    const tAim = self ? selfAim("top") : aim(to.kind, j ? atPoint(j) : b, a.cx, a.cy);
+    const tAim = self
+      ? selfAim("top")
+      : j
+        ? entryAim(j, a.cx, a.cy)
+        : aim(to.kind, b, a.cx, a.cy);
     add(e.to, { kind: to.kind, b, aim: tAim, off: barred(), ...half, ...(j && { junction: j }) });
   }
 

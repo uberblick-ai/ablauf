@@ -420,6 +420,31 @@ describe("D23: one endpoint per anchor", () => {
     ]);
   });
 
+  it("climbs a gutter to the junction when the entry comes from below", () => {
+    // A junction sits above the top vertex, so an entry from underneath has the
+    // whole diamond between it and its own anchor. It used to claim the way in
+    // from below anyway, which put D24's gutter stub *on* the vertex: the leg
+    // arrived horizontally there, the trunk was gone, and the repeated point it
+    // left behind survived `simplify` as a zero-length segment.
+    const TEXT = "flowchart TD\n  a[A] --> d{D?}\n  d --> b[B]\n  b --> d";
+    const AT: Record<string, [number, number]> = { a: [200, 60], d: [200, 200], b: [200, 340] };
+    // `d` is 164x74 at (200, 200) — box 118..282 by 163..237, top vertex
+    // (200, 163), junction (200, 153) — and `b` is straight below it.
+    const back = routes(TEXT, AT)[2] as Pt[];
+    expect(back).toEqual([
+      [220, 312],
+      [220, 302], // out of `b`'s top, D24's stub
+      [292, 302],
+      [292, 153], // up the gutter, half a MARGIN clear of `d`'s right edge
+      [200, 153], // into the junction, from the side it claimed
+      [200, 163], // and down the trunk into the top vertex
+    ]);
+    expect(back.some(([x, y], i) => i > 0 && x === back[i - 1]?.[0] && y === back[i - 1]?.[1])).toBe(
+      false,
+    );
+    expect(crossings(back, TEXT, AT)).toEqual([]);
+  });
+
   it("draws no two edges on top of each other in the retry-loop scenario", () => {
     // The old one-port-per-side router gave `queue --> start` the same left port
     // `rate --> queue` had just arrived at, and 73px of the way back was drawn

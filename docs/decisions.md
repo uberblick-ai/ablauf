@@ -226,6 +226,20 @@ occupy, and between two edges into *that* diamond. Everything else, everywhere
 else, is still a violation — a shared run into a node that is not a decision
 included, which is pinned by its own test.
 
+A junction has **three** ways in, not four. It sits above the top vertex, so an
+entry arriving from underneath it has the whole diamond in the way, and D24's
+gutter — whose stub steps back along that same normal — lands its last turn *on*
+the vertex, which swallows the trunk and leaves a zero-length segment behind. So
+an entry from **below** the diamond climbs to the junction beside it instead: its
+own x picks left or right, an exact tie goes clockwise as everywhere else here,
+and D24 is still asked the gutter question about that leg, which is what runs it
+up half a `MARGIN` clear of the diamond's side. The junction distance is also a
+**constant**, which fixes one boundary rather than searching: a source parked
+closer than half a `MARGIN` above the diamond — which the snap pass never does,
+`ROW` being 120, so only a drag can — gets a leg that steps back into its own box
+by that difference. That degrades to ugly, never to scrambled (D7), and the merge
+is still one line into one vertex.
+
 Scope, deliberately: **decisions only** — merging into any other shape stays
 distinct anchors, which is the S5/S7 rendering the owner approved. The entry
 vertex is the top one because the charts are `TD`, and the renderer does not read
