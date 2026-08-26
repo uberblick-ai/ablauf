@@ -28,13 +28,13 @@
 //     trunk from there into the vertex is drawn once, so two inbounds merge
 //     into one line instead of fanning onto the diamond's sloped boundary —
 //     which leaves the other three vertices to the exits.
-//   * A backward edge whose dogleg would cross a box takes a gutter instead
-//     (D24): one corridor-choice rule for one edge class, not the deferred
-//     obstacle-avoiding routing pass.
+//   * An edge whose dogleg would cross a box takes a gutter instead (D24),
+//     backward and forward alike: one alternative corridor, taken only when it
+//     is itself clear, not the deferred obstacle-avoiding routing pass.
 //   * Each edge gets its own corridor (D26): a forward dogleg's elbow sits at
 //     the target anchor's fan fraction of the gap rather than at its midpoint,
 //     so two edges into one node are no more drawn on top of each other than
-//     their anchors are.
+//     their anchors are. An edge that takes D24's gutter has no elbow to place.
 //   * A self-loop is drawn as a loop outside its node (D25), not as a dogleg
 //     between two anchors of the same box — which is a line along, or through,
 //     the box itself, with the arrowhead buried in its own border.
@@ -489,9 +489,10 @@ const simplify = (pts: readonly Pt[]): Pt[] => {
 };
 
 /**
- * The backward-edge gutter (D24): the same rectangle the dogleg elbows around,
- * taken by its *other* corner pair, with the vertical run pushed clear of every
- * box in the band instead of parked at the midpoint between the two nodes.
+ * The gutter a blocked edge takes (D24): the same rectangle the dogleg elbows
+ * around, taken by its *other* corner pair, with the vertical run pushed clear
+ * of every box in the band instead of parked at the midpoint between the two
+ * nodes.
  *
  * Both ends first step `STUB` out along their anchor's normal, so the route
  * leaves and arrives the way the arrowhead points and never runs along the box
@@ -502,6 +503,11 @@ const simplify = (pts: readonly Pt[]): Pt[] => {
  * ones, whichever costs less horizontal travel, an exact tie going right.
  * Returns `null` when the band is empty, which cannot happen for the blocked
  * edge this is called for — a crossed box is by construction in the band.
+ *
+ * It reads a direction from nothing: the band is a `min`/`max` over the two
+ * turn points, so a run that goes **down** is the same arithmetic as one that
+ * goes up. That is what lets a forward edge ask the same question a backward
+ * one does, and it is why extending D24 to forward edges added no geometry.
  */
 const gutterRoute = (
   s: Pt,
@@ -682,9 +688,9 @@ const routeAll = (graph: Graph, box: Map<string, Box>): (Pt[] | null)[] => {
   const trunk = (end: End): Pt[] =>
     end.junction === undefined ? [] : [port(end.b, end.kind, "top", 0.5)];
 
-  // 6. Route. Every box, in document order (D21), is what a backward edge's
-  //    corridor has to clear — forward edges keep the blind dogleg, which is
-  //    the deferred router's problem and not this rule's (D24).
+  // 6. Route. Every box, in document order (D21), is what a blocked edge's
+  //    corridor has to clear (D24) — backward and forward alike, since a box
+  //    standing in a forward edge's own column is the same geometry.
   const obstacles: Box[] = [];
   for (const node of graph.nodes) {
     const b = box.get(node.id);
@@ -703,10 +709,13 @@ const routeAll = (graph: Graph, box: Map<string, Box>): (Pt[] | null)[] => {
     // is answered against the boxes, not against the other edges.
     const forward = t.b.cy >= s.b.cy;
     const plain = dogleg(at(s), s.side, at(t), t.side, forward ? t.f : 0.5);
-    const around =
-      forward || !blocked(plain, obstacles)
-        ? null
-        : gutterRoute(at(s), s.side, at(t), t.side, obstacles);
+    // D24's question, asked of every blocked edge in either direction: one
+    // alternative corridor, taken only when it is itself clear, so the rule can
+    // never draw a chart worse than the dogleg already drew it. A forward edge
+    // that takes it has no D26 elbow left to place — the corridor replaces it.
+    const around = blocked(plain, obstacles)
+      ? gutterRoute(at(s), s.side, at(t), t.side, obstacles)
+      : null;
     const leg = around && !blocked(around, obstacles) ? around : plain;
     // An edge into a decision stops at the junction; the trunk from there into
     // the top vertex is the segment its fellow entries share on purpose (D23),
@@ -796,7 +805,7 @@ const spanOf = (pts: readonly Pt[]): Rect => {
  * around highlighted ones, the edges themselves, and the edge-label chips. The
  * canvas *size* comes from this rather than from node boxes alone — a long
  * label between two short nodes reaches well past every box in the picture, and
- * a backward edge's gutter corridor runs outside them all (D24), and D9 says
+ * a blocked edge's gutter corridor runs outside them all (D24), and D9 says
  * nothing is clipped. The *origin* does not: it comes from the boxes (D18,
  * `metaOf`). Boxes, rings and edges are stroked and so contribute their outline
  * too; the chip is a bare fill, so its own rectangle is all of it.

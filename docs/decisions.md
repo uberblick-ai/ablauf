@@ -244,9 +244,11 @@ Scope, deliberately: **decisions only** — merging into any other shape stays
 distinct anchors, which is the S5/S7 rendering the owner approved. The entry
 vertex is the top one because the charts are `TD`, and the renderer does not read
 `graph.direction` at all; an `LR` chart mirroring this rule is a change to make
-when `LR` layouts are real, not a guess to encode now. A **backward** inbound
-keeps D24 for its leg up to the junction — the gutter question is asked about
-that leg exactly as before, and only its far end moved — and a **self-loop** on a
+when `LR` layouts are real, not a guess to encode now. An inbound edge keeps D24
+for its leg to the junction — the gutter question is asked about that leg exactly
+as before, and only its far end moved; it is asked in either direction, so an
+entry that takes the gutter still arrives at its junction from the side it
+claimed and the trunk below is unaffected — and a **self-loop** on a
 diamond is not an entry at all and keeps D25. Nothing here avoids obstacles
 either: the entry is out of the diamond's own slopes, which is why S6 stopped
 crossing `route` and the acceptance branch set stopped crossing `mfa` and `rate`,
@@ -267,17 +269,16 @@ centres of its own gets the mirror only where the two differences come out
 bit-identical, which is a boundary on the *symmetry*, never on determinism — the
 same positions still draw the same picture everywhere. Nothing here avoids
 obstacles — that stays deferred (below), and a fallback anchor can still route
-across whatever happens to be in the way, except for the one edge class D24
-names.
+across whatever happens to be in the way, except where D24's one alternative
+corridor clears it.
 
-**D24. A backward edge whose corridor is occupied takes a gutter (owner-reviewed
+**D24. An edge whose corridor is occupied takes a gutter (owner-reviewed
 scenarios, 2026-08-26).** The dogleg parks its corridor at the midpoint between
 the two nodes and is blind to what is standing there: `fix --> push` in the
 review's S4 scenario ran the width of the chart straight through `Unit tests`,
 and where two endpoints' x-ranges overlap the corridor lands *inside both boxes*
-and the arrow reads reversed. So: an edge is **backward** when its target's
-centre is above its source's, and a backward edge whose dogleg would cross the
-interior of any node box is re-routed through a gutter instead. Both ends first
+and the arrow reads reversed. So: an edge whose dogleg would cross the interior
+of any node box is re-routed through a gutter instead. Both ends first
 step half a `MARGIN` out along their anchor's outward normal, so the route
 leaves and arrives the way the arrowhead points; those two turn points fix the
 **band**, the y-range the corridor spans, and every positioned box whose own
@@ -287,20 +288,46 @@ clears: a vertical run at half a `MARGIN` beyond the rightmost of their right
 edges, or beyond the leftmost of their left edges, whichever costs less
 horizontal travel (`|g - sx| + |g - tx|`), an exact tie going right. The canvas
 grows to hold it, because everything painted counts and edges now count too
-(D9). Only a *backward* edge asks the question, so the gutter cannot silently
-become the general router; and the gutter is taken only if it is itself clear,
-so the rule can never make a chart worse than the dogleg already drew it.
+(D9). The gutter is taken only if it is itself clear, so the rule can never make
+a chart worse than the dogleg already drew it.
+
+It covers **both directions** (owner, 2026-08-26). It was written for backward
+edges — target centre above the source's — where the review's damage was; the
+`deploy` golden showed the same geometry pointing down, `fail --> notify` running
+from `Report failure` straight through `Block release` to `Notify author`, all
+three centred on x = 1030 with the blocking box squarely between them. That is
+one box standing in an edge's own column with a span that contains the run: the
+same question, and the same answer, so the direction test was dropped rather than
+a second rule written. The arithmetic needed nothing: the band is a `min`/`max`
+over the two turn points, so a run that goes down is the run that goes up. A
+forward edge that takes the gutter has **no D26 elbow** left to place — the
+corridor replaces it — and an inbound edge into a decision still ends at its
+junction from the side it claimed (D23), the gutter having moved only the leg
+before it.
 
 What it deliberately does not do: it moves no node (D6), it re-chooses no anchor
-(D23), it does not touch forward edges, and it searches nothing — one corridor
-is computed and either taken or not. A backward edge boxed in on both sides has
-no single corridor at any x and keeps its dogleg; two such edges exist in the
-acceptance sets, pinned by name in `scripts/acceptance.mjs` so a regression
-fails the gate and so does the day they start routing cleanly. Clearing them
-needs a staircase, which is the obstacle-avoiding pass below. Determinism
-(D5/D21) is the band's two turn points, a min and a max over the node boxes in
-document order, and one comparison of two absolute differences — no search
-order to depend on and no approximated math.
+(D23), and it searches nothing — one corridor is computed and either taken or
+not. An edge boxed in on both sides has no single corridor at any x and keeps
+its dogleg; two such backward edges exist in the acceptance sets, pinned by name
+in `scripts/acceptance.mjs` so a regression fails the gate and so does the day
+they start routing cleanly. That list stays backward-only: a corridor exists for
+every backward edge in the corpus but those two, which is what makes naming them
+meaningful, while the boxes a forward edge can be blocked by are whatever its
+chart's columns hold. The forward half of the property is pinned instead as a
+corpus check over both goldens and all eight ladder scenarios in
+`test/render.test.ts` — no edge, in either direction, through any box — plus the
+two named cases: `fail --> notify`, and a forward edge boxed in on both sides
+that keeps the dogleg it had. It is still not obstacle avoidance: blockage that
+is not a box across the corridor — diagonal, cross-column, a second obstacle in
+the alternative corridor — is the deferred pass below.
+
+Determinism (D5/D21) is the band's two turn points, a min and a max over the
+node boxes in document order, and one comparison of two absolute differences —
+no search order to depend on and no approximated math. The tie-break is that
+one comparison and nothing else: an exact tie goes right. A further tie-break by
+"which side has more free space" was considered when the forward case was
+written and **rejected** — free space is not a quantity anything here measures,
+and inventing one would be the search this rule exists without.
 
 **D25. A self-loop is drawn as a loop outside its node (owner-reviewed
 scenarios, 2026-08-26).** `a --> a` is valid mermaid and the parser takes it
@@ -366,17 +393,26 @@ are the same missing input — the rule reads one edge's own two anchors and nev
 another edge — and both are for the obstacle-avoiding pass below, or for a later
 correction against a real chart.
 
+D24's gutter takes the first limit's worst case away without fixing it (owner,
+2026-08-26): two sources stacked in **one column** put the upper one's box
+across the lower edge's run whatever order they were declared in, so that edge is
+blocked and leaves the column entirely. The blindness is untouched, and the shape
+it still draws is two sources in *different* columns whose elbows land on the
+same y with overlapping x — nothing is in either one's way, and 40px of one
+horizontal run is drawn twice. That is the case the scoping test now uses.
+
 What it deliberately does not do: it moves no node (D6), re-chooses no anchor
 (D23), and does not touch a **backward** edge, whose corridor is D24's — moving
 that elbow would change which backward edges the gutter is asked about, and
 that question is answered against the boxes rather than against the other
 edges. It is not obstacle avoidance either: the corridors are separated from
-each other, not from the boxes. The `deploy` edge above still crosses `Block
-release` on its way down — it did before, at x=1030 through the middle of it —
-and now turns its corner inside that box rather than below it, which is the
-accepted price: an elbow cannot be kept out of a box by a rule that never looks
-at one, and a chart reads worse with two edges drawn as one than with one edge
-crossing a box it was already crossing. The retrace detector over both goldens
+each other, not from the boxes. The `deploy` edge above used to cross `Block
+release` on its way down — it did before this rule, at x=1030 through the middle
+of it, and afterwards turned its corner inside that box rather than below it,
+which was the accepted price. D24 now asks its question of a forward edge too
+and that edge takes the gutter, so it has no elbow here at all; what stands is
+the reasoning, unchanged — an elbow cannot be kept out of a box by a rule that
+never looks at one, and D26 is not the rule that looks. The retrace detector over both goldens
 and all eight scenarios of the legibility ladder (`test/render.test.ts`) is a
 **corpus pin, not a proof**: it fails the day one of those charts starts
 drawing two edges as one, and it says nothing about the layouts above. It carries
@@ -468,17 +504,23 @@ demo page and a written host-integration proposal, not by zero dependencies.
   D22. The layout-store spec documents the host
   contract they implement; the demo page proves it runs.
 - **Edge routing.** v1 keeps the spike's dogleg router, with the per-node
-  anchor assignment of D23 in front of it, the backward-edge gutter of D24
+  anchor assignment of D23 in front of it, the blocked-edge gutter of D24
   behind it, the self-loop of D25 beside it, and the per-edge corridor offset
   of D26 inside it. What those do not add up to
-  is a router: a **forward** edge
-  still runs wherever its corridor puts it, obstacles included — D26 separates
-  the corridors from each other, never from the boxes; a
-  backward edge gets exactly one alternative corridor and keeps its dogleg when
+  is a router. What is still not done, after D24 grew to cover forward edges:
+  an edge gets **exactly one** alternative corridor and keeps its dogleg when
   that one is blocked too, so an edge boxed in on both sides still draws through
-  a box; and nothing anywhere searches, backtracks, or bends an edge more than
-  twice. If a real obstacle-avoiding pass is ever needed, the structure is
-  draw.io's:
+  a box (#21, left pinned rather than solved); the corridor is a *vertical* run
+  to one side, so the only blockage it answers is a box across the run — nothing
+  handles diagonal or cross-column obstruction, an obstacle in the alternative
+  corridor, or the staircase two corridors would need; D26 separates corridors
+  from each other and never from the boxes; a corridor is chosen by one cost
+  comparison, so it can round the far side of a chart when a nearer detour with a
+  bend would read better; and nothing anywhere searches, backtracks, or bends an
+  edge more than twice. Three narrow extensions in (D24 backward, D26 offsets,
+  D24 forward), the next one is the router licence decision and it is the
+  owner's, not an issue's. If a real obstacle-avoiding pass is ever needed, the
+  structure is draw.io's:
   layout for nodes, a separate orthogonal routing pass treating every node as
   an obstacle. Router choice carries a licence question under D15:
   `libavoid-js` is the best implementation and is LGPL-2.1, whose §6 relinking

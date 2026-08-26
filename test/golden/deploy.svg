@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1128" height="1289" viewBox="0 0 1128 1289">
+<svg xmlns="http://www.w3.org/2000/svg" width="1134" height="1289" viewBox="0 0 1134 1289">
 <title>Deploy pipeline</title>
 <defs><marker id="ablauf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5a6580"/></marker><marker id="ablauf-arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c2410c"/></marker></defs>
-<rect x="0" y="0" width="1128" height="1289" fill="#ffffff"/>
+<rect x="0" y="0" width="1134" height="1289" fill="#ffffff"/>
 <path d="M483,60 L390,60 L390,142" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
 <path d="M637,60 L730,60 L730,142" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
 <path d="M390,198 L390,238 L560,238 L560,248" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
@@ -9,7 +9,7 @@
 <path d="M642,285 L953,285" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
 <rect x="785.5" y="275" width="24" height="20" rx="4" fill="#ffffff"/>
 <text x="797.5" y="289.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#5a6580">no</text>
-<path d="M1030,313 L1030,589.3 L1005.8,589.3 L1005.8,1142" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M1030,313 L1030,323 L1112.5,323 L1112.5,1132 L1005.8,1132 L1005.8,1142" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
 <path d="M560,322 L560,372" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
 <rect x="544.5" y="337" width="31" height="20" rx="4" fill="#ffffff"/>
 <text x="560" y="351.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#5a6580">yes</text>

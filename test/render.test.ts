@@ -56,6 +56,22 @@ const fixture = (name: string): { graph: Graph; positions: Record<string, Positi
 const goldenPath = (name: string): URL => new URL(`golden/${name}.svg`, import.meta.url);
 
 /**
+ * The legibility ladder, straight off disk — the same eight charts the
+ * acceptance gallery is looked at in, so the corpus properties are pinned where
+ * routing changes are reviewed (D24, D26). S5 and S7 are the merges: their
+ * edges have to share neither an anchor (D23) nor a corridor (D26).
+ */
+const scenarios = (
+  JSON.parse(readFileSync(new URL("fixtures/scenarios/scenarios.json", ROOT), "utf8")) as {
+    scenarios: { id: string; title: string; positions: Record<string, Position> }[];
+  }
+).scenarios;
+
+/** One ladder scenario's parsed chart, by id. */
+const ladder = (id: string): Graph =>
+  parse(readFileSync(new URL(`fixtures/scenarios/${id}.mmd`, ROOT), "utf8"));
+
+/**
  * Node labels carry the node font size and edge labels the edge one, which is
  * how a rendered node's coordinates are read back out of the SVG without the
  * renderer having to emit ids for the test's benefit. Labels are unique in both
@@ -116,11 +132,19 @@ const routes = (text: string, at: Record<string, [number, number]>): Pt[][] =>
   );
 
 /**
- * Which boxes one route runs through the **interior** of — the same strict test
- * the router itself asks (`through` in src/render/svg.ts), so an anchor sitting
- * on a border, or a segment running along one, is not a crossing. Every node in
- * the chart counts, the edge's own endpoints included — both of them, for a
- * self-loop (D25).
+ * Does one segment run through the **interior** of one box — the same strict
+ * test the router itself asks (`through` in src/render/svg.ts), so an anchor
+ * sitting on a border, or a segment running along one, is not a crossing.
+ */
+const cuts = (b: ReturnType<typeof boxOf>, [ax, ay]: Pt, [bx, by]: Pt): boolean =>
+  Math.min(ax, bx) < b.x + b.w &&
+  Math.max(ax, bx) > b.x &&
+  Math.min(ay, by) < b.y + b.h &&
+  Math.max(ay, by) > b.y;
+
+/**
+ * Which boxes one route runs through. Every node in the chart counts, the
+ * edge's own endpoints included — both of them, for a self-loop (D25).
  */
 const crossings = (line: Pt[], text: string, at: Record<string, [number, number]>): string[] => {
   const hits: string[] = [];
@@ -128,17 +152,33 @@ const crossings = (line: Pt[], text: string, at: Record<string, [number, number]
     const [x, y] = at[n.id] as [number, number];
     const b = boxOf(n, { x, y });
     for (let i = 0; i + 1 < line.length; i++) {
-      const [ax, ay] = line[i] as Pt;
-      const [bx, by] = line[i + 1] as Pt;
-      const over =
-        Math.min(ax, bx) < b.x + b.w &&
-        Math.max(ax, bx) > b.x &&
-        Math.min(ay, by) < b.y + b.h &&
-        Math.max(ay, by) > b.y;
-      if (over) hits.push(`${n.id}@seg${i}`);
+      if (cuts(b, line[i] as Pt, line[i + 1] as Pt)) hits.push(`${n.id}@seg${i}`);
     }
   }
   return hits;
+};
+
+/**
+ * The same question asked of a whole chart: every edge of `graph`, against every
+ * box in it (D24). This is the corpus pin for "no edge runs through a box" —
+ * both goldens and all eight ladder scenarios — and it is deliberately *not*
+ * split by direction, because D24's gutter is now asked about a blocked edge in
+ * either one. Like the retrace detector it is a corpus pin, not a proof: it
+ * fails the day one of these charts starts drawing an edge through a box.
+ */
+const throughBoxes = (graph: Graph, at: Record<string, Position>, svg: string): string[] => {
+  const lines = polylines(svg);
+  const boxes = graph.nodes.map((n) => [n.id, boxOf(n, at[n.id] as Position)] as const);
+  const bad: string[] = [];
+  graph.edges.forEach((e, i) => {
+    const line = lines[i] ?? [];
+    for (let k = 0; k + 1 < line.length; k++) {
+      for (const [id, b] of boxes) {
+        if (cuts(b, line[k] as Pt, line[k + 1] as Pt)) bad.push(`${e.from}->${e.to}@seg${k} × ${id}`);
+      }
+    }
+  });
+  return bad;
 };
 
 /**
@@ -552,10 +592,10 @@ describe("D23: one endpoint per anchor", () => {
 });
 
 // ---------------------------------------------------------------------------
-// D24 — a backward edge routes through a gutter
+// D24 — a blocked edge routes through a gutter
 // ---------------------------------------------------------------------------
 
-describe("D24: a backward edge clears the boxes between its ends", () => {
+describe("D24: a blocked edge clears the boxes between its ends", () => {
   // S4. The mid-y elbow of `fix --> push` used to run the full width of the
   // chart at y=190, straight through `unit` (162..218) — the corridor is blind
   // to what sits in it, which is the whole of issue #14.
@@ -611,6 +651,83 @@ describe("D24: a backward edge clears the boxes between its ends", () => {
     // And it never turns back down: the phantom this scenario was reported for
     // was the route re-crossing its own source, which reads as a reversed edge.
     expect(back.every(([, y], i) => i === 0 || y <= (back[i - 1] as Pt)[1])).toBe(true);
+  });
+
+  it("takes `fail --> notify` out of the column `block` is standing in", () => {
+    // The owner's review case: `fail` (bottom anchor at y=313) and `notify` are
+    // both in the x=1030 column with `block` (577..633 by 957.5..1102.5)
+    // squarely between them, so the run down that column went through it — and
+    // D26's elbow only moved the corner *inside* the box. The band between the
+    // two turn points (y 323..1132) reaches from `approve`'s left edge to
+    // `block`'s right one, and going right costs 209.2px of horizontal travel
+    // against the left corridor's 1169.8, so the gutter runs half a MARGIN
+    // beyond x=1102.5. The last leg is still `notify`'s fanned top anchor
+    // (D23/D26) — the gutter re-chooses no anchor.
+    const { graph, positions } = fixture("deploy");
+    const svg = toSvg(graph, positions, { title: titleOf("deploy") });
+    expect(polylines(svg)[5]).toEqual([
+      [1030, 313],
+      [1030, 323],
+      [1112.5, 323],
+      [1112.5, 1132],
+      [1005.8, 1132],
+      [1005.8, 1142],
+    ]);
+    expect(throughBoxes(graph, positions, svg)).toEqual([]);
+  });
+
+  it("leaves a forward edge with no clear gutter on the dogleg it had", () => {
+    // Boxed in on both sides, the forward twin of the two backward edges pinned
+    // in `scripts/acceptance.mjs`: `b` blocks the column, and `l` and `r` sit in
+    // the row the route's first turn point is on, so whichever corridor is
+    // costed cheaper, the leg out to it crosses one of them. One corridor is
+    // computed and rejected — nothing searches for a second (#21) — and the
+    // edge keeps the straight run it already had, unchanged and no worse.
+    const text = `flowchart TD
+  a[A] --> c[C]
+  b[B]
+  l[L]
+  r[R]`;
+    const at: Record<string, [number, number]> = {
+      a: [400, 100],
+      c: [400, 500],
+      b: [400, 300],
+      l: [200, 138],
+      r: [600, 138],
+    };
+    expect(routes(text, at)[0]).toEqual([
+      [400, 128],
+      [400, 472],
+    ]);
+    // Dropping just one of the two side blockers opens a corridor, which is
+    // what says the pair above is doing the work rather than the column: with
+    // `r` gone the cheaper side is the right one, half a MARGIN clear of `b`.
+    const open = `flowchart TD
+  a[A] --> c[C]
+  b[B]
+  l[L]`;
+    expect(routes(open, { a: [400, 100], c: [400, 500], b: [400, 300], l: [200, 138] })[0]).toEqual([
+      [400, 128],
+      [400, 138],
+      [470, 138],
+      [470, 462],
+      [400, 462],
+      [400, 472],
+    ]);
+  });
+
+  it.each(FIXTURES)("%s: no edge runs through a box", (name) => {
+    const { graph, positions } = fixture(name);
+    expect(throughBoxes(graph, positions, toSvg(graph, positions, { title: titleOf(name) }))).toEqual(
+      [],
+    );
+  });
+
+  it.each(scenarios.map((s) => [s.id, s] as const))("%s: no edge runs through a box", (id, s) => {
+    const graph = ladder(id);
+    expect(throughBoxes(graph, s.positions, toSvg(graph, s.positions, { title: s.title }))).toEqual(
+      [],
+    );
   });
 });
 
@@ -702,36 +819,23 @@ describe("D26: distinct edges share no segment", () => {
     expect(retraced(graph, positions, toSvg(graph, positions, { title: titleOf(name) }))).toEqual([]);
   });
 
-  // The whole legibility ladder, straight off disk — the same eight charts the
-  // acceptance gallery is looked at in, so the property is pinned where routing
-  // changes are reviewed. S5 and S7 are the merges: their edges have to share
-  // neither an anchor (D23) nor a corridor (D26).
-  const scenarios = (
-    JSON.parse(readFileSync(new URL("fixtures/scenarios/scenarios.json", ROOT), "utf8")) as {
-      scenarios: { id: string; title: string; positions: Record<string, Position> }[];
-    }
-  ).scenarios;
-
   it.each(scenarios.map((s) => [s.id, s] as const))("%s: no two edges share a run", (id, s) => {
-    const graph = parse(readFileSync(new URL(`fixtures/scenarios/${id}.mmd`, ROOT), "utf8"));
+    const graph = ladder(id);
     expect(retraced(graph, s.positions, toSvg(graph, s.positions, { title: s.title }))).toEqual([]);
   });
 
-  it("gives the deploy fixture's two merge edges two corridors", () => {
+  it("puts the deploy fixture's second merge edge on its own fan fraction", () => {
     // The defect this rule exists for: `fail` (bottom anchor at y=313) and
     // `block` (at y=633) are both centred on x=1030, so both doglegs ran down
     // that one line — 94.5px of it drawn twice — before splitting to `notify`'s
-    // two fanned top anchors. The elbows now sit at the anchors' own fan
-    // fractions of the gap, 1/3 and 2/3, so the first turns off well above the
-    // second starts.
+    // two fanned top anchors. `block --> notify` still elbows at its anchor's
+    // own fraction of the gap, 2/3, which is this rule and nothing else.
+    // `fail --> notify` no longer shares that column at all: `block` stands in
+    // it, so the edge takes D24's gutter (pinned there). D24 does the
+    // separating in this one chart now; the rule that keeps two *unblocked*
+    // corridors apart is unchanged, and `retraced` above is the property.
     const { graph, positions } = fixture("deploy");
     const lines = polylines(toSvg(graph, positions, { title: titleOf("deploy") }));
-    expect(lines[5]).toEqual([
-      [1030, 313],
-      [1030, 589.3], // 313 + (1142 - 313) / 3
-      [1005.8, 589.3],
-      [1005.8, 1142],
-    ]);
     expect(lines[10]).toEqual([
       [1030, 633],
       [1030, 972.3], // 633 + (1142 - 633) * 2 / 3
@@ -742,13 +846,22 @@ describe("D26: distinct edges share no segment", () => {
 
   it("still flags a shared run into a node that is not a decision", () => {
     // The single-entry exemption is scoped to a diamond's entry trunk (D23),
-    // and this is the shape that proves the scoping: two sources in one column
-    // into one target, the *lower* declared first — D26's own documented limit,
-    // where the corridors are laid out in declaration order and the two runs
-    // overlap for 48px. Into a process node that is a defect, and it stays one.
+    // and this is the shape that proves the scoping: two sources that both have
+    // `c`'s top as their only clear side fan onto it at 1/3 and 2/3, and their
+    // elbows land on the same y — 276, the 1/3 of one gap and the 2/3 of the
+    // other — with overlapping x. 40px of one horizontal run drawn twice, into
+    // a process node: a defect, and it stays one.
+    //
+    // The two sources sit in *different* columns on purpose. D26's documented
+    // limit was written with them stacked in one, and D24's gutter now takes
+    // that case away — the upper edge is blocked by the lower source's own box
+    // and leaves the column. What is left is the blindness itself, which is
+    // unchanged: one edge's corridor never reads another's.
     const graph = parse("flowchart TD\n  a[A] --> c[C]\n  b[B] --> c");
-    const at = { a: { x: 200, y: 200 }, b: { x: 200, y: 60 }, c: { x: 200, y: 400 } };
+    const at = { a: { x: 250, y: 200 }, b: { x: 150, y: 56 }, c: { x: 200, y: 400 } };
     expect(retraced(graph, at, toSvg(graph, at))).toEqual(["a->c × b->c"]);
+    // And neither edge is blocked, so nothing here is D24's gutter falling back.
+    expect(throughBoxes(graph, at, toSvg(graph, at))).toEqual([]);
   });
 
   it("leaves an unfanned edge on the midpoint the spike drew", () => {
