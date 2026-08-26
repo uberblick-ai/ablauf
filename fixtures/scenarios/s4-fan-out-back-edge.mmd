@@ -1,0 +1,6 @@
+flowchart TD
+  push([Push]) --> lint[Lint] & unit[Unit tests]
+  lint & unit --> gate{All green?}
+  gate -->|no| fix[Fix]
+  fix --> push
+  gate -->|yes| ship[Ship it]

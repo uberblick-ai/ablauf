@@ -1,0 +1,7 @@
+flowchart TD
+  in([Request]) --> route{Route?}
+  retry[Retry later] --> route
+  route -->|a| svc1[Service A]
+  route -->|b| svc2[Service B]
+  route -->|c| svc3[Service C]
+  svc3 --> retry

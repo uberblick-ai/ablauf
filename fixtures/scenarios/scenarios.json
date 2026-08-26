@@ -1,0 +1,98 @@
+{
+  "version": 1,
+  "note": "The legibility scenario ladder: eight charts of growing structural complexity, each one text (`<id>.mmd`, valid mermaid) plus hand-set node centres. Input to scripts/acceptance.mjs (rendered from the stored positions, no directives — these are fixed charts, not snap sets) and to scripts/gallery.mjs. See README.md in this directory.",
+  "scenarios": [
+    {
+      "id": "s1-linear",
+      "title": "S1 — linear",
+      "note": "The floor: three nodes, one column, nothing to route around.",
+      "positions": {
+        "a": { "x": 200, "y": 60 },
+        "b": { "x": 200, "y": 180 },
+        "c": { "x": 200, "y": 300 }
+      }
+    },
+    {
+      "id": "s2-branch-merge",
+      "title": "S2 — diamond branch and merge",
+      "note": "A binary decision: entry at the diamond's top vertex, `yes`/`no` leaving distinct side vertices, both branches merging on `e` (D23).",
+      "positions": {
+        "a": { "x": 320, "y": 60 },
+        "d": { "x": 320, "y": 180 },
+        "b1": { "x": 180, "y": 310 },
+        "b2": { "x": 460, "y": 310 },
+        "e": { "x": 320, "y": 440 }
+      }
+    },
+    {
+      "id": "s3-retry-loop",
+      "title": "S3 — side branch with a retry loop",
+      "note": "`queue` carries an in- and an out-edge toward the same side, and the retry edge runs backward past the node it came from (D23 + D24).",
+      "positions": {
+        "start": { "x": 320, "y": 60 },
+        "rate": { "x": 320, "y": 190 },
+        "queue": { "x": 620, "y": 190 },
+        "allow": { "x": 320, "y": 330 }
+      }
+    },
+    {
+      "id": "s4-fan-out-back-edge",
+      "title": "S4 — fan-out, join, and a back edge",
+      "note": "`push` fans out and `gate` joins back; `fix --> push` is a backward edge whose midpoint corridor is occupied by `unit` (D24).",
+      "positions": {
+        "push": { "x": 360, "y": 60 },
+        "lint": { "x": 220, "y": 190 },
+        "unit": { "x": 500, "y": 190 },
+        "gate": { "x": 360, "y": 320 },
+        "fix": { "x": 640, "y": 320 },
+        "ship": { "x": 360, "y": 460 }
+      }
+    },
+    {
+      "id": "s5-ternary",
+      "title": "S5 — ternary decision",
+      "note": "Three exits from one diamond and three edges into one terminal: every anchor on both hub nodes is claimed exactly once (D23).",
+      "positions": {
+        "in": { "x": 400, "y": 60 },
+        "sev": { "x": 400, "y": 190 },
+        "log": { "x": 160, "y": 330 },
+        "ticket": { "x": 400, "y": 330 },
+        "page": { "x": 640, "y": 330 },
+        "done": { "x": 400, "y": 470 }
+      }
+    },
+    {
+      "id": "s6-overlapping-span",
+      "title": "S6 — five-edge diamond with an overlapping-span back edge",
+      "note": "`route` has five endpoints, one more than it has anchors, so the fifth fans out along its preferred side (D23); `svc3 --> retry` is a backward edge whose endpoints' x-ranges overlap, so no corridor exists between them (D24).",
+      "positions": {
+        "in": { "x": 400, "y": 60 },
+        "retry": { "x": 700, "y": 60 },
+        "route": { "x": 400, "y": 190 },
+        "svc1": { "x": 160, "y": 330 },
+        "svc2": { "x": 400, "y": 330 },
+        "svc3": { "x": 640, "y": 330 }
+      }
+    },
+    {
+      "id": "s7-triple-merge",
+      "title": "S7 — triple merge",
+      "note": "Three arrows into one node: left, top and right anchors, one edge each (D23).",
+      "positions": {
+        "a": { "x": 160, "y": 60 },
+        "b": { "x": 400, "y": 60 },
+        "c": { "x": 640, "y": 60 },
+        "notify": { "x": 400, "y": 200 },
+        "done": { "x": 400, "y": 340 }
+      }
+    },
+    {
+      "id": "s8-self-loop",
+      "title": "S8 — self-loop",
+      "note": "One node, one edge to itself: a visible loop outside the box, not a line through its interior (D25).",
+      "positions": {
+        "a": { "x": 200, "y": 100 }
+      }
+    }
+  ]
+}
