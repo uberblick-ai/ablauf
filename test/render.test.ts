@@ -639,28 +639,29 @@ describe("D25: a self-loop loops outside its node", () => {
   it("leaves the right anchor and returns into the top, clear of the box", () => {
     const loop = routes(S8, S8_AT)[0] as Pt[];
     // `a` is 120x56 centred on (200, 100) — box 140..260 by 72..128 — so the
-    // right anchor is (260, 100), the top one (200, 72), and the loop turns
-    // half a MARGIN past the top-right corner, at (270, 62).
+    // right anchor is (260, 100), the top one (200, 72), and the loop turns a
+    // whole MARGIN past the top-right corner, at (280, 52): both runs clear the
+    // box by MARGIN, on x and on y alike.
     expect(loop).toEqual([
       [260, 100],
-      [270, 100],
-      [270, 62],
-      [200, 62],
+      [280, 100],
+      [280, 52],
+      [200, 52],
       [200, 72],
     ]);
     expect(crossings(loop, S8, S8_AT)).toEqual([]);
     // The arrowhead is the last segment, and it approaches from *outside*:
-    // 10px straight down onto the top border, not out of the node's middle.
-    expect(loop.at(-2)).toEqual([200, 62]);
+    // 20px straight down onto the top border, not out of the node's middle.
+    expect(loop.at(-2)).toEqual([200, 52]);
   });
 
   it("puts a label on the loop's outer run, not inside the node", () => {
     const svg = toSvg(parse(`flowchart TD
   a[Poll] -->|poll| a`), { a: { x: 200, y: 100 } });
-    // The outer run (270, 62)–(200, 62) is the longest segment of the loop, so
+    // The outer run (280, 52)–(200, 52) is the longest segment of the loop, so
     // `labelPos` lands there; the baseline sits `edgeFontSize / 3` below it and
     // still well above the box's top border at y=72.
-    expect(edgeLabel(svg, "poll")).toEqual([235, 66.3]);
+    expect(edgeLabel(svg, "poll")).toEqual([240, 56.3]);
   });
 
   it("keeps two self-loops on one node apart", () => {
@@ -675,16 +676,16 @@ describe("D25: a self-loop loops outside its node", () => {
     // in declaration order, and the two routes come out distinct.
     expect(first).toEqual([
       [260, 90.7],
-      [270, 90.7],
-      [270, 62],
-      [180, 62],
+      [280, 90.7],
+      [280, 52],
+      [180, 52],
       [180, 72],
     ]);
     expect(second).toEqual([
       [260, 109.3],
-      [270, 109.3],
-      [270, 62],
-      [220, 62],
+      [280, 109.3],
+      [280, 52],
+      [220, 52],
       [220, 72],
     ]);
     expect(crossings(first, two, S8_AT).concat(crossings(second, two, S8_AT))).toEqual([]);
