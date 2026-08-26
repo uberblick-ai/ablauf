@@ -426,6 +426,18 @@ demo page and a written host-integration proposal, not by zero dependencies.
   fallback.
 - **Subgraphs / clusters.** Rejected by the parser in v1 (D12) rather than
   half-supported.
+- **Theming past two presets.** What ships is a pair of complete token sets —
+  `DEFAULT_THEME` and `DARK_THEME` — and the render-twice contract: colours are
+  written literally into the SVG, so a consumer that wants light and dark
+  renders once per theme and picks between the files (`prefers-color-scheme` in
+  a `<picture>`, or the host passing the tokens it already knows). An adaptive
+  `<style>` inside the SVG is not the mechanism: the output has to stay
+  self-contained wherever it is dropped, and a tool that ignores the style block
+  would silently pick the fallback palette (D5, D21). Everything past the pair —
+  a theme API, a named-theme registry, palette derivation, per-node or per-edge
+  style overrides, further presets — is wanted later and deliberately not
+  designed now (owner, 2026-08-26). An agent that finds itself building a
+  theming layer while editing `theme.ts` has left its issue's scope.
 - **Canvas creation (drawing a chart from scratch on a canvas).** Nine
   person-years of prior evidence says buy, don't build; React Flow (MIT) if
   it ever becomes real.
