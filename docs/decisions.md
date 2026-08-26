@@ -214,6 +214,33 @@ needs a staircase, which is the obstacle-avoiding pass below. Determinism
 document order, and one comparison of two absolute differences — no search
 order to depend on and no approximated math.
 
+**D25. A self-loop is drawn as a loop outside its node (owner-reviewed
+scenarios, 2026-08-26).** `a --> a` is valid mermaid and the parser takes it
+(D12), but both of its ends land on the same box, where every anchor rule in
+D23 degenerates: the counterpart *is* the node, so no side faces it and no side
+is clear. The router drew the result as a line along the node's own top border
+with the arrowhead buried in it — the mermaid-contract chart silently losing an
+edge, which D4 does not allow. So a self-loop is routed by rule instead of by
+geometry: the source end is aimed at the **right** side and the target end at
+the **top**, each with that one side both best-facing and clear, and `claim`
+then treats them like any other endpoint — the side when it is free, and a fan
+along it (D23) when something claimed it first, which is also the only thing
+that separates two self-loops on one node. Both ends step half a `MARGIN` out
+along their own normal, exactly as D24's gutter does, and the loop turns at the
+corner those two stubs meet at: half a `MARGIN` past the box's nearest corner,
+the top-right one in the default pair. No segment enters the box, the arrowhead
+arrives from outside onto the border, and the label lands on the outer run
+because it is the longest segment — `w/2 + MARGIN/2` against the vertical run's
+`h/2 + MARGIN/2`, and every node box is wider than it is tall (D5).
+
+What it deliberately does not do: it asks D24's question not at all — a
+self-loop is neither forward nor backward, has no corridor and no midpoint to
+park one at — and it does not separate the *detours* of two self-loops on one
+node, which share the outer corner and overlap along it. Their anchors differ,
+so the routes do; spacing the detours as well needs a per-loop depth and is not
+worth the rule. Determinism (D5/D21) is two constants and the anchors D23
+already fixed: no search, no measurement, no approximated math.
+
 ## Grammar and format boundaries (v1)
 
 **D12. Strict subset, loud errors.** Supported: the `flowchart`/`graph`
@@ -295,8 +322,9 @@ demo page and a written host-integration proposal, not by zero dependencies.
   D22. The layout-store spec documents the host
   contract they implement; the demo page proves it runs.
 - **Edge routing.** v1 keeps the spike's dogleg router, with the per-node
-  anchor assignment of D23 in front of it and the backward-edge gutter of D24
-  behind it. What those two do not add up to is a router: a **forward** edge
+  anchor assignment of D23 in front of it, the backward-edge gutter of D24
+  behind it, and the self-loop of D25 beside it. What those do not add up to
+  is a router: a **forward** edge
   still runs wherever the midpoint corridor puts it, obstacles included (that
   is where the shared mid-y corridor between two forward edges lives); a
   backward edge gets exactly one alternative corridor and keeps its dogleg when

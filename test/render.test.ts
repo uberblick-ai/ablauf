@@ -114,6 +114,32 @@ const routes = (text: string, at: Record<string, [number, number]>): Pt[][] =>
     ),
   );
 
+/**
+ * Which boxes one route runs through the **interior** of — the same strict test
+ * the router itself asks (`through` in src/render/svg.ts), so an anchor sitting
+ * on a border, or a segment running along one, is not a crossing. Every node in
+ * the chart counts, the edge's own endpoints included — both of them, for a
+ * self-loop (D25).
+ */
+const crossings = (line: Pt[], text: string, at: Record<string, [number, number]>): string[] => {
+  const hits: string[] = [];
+  for (const n of parse(text).nodes) {
+    const [x, y] = at[n.id] as [number, number];
+    const b = boxOf(n, { x, y });
+    for (let i = 0; i + 1 < line.length; i++) {
+      const [ax, ay] = line[i] as Pt;
+      const [bx, by] = line[i + 1] as Pt;
+      const over =
+        Math.min(ax, bx) < b.x + b.w &&
+        Math.max(ax, bx) > b.x &&
+        Math.min(ay, by) < b.y + b.h &&
+        Math.max(ay, by) > b.y;
+      if (over) hits.push(`${n.id}@seg${i}`);
+    }
+  }
+  return hits;
+};
+
 // ---------------------------------------------------------------------------
 // the goldens
 // ---------------------------------------------------------------------------
@@ -366,31 +392,6 @@ describe("D23: one endpoint per anchor", () => {
 // ---------------------------------------------------------------------------
 
 describe("D24: a backward edge clears the boxes between its ends", () => {
-  /**
-   * Which boxes one route runs through the **interior** of — the same strict
-   * test the router itself asks (`through` in src/render/svg.ts), so an anchor
-   * sitting on a border, or a segment running along one, is not a crossing.
-   * Every node in the chart counts, the edge's own two endpoints included.
-   */
-  const crossings = (line: Pt[], text: string, at: Record<string, [number, number]>): string[] => {
-    const hits: string[] = [];
-    for (const n of parse(text).nodes) {
-      const [x, y] = at[n.id] as [number, number];
-      const b = boxOf(n, { x, y });
-      for (let i = 0; i + 1 < line.length; i++) {
-        const [ax, ay] = line[i] as Pt;
-        const [bx, by] = line[i + 1] as Pt;
-        const over =
-          Math.min(ax, bx) < b.x + b.w &&
-          Math.max(ax, bx) > b.x &&
-          Math.min(ay, by) < b.y + b.h &&
-          Math.max(ay, by) > b.y;
-        if (over) hits.push(`${n.id}@seg${i}`);
-      }
-    }
-    return hits;
-  };
-
   // S4. The mid-y elbow of `fix --> push` used to run the full width of the
   // chart at y=190, straight through `unit` (162..218) — the corridor is blind
   // to what sits in it, which is the whole of issue #14.
@@ -443,6 +444,83 @@ describe("D24: a backward edge clears the boxes between its ends", () => {
     // And it never turns back down: the phantom this scenario was reported for
     // was the route re-crossing its own source, which reads as a reversed edge.
     expect(back.every(([, y], i) => i === 0 || y <= (back[i - 1] as Pt)[1])).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// D25 — a self-loop is drawn outside its node
+// ---------------------------------------------------------------------------
+
+describe("D25: a self-loop loops outside its node", () => {
+  /** An edge label's anchor point, read back off the one text at that size. */
+  const edgeLabel = (svg: string, text: string): Pt => {
+    const re = new RegExp(
+      `<text x="([^"]+)" y="([^"]+)"[^>]*font-size="${DEFAULT_THEME.edgeFontSize}"[^>]*>${text}</text>`,
+    );
+    const m = re.exec(svg);
+    return [Number(m?.[1]), Number(m?.[2])];
+  };
+
+  // S8. `a --> a` is valid mermaid and the parser takes it, but both ends land
+  // on the same box, where the dogleg has no counterpart to aim at: it drew the
+  // loop as a line along the node's own top border, arrowhead buried in the
+  // border it arrived at — an edge the reader cannot see at all.
+  const S8 = `flowchart TD
+  a[Poll] --> a`;
+  const S8_AT: Record<string, [number, number]> = { a: [200, 100] };
+
+  it("leaves the right anchor and returns into the top, clear of the box", () => {
+    const loop = routes(S8, S8_AT)[0] as Pt[];
+    // `a` is 120x56 centred on (200, 100) — box 140..260 by 72..128 — so the
+    // right anchor is (260, 100), the top one (200, 72), and the loop turns
+    // half a MARGIN past the top-right corner, at (270, 62).
+    expect(loop).toEqual([
+      [260, 100],
+      [270, 100],
+      [270, 62],
+      [200, 62],
+      [200, 72],
+    ]);
+    expect(crossings(loop, S8, S8_AT)).toEqual([]);
+    // The arrowhead is the last segment, and it approaches from *outside*:
+    // 10px straight down onto the top border, not out of the node's middle.
+    expect(loop.at(-2)).toEqual([200, 62]);
+  });
+
+  it("puts a label on the loop's outer run, not inside the node", () => {
+    const svg = toSvg(parse(`flowchart TD
+  a[Poll] -->|poll| a`), { a: { x: 200, y: 100 } });
+    // The outer run (270, 62)–(200, 62) is the longest segment of the loop, so
+    // `labelPos` lands there; the baseline sits `edgeFontSize / 3` below it and
+    // still well above the box's top border at y=72.
+    expect(edgeLabel(svg, "poll")).toEqual([235, 66.3]);
+  });
+
+  it("keeps two self-loops on one node apart", () => {
+    const two = `flowchart TD
+  a[Poll] --> a
+  a --> a`;
+    const loops = routes(two, S8_AT);
+    const first = loops[0] as Pt[];
+    const second = loops[1] as Pt[];
+    // Nothing special-cases the second loop: both exits contest the right side
+    // and both entries the top, so D23's fan puts them at 1/3 and 2/3 along it,
+    // in declaration order, and the two routes come out distinct.
+    expect(first).toEqual([
+      [260, 90.7],
+      [270, 90.7],
+      [270, 62],
+      [180, 62],
+      [180, 72],
+    ]);
+    expect(second).toEqual([
+      [260, 109.3],
+      [270, 109.3],
+      [270, 62],
+      [220, 62],
+      [220, 72],
+    ]);
+    expect(crossings(first, two, S8_AT).concat(crossings(second, two, S8_AT))).toEqual([]);
   });
 });
 

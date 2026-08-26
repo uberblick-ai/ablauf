@@ -26,6 +26,9 @@
 //   * A backward edge whose dogleg would cross a box takes a gutter instead
 //     (D24): one corridor-choice rule for one edge class, not the deferred
 //     obstacle-avoiding routing pass.
+//   * A self-loop is drawn as a loop outside its node (D25), not as a dogleg
+//     between two anchors of the same box — which is a line along, or through,
+//     the box itself, with the arrowhead buried in its own border.
 //
 // Determinism (D5, D21): fixed element order, fixed attribute order, fixed
 // precision, literal theme tokens, no generated ids beyond the two arrow
@@ -235,6 +238,23 @@ const aim = (kind: NodeKind, b: Box, ox: number, oy: number): Aim => {
   };
 };
 
+/**
+ * How a **self-loop's** end sees its counterpart, which is its own node (D25).
+ * The geometric answer is degenerate — every side scores zero and none is clear
+ * — so the two ends are aimed by rule instead: `want` is the one side that is
+ * both best-facing and clear, the source's being `right` and the target's
+ * `top`. `claim` is then the ordinary one (D23): the side is taken when free,
+ * and when something else claimed it first the loop fans onto it in declaration
+ * order, since a side that is not clear can never be approached from outside.
+ */
+const selfAim = (want: Side): Aim => {
+  const score: Fill = { top: 0, right: 0, bottom: 0, left: 0 };
+  const clear: Record<Side, boolean> = { top: false, right: false, bottom: false, left: false };
+  score[want] = 1;
+  clear[want] = true;
+  return { score, clear };
+};
+
 /** One endpoint's anchor: which side, and how many claimed that side first. */
 /**
  * The best-facing anchor that is both clear and still free — or, when every
@@ -377,6 +397,24 @@ const gutterRoute = (
   return simplify([s, os, { x: g, y: os.y }, { x: g, y: ot.y }, ot, t]);
 };
 
+/**
+ * A self-loop (D25): out of one anchor, round the box, back into another. Both
+ * ends step `STUB` out along their own normal exactly as the gutter's do, and
+ * the turn between them is the corner those two stubs meet at — which for the
+ * default `right` → `top` pair is `STUB` beyond the box's top-right corner. No
+ * segment enters the box: each stub leaves its border outward, and the two runs
+ * between them are `STUB` clear of the sides they parallel.
+ *
+ * Two ends that fanned onto the *same* side (D23) collapse to a bump on that
+ * side, since their stubs share a coordinate and `simplify` drops the corner.
+ */
+const selfLoop = (s: Pt, sSide: Side, t: Pt, tSide: Side): Pt[] => {
+  const os = outward(s, sSide, STUB);
+  const ot = outward(t, tSide, STUB);
+  const corner = upright(sSide) ? { x: ot.x, y: os.y } : { x: os.x, y: ot.y };
+  return simplify([s, os, corner, ot, t]);
+};
+
 /** One end of one edge, at the node it attaches to. Filled in by `routeAll`. */
 type End = { kind: NodeKind; b: Box; aim: Aim; side: Side; f: number };
 
@@ -415,8 +453,11 @@ const routeAll = (graph: Graph, box: Map<string, Box>): (Pt[] | null)[] => {
       continue;
     }
     const half = { side: "top" as Side, f: 0.5 };
-    add(e.from, { kind: from.kind, b: a, aim: aim(from.kind, a, b.cx, b.cy), ...half });
-    add(e.to, { kind: to.kind, b, aim: aim(to.kind, b, a.cx, a.cy), ...half });
+    const self = e.from === e.to;
+    const sAim = self ? selfAim("right") : aim(from.kind, a, b.cx, b.cy);
+    const tAim = self ? selfAim("top") : aim(to.kind, b, a.cx, a.cy);
+    add(e.from, { kind: from.kind, b: a, aim: sAim, ...half });
+    add(e.to, { kind: to.kind, b, aim: tAim, ...half });
   }
 
   for (const node of graph.nodes) {
@@ -453,10 +494,13 @@ const routeAll = (graph: Graph, box: Map<string, Box>): (Pt[] | null)[] => {
     const b = box.get(node.id);
     if (b) obstacles.push(b);
   }
-  return graph.edges.map((_, i) => {
+  return graph.edges.map((e, i) => {
     const s = ends[2 * i];
     const t = ends[2 * i + 1];
     if (!s || !t) return null;
+    // A self-loop is neither forward nor backward — it has no corridor to
+    // clear and no midpoint to park one at — so it never asks D24's question.
+    if (e.from === e.to) return selfLoop(at(s), s.side, at(t), t.side);
     const plain = dogleg(at(s), s.side, at(t), t.side);
     if (t.b.cy >= s.b.cy || !blocked(plain, obstacles)) return plain;
     const around = gutterRoute(at(s), s.side, at(t), t.side, obstacles);
