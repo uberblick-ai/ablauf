@@ -396,10 +396,10 @@ const outward = ({ x, y }: Pt, side: Side, d: number): Pt =>
 /**
  * A decision's **entry junction** (D23, the single-entry rule): a point on the
  * vertical above its top vertex, `depth` half-`MARGIN` steps out — the same step
- * out of a box D24's gutter and D25's loop take. Every inbound edge routes here
- * and then runs the trunk down into the vertex, so two or more of them arrive as
- * one drawn line instead of fanning onto the diamond's slopes, and the other
- * three vertices are left to the exits.
+ * out of a box D24's gutter takes. Every inbound edge routes here and then runs
+ * the trunk down into the vertex, so two or more of them arrive as one drawn
+ * line instead of fanning onto the diamond's slopes, and the other three
+ * vertices are left to the exits.
  *
  * `depth` is 1 for every entry that comes into the junction on a side of its own
  * and counts up for the ones that share a side, because two legs into one point
@@ -528,19 +528,28 @@ const gutterRoute = (
 };
 
 /**
+ * How far outside its box a self-loop's detour runs (D25): a full `MARGIN`,
+ * where D24's gutter and D23's junction take half of one. At `STUB` the loop
+ * traced the box's own corner and read as an outline of it rather than as a
+ * loop (owner, 2026-08-26) — which is why this is its own constant and not the
+ * shared step out of a box: widening the loop must not widen those.
+ */
+const LOOP = MARGIN;
+
+/**
  * A self-loop (D25): out of one anchor, round the box, back into another. Both
- * ends step `STUB` out along their own normal exactly as the gutter's do, and
- * the turn between them is the corner those two stubs meet at — which for the
- * default `right` → `top` pair is `STUB` beyond the box's top-right corner. No
- * segment enters the box: each stub leaves its border outward, and the two runs
- * between them are `STUB` clear of the sides they parallel.
+ * ends step `LOOP` out along their own normal, and the turn between them is the
+ * corner those two stubs meet at — which for the default `right` → `top` pair is
+ * `LOOP` beyond the box's top-right corner. No segment enters the box: each stub
+ * leaves its border outward, and the two runs between them are `LOOP` clear of
+ * the sides they parallel.
  *
  * Two ends that fanned onto the *same* side (D23) collapse to a bump on that
  * side, since their stubs share a coordinate and `simplify` drops the corner.
  */
 const selfLoop = (s: Pt, sSide: Side, t: Pt, tSide: Side): Pt[] => {
-  const os = outward(s, sSide, STUB);
-  const ot = outward(t, tSide, STUB);
+  const os = outward(s, sSide, LOOP);
+  const ot = outward(t, tSide, LOOP);
   const corner = upright(sSide) ? { x: ot.x, y: os.y } : { x: os.x, y: ot.y };
   return simplify([s, os, corner, ot, t]);
 };

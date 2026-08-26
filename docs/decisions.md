@@ -313,13 +313,15 @@ geometry: the source end is aimed at the **right** side and the target end at
 the **top**, each with that one side both best-facing and clear, and `claim`
 then treats them like any other endpoint — the side when it is free, and a fan
 along it (D23) when something claimed it first, which is also the only thing
-that separates two self-loops on one node. Both ends step half a `MARGIN` out
-along their own normal, exactly as D24's gutter does, and the loop turns at the
-corner those two stubs meet at: half a `MARGIN` past the box's nearest corner,
-the top-right one in the default pair. No segment enters the box, the arrowhead
-arrives from outside onto the border, and the label lands on the outer run
-because it is the longest segment — `w/2 + MARGIN/2` against the vertical run's
-`h/2 + MARGIN/2`, and every node box is wider than it is tall (D5).
+that separates two self-loops on one node. Both ends step a full `MARGIN` out
+along their own normal — the gutter's step out of a box, doubled (owner,
+2026-08-26): at half a `MARGIN` the detour traced the box's own corner and read
+as an outline of it rather than as a loop — and the loop turns at the corner
+those two stubs meet at: a `MARGIN` past the box's nearest corner, the top-right
+one in the default pair. No segment enters the box, the arrowhead arrives from
+outside onto the border, and the label lands on the outer run because it is the
+longest segment — `w/2 + MARGIN` against the vertical run's `h/2 + MARGIN`, and
+every node box is wider than it is tall (D5).
 
 What it deliberately does not do: it asks D24's question not at all — a
 self-loop is neither forward nor backward, has no corridor and no midpoint to
