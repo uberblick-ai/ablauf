@@ -22,7 +22,7 @@ export type { JsonLayoutStore, LayoutJson, LayoutStore } from "./layout/store.js
 export { ParseError, parse } from "./parse.js";
 export { RenderError, svgMeta, toSvg } from "./render/svg.js";
 export type { RenderOptions, SvgMeta } from "./render/svg.js";
-export { DEFAULT_THEME } from "./render/theme.js";
+export { DARK_THEME, DEFAULT_THEME } from "./render/theme.js";
 export type { Theme } from "./render/theme.js";
 export { SerializeError, serialize } from "./serialize.js";
 export type { Direction, Edge, EdgeStyle, Graph, Node, NodeKind } from "./types.js";
