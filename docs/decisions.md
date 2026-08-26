@@ -476,7 +476,13 @@ for programmatic construction, never to write back over a human's source.
 **D14. Single package, `tsc` build, no bundler.** One export, `.` — adapter
 subpaths return when adapters do (D22). Core has zero runtime dependencies.
 Toolchain: mise-pinned node 26 + pnpm 10, biome lint-only, vitest,
-TypeScript strict.
+TypeScript strict. It ships to npm as the public ESM package
+`@uberblick/ablauf` (the unscoped name was already taken, so the scope is
+forced, not a preference), first public version `0.1.0`; the semver promise
+covers exactly what `src/index.ts` exports, pre-1.0 minors may break it and
+patches never do, and the tarball carries `dist/`, `agent/` and `docs/spec/`
+so a consumer gets the contract with the code. `mise run pack-check` is the
+gate on all of that; `docs/releasing.md` is the owner's procedure.
 
 **D15. The licence bar is distribution, not a specific licence (owner,
 2026-08-25).** The test a dependency has to pass is that it places no

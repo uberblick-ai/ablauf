@@ -26,6 +26,10 @@ run = "pnpm test"
 [tasks.build]
 run = "pnpm build"
 
+[tasks.pack-check]
+description = "Pack the package and install it into a throwaway consumer: contents, types, runtime"
+run = "pnpm pack-check"
+
 [tasks.demo]
 description = "Build, then serve the repo root and print the demo URL"
 depends = ["build"]
