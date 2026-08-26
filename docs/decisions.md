@@ -151,8 +151,8 @@ two nodes claiming the same spot settle by document order, not list order.
 **D23. One endpoint per anchor; a diamond's exits leave through distinct
 vertices (owner, 2026-08-26).** Every node has four anchors — the side
 midpoints, which on a decision node *are* its four vertices — and each edge
-endpoint claims one, first come first served, in the order the next paragraph
-fixes. An endpoint prefers the side that best faces its counterpart: the dot
+endpoint claims one, first come first served, in the order the next two
+paragraphs fix. An endpoint prefers the side that best faces its counterpart: the dot
 product of
 the side's outward normal with the direction to the counterpart, scaled per
 axis by the node's own extents, so a wide, short box keeps a top-down chart
@@ -184,9 +184,28 @@ fanned point slides along the slanted edge instead of hanging in the empty
 corner beside it. The other four shapes keep their bounding box, which is never
 more than a few px off the outline they draw.
 
+Declaration order breaks a tie only between **equal preferences**, and never
+hands the first-declared endpoint a better anchor than its mirror twin (owner,
+2026-08-26). Two endpoints whose counterparts sit mirrored about the side they
+both want face it exactly equally, and awarding it first-come drew the same
+geometry as two different shapes: in the S2 scenario `b1 --> e` took `e`'s top
+while `b2 --> e` was pushed onto its right, a mid-y dogleg and an L for two
+sources placed symmetrically about `e`. Such a pair steps aside from the
+contested anchor instead — each onto the mirrored side it ranks next — so the
+anchor is left to an endpoint that has nowhere else to go, or to no one, and
+the two routes come out as reflections of each other. A twin pair with no other
+clear side steps aside from nothing and fans onto the shared side, which is
+symmetric already. Only an *exact* mirror steps aside: every other contest is
+settled by the resolution order above, and a third endpoint that does not
+mirror can still claim an anchor between two that do — the symmetry is a
+property of symmetric input, not something the router imposes.
+
 Determinism (D5/D21) comes from three fixed orders and nothing else: edges in
 declaration order, sides in a clockwise list, and a resolution order that is a
-count plus that declaration order. Nothing here avoids obstacles — that
+count plus that declaration order. The step-aside pass adds no fourth: it walks
+the same declaration order over pairs, and its test is exact equality between
+two endpoints' scores — the integer arithmetic the anchors already come from,
+with no tolerance and nothing measured. Nothing here avoids obstacles — that
 stays deferred (below), and a fallback anchor can still route across whatever
 happens to be in the way, except for the one edge class D24 names.
 

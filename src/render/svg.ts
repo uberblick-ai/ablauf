@@ -255,20 +255,52 @@ const selfAim = (want: Side): Aim => {
   return { score, clear };
 };
 
+/** The sides one endpoint has stepped aside from (D23). Indexed, never iterated. */
+type Barred = Record<Side, boolean>;
+const barred = (): Barred => ({ top: false, right: false, bottom: false, left: false });
+
+/**
+ * The side an endpoint *wants*: the best-facing clear one it has not stepped
+ * aside from, whatever has already claimed it — `null` when nothing is clear,
+ * which is the case the fan covers. `except` asks the same question with one
+ * side struck out, which is how "does this endpoint have somewhere else to go?"
+ * is spelled. Same ordered walk over `SIDES` as `claim`, same clockwise tie.
+ */
+const prefer = ({ score, clear }: Aim, off: Barred, except?: Side): Side | null => {
+  let best: Side | null = null;
+  for (const side of SIDES) {
+    if (side === except || !clear[side] || off[side]) continue;
+    if (best === null || score[side] > score[best]) best = side;
+  }
+  return best;
+};
+
+/**
+ * Do two of one node's endpoints see `side` from mirror-image positions? A
+ * score is the counterpart's offset from the centre scaled per axis by a
+ * positive weight, so an equal score along the axis `side` sits on and a
+ * swapped one across it *is* mirror-image geometry — the exact tie D23 refuses
+ * to break by declaration order.
+ */
+const twins = (a: Fill, b: Fill, side: Side): boolean =>
+  upright(side)
+    ? a.top === b.top && a.bottom === b.bottom && a.left === b.right && a.right === b.left
+    : a.left === b.left && a.right === b.right && a.top === b.bottom && a.bottom === b.top;
+
 /** One endpoint's anchor: which side, and how many claimed that side first. */
 /**
- * The best-facing anchor that is both clear and still free — or, when every
- * clear anchor is taken, a share of the best-facing one, which is the fan D23
- * describes. Scanning `SIDES` in order with a strict `>` is what makes an exact
- * tie go clockwise from the top, and it is an ordered walk over a fixed list
- * rather than an iteration over a map (D21).
+ * The best-facing anchor that is clear, free, and not one this endpoint stepped
+ * aside from — or, when every clear anchor is taken, a share of the best-facing
+ * one, which is the fan D23 describes. Scanning `SIDES` in order with a strict
+ * `>` is what makes an exact tie go clockwise from the top, and it is an ordered
+ * walk over a fixed list rather than an iteration over a map (D21).
  */
-const claim = (used: Fill, { score, clear }: Aim): Side => {
+const claim = (used: Fill, { score, clear }: Aim, off: Barred): Side => {
   let best: Side = "top";
   let free: Side | null = null;
   for (const side of SIDES) {
     if (score[side] > score[best]) best = side;
-    if (clear[side] && used[side] === 0 && (free === null || score[side] > score[free])) {
+    if (clear[side] && !off[side] && used[side] === 0 && (free === null || score[side] > score[free])) {
       free = side;
     }
   }
@@ -416,7 +448,7 @@ const selfLoop = (s: Pt, sSide: Side, t: Pt, tSide: Side): Pt[] => {
 };
 
 /** One end of one edge, at the node it attaches to. Filled in by `routeAll`. */
-type End = { kind: NodeKind; b: Box; aim: Aim; side: Side; f: number };
+type End = { kind: NodeKind; b: Box; aim: Aim; off: Barred; side: Side; f: number };
 
 /**
  * Every edge's polyline, in document order — `null` for an edge whose endpoints
@@ -426,9 +458,9 @@ type End = { kind: NodeKind; b: Box; aim: Aim; side: Side; f: number };
  * The anchors are assigned here rather than per edge, because the assignment is
  * a property of the whole graph: that is the difference between a decision's two
  * branches leaving distinct vertices and both leaving the bottom one (D23). Each
- * node resolves its own endpoints, and in three passes, because each needs the
- * one before it — collect the endpoints, claim a side for each, then space out
- * whatever ended up sharing one.
+ * node resolves its own endpoints, and in four passes, because each needs the
+ * one before it — collect the endpoints, step the mirror-image ties aside, claim
+ * a side for each, then space out whatever ended up sharing one.
  */
 const routeAll = (graph: Graph, box: Map<string, Box>): (Pt[] | null)[] => {
   const nodes = new Map(graph.nodes.map((n) => [n.id, n]));
@@ -456,8 +488,8 @@ const routeAll = (graph: Graph, box: Map<string, Box>): (Pt[] | null)[] => {
     const self = e.from === e.to;
     const sAim = self ? selfAim("right") : aim(from.kind, a, b.cx, b.cy);
     const tAim = self ? selfAim("top") : aim(to.kind, b, a.cx, a.cy);
-    add(e.from, { kind: from.kind, b: a, aim: sAim, ...half });
-    add(e.to, { kind: to.kind, b, aim: tAim, ...half });
+    add(e.from, { kind: from.kind, b: a, aim: sAim, off: barred(), ...half });
+    add(e.to, { kind: to.kind, b, aim: tAim, off: barred(), ...half });
   }
 
   for (const node of graph.nodes) {
@@ -466,14 +498,38 @@ const routeAll = (graph: Graph, box: Map<string, Box>): (Pt[] | null)[] => {
     const mine = (i: number): End => ends[i] as End;
     const used: Fill = { top: 0, right: 0, bottom: 0, left: 0 };
 
-    // 2. Claim, fewest options first (D23): an endpoint whose counterpart is
+    // 2. Step aside from a tie between mirror images (D23). Two endpoints whose
+    //    counterparts sit mirrored about the side they both want have exactly
+    //    equal claims on it; handing it to the first-declared pushes its twin
+    //    onto a different side, which draws the same geometry as two different
+    //    shapes. Both step aside instead — onto the mirrored sides they rank
+    //    next — and the anchor is left to an endpoint that has nowhere else to
+    //    go, or to no one. A twin with no other clear side steps aside from
+    //    nothing and the pair fans onto the shared side, which is symmetric
+    //    already. Declaration order still decides everything that is not this
+    //    exact tie.
+    for (const i of list) {
+      for (const j of list) {
+        if (j <= i) continue;
+        const a = mine(i);
+        const b = mine(j);
+        const want = prefer(a.aim, a.off);
+        if (want === null || prefer(b.aim, b.off) !== want) continue;
+        if (!twins(a.aim.score, b.aim.score, want)) continue;
+        if (prefer(a.aim, a.off, want) === null || prefer(b.aim, b.off, want) === null) continue;
+        a.off[want] = true;
+        b.off[want] = true;
+      }
+    }
+
+    // 3. Claim, fewest options first (D23): an endpoint whose counterpart is
     //    straight above has exactly one side it can be approached from, and
     //    would otherwise lose it to a diagonal neighbour that had a second
     //    choice — three arrows into one node, two of them stacked on its top.
     const order = [...list].sort((i, j) => options(mine(i).aim) - options(mine(j).aim) || i - j);
-    for (const i of order) mine(i).side = claim(used, mine(i).aim);
+    for (const i of order) mine(i).side = claim(used, mine(i).aim, mine(i).off);
 
-    // 3. Space out the sides that ended up shared. `n` endpoints on one side sit
+    // 4. Space out the sides that ended up shared. `n` endpoints on one side sit
     //    at 1/(n+1) … n/(n+1) along it — the midpoint when `n` is 1 — in
     //    declaration order, so a fan reads left to right as the text does.
     const seen: Fill = { top: 0, right: 0, bottom: 0, left: 0 };
@@ -486,7 +542,7 @@ const routeAll = (graph: Graph, box: Map<string, Box>): (Pt[] | null)[] => {
 
   const at = (end: End): Pt => port(end.b, end.kind, end.side, end.f);
 
-  // 4. Route. Every box, in document order (D21), is what a backward edge's
+  // 5. Route. Every box, in document order (D21), is what a backward edge's
   //    corridor has to clear — forward edges keep the blind dogleg, which is
   //    the deferred router's problem and not this rule's (D24).
   const obstacles: Box[] = [];

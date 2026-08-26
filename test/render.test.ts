@@ -246,12 +246,23 @@ describe("D23: one endpoint per anchor", () => {
     expect(no?.[0]).toEqual([402, 180]);
   });
 
-  it("lands two arrows into one merge target on two different anchors", () => {
+  it("lands two arrows into one merge target as mirror images of each other", () => {
     const [, , , first, second] = routes(S2, S2_AT);
-    // The top anchor, then the right one: the first approach took the top, and
-    // the right is the best anchor still free and still clear of `b2`.
-    expect(first?.at(-1)).toEqual([320, 412]);
-    expect(second?.at(-1)).toEqual([380, 440]);
+    // `b1` and `b2` straddle x=320, so their claims on `e`'s top anchor are
+    // exactly equal (D23): neither takes it by being declared first, both step
+    // aside, and each keeps the side anchor it faces. Declaration order used to
+    // give `first` the top and push `second` onto the right — the same geometry
+    // drawn as two different shapes.
+    expect(first).toEqual([
+      [180, 338],
+      [180, 440],
+      [260, 440],
+    ]);
+    expect(second).toEqual([
+      [460, 338],
+      [460, 440],
+      [380, 440],
+    ]);
   });
 
   it("gives a ternary decision three vertices, and its merge target three anchors", () => {
@@ -385,6 +396,72 @@ describe("D23: one endpoint per anchor", () => {
       [401, 60],
     ]);
   });
+
+  /**
+   * Every chart this repo commits, rendered from its stored centres: the two
+   * hand-arranged fixtures and the eight-scenario legibility ladder.
+   */
+  const charts: { name: string; graph: Graph; at: Record<string, Position> }[] = [
+    ...FIXTURES.map((name) => ({ name, graph: fixture(name).graph, at: fixture(name).positions })),
+    ...(
+      JSON.parse(readFileSync(new URL("fixtures/scenarios/scenarios.json", ROOT), "utf8")) as {
+        scenarios: { id: string; positions: Record<string, Position> }[];
+      }
+    ).scenarios.map((s) => ({
+      name: s.id,
+      graph: parse(readFileSync(new URL(`fixtures/scenarios/${s.id}.mmd`, ROOT), "utf8")),
+      at: s.positions,
+    })),
+  ];
+
+  it("draws mirror-image geometry as mirror-image routes, in every committed chart", () => {
+    // Two edges meeting at one node from mirror-image positions have exactly
+    // equal claims on the anchors between them, so their routes have to be
+    // reflections of each other — that is the whole of #25. The three nodes
+    // involved have to mirror as *wholes*, though: an unmirrored third edge on
+    // any of them claims an anchor first and breaks the symmetry legitimately,
+    // which is why `lint --> gate` and `unit --> gate` are not in the list
+    // below — `gate`'s two exits are not mirror images.
+    const found: string[] = [];
+    for (const { name, graph, at } of charts) {
+      const box = new Map(graph.nodes.map((n) => [n.id, boxOf(n, at[n.id] as Position)]));
+      const lines = polylines(toSvg(graph, at));
+      /** One box as a reflection-comparable key, `flip` reflecting it about `axis`. */
+      const key = (id: string, axis: number, flip: boolean): string => {
+        const b = box.get(id);
+        return b === undefined ? id : `${flip ? 2 * axis - b.cx : b.cx},${b.cy},${b.w},${b.h}`;
+      };
+      /** Everything attached to one node, as those keys, in a fixed order. */
+      const around = (id: string, axis: number, flip: boolean): string =>
+        graph.edges
+          .flatMap((e) => (e.from === id ? [e.to] : e.to === id ? [e.from] : []))
+          .map((other) => key(other, axis, flip))
+          .sort()
+          .join(" ");
+      for (let i = 0; i < graph.edges.length; i++) {
+        for (let j = i + 1; j < graph.edges.length; j++) {
+          const a = graph.edges[i]!;
+          const b = graph.edges[j]!;
+          const hub = a.to === b.to ? a.to : a.from === b.from ? a.from : null;
+          const [u, v] = hub === a.to ? [a.from, b.from] : [a.to, b.to];
+          const axis = box.get(hub ?? "")?.cx;
+          if (hub === null || axis === undefined || u === v) continue;
+          if (key(u!, axis, true) !== key(v!, axis, false)) continue;
+          if (around(hub, axis, false) !== around(hub, axis, true)) continue;
+          if (around(u!, axis, true) !== around(v!, axis, false)) continue;
+          const flipped = (lines[i] ?? []).map(([px, py]) => [2 * axis - (px ?? 0), py] as Pt);
+          expect(flipped, `${name}: ${a.from}->${a.to} vs ${b.from}->${b.to}`).toEqual(lines[j]);
+          found.push(`${name}: ${a.from}->${a.to} ~ ${b.from}->${b.to}`);
+        }
+      }
+    }
+    // Pinned, so the check cannot quietly stop finding anything to check.
+    expect(found).toEqual([
+      "deploy: push->lint ~ push->unit",
+      "s2-branch-merge: d->b1 ~ d->b2",
+      "s2-branch-merge: b1->e ~ b2->e",
+    ]);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -416,7 +493,10 @@ describe("D24: a backward edge clears the boxes between its ends", () => {
     // The band between the two turn points (y 98..282) holds `lint` and `unit`
     // only, so the corridor clears `unit`'s right edge by half a MARGIN — a
     // cheaper detour than going round `lint` on the left.
-    expect(back.map(([x]) => x)).toEqual([640, 640, 570, 570, 380, 380]);
+    // It arrives on `push`'s bottom at the midpoint: the two fan-out edges are
+    // mirror images about x=360 and step off the bottom onto `push`'s two side
+    // anchors (D23), so nothing shares the bottom with this one.
+    expect(back.map(([x]) => x)).toEqual([640, 640, 570, 570, 360, 360]);
   });
 
   // S6. The endpoints' x-ranges overlap, so the midpoint of a *horizontal*
