@@ -1,7 +1,8 @@
 // The render tokens. Every value here is written **literally** into the SVG —
 // no `<style>` block, no external stylesheet, no `currentColor` — because the
 // output has to be self-contained and byte-stable wherever it is dropped (D5,
-// D21). A host that wants light and dark passes two themes and renders twice.
+// D21). A host that wants light and dark passes two themes and renders twice;
+// `DEFAULT_THEME` and `DARK_THEME` below are that pair.
 //
 // The token set is deliberately flat: `opts.theme` merges shallowly, so a flat
 // record means overriding one fill cannot silently drop the other four.
@@ -53,6 +54,39 @@ export const DEFAULT_THEME: Theme = {
   edgeText: "#5a6580",
   accent: "#c2410c",
   grid: "#dfe6f0",
+  fontFamily: "Helvetica, Arial, sans-serif",
+  fontSize: 15,
+  edgeFontSize: 13,
+  nodeStrokeWidth: 2,
+  edgeStrokeWidth: 1.8,
+  thickStrokeWidth: 3.2,
+  radius: 8,
+};
+
+/**
+ * The dark half of the pair. Spelled out rather than spread over
+ * `DEFAULT_THEME`, so a token added to `Theme` fails to compile here too
+ * instead of silently inheriting a light colour; the non-colour tokens are
+ * deliberately identical to the default's, since only the palette changes.
+ *
+ * Every foreground reaches WCAG AA (4.5:1) against `background`, and `text`
+ * against each of the five fills — `test/render.test.ts` computes the ratios.
+ * `accent` stays an amber against blue-grey edges, so a highlight cannot be
+ * misread as an ordinary edge at equal luminance.
+ */
+export const DARK_THEME: Theme = {
+  background: "#12151c",
+  fillProcess: "#1e2530",
+  fillRounded: "#1e2530",
+  fillStadium: "#162b22",
+  fillDecision: "#2e2618",
+  fillCircle: "#162b22",
+  stroke: "#8ea3c4",
+  text: "#e7edf7",
+  edge: "#96a3ba",
+  edgeText: "#96a3ba",
+  accent: "#f59e0b",
+  grid: "#242c3a",
   fontFamily: "Helvetica, Arial, sans-serif",
   fontSize: 15,
   edgeFontSize: 13,

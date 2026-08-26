@@ -19,6 +19,7 @@ import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
+  DARK_THEME,
   DEFAULT_THEME,
   MARGIN,
   RenderError,
@@ -197,6 +198,18 @@ describe.each(FIXTURES)("the %s fixture", (name) => {
       if (e.label) expect(svg).toContain(`>${e.label}</text>`);
     }
   });
+});
+
+/**
+ * The dark half of the pair (`DARK_THEME`): one fixture, the second preset,
+ * pinned the same way — colours are written literally, so a palette change is
+ * a reviewable byte diff like any other (D5/D21).
+ */
+it("renders the auth fixture with DARK_THEME byte-identically to its golden", () => {
+  const { graph, positions } = fixture("auth");
+  const svg = toSvg(graph, positions, { title: titleOf("auth"), theme: DARK_THEME });
+  if (process.env.UPDATE_GOLDEN === "1") writeFileSync(goldenPath("auth-dark"), svg);
+  expect(svg).toBe(readFileSync(goldenPath("auth-dark"), "utf8"));
 });
 
 it(
@@ -1071,4 +1084,74 @@ it("takes every size from src/geometry.ts, never from the text", () => {
   expect(sizeOf(short)).toEqual({ w: 120, h: 56 });
   expect(boxAttr(toSvg(graph(short), pos))).toContain(`width="120"`);
   expect(boxAttr(toSvg(graph(long), pos))).toContain(`width="${sizeOf(long).w}"`);
+});
+
+// ---------------------------------------------------------------------------
+// the dark preset
+// ---------------------------------------------------------------------------
+
+/**
+ * WCAG 2.1 relative luminance, so the palette is checked by arithmetic and not
+ * by eye. The `**` on the sRGB linearisation is fine here: D21 bans
+ * approximated `Math` in `src/` — the render path whose bytes must match
+ * across engines — not in a test's own assertions.
+ */
+const channels = (hex: string): [number, number, number] => {
+  const n = Number.parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+};
+
+const luminance = (hex: string): number => {
+  const lin = (c: number): number => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  };
+  const [r, g, b] = channels(hex);
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+};
+
+const contrast = (a: string, b: string): number => {
+  const [x, y] = [luminance(a), luminance(b)];
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+};
+
+describe("DARK_THEME", () => {
+  /** Every foreground on the canvas, then the label on each of the five fills. */
+  const PAIRS: readonly (readonly [string, string, string])[] = [
+    ["stroke on background", DARK_THEME.stroke, DARK_THEME.background],
+    ["text on background", DARK_THEME.text, DARK_THEME.background],
+    ["edge on background", DARK_THEME.edge, DARK_THEME.background],
+    ["edgeText on background", DARK_THEME.edgeText, DARK_THEME.background],
+    ["accent on background", DARK_THEME.accent, DARK_THEME.background],
+    ["text on fillProcess", DARK_THEME.text, DARK_THEME.fillProcess],
+    ["text on fillRounded", DARK_THEME.text, DARK_THEME.fillRounded],
+    ["text on fillStadium", DARK_THEME.text, DARK_THEME.fillStadium],
+    ["text on fillDecision", DARK_THEME.text, DARK_THEME.fillDecision],
+    ["text on fillCircle", DARK_THEME.text, DARK_THEME.fillCircle],
+  ];
+
+  it("clears WCAG AA (4.5:1) on every foreground pair", () => {
+    expect(PAIRS.filter(([, fg, bg]) => contrast(fg, bg) < 4.5).map(([name]) => name)).toEqual([]);
+  });
+
+  it("keeps accent unmistakable against edge and stroke", () => {
+    // Contrast is the wrong instrument here: an amber and a blue-grey of the
+    // same luminance sit at ~1.2:1 and still read as different colours. So
+    // channel distance, out of a possible 765 — the palette's is ~275.
+    const apart = (a: string, b: string): number => {
+      const [p, q] = [channels(a), channels(b)];
+      return Math.abs(p[0] - q[0]) + Math.abs(p[1] - q[1]) + Math.abs(p[2] - q[2]);
+    };
+    expect(apart(DARK_THEME.accent, DARK_THEME.edge)).toBeGreaterThanOrEqual(150);
+    expect(apart(DARK_THEME.accent, DARK_THEME.stroke)).toBeGreaterThanOrEqual(150);
+  });
+
+  it("changes nothing but the palette", () => {
+    // The render-twice contract is two palettes, not two geometries: a chart
+    // rendered dark must land pixel-for-pixel where the light one did.
+    const { graph, positions } = fixture("auth");
+    expect(nodeCoords(toSvg(graph, positions, { theme: DARK_THEME }))).toEqual(
+      nodeCoords(toSvg(graph, positions)),
+    );
+  });
 });
