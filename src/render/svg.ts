@@ -537,10 +537,15 @@ const labelPos = (pts: Pt[]): Pt => {
  * renderer never measures text (D5). It is derived here rather than at the draw
  * site because the canvas has to be big enough to hold it.
  */
-const chipOf = (label: string, at: Pt, theme: Theme): Rect => {
+const chipOf = (label: string, at: Pt, theme: Theme, origin: Pt): Rect => {
   const w = Math.round(label.length * theme.edgeFontSize * 0.54) + 10;
   const h = theme.edgeFontSize + 7;
-  return { x: at.x - w / 2, y: at.y - h / 2, w, h };
+  // The chip slides rather than crops (D9): a label between two nodes in the
+  // first column is wider than the gutter in front of them, and the origin is
+  // the node boxes' (D18) — so the chip, and the text it carries, are pushed
+  // back to the canvas edge instead of being cut off at it. Its size never
+  // changes, no node moves, and `Math.max` is exact on every engine (D21).
+  return { x: Math.max(at.x - w / 2, origin.x), y: Math.max(at.y - h / 2, origin.y), w, h };
 };
 
 /** The dashed ring a highlighted node gets, which sticks out past its box. */
@@ -595,6 +600,7 @@ const painted = (
   theme: Theme,
   hot: ReadonlySet<string>,
   routes: readonly (Pt[] | null)[],
+  origin: Pt,
 ): Rect[] => {
   const out: Rect[] = [];
   for (const node of graph.nodes) {
@@ -609,49 +615,56 @@ const painted = (
     const width = e.style === "thick" ? theme.thickStrokeWidth : theme.edgeStrokeWidth;
     out.push(stroked(spanOf(pts), width));
     if (e.label === undefined || e.label === "") return;
-    out.push(chipOf(e.label, labelPos(pts), theme));
+    out.push(chipOf(e.label, labelPos(pts), theme, origin));
   });
   return out;
 };
 
 /**
- * The canvas, from two different measurements on purpose.
+ * The near edge, measured from the node *boxes* — the same geometry the snap
+ * pass clamps — so a movable node clamped to exactly `MARGIN` leaves the origin
+ * at (0, 0) (D18) instead of dragging it to -1 with the outer half of its
+ * stroke and shifting the whole picture on screen at 0px store drift. The
+ * gutter is what absorbs that stroke; only a *box* carried past the bound,
+ * which is a frozen node (D17), pushes the origin negative, and `min(0, …)` is
+ * what lets it. Floored, so the exported transform is an integer.
  *
- * The far edge is the bounding box of everything *painted*, so nothing is
- * clipped as the canvas grows (D9). The origin is measured from the node
- * *boxes* — the same geometry the snap pass clamps — so a movable node clamped
- * to exactly `MARGIN` leaves the origin at (0, 0) (D18) instead of dragging it
- * to -1 with the outer half of its stroke and shifting the whole picture on
- * screen at 0px store drift. The gutter is what absorbs that stroke; only a
- * *box* carried past the bound, which is a frozen node (D17), pushes the origin
- * negative, and `min(0, …)` is what lets it.
- *
- * Integers on all four numbers — the origin floored, the far edge ceiled — so
- * the exported transform is exact and rounding can only ever grow the canvas,
- * never crop it.
+ * It is measured before anything is painted, because the chip a long edge label
+ * sits on is clamped to it (D9, `chipOf`).
  */
-const metaOf = (rects: readonly Rect[], nodeBoxes: readonly Rect[], margin: number): SvgMeta => {
-  // Nothing painted: an empty chart is a margin-sized square of paper.
-  if (rects.length === 0) return { originX: 0, originY: 0, width: 2 * margin, height: 2 * margin };
+const originOf = (nodeBoxes: readonly Rect[], margin: number): Pt => {
   let minX = Number.POSITIVE_INFINITY;
   let minY = Number.POSITIVE_INFINITY;
   for (const b of nodeBoxes) {
     minX = Math.min(minX, b.x);
     minY = Math.min(minY, b.y);
   }
+  return { x: Math.min(0, Math.floor(minX - margin)), y: Math.min(0, Math.floor(minY - margin)) };
+};
+
+/**
+ * The canvas, from two different measurements on purpose.
+ *
+ * The far edge is the bounding box of everything *painted*, so nothing is
+ * clipped as the canvas grows (D9). The near edge is `originOf`'s, from the
+ * node boxes alone (D18). Integers on all four numbers — the origin floored,
+ * the far edge ceiled — so the exported transform is exact and rounding can
+ * only ever grow the canvas, never crop it.
+ */
+const metaOf = (rects: readonly Rect[], origin: Pt, margin: number): SvgMeta => {
+  // Nothing painted: an empty chart is a margin-sized square of paper.
+  if (rects.length === 0) return { originX: 0, originY: 0, width: 2 * margin, height: 2 * margin };
   let maxX = Number.NEGATIVE_INFINITY;
   let maxY = Number.NEGATIVE_INFINITY;
   for (const r of rects) {
     maxX = Math.max(maxX, r.x + r.w);
     maxY = Math.max(maxY, r.y + r.h);
   }
-  finite("the content bounds", minX, minY, maxX, maxY);
-  const originX = Math.min(0, Math.floor(minX - margin));
-  const originY = Math.min(0, Math.floor(minY - margin));
-  const width = Math.ceil(maxX + margin) - originX;
-  const height = Math.ceil(maxY + margin) - originY;
-  finite("the canvas size", originX, originY, width, height);
-  return { originX, originY, width, height };
+  finite("the content bounds", origin.x, origin.y, maxX, maxY);
+  const width = Math.ceil(maxX + margin) - origin.x;
+  const height = Math.ceil(maxY + margin) - origin.y;
+  finite("the canvas size", width, height);
+  return { originX: origin.x, originY: origin.y, width, height };
 };
 
 /**
@@ -668,7 +681,8 @@ export const svgMeta = (
   const box = boxes(graph, positions, false);
   const hot = new Set(opts.highlight ?? []);
   const routes = routeAll(graph, box);
-  return metaOf(painted(graph, box, theme, hot, routes), [...box.values()], margin);
+  const origin = originOf([...box.values()], margin);
+  return metaOf(painted(graph, box, theme, hot, routes, origin), origin, margin);
 };
 
 const shape = (node: Node, b: Box, theme: Theme): string => {
@@ -767,7 +781,8 @@ export const toSvg = (
   const box = boxes(graph, positions, true);
   const hot = new Set(opts.highlight ?? []);
   const routes = routeAll(graph, box);
-  const meta = metaOf(painted(graph, box, theme, hot, routes), [...box.values()], margin);
+  const origin = originOf([...box.values()], margin);
+  const meta = metaOf(painted(graph, box, theme, hot, routes, origin), origin, margin);
 
   const parts: string[] = [];
   if (opts.title !== undefined) parts.push(el("title", {}, esc(opts.title)));
@@ -795,8 +810,11 @@ export const toSvg = (
       }),
     );
     if (e.label !== undefined && e.label !== "") {
-      const lp = labelPos(pts);
-      const chip = chipOf(e.label, lp, theme);
+      const chip = chipOf(e.label, labelPos(pts), theme, origin);
+      // The text rides on the chip, so a clamped chip carries its label with it
+      // and the two never come apart. The chip is built centred on the label
+      // point, so this is that same point wherever nothing was clamped.
+      const lp = { x: chip.x + chip.w / 2, y: chip.y + chip.h / 2 };
       parts.push(
         el("rect", {
           x: chip.x,
