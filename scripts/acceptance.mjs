@@ -87,8 +87,15 @@ const polylines = (svg) =>
 /**
  * D24, on the rendered bytes: a **backward** edge — target above its source —
  * with a segment through the interior of any node box. Strict on all four
- * sides, since every anchor sits on a border. Forward edges are the deferred
- * router's problem and are not asked about here.
+ * sides, since every anchor sits on a border.
+ *
+ * Deliberately still backward-only, though D24 now asks its question of forward
+ * edges too: `KNOWN_BLOCKED` below is a *backward* set, pinned edge by edge
+ * because a corridor exists for every one of these but two. A forward edge has
+ * no such census — the boxes it can be blocked by are whatever the chart's own
+ * columns hold — so the "no new edge-through-box" criterion is carried where a
+ * list of names is not needed: the `crossings` assertions over the goldens and
+ * the scenario ladder in `test/render.test.ts`.
  */
 const backwardThroughBox = (graph, positions, svg) => {
   const boxes = graph.nodes.map((n) => [n.id, boxOf(n, positions[n.id])]);

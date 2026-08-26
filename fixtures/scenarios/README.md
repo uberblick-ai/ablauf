@@ -21,7 +21,8 @@ two different origins.
 
 They are **fixed charts, not snap sets**: `scripts/acceptance.mjs` renders
 each from its stored positions with no directives, hashes the SVG into the
-manifest, and asserts D24 on the rendered bytes; `scripts/gallery.mjs` puts
+manifest, and asserts D24's backward half on the rendered bytes (the forward
+half is the corpus check in `test/render.test.ts`); `scripts/gallery.mjs` puts
 all eight into `gallery.html`, which is where a human judges them (D20 —
 the browser is the rasteriser). There are deliberately no goldens: the
 ladder's job is to be *looked at* when routing changes, and the manifest's
