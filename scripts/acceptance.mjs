@@ -65,6 +65,64 @@ const nodeCoords = (svg) => {
   return new Map([...svg.matchAll(re)].map((m) => [m[3], [+m[1] - ox, +m[2] - oy]]));
 };
 
+/** Every edge's drawn polyline, in declaration order. `</defs>` cuts the markers off. */
+const polylines = (svg) =>
+  [...(svg.split("</defs>")[1] ?? "").matchAll(/<path d="([^"]+)"/g)].map((m) =>
+    m[1].split(" ").map((p) => p.slice(1).split(",").map(Number)),
+  );
+
+/**
+ * D24, on the rendered bytes: a **backward** edge — target above its source —
+ * with a segment through the interior of any node box. Strict on all four
+ * sides, since every anchor sits on a border. Forward edges are the deferred
+ * router's problem and are not asked about here.
+ */
+const backwardThroughBox = (graph, positions, svg) => {
+  const boxes = graph.nodes.map((n) => [n.id, boxOf(n, positions[n.id])]);
+  const lines = polylines(svg);
+  const bad = [];
+  graph.edges.forEach((e, i) => {
+    if (positions[e.to].y >= positions[e.from].y) return;
+    const line = lines[i] ?? [];
+    for (let k = 0; k + 1 < line.length; k++) {
+      const [ax, ay] = line[k];
+      const [bx, by] = line[k + 1];
+      for (const [id, b] of boxes) {
+        const over =
+          Math.min(ax, bx) < b.x + b.w &&
+          Math.max(ax, bx) > b.x &&
+          Math.min(ay, by) < b.y + b.h &&
+          Math.max(ay, by) > b.y;
+        if (over) bad.push(`${e.from}->${e.to} segment ${k} through ${id}`);
+      }
+    }
+  });
+  return bad;
+};
+
+/**
+ * The two backward edges D24's corridor cannot clear, pinned exactly the way
+ * `expectWarnings` pins a warning: a set that grows a crossing fails, and so
+ * does one that loses these, which is the day the deferred router lands.
+ *
+ * Both are boxed in on *both* sides, so no single corridor exists at any x.
+ * `verify --> rate` leaves through `verify`'s left anchor with `queue` in the
+ * same row to its left and `challenge` in the row above it, so the leg out and
+ * the leg in cannot be cleared by the same corridor. `notify --> stray` is the
+ * hostile set (D7: a bad directive set degrades to ugly, never to scrambled):
+ * `stray` is min-clamped into the top-left corner and entered through its right
+ * anchor, and `push` sits in that same row between them. Clearing either needs
+ * a staircase, which is the obstacle-avoiding pass this repo defers on purpose.
+ */
+const KNOWN_BLOCKED = {
+  "auth-add-branch": ["verify->rate segment 0 through queue", "verify->rate segment 1 through queue"],
+  "deploy-hostile": [
+    "notify->stray segment 0 through fail",
+    "notify->stray segment 0 through block",
+    "notify->stray segment 1 through push",
+  ],
+};
+
 // --- the run ---------------------------------------------------------------
 
 mkdirSync(OUT, { recursive: true });
@@ -88,6 +146,8 @@ for (const name of FIXTURES) {
     `${name}: rendered SVG is byte-identical to the committed golden`,
     `${sha256(svg)} vs ${sha256(read(`test/golden/${name}.svg`))}`,
   );
+  const routed = backwardThroughBox(graph, store.snapshot(), svg);
+  check(routed.length === 0, `${name}: no backward edge routed through a box (D24)`, routed.join(", "));
   base.set(name, { graph, store, svg });
 }
 
@@ -162,6 +222,17 @@ for (const set of readJson("fixtures/acceptance/directives.json").sets) {
     .filter((n) => boxes.get(n.id).x < MARGIN || boxes.get(n.id).y < MARGIN)
     .map((n) => `${n.id} at ${JSON.stringify(positions[n.id])}`);
   check(escaped.length === 0, `${set.id}: every movable node inside the minimum bound`, escaped.join(", "));
+
+  // D24: the corridor a backward edge takes has to be empty. The sets are where
+  // this bites — a directive that lands a node in the old midpoint corridor is
+  // exactly how the blind router drew a line through a box.
+  const routed = backwardThroughBox(graph, positions, svg);
+  const known = KNOWN_BLOCKED[set.id] ?? [];
+  check(
+    routed.join(" | ") === known.join(" | "),
+    `${set.id}: backward edges through a box are exactly the ${known.length} known (D24)`,
+    `got [${routed.join(", ")}]`,
+  );
 }
 
 // 8. The gallery — written every run and uploaded with everything else, but

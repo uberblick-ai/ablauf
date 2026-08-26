@@ -180,7 +180,39 @@ Determinism (D5/D21) comes from three fixed orders and nothing else: edges in
 declaration order, sides in a clockwise list, and a resolution order that is a
 count plus that declaration order. Nothing here avoids obstacles — that
 stays deferred (below), and a fallback anchor can still route across whatever
-happens to be in the way.
+happens to be in the way, except for the one edge class D24 names.
+
+**D24. A backward edge whose corridor is occupied takes a gutter (owner-reviewed
+scenarios, 2026-08-26).** The dogleg parks its corridor at the midpoint between
+the two nodes and is blind to what is standing there: `fix --> push` in the
+review's S4 scenario ran the width of the chart straight through `Unit tests`,
+and where two endpoints' x-ranges overlap the corridor lands *inside both boxes*
+and the arrow reads reversed. So: an edge is **backward** when its target's
+centre is above its source's, and a backward edge whose dogleg would cross the
+interior of any node box is re-routed through a gutter instead. Both ends first
+step half a `MARGIN` out along their anchor's outward normal, so the route
+leaves and arrives the way the arrowhead points; those two turn points fix the
+**band**, the y-range the corridor spans, and every positioned box whose own
+y-range meets that band — the source's and the target's included, since those
+are exactly the ones a midpoint corridor lands inside — is what the corridor
+clears: a vertical run at half a `MARGIN` beyond the rightmost of their right
+edges, or beyond the leftmost of their left edges, whichever costs less
+horizontal travel (`|g - sx| + |g - tx|`), an exact tie going right. The canvas
+grows to hold it, because everything painted counts and edges now count too
+(D9). Only a *backward* edge asks the question, so the gutter cannot silently
+become the general router; and the gutter is taken only if it is itself clear,
+so the rule can never make a chart worse than the dogleg already drew it.
+
+What it deliberately does not do: it moves no node (D6), it re-chooses no anchor
+(D23), it does not touch forward edges, and it searches nothing — one corridor
+is computed and either taken or not. A backward edge boxed in on both sides has
+no single corridor at any x and keeps its dogleg; two such edges exist in the
+acceptance sets, pinned by name in `scripts/acceptance.mjs` so a regression
+fails the gate and so does the day they start routing cleanly. Clearing them
+needs a staircase, which is the obstacle-avoiding pass below. Determinism
+(D5/D21) is the band's two turn points, a min and a max over the node boxes in
+document order, and one comparison of two absolute differences — no search
+order to depend on and no approximated math.
 
 ## Grammar and format boundaries (v1)
 
@@ -263,8 +295,15 @@ demo page and a written host-integration proposal, not by zero dependencies.
   D22. The layout-store spec documents the host
   contract they implement; the demo page proves it runs.
 - **Edge routing.** v1 keeps the spike's dogleg router, with the per-node
-  anchor assignment of D23 in front of it. If a real
-  obstacle-avoiding pass is ever needed, the structure is draw.io's:
+  anchor assignment of D23 in front of it and the backward-edge gutter of D24
+  behind it. What those two do not add up to is a router: a **forward** edge
+  still runs wherever the midpoint corridor puts it, obstacles included (that
+  is where the shared mid-y corridor between two forward edges lives); a
+  backward edge gets exactly one alternative corridor and keeps its dogleg when
+  that one is blocked too, so an edge boxed in on both sides still draws through
+  a box; and nothing anywhere searches, backtracks, or bends an edge more than
+  twice. If a real obstacle-avoiding pass is ever needed, the structure is
+  draw.io's:
   layout for nodes, a separate orthogonal routing pass treating every node as
   an obstacle. Router choice carries a licence question under D15:
   `libavoid-js` is the best implementation and is LGPL-2.1, whose §6 relinking

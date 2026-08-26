@@ -105,6 +105,15 @@ const polylines = (svg: string): Pt[][] =>
     (m[1] ?? "").split(" ").map((p) => p.slice(1).split(",").map(Number) as Pt),
   );
 
+/** A legibility scenario from issues #13/#14: text and positions in, polylines out. */
+const routes = (text: string, at: Record<string, [number, number]>): Pt[][] =>
+  polylines(
+    toSvg(
+      parse(text),
+      Object.fromEntries(Object.entries(at).map(([id, [x, y]]) => [id, { x, y }])),
+    ),
+  );
+
 // ---------------------------------------------------------------------------
 // the goldens
 // ---------------------------------------------------------------------------
@@ -185,15 +194,6 @@ it(
 // ---------------------------------------------------------------------------
 
 describe("D23: one endpoint per anchor", () => {
-  /** A legibility scenario from issue #13: text and positions in, polylines out. */
-  const routes = (text: string, at: Record<string, [number, number]>): Pt[][] =>
-    polylines(
-      toSvg(
-        parse(text),
-        Object.fromEntries(Object.entries(at).map(([id, [x, y]]) => [id, { x, y }])),
-      ),
-    );
-
   // Every anchor below is arithmetic rather than a snapshot: `sizeOf` makes a
   // decision `max(120, round(label*8.4) + 36) + 44` wide and 74 tall and every
   // other shape that width without the 44 and 56 tall, centred on its position.
@@ -358,6 +358,91 @@ describe("D23: one endpoint per anchor", () => {
       [620, 60],
       [401, 60],
     ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// D24 — a backward edge routes through a gutter
+// ---------------------------------------------------------------------------
+
+describe("D24: a backward edge clears the boxes between its ends", () => {
+  /**
+   * Which boxes one route runs through the **interior** of — the same strict
+   * test the router itself asks (`through` in src/render/svg.ts), so an anchor
+   * sitting on a border, or a segment running along one, is not a crossing.
+   * Every node in the chart counts, the edge's own two endpoints included.
+   */
+  const crossings = (line: Pt[], text: string, at: Record<string, [number, number]>): string[] => {
+    const hits: string[] = [];
+    for (const n of parse(text).nodes) {
+      const [x, y] = at[n.id] as [number, number];
+      const b = boxOf(n, { x, y });
+      for (let i = 0; i + 1 < line.length; i++) {
+        const [ax, ay] = line[i] as Pt;
+        const [bx, by] = line[i + 1] as Pt;
+        const over =
+          Math.min(ax, bx) < b.x + b.w &&
+          Math.max(ax, bx) > b.x &&
+          Math.min(ay, by) < b.y + b.h &&
+          Math.max(ay, by) > b.y;
+        if (over) hits.push(`${n.id}@seg${i}`);
+      }
+    }
+    return hits;
+  };
+
+  // S4. The mid-y elbow of `fix --> push` used to run the full width of the
+  // chart at y=190, straight through `unit` (162..218) — the corridor is blind
+  // to what sits in it, which is the whole of issue #14.
+  const S4 = `flowchart TD
+  push([Push]) --> lint[Lint] & unit[Unit tests]
+  lint & unit --> gate{All green?}
+  gate -->|no| fix[Fix]
+  fix --> push
+  gate -->|yes| ship[Ship it]`;
+  const S4_AT: Record<string, [number, number]> = {
+    push: [360, 60],
+    lint: [220, 190],
+    unit: [500, 190],
+    gate: [360, 320],
+    fix: [640, 320],
+    ship: [360, 460],
+  };
+
+  it("takes `fix --> push` out of the corridor `unit` is standing in", () => {
+    const back = routes(S4, S4_AT)[5] as Pt[];
+    expect(crossings(back, S4, S4_AT)).toEqual([]);
+    // The band between the two turn points (y 98..282) holds `lint` and `unit`
+    // only, so the corridor clears `unit`'s right edge by half a MARGIN — a
+    // cheaper detour than going round `lint` on the left.
+    expect(back.map(([x]) => x)).toEqual([640, 640, 570, 570, 380, 380]);
+  });
+
+  // S6. The endpoints' x-ranges overlap, so the midpoint of a *horizontal*
+  // corridor would lie inside both boxes. With D23's anchors it does not arise;
+  // this pins that, and that D24 leaves a clean backward edge alone.
+  const S6 = `flowchart TD
+  in([Request]) --> route{Route?}
+  retry[Retry later] --> route
+  route -->|a| svc1[Service A]
+  route -->|b| svc2[Service B]
+  route -->|c| svc3[Service C]
+  svc3 --> retry`;
+  const S6_AT: Record<string, [number, number]> = {
+    in: [400, 60],
+    retry: [700, 60],
+    route: [400, 190],
+    svc1: [160, 330],
+    svc2: [400, 330],
+    svc3: [640, 330],
+  };
+
+  it("keeps `svc3 --> retry` out of every box, its own two included", () => {
+    const back = routes(S6, S6_AT)[5] as Pt[];
+    expect(crossings(back, S6, S6_AT)).toEqual([]);
+    // And it never turns back down: the phantom this scenario was reported for
+    // was the route re-crossing its own source, which reads as a reversed edge.
+    expect(back.every(([, y], i) => i === 0 || y <= (back[i - 1] as Pt)[1])).toBe(true);
   });
 });
 
