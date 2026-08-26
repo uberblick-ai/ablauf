@@ -275,6 +275,17 @@ Each step is separately useful and separately shippable:
    [`../spec/layout-store.md`](../spec/layout-store.md), and the written
    procedure in [`../../agent/layout-preserving-edit.md`](../../agent/layout-preserving-edit.md).
 
+**Filed as issues** in `uberblick-ai/uberblick-2` on 2026-08-26, unlabeled and
+in this order: [#272](https://github.com/uberblick-ai/uberblick-2/issues/272)
+(read-only render), [#273](https://github.com/uberblick-ai/uberblick-2/issues/273)
+(the `layout` map, binding and undo scope),
+[#274](https://github.com/uberblick-ai/uberblick-2/issues/274) (drag),
+[#275](https://github.com/uberblick-ai/uberblick-2/issues/275) (the agent
+surface). Step 1 is deliberately first and deliberately alone: the owner's call
+(2026-08-26) is to settle §2 on the strength of a running render rather than on
+this argument, so #273–#275 declare a dependency on it and none of them start
+until that question has an answer.
+
 ## 10. Open questions for uberblick
 
 1. §2 — is the "no live renderer" position reversed for a derived,
