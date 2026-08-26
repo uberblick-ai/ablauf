@@ -83,7 +83,14 @@ resolver can always search further out. Width and height grow with everything
 *painted* — stroke extents, highlight rings and edge-label chips included — so
 nothing is clipped on the far edge, while on the near edge the `MARGIN` gutter
 absorbs the half-stroke a box paints outside itself and the origin is measured
-from the boxes (D18).
+from the boxes (D18). Near-edge decoration that outgrows that gutter splits by
+what it is anchored to (owner, 2026-08-26): an **edge-label chip slides** — it
+is clamped to start at the origin, keeping its size and carrying its text, so
+no character is ever cut — while decoration anchored to a node's geometry
+(a highlight ring, the outer half-stroke at `margin: 0`) cannot slide without
+moving the node, so **whatever it reaches past the gutter is cropped**, and
+that is the accepted boundary: at most the 8px a ring adds outside the box,
+cosmetic, never text.
 
 **D10. No runtime intelligence in the library (owner, 2026-08-25).** v1 is
 contracts plus enablement: formats, safety code, rendering, and the

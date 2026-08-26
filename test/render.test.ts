@@ -575,11 +575,35 @@ describe("D9: the canvas grows, it is never clamped", () => {
     expect(y).toBeGreaterThanOrEqual(meta.originY);
     expect(x + w).toBeLessThanOrEqual(meta.originX + meta.width);
     expect(y + h).toBeLessThanOrEqual(meta.originY + meta.height);
-    // The *near* edge is the origin's, and the origin is measured from node
-    // boxes (D18): this chip is wider than the gutter in front of the leftmost
-    // box, so it really is cropped on the left rather than translating the
-    // whole picture. Pinned so the trade-off cannot change unnoticed.
-    expect(x).toBeLessThan(meta.originX);
+  });
+
+  it("slides a chip that would cross the near edge, and moves no node doing it", () => {
+    // The near edge is the origin's, and the origin is measured from node boxes
+    // (D18): this chip is wider than the gutter in front of the two boxes it
+    // sits between, so unclamped it would start left of the canvas and lose its
+    // first characters. It slides instead — the chip keeps its size, the label
+    // rides on it, and nothing about the nodes changes (D9, #10).
+    const long = "a label far wider than either of the two boxes it sits between";
+    const pos = { a: { x: 200, y: 100 }, b: { x: 200, y: 400 } };
+    const meta = svgMeta(pair(long), pos);
+    const svg = toSvg(pair(long), pos);
+
+    // The chip is the only `rx="4"` rect the renderer draws.
+    const found = /<rect x="([^"]+)" y="([^"]+)" width="([^"]+)" height="([^"]+)" rx="4"/.exec(svg);
+    const [x = 0, y = 0, w = 0] = found?.slice(1).map(Number) ?? [];
+    expect(found).not.toBeNull();
+    // Unclamped it starts left of the origin; clamped it starts exactly on it.
+    expect(200 - w / 2).toBeLessThan(meta.originX);
+    expect(x).toBe(meta.originX);
+    expect(y).toBeGreaterThanOrEqual(meta.originY);
+
+    // The label travelled with its chip and sits centred on it, so no character
+    // is cut off at the edge.
+    const text = new RegExp(`<text x="([^"]+)"[^>]*>${long}</text>`).exec(svg);
+    expect(Number(text?.[1])).toBe(x + w / 2);
+
+    // And the nodes are drawn exactly where the short-label chart drew them.
+    expect(nodeCoords(svg)).toEqual(nodeCoords(toSvg(pair("ok"), pos)));
   });
 
   it("fits the stroke on the far edge: half a node's outline paints outside its box", () => {
