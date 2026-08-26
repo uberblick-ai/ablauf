@@ -153,7 +153,7 @@ likewise emitted as stored, with a `frozen-out-of-bounds` warning.
 ## The snap pass
 
 ```ts
-snap(graph, prev, directives): { positions, warnings }
+snap(graph, prev, directives): { positions, writes, warnings }
 ```
 
 `prev` is the store's snapshot. The pass **never throws for bad input**: an
@@ -178,6 +178,32 @@ Per movable node, in graph document order:
    trade an overlap for an escape.
 
 A movable node may never be placed overlapping any other node.
+
+### `positions` and `writes`
+
+Two different jobs, and conflating them is a bug a host cannot see locally
+([D27](../decisions.md)):
+
+- **`positions`** is **every** graph node's centre — the whole picture, and
+  what a host renders. It is complete on every call, whatever changed.
+- **`writes`** is the **minimal set to persist**: exactly the graph nodes whose
+  entry in `prev` is absent, is not a finite point, or differs numerically on
+  either axis from the emitted position. Nothing else is in it.
+
+A node that was already stored at the position it is emitted at is **not** in
+`writes` — whether it was frozen, or a directive happened to resolve back to
+the coordinate it already had. Orphans and ids the chart has no node for are
+never in `writes` either; it is keyed by graph node, in graph document order.
+
+The reason is storage that merges per key. Rewriting a node whose stored
+coordinate is already correct is a competing write, and in a CRDT store a
+competing write can defeat a concurrent drag of that node on another replica —
+measured, two Yjs replicas, one drag lost. `writes` is therefore the safe write
+set, computed once here rather than rediscovered by every host.
+
+This does not soften the freeze rule. A frozen node is emitted verbatim in
+`positions`; it is absent from `writes` because the store already holds exactly
+that coordinate. Same fact, said twice.
 
 ### Warnings
 
@@ -236,15 +262,23 @@ What a host implements, and all it implements ([D22](../decisions.md)):
 3. **A drag is one call:**
 
    ```ts
-   const { positions, warnings } = snap(graph, store.snapshot(), [{ id, at: point }]);
+   const { positions, writes, warnings } = snap(graph, store.snapshot(), [{ id, at: point }]);
+   render(positions);
+   for (const [id, p] of Object.entries(writes)) store.set(id, p);
    ```
 
    The human and the agent go through the identical validation path. A drop
    onto an occupied spot resolves nearest-free from the drop point; a drop out
    of bounds is min-clamped, with a warning. **Hosts never write coordinates
-   into the store directly** — they write back what `snap` returned, which is
-   the only thing that keeps the store on the grid, in bounds and free of
-   movable overlaps.
+   into the store directly** — every coordinate that reaches the store came out
+   of `snap`, which is the only thing that keeps the store on the grid, in
+   bounds and free of movable overlaps.
+
+   **Render `positions`; persist `writes`.** Looping the full `positions` into
+   the store is what a keyed CRDT store cannot afford ([D27](../decisions.md)):
+   it rewrites nodes that did not change, and one of those redundant writes can
+   land on top of another replica's concurrent drag. For a single-writer store
+   the two loops reach the same document; for a shared one they do not.
 
 A host that renders is also holding the SVG↔store transform; the renderer
 exposes its origin and dimensions so nothing re-derives it by hand

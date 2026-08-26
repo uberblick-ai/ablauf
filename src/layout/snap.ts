@@ -53,7 +53,18 @@ export type WarningCode =
 /** `ids` names the nodes the warning is about; branch on `code`, show `message`. */
 export type Warning = { code: WarningCode; ids: string[]; message: string };
 
-export type SnapResult = { positions: Record<string, Position>; warnings: Warning[] };
+/**
+ * `positions` is every graph node's centre — the full picture to render.
+ * `writes` is the subset a host has to persist: the nodes whose stored entry is
+ * missing, not a finite point, or numerically different. A frozen node, and a
+ * node whose directive happened to resolve back to where it already was, are in
+ * `positions` and not in `writes` (D27).
+ */
+export type SnapResult = {
+  positions: Record<string, Position>;
+  writes: Record<string, Position>;
+  warnings: Warning[];
+};
 
 const DIRS = new Map<string, readonly [number, number]>([
   ["above", [0, -1]],
@@ -107,8 +118,9 @@ const warn = (code: WarningCode, ids: string[], message: string): Warning => ({ 
  * Turn directives into coordinates.
  *
  * `prev` is the layout store's snapshot; `directives` may be empty, malformed,
- * contradictory or enormous. Returns every graph node's centre plus what the
- * pass had to say about the input. See docs/spec/layout-store.md.
+ * contradictory or enormous. Returns every graph node's centre, the minimal set
+ * of them a host has to write back, and what the pass had to say about the
+ * input. See docs/spec/layout-store.md.
  */
 export const snap = (
   graph: Graph,
@@ -378,5 +390,20 @@ export const snap = (
       return [node.id, p] as const;
     }),
   );
-  return { positions, warnings: [...input, ...during, ...emitted] };
+  // The minimal write set (D27). Hosts render `positions` and persist only this:
+  // rewriting a node whose stored coordinate is already correct is a competing
+  // write, and in a keyed CRDT store a competing write can defeat a concurrent
+  // drag of that node on another replica. `known` is exactly "prev had a finite
+  // point for this graph node", so an absent, invalid or orphan entry falls
+  // through to a write and an unknown id can never reach one. Graph document
+  // order, never `prev`'s key order (D21).
+  const writes: Record<string, Position> = Object.fromEntries(
+    graph.nodes.flatMap((node) => {
+      const p = placed.get(node.id) as Position;
+      const was = known.get(node.id);
+      if (was && was.x === p.x && was.y === p.y) return [];
+      return [[node.id, p] as const];
+    }),
+  );
+  return { positions, writes, warnings: [...input, ...during, ...emitted] };
 };

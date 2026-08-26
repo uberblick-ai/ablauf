@@ -52,8 +52,8 @@ flowchart TD
    relabel needs none, and an edge added between two placed nodes needs none.
    If you added no node and decided to move none, emit nothing.
 4. **Run `snap` and read its warnings.** `snap(graph, store.snapshot(),
-   directives)` returns `{ positions, warnings }`. Warnings are data — branch
-   on `code`, read `ids`, show `message`. `displaced`, `min-clamped`,
+   directives)` returns `{ positions, writes, warnings }`. Warnings are data —
+   branch on `code`, read `ids`, show `message`. `displaced`, `min-clamped`,
    `unknown-node`, `invalid-directive` and `unresolvable-anchor` each mean your
    request was not honoured as written: revise and run again.
 5. **Escalate only if the warnings and the positions leave you unsure** — they
@@ -62,7 +62,18 @@ flowchart TD
    look. Rasterisation is a host capability: never a precondition for this
    procedure, and never a reason to refuse the edit.
 
-Then write back exactly what `snap` returned.
+Then **read the picture from `positions`, and write back only `writes`.**
+`positions` is every node's centre — the whole chart, what you render or reason
+about. `writes` is the minimal set to persist: exactly the nodes whose stored
+entry was missing, unusable, or at a different coordinate. A node that was
+already stored where it is emitted is in `positions` and not in `writes`,
+frozen or not.
+
+Write the entries in `writes` and leave every other stored entry untouched.
+Re-writing an unchanged node is not harmless everywhere: on shared storage that
+merges per node id, a redundant write can land on top of somebody else's
+concurrent drag of that node. Never invent a coordinate of your own, and never
+write one back that did not come out of `snap`.
 
 ## The four directive forms
 
@@ -203,7 +214,17 @@ way with `delta` — a deliberate choice, not a requirement.
  { "id": "queue", "delta": { "dx": 200, "dy": 0 } }]
 ```
 
-**Warnings**: `[]`. **After** — write this back verbatim:
+**Warnings**: `[]`. **`writes`** — the four entries to persist, and nothing
+else:
+
+```json
+{ "mfa":    { "x": 640, "y": 180 }, "challenge": { "x": 640, "y": 300 },
+  "verify": { "x": 640, "y": 420 }, "queue":     { "x": 880, "y": 420 } }
+```
+
+The other seven nodes are in `positions` at the coordinates they already had,
+and are absent from `writes` because the store is already right about them.
+Applying those four entries leaves the store:
 
 ```json
 { "version": 1, "nodes": {
@@ -216,4 +237,5 @@ way with `delta` — a deliberate choice, not a requirement.
 ```
 
 Four nodes named, three of them new; `queue` moved because you said so, and
-every other node sits where it did, to the pixel.
+every other node sits where it did, to the pixel — untouched in the store as
+well as on the canvas.

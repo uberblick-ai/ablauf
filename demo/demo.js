@@ -5,8 +5,11 @@
 //
 // The one rule worth reading the file for: a drag is ONE `at` directive
 // through `snap`. The page never writes a coordinate of its own into the
-// store — it writes back what `snap` returned, which is the only thing that
-// keeps the store on the grid, in bounds and free of movable overlaps.
+// store — every coordinate that reaches it came out of `snap`, which is the
+// only thing that keeps the store on the grid, in bounds and free of movable
+// overlaps. It renders `result.positions` (the whole picture) and persists
+// `result.writes` (only what changed): a keyed store must not be rewritten
+// where it is already right (D27).
 import { DARK_THEME, boxOf, jsonStore, parse, snap, svgMeta, toSvg } from "../dist/index.js";
 
 const NAMES = ["auth", "deploy"];
@@ -43,7 +46,7 @@ const draw = (directives) => {
   const before = pixels();
   const graph = graphs[name];
   const result = snap(graph, store.snapshot(), directives);
-  for (const [id, p] of Object.entries(result.positions)) store.set(id, p);
+  for (const [id, p] of Object.entries(result.writes)) store.set(id, p);
   positions = result.positions;
   const opts = { title: TITLES[name], debugGrid: $("grid").checked, ...(dark.matches ? { theme: DARK_THEME } : {}) };
   meta = svgMeta(graph, positions, opts);
