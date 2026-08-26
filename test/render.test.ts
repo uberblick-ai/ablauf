@@ -1104,7 +1104,7 @@ const channels = (hex: string): [number, number, number] => {
 const luminance = (hex: string): number => {
   const lin = (c: number): number => {
     const s = c / 255;
-    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+    return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
   };
   const [r, g, b] = channels(hex);
   return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
