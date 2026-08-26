@@ -184,42 +184,133 @@ it(
 // D23 — one endpoint per anchor
 // ---------------------------------------------------------------------------
 
-describe("D23: no two endpoints share an anchor while a free one faces", () => {
-  // The legibility scenarios from issue #13, positions and all. Sizes come from
-  // `sizeOf`: a decision is `label*8.4 + 36 + 44` wide (min 164) and 74 tall, so
-  // `d` at (320, 180) is 164x74 — top vertex (320, 143), left (238, 180), right
-  // (402, 180) — and a 120x56 process box sits 28px above and below its centre.
-  const branch = () => ({
-    graph: parse(`flowchart TD
+describe("D23: one endpoint per anchor", () => {
+  /** A legibility scenario from issue #13: text and positions in, polylines out. */
+  const routes = (text: string, at: Record<string, [number, number]>): Pt[][] =>
+    polylines(
+      toSvg(
+        parse(text),
+        Object.fromEntries(Object.entries(at).map(([id, [x, y]]) => [id, { x, y }])),
+      ),
+    );
+
+  // Every anchor below is arithmetic rather than a snapshot: `sizeOf` makes a
+  // decision `max(120, round(label*8.4) + 36) + 44` wide and 74 tall and every
+  // other shape that width without the 44 and 56 tall, centred on its position.
+  // So `d` at (320, 180) is 164x74 — top vertex (320, 143), left (238, 180),
+  // right (402, 180) — and `e`, 120x56 at (320, 440), reaches 28px either way.
+  const S2 = `flowchart TD
   a([Start]) --> d{OK?}
   d -->|yes| b1[Do thing]
   d -->|no| b2[Fix it]
   b1 --> e([End])
-  b2 --> e`),
-    positions: {
-      a: { x: 320, y: 60 },
-      d: { x: 320, y: 180 },
-      b1: { x: 180, y: 310 },
-      b2: { x: 460, y: 310 },
-      e: { x: 320, y: 440 },
-    } as Record<string, Position>,
-  });
+  b2 --> e`;
+  const S2_AT: Record<string, [number, number]> = {
+    a: [320, 60],
+    d: [320, 180],
+    b1: [180, 310],
+    b2: [460, 310],
+    e: [320, 440],
+  };
 
   it("routes a diamond's entry through the top vertex and its exits through two others", () => {
-    const { graph, positions } = branch();
-    const [entry, yes, no] = polylines(toSvg(graph, positions));
+    const [entry, yes, no] = routes(S2, S2_AT);
     expect(entry?.at(-1)).toEqual([320, 143]);
     expect(yes?.[0]).toEqual([238, 180]);
     expect(no?.[0]).toEqual([402, 180]);
   });
 
   it("lands two arrows into one merge target on two different anchors", () => {
-    const { graph, positions } = branch();
-    const [, , , first, second] = polylines(toSvg(graph, positions));
-    // `e` is 120x56 at (320, 440): the top anchor, then the right one, because
-    // the first approach took the top and the right is the best still free.
+    const [, , , first, second] = routes(S2, S2_AT);
+    // The top anchor, then the right one: the first approach took the top, and
+    // the right is the best anchor still free and still clear of `b2`.
     expect(first?.at(-1)).toEqual([320, 412]);
     expect(second?.at(-1)).toEqual([380, 440]);
+  });
+
+  it("gives a ternary decision three vertices, and its merge target three anchors", () => {
+    // S5. `sev` is 164x74 at (400, 190), `done` 120x56 at (400, 470).
+    const lines = routes(
+      `flowchart TD
+  in([Alert fires]) --> sev{Severity?}
+  sev -->|low| log[Log it]
+  sev -->|medium| ticket[Open ticket]
+  sev -->|high| page[Page on-call]
+  log --> done([Done])
+  ticket --> done
+  page --> done`,
+      {
+        in: [400, 60],
+        sev: [400, 190],
+        log: [160, 330],
+        ticket: [400, 330],
+        page: [640, 330],
+        done: [400, 470],
+      },
+    );
+    expect(lines[0]?.at(-1)).toEqual([400, 153]);
+    expect([lines[1]?.[0], lines[2]?.[0], lines[3]?.[0]]).toEqual([
+      [318, 190], // low → left vertex
+      [400, 227], // medium → bottom vertex
+      [482, 190], // high → right vertex
+    ]);
+    expect([lines[4]?.at(-1), lines[5]?.at(-1), lines[6]?.at(-1)]).toEqual([
+      [340, 470], // log → left
+      [400, 442], // ticket → top
+      [460, 470], // page → right
+    ]);
+  });
+
+  it("spreads three arrows into one node over its left, top and right anchors", () => {
+    // S7. `notify` is 145x56 at (400, 200). `b` is straight above it, so the top
+    // is the only anchor `b` can be approached from and it is resolved first;
+    // greedy declaration order would have let `a` take the top and strand `b`.
+    const lines = routes(
+      `flowchart TD
+  a[Build fails] --> notify[Notify author]
+  b[Scan fails] --> notify
+  c[Deploy fails] --> notify
+  notify --> done([Done])`,
+      { a: [160, 60], b: [400, 60], c: [640, 60], notify: [400, 200], done: [400, 340] },
+    );
+    expect([lines[0]?.at(-1), lines[1]?.at(-1), lines[2]?.at(-1)]).toEqual([
+      [327.5, 200],
+      [400, 172],
+      [472.5, 200],
+    ]);
+  });
+
+  it("fans a five-edge diamond's surplus along its preferred side, on the outline", () => {
+    // S6 (defined in #14). `route` is 164x74 at (400, 190) and carries five
+    // endpoints: two in, three out.
+    const lines = routes(
+      `flowchart TD
+  in([Request]) --> route{Route?}
+  retry[Retry later] --> route
+  route -->|a| svc1[Service A]
+  route -->|b| svc2[Service B]
+  route -->|c| svc3[Service C]
+  svc3 --> retry`,
+      {
+        in: [400, 60],
+        retry: [700, 60],
+        route: [400, 190],
+        svc1: [160, 330],
+        svc2: [400, 330],
+        svc3: [640, 330],
+      },
+    );
+    const at = [lines[0]?.at(-1), lines[1]?.at(-1), lines[2]?.[0], lines[3]?.[0], lines[4]?.[0]];
+    expect(new Set(at.map(String)).size).toBe(5);
+    expect(at[0]).toEqual([400, 153]); // in → top vertex
+    expect(at[2]).toEqual([318, 190]); // a → left vertex
+    expect(at[3]).toEqual([400, 227]); // b → bottom vertex
+    // The right side carries two — `retry -->` claimed it and `--> svc3` fanned
+    // onto it — and both sit on the diamond's slanted edges, not off the box.
+    expect([at[1], at[4]]).toEqual([
+      [454.7, 177.7],
+      [454.7, 202.3],
+    ]);
   });
 
   it("draws no two edges on top of each other in the retry-loop scenario", () => {

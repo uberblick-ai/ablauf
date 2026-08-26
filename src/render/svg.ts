@@ -233,8 +233,6 @@ const aim = (kind: NodeKind, b: Box, ox: number, oy: number): Aim => {
 };
 
 /** One endpoint's anchor: which side, and how many claimed that side first. */
-type Anchor = { side: Side; seq: number };
-
 /**
  * The best-facing anchor that is both clear and still free — or, when every
  * clear anchor is taken, a share of the best-facing one, which is the fan D23
@@ -242,7 +240,7 @@ type Anchor = { side: Side; seq: number };
  * tie go clockwise from the top, and it is an ordered walk over a fixed list
  * rather than an iteration over a map (D21).
  */
-const claim = (used: Fill, { score, clear }: Aim): Anchor => {
+const claim = (used: Fill, { score, clear }: Aim): Side => {
   let best: Side = "top";
   let free: Side | null = null;
   for (const side of SIDES) {
@@ -252,10 +250,12 @@ const claim = (used: Fill, { score, clear }: Aim): Anchor => {
     }
   }
   const side = free ?? best;
-  const seq = used[side];
-  used[side] = seq + 1;
-  return { side, seq };
+  used[side] += 1;
+  return side;
 };
+
+/** How many of this node's sides the endpoint's counterpart can be reached from. */
+const options = ({ clear }: Aim): number => SIDES.filter((side) => clear[side]).length;
 
 /**
  * The spike's dogleg router, connecting two assigned anchors (D23) instead of
@@ -285,53 +285,77 @@ const dogleg = (s: Pt, sSide: Side, t: Pt, tSide: Side): Pt[] => {
   return flat ? [s, t] : [s, corner, t];
 };
 
+/** One end of one edge, at the node it attaches to. Filled in by `routeAll`. */
+type End = { kind: NodeKind; b: Box; aim: Aim; side: Side; f: number };
+
 /**
  * Every edge's polyline, in document order — `null` for an edge whose endpoints
  * are not both positioned, which only `svgMeta` ever sees, because `toSvg` has
- * thrown by then. The anchors are assigned here, in one pass over the edges in
- * declaration order, because the assignment is a property of the whole graph
- * rather than of one edge: that is the difference between a decision's two
- * branches leaving distinct vertices and both leaving the bottom one (D23).
+ * thrown by then.
+ *
+ * The anchors are assigned here rather than per edge, because the assignment is
+ * a property of the whole graph: that is the difference between a decision's two
+ * branches leaving distinct vertices and both leaving the bottom one (D23). Each
+ * node resolves its own endpoints, and in three passes, because each needs the
+ * one before it — collect the endpoints, claim a side for each, then space out
+ * whatever ended up sharing one.
  */
 const routeAll = (graph: Graph, box: Map<string, Box>): (Pt[] | null)[] => {
   const nodes = new Map(graph.nodes.map((n) => [n.id, n]));
-  const used = new Map<string, Fill>();
-  const fill = (id: string): Fill => {
-    const found = used.get(id);
-    if (found) return found;
-    const fresh: Fill = { top: 0, right: 0, bottom: 0, left: 0 };
-    used.set(id, fresh);
-    return fresh;
+
+  // 1. Both ends of every edge, source first, in declaration order — and, per
+  //    node, the indices of the ends attached to it, in that same order.
+  const ends: (End | null)[] = [];
+  const attached = new Map<string, number[]>();
+  const add = (id: string, end: End): void => {
+    const list = attached.get(id);
+    if (list) list.push(ends.length);
+    else attached.set(id, [ends.length]);
+    ends.push(end);
   };
-  type Claim = { from: Node; to: Node; a: Box; b: Box; s: Anchor; t: Anchor };
-  const claims: (Claim | null)[] = [];
   for (const e of graph.edges) {
     const from = nodes.get(e.from);
     const to = nodes.get(e.to);
     const a = box.get(e.from);
     const b = box.get(e.to);
     if (!from || !to || !a || !b) {
-      claims.push(null);
+      ends.push(null, null);
       continue;
     }
-    claims.push({
-      from,
-      to,
-      a,
-      b,
-      s: claim(fill(e.from), aim(from.kind, a, b.cx, b.cy)),
-      t: claim(fill(e.to), aim(to.kind, b, a.cx, a.cy)),
-    });
+    const half = { side: "top" as Side, f: 0.5 };
+    add(e.from, { kind: from.kind, b: a, aim: aim(from.kind, a, b.cx, b.cy), ...half });
+    add(e.to, { kind: to.kind, b, aim: aim(to.kind, b, a.cx, a.cy), ...half });
   }
-  // The fan's spacing needs each side's final population, so the points are
-  // built only once every endpoint has claimed: n endpoints on one side sit at
-  // 1/(n+1) … n/(n+1) along it, which is the midpoint when n is 1.
-  const at = (id: string, node: Node, b: Box, anchor: Anchor): Pt =>
-    port(b, node.kind, anchor.side, (anchor.seq + 1) / (fill(id)[anchor.side] + 1));
-  return graph.edges.map((e, i) => {
-    const c = claims[i];
-    if (!c) return null;
-    return dogleg(at(e.from, c.from, c.a, c.s), c.s.side, at(e.to, c.to, c.b, c.t), c.t.side);
+
+  for (const node of graph.nodes) {
+    const list = attached.get(node.id);
+    if (list === undefined) continue;
+    const mine = (i: number): End => ends[i] as End;
+    const used: Fill = { top: 0, right: 0, bottom: 0, left: 0 };
+
+    // 2. Claim, fewest options first (D23): an endpoint whose counterpart is
+    //    straight above has exactly one side it can be approached from, and
+    //    would otherwise lose it to a diagonal neighbour that had a second
+    //    choice — three arrows into one node, two of them stacked on its top.
+    const order = [...list].sort((i, j) => options(mine(i).aim) - options(mine(j).aim) || i - j);
+    for (const i of order) mine(i).side = claim(used, mine(i).aim);
+
+    // 3. Space out the sides that ended up shared. `n` endpoints on one side sit
+    //    at 1/(n+1) … n/(n+1) along it — the midpoint when `n` is 1 — in
+    //    declaration order, so a fan reads left to right as the text does.
+    const seen: Fill = { top: 0, right: 0, bottom: 0, left: 0 };
+    for (const i of list) {
+      const end = mine(i);
+      seen[end.side] += 1;
+      end.f = seen[end.side] / (used[end.side] + 1);
+    }
+  }
+
+  const at = (end: End): Pt => port(end.b, end.kind, end.side, end.f);
+  return graph.edges.map((_, i) => {
+    const s = ends[2 * i];
+    const t = ends[2 * i + 1];
+    return s && t ? dogleg(at(s), s.side, at(t), t.side) : null;
   });
 };
 
