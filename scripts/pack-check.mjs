@@ -90,7 +90,8 @@ const tsconfigFor = (moduleKind, resolution) => ({
     moduleResolution: resolution,
     strict: true,
     verbatimModuleSyntax: true,
-    skipLibCheck: true,
+    // Deliberately no `skipLibCheck`: it would hide errors *inside* the
+    // shipped declarations, which is exactly what this check is for.
     noEmit: true,
   },
   files: ["consumer.ts"],

@@ -30,7 +30,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "prepack": "pnpm build",
+    "prepack": "npm run build",
     "acceptance": "pnpm build && node scripts/acceptance.mjs",
     "agent-check": "node scripts/check-agent-pack.mjs",
     "pack-check": "node scripts/pack-check.mjs",

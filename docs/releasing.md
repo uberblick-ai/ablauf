@@ -1,11 +1,12 @@
 # Releasing ablauf
 
 Publishing is the one step in this repo that an agent cannot do and must not
-try: it needs the owner's npm credentials and it is irreversible within 72
-hours. Everything an agent *can* prove is proven by `mise run pack-check`
-before this file is opened at all. What follows is the owner's procedure, and
-it is deliberately manual — no release automation until there is a second
-release worth automating (D14).
+try: it needs the owner's npm credentials, and it is effectively permanent —
+npm allows a qualifying unpublish only within 72 hours of the publish, and
+after that the version is there for good. Everything an agent *can* prove is
+proven by `mise run pack-check` before this file is opened at all. What
+follows is the owner's procedure, and it is deliberately manual — no release
+automation until there is a second release worth automating (D14).
 
 The package is `@uberblick/ablauf`, public, ESM-only, zero runtime
 dependencies. Versions follow the promise in the README: pre-1.0 a minor may
@@ -39,16 +40,17 @@ that `dependencies` is still absent.
 ## Publishing
 
 ```
-npm whoami                                # expect the account that owns the @uberblick org
-mise exec -- npm publish --access public  # runs prepack → build; `--dry-run` first if in doubt
+npm whoami                     # expect the account that owns the @uberblick org
+npm publish --access public    # runs prepack → build; `--dry-run` first if in doubt
 git tag v0.1.0
 git push origin v0.1.0
 ```
 
 `publishConfig.access` already says `public`, so the flag is belt and braces
-on a scoped package that would otherwise default to restricted. Publish
-through `mise exec` because `prepack` shells out to `pnpm build`: that is the
-one command in the procedure that needs the pinned toolchain on `PATH`.
+on a scoped package that would otherwise default to restricted. `prepack`
+calls `npm run build`, which needs nothing but the checkout's own
+`node_modules` — the pinned toolchain matters for the gates above, not for
+the publish itself.
 
 Tag *after* the publish succeeds: a tag that points at a version nobody can
 install is worse than no tag.
@@ -85,7 +87,8 @@ have a home; nothing in the toolchain depends on one existing.
 
 ## If something is wrong after publishing
 
-Do not unpublish unless the release is minutes old and demonstrably broken —
-unpublishing a version other people may already have pinned is worse than
-superseding it. `npm deprecate @uberblick/ablauf@0.1.0 "…"` and a patch
-release is the normal repair.
+npm's unpublish window is 72 hours, and only for a version nothing depends on;
+past that the version is permanent. Even inside the window, do not use it
+unless the release is minutes old and demonstrably broken — pulling a version
+other people may already have pinned is worse than superseding it. The normal
+repair is `npm deprecate @uberblick/ablauf@0.1.0 "…"` plus a patch release.
