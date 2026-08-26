@@ -23,6 +23,9 @@
 //     is what puts a decision's branches on distinct vertices and keeps an
 //     in-edge and an out-edge from being drawn on top of each other. It moves
 //     no node and reads no label — it is still the spike's dumb router.
+//   * A backward edge whose dogleg would cross a box takes a gutter instead
+//     (D24): one corridor-choice rule for one edge class, not the deferred
+//     obstacle-avoiding routing pass.
 //
 // Determinism (D5, D21): fixed element order, fixed attribute order, fixed
 // precision, literal theme tokens, no generated ids beyond the two arrow
@@ -285,6 +288,95 @@ const dogleg = (s: Pt, sSide: Side, t: Pt, tSide: Side): Pt[] => {
   return flat ? [s, t] : [s, corner, t];
 };
 
+/** How far outside its anchor a gutter route turns before it runs (D24). */
+const STUB = MARGIN / 2;
+
+/** `d` px out from an anchor along its side's outward normal. */
+const outward = ({ x, y }: Pt, side: Side, d: number): Pt =>
+  side === "top"
+    ? { x, y: y - d }
+    : side === "bottom"
+      ? { x, y: y + d }
+      : side === "left"
+        ? { x: x - d, y }
+        : { x: x + d, y };
+
+/**
+ * Does the axis-aligned segment `a`–`b` pass through the **interior** of `r`?
+ * Strict on all four sides, because that is where the anchors are: an edge
+ * leaving a box's border, or running along it, is not crossing it. For a
+ * zero-thickness axis-aligned segment, overlapping the open rectangle and
+ * overlapping it with the segment's bounding box are the same question.
+ */
+const through = (r: Rect, a: Pt, b: Pt): boolean =>
+  Math.min(a.x, b.x) < r.x + r.w &&
+  Math.max(a.x, b.x) > r.x &&
+  Math.min(a.y, b.y) < r.y + r.h &&
+  Math.max(a.y, b.y) > r.y;
+
+/** Any segment of `pts` through any box: the one obstacle question asked (D24). */
+const blocked = (pts: readonly Pt[], obstacles: readonly Rect[]): boolean => {
+  for (let i = 0; i + 1 < pts.length; i++) {
+    const a = pts[i];
+    const b = pts[i + 1];
+    if (!a || !b) continue;
+    for (const r of obstacles) if (through(r, a, b)) return true;
+  }
+  return false;
+};
+
+/** Drop repeated points and the middle of a straight run: one shape, one spelling. */
+const simplify = (pts: readonly Pt[]): Pt[] => {
+  const out: Pt[] = [];
+  for (const p of pts) {
+    const a = out[out.length - 2];
+    const b = out[out.length - 1];
+    if (b && b.x === p.x && b.y === p.y) continue;
+    if (a && b && ((a.x === b.x && b.x === p.x) || (a.y === b.y && b.y === p.y))) out.pop();
+    out.push(p);
+  }
+  return out;
+};
+
+/**
+ * The backward-edge gutter (D24): the same rectangle the dogleg elbows around,
+ * taken by its *other* corner pair, with the vertical run pushed clear of every
+ * box in the band instead of parked at the midpoint between the two nodes.
+ *
+ * Both ends first step `STUB` out along their anchor's normal, so the route
+ * leaves and arrives the way the arrowhead points and never runs along the box
+ * it just left. Those two turn points fix the **band** — the y-range the
+ * corridor spans — and every positioned box whose own y-range meets that band,
+ * the two endpoints' boxes included, is what the corridor has to clear: just
+ * beyond the rightmost of their right edges, or the leftmost of their left
+ * ones, whichever costs less horizontal travel, an exact tie going right.
+ * Returns `null` when the band is empty, which cannot happen for the blocked
+ * edge this is called for — a crossed box is by construction in the band.
+ */
+const gutterRoute = (
+  s: Pt,
+  sSide: Side,
+  t: Pt,
+  tSide: Side,
+  obstacles: readonly Rect[],
+): Pt[] | null => {
+  const os = outward(s, sSide, STUB);
+  const ot = outward(t, tSide, STUB);
+  const lo = Math.min(os.y, ot.y);
+  const hi = Math.max(os.y, ot.y);
+  let left = Number.POSITIVE_INFINITY;
+  let right = Number.NEGATIVE_INFINITY;
+  for (const r of obstacles) {
+    if (r.y >= hi || r.y + r.h <= lo) continue;
+    left = Math.min(left, r.x);
+    right = Math.max(right, r.x + r.w);
+  }
+  if (!Number.isFinite(left)) return null;
+  const cost = (g: number): number => Math.abs(g - os.x) + Math.abs(g - ot.x);
+  const g = cost(left - STUB) < cost(right + STUB) ? left - STUB : right + STUB;
+  return simplify([s, os, { x: g, y: os.y }, { x: g, y: ot.y }, ot, t]);
+};
+
 /** One end of one edge, at the node it attaches to. Filled in by `routeAll`. */
 type End = { kind: NodeKind; b: Box; aim: Aim; side: Side; f: number };
 
@@ -352,10 +444,23 @@ const routeAll = (graph: Graph, box: Map<string, Box>): (Pt[] | null)[] => {
   }
 
   const at = (end: End): Pt => port(end.b, end.kind, end.side, end.f);
+
+  // 4. Route. Every box, in document order (D21), is what a backward edge's
+  //    corridor has to clear — forward edges keep the blind dogleg, which is
+  //    the deferred router's problem and not this rule's (D24).
+  const obstacles: Box[] = [];
+  for (const node of graph.nodes) {
+    const b = box.get(node.id);
+    if (b) obstacles.push(b);
+  }
   return graph.edges.map((_, i) => {
     const s = ends[2 * i];
     const t = ends[2 * i + 1];
-    return s && t ? dogleg(at(s), s.side, at(t), t.side) : null;
+    if (!s || !t) return null;
+    const plain = dogleg(at(s), s.side, at(t), t.side);
+    if (t.b.cy >= s.b.cy || !blocked(plain, obstacles)) return plain;
+    const around = gutterRoute(at(s), s.side, at(t), t.side, obstacles);
+    return around && !blocked(around, obstacles) ? around : plain;
   });
 };
 
@@ -415,14 +520,30 @@ const stroked = (r: Rect, width: number): Rect => {
   return { x: r.x - half, y: r.y - half, w: r.w + width, h: r.h + width };
 };
 
+/** The rectangle a polyline occupies. An edge is painted ink too (D9, D24). */
+const spanOf = (pts: readonly Pt[]): Rect => {
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+  for (const p of pts) {
+    minX = Math.min(minX, p.x);
+    minY = Math.min(minY, p.y);
+    maxX = Math.max(maxX, p.x);
+    maxY = Math.max(maxY, p.y);
+  }
+  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+};
+
 /**
  * Every box the renderer paints, in document order: node boxes, the rings
- * around highlighted ones, and the edge-label chips. The canvas *size* comes
- * from this rather than from node boxes alone — a long label between two short
- * nodes reaches well past every box in the picture, and D9 says nothing is
- * clipped. The *origin* does not: it comes from the boxes (D18, `metaOf`).
- * Boxes and rings are stroked and so contribute their outline too; the chip is
- * a bare fill, so its own rectangle is all of it.
+ * around highlighted ones, the edges themselves, and the edge-label chips. The
+ * canvas *size* comes from this rather than from node boxes alone — a long
+ * label between two short nodes reaches well past every box in the picture, and
+ * a backward edge's gutter corridor runs outside them all (D24), and D9 says
+ * nothing is clipped. The *origin* does not: it comes from the boxes (D18,
+ * `metaOf`). Boxes, rings and edges are stroked and so contribute their outline
+ * too; the chip is a bare fill, so its own rectangle is all of it.
  */
 const painted = (
   graph: Graph,
@@ -440,7 +561,10 @@ const painted = (
   }
   graph.edges.forEach((e, i) => {
     const pts = routes[i];
-    if (!pts || e.label === undefined || e.label === "") return;
+    if (!pts || pts.length === 0) return;
+    const width = e.style === "thick" ? theme.thickStrokeWidth : theme.edgeStrokeWidth;
+    out.push(stroked(spanOf(pts), width));
+    if (e.label === undefined || e.label === "") return;
     out.push(chipOf(e.label, labelPos(pts), theme));
   });
   return out;
