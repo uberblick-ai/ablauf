@@ -3,13 +3,13 @@
 <defs><marker id="ablauf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5a6580"/></marker><marker id="ablauf-arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c2410c"/></marker></defs>
 <rect x="0" y="0" width="1128" height="1289" fill="#ffffff"/>
 <path d="M560,88 L560,115 L390,115 L390,142" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
-<path d="M560,88 L560,115 L730,115 L730,142" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
-<path d="M390,198 L390,223 L560,223 L560,248" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M637,60 L730,60 L730,142" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M390,198 L390,285 L478,285" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
 <path d="M730,198 L730,223 L560,223 L560,248" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
 <path d="M642,285 L953,285" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
 <rect x="785.5" y="275" width="24" height="20" rx="4" fill="#ffffff"/>
 <text x="797.5" y="289.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#5a6580">no</text>
-<path d="M1030,313 L1030,1142" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M1030,313 L1030,727.5 L1005.8,727.5 L1005.8,1142" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
 <path d="M560,322 L560,372" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
 <rect x="544.5" y="337" width="31" height="20" rx="4" fill="#ffffff"/>
 <text x="560" y="351.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#5a6580">yes</text>
@@ -18,7 +18,7 @@
 <path d="M650.5,605 L957.5,605" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
 <rect x="788.5" y="595" width="31" height="20" rx="4" fill="#ffffff"/>
 <text x="804" y="609.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#5a6580">yes</text>
-<path d="M1030,633 L1030,1142" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M1030,633 L1030,887.5 L1054.2,887.5 L1054.2,1142" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
 <path d="M560,642 L560,687" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
 <rect x="548" y="654.5" width="24" height="20" rx="4" fill="#ffffff"/>
 <text x="560" y="668.8" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#5a6580">no</text>
@@ -28,14 +28,14 @@
 <path d="M646,1020 L770,1020" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
 <rect x="696" y="1010" width="24" height="20" rx="4" fill="#ffffff"/>
 <text x="708" y="1024.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#5a6580">no</text>
-<path d="M830,1048 L830,1095 L1030,1095 L1030,1142" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M830,1048 L830,1160.7 L957.5,1160.7" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
 <path d="M560,1057 L560,1093" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
 <rect x="544.5" y="1065" width="31" height="20" rx="4" fill="#ffffff"/>
 <text x="560" y="1079.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#5a6580">yes</text>
-<path d="M560,1167 L560,1189.5 L400,1189.5 L400,1212" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
-<rect x="464.5" y="1179.5" width="31" height="20" rx="4" fill="#ffffff"/>
-<text x="480" y="1193.8" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#5a6580">yes</text>
-<path d="M667,1130 L812.3,1130 L812.3,1170 L957.5,1170" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M453,1130 L400,1130 L400,1212" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="384.5" y="1161" width="31" height="20" rx="4" fill="#ffffff"/>
+<text x="400" y="1175.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#5a6580">yes</text>
+<path d="M667,1130 L812.3,1130 L812.3,1179.3 L957.5,1179.3" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
 <rect x="727.6" y="1120" width="24" height="20" rx="4" fill="#ffffff"/>
 <text x="739.6" y="1134.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#5a6580">no</text>
 <path d="M336,1240 L190,1240" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>

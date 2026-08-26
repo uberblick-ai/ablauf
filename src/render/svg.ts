@@ -18,6 +18,11 @@
 //     into a lie on the only surface the user looks at; measuring the origin
 //     from painted extents does the same thing 1px at a time, because a
 //     clamped box's stroke reaches into the gutter.
+//   * Edges get their anchors assigned per node (D23), not one fixed port per
+//     side: no two endpoints share an anchor while a clear one is free, which
+//     is what puts a decision's branches on distinct vertices and keeps an
+//     in-edge and an out-edge from being drawn on top of each other. It moves
+//     no node and reads no label — it is still the spike's dumb router.
 //
 // Determinism (D5, D21): fixed element order, fixed attribute order, fixed
 // precision, literal theme tokens, no generated ids beyond the two arrow
@@ -26,7 +31,7 @@
 import { MARGIN, boxOf } from "../geometry.js";
 import type { Box, Position } from "../geometry.js";
 import { isPosition } from "../layout/store.js";
-import type { Edge, Graph, Node } from "../types.js";
+import type { Edge, Graph, Node, NodeKind } from "../types.js";
 import { type Theme, fillOf, resolveTheme } from "./theme.js";
 
 export type RenderOptions = {
@@ -65,7 +70,6 @@ export class RenderError extends Error {
 export type SvgMeta = { originX: number; originY: number; width: number; height: number };
 
 type Pt = { x: number; y: number };
-type Side = "top" | "bottom" | "left" | "right";
 /** An axis-aligned box in store coordinates, in the `Box` spelling. */
 type Rect = { x: number; y: number; w: number; h: number };
 
@@ -169,41 +173,190 @@ const resolve = (opts: RenderOptions): Resolved => {
   return { theme, margin };
 };
 
-const port = (b: Box, side: Side): Pt => {
-  switch (side) {
-    case "top":
-      return { x: b.cx, y: b.y };
-    case "bottom":
-      return { x: b.cx, y: b.y + b.h };
-    case "left":
-      return { x: b.x, y: b.cy };
-    default:
-      return { x: b.x + b.w, y: b.cy };
-  }
+/**
+ * Edge anchors (D23), clockwise from the top. An anchor is a side midpoint,
+ * which on a decision node *is* one of its four vertices — so the flowchart
+ * convention (one entry on the top vertex, exits on distinct vertices) falls
+ * out of the one-endpoint-per-anchor rule rather than being special-cased.
+ */
+const SIDES = ["top", "right", "bottom", "left"] as const;
+type Side = (typeof SIDES)[number];
+/** How many endpoints have claimed each side of one node. */
+type Fill = Record<Side, number>;
+const upright = (side: Side): boolean => side === "top" || side === "bottom";
+
+/**
+ * The anchor point: `f` of the way along `side` — left to right on the
+ * horizontal sides, top to bottom on the vertical ones. `f` is 0.5, the side
+ * midpoint, for every endpoint that has its side to itself; only a fanned side
+ * (D23) uses anything else. A diamond's outline is its four vertices, so a
+ * fanned anchor there slides along the slanted edge rather than hanging in the
+ * empty corner beside it; the other four shapes stay on their bounding box,
+ * which is never more than a few px off the outline they draw.
+ */
+const port = (b: Box, kind: NodeKind, side: Side, f: number): Pt => {
+  const x = side === "left" ? b.x : side === "right" ? b.x + b.w : b.x + b.w * f;
+  const y = side === "top" ? b.y : side === "bottom" ? b.y + b.h : b.y + b.h * f;
+  if (kind !== "decision") return { x, y };
+  return upright(side)
+    ? { x, y: b.cy + (y - b.cy) * (1 - Math.abs(x - b.cx) / (b.w / 2)) }
+    : { x: b.cx + (x - b.cx) * (1 - Math.abs(y - b.cy) / (b.h / 2)), y };
 };
 
 /**
- * The spike's dogleg router, ported verbatim. Mostly-vertical edges leave the
- * bottom and enter the top with a mid-y elbow; mostly-horizontal or backward
- * edges leave a side. It is deliberately dumb and knows nothing about
- * obstacles: a real orthogonal routing pass is deferred (see
- * docs/decisions.md, "Deliberately deferred") and is not smuggled in here.
+ * How one endpoint sees its counterpart at `(ox, oy)`, per side.
+ *
+ * `score` is how directly the side faces it: the dot product of the side's
+ * outward normal with the direction to the counterpart, scaled per axis by the
+ * node's own extents. A 120x56 box is far wider than it is tall, so under that
+ * scaling a counterpart has to be well off to the side before a side anchor
+ * beats the top or bottom one — which is what keeps a top-down chart flowing
+ * down. A decision is the documented exception (D23): its scores are unscaled,
+ * so a branch heading sideways at all leaves through the left or right vertex,
+ * which is the anatomy a reader expects of a diamond.
+ *
+ * `clear` is the stricter question of whether the counterpart is past that
+ * side's plane at all. Only a clear side can be *approached* from outside: the
+ * dumb router would otherwise reach a left anchor by crossing the box from the
+ * inside and strand the arrowhead pointing back out of it.
  */
-const routeEdge = (a: Box, b: Box): Pt[] => {
-  const dx = b.cx - a.cx;
-  const dy = b.cy - a.cy;
-  if (Math.abs(dy) > 60 && b.y > a.y + a.h - 10) {
-    const s = port(a, "bottom");
-    const t = port(b, "top");
-    if (Math.abs(dx) < 6) return [s, t];
+type Aim = { score: Fill; clear: Record<Side, boolean> };
+const aim = (kind: NodeKind, b: Box, ox: number, oy: number): Aim => {
+  const wx = kind === "decision" ? 1 : b.h;
+  const wy = kind === "decision" ? 1 : b.w;
+  const dx = ox - b.cx;
+  const dy = oy - b.cy;
+  return {
+    score: { top: -dy * wy, right: dx * wx, bottom: dy * wy, left: -dx * wx },
+    clear: { top: oy < b.y, right: ox > b.x + b.w, bottom: oy > b.y + b.h, left: ox < b.x },
+  };
+};
+
+/** One endpoint's anchor: which side, and how many claimed that side first. */
+/**
+ * The best-facing anchor that is both clear and still free — or, when every
+ * clear anchor is taken, a share of the best-facing one, which is the fan D23
+ * describes. Scanning `SIDES` in order with a strict `>` is what makes an exact
+ * tie go clockwise from the top, and it is an ordered walk over a fixed list
+ * rather than an iteration over a map (D21).
+ */
+const claim = (used: Fill, { score, clear }: Aim): Side => {
+  let best: Side = "top";
+  let free: Side | null = null;
+  for (const side of SIDES) {
+    if (score[side] > score[best]) best = side;
+    if (clear[side] && used[side] === 0 && (free === null || score[side] > score[free])) {
+      free = side;
+    }
+  }
+  const side = free ?? best;
+  used[side] += 1;
+  return side;
+};
+
+/** How many of this node's sides the endpoint's counterpart can be reached from. */
+const options = ({ clear }: Aim): number => SIDES.filter((side) => clear[side]).length;
+
+/**
+ * The spike's dogleg router, connecting two assigned anchors (D23) instead of
+ * one fixed port per side. Two anchors on the same axis keep the spike's shapes
+ * exactly — a mid-y elbow between two vertical anchors, a mid-x elbow between
+ * two horizontal ones, a straight line when they are within 6px of aligned; a
+ * pair on different axes is a single corner, which is what lets an edge leave a
+ * diamond's left vertex and drop into the top of the box below it.
+ *
+ * It is still deliberately dumb and knows nothing about obstacles: a real
+ * orthogonal routing pass is deferred (see docs/decisions.md, "Deliberately
+ * deferred") and is not smuggled in here.
+ */
+const dogleg = (s: Pt, sSide: Side, t: Pt, tSide: Side): Pt[] => {
+  if (upright(sSide) && upright(tSide)) {
+    if (Math.abs(t.x - s.x) < 6) return [s, t];
     const my = (s.y + t.y) / 2;
     return [s, { x: s.x, y: my }, { x: t.x, y: my }, t];
   }
-  const s = port(a, dx >= 0 ? "right" : "left");
-  const t = port(b, dx >= 0 ? "left" : "right");
-  if (Math.abs(dy) < 6) return [s, t];
-  const mx = (s.x + t.x) / 2;
-  return [s, { x: mx, y: s.y }, { x: mx, y: t.y }, t];
+  if (!upright(sSide) && !upright(tSide)) {
+    if (Math.abs(t.y - s.y) < 6) return [s, t];
+    const mx = (s.x + t.x) / 2;
+    return [s, { x: mx, y: s.y }, { x: mx, y: t.y }, t];
+  }
+  const corner = upright(sSide) ? { x: s.x, y: t.y } : { x: t.x, y: s.y };
+  const flat = (corner.x === s.x && corner.y === s.y) || (corner.x === t.x && corner.y === t.y);
+  return flat ? [s, t] : [s, corner, t];
+};
+
+/** One end of one edge, at the node it attaches to. Filled in by `routeAll`. */
+type End = { kind: NodeKind; b: Box; aim: Aim; side: Side; f: number };
+
+/**
+ * Every edge's polyline, in document order — `null` for an edge whose endpoints
+ * are not both positioned, which only `svgMeta` ever sees, because `toSvg` has
+ * thrown by then.
+ *
+ * The anchors are assigned here rather than per edge, because the assignment is
+ * a property of the whole graph: that is the difference between a decision's two
+ * branches leaving distinct vertices and both leaving the bottom one (D23). Each
+ * node resolves its own endpoints, and in three passes, because each needs the
+ * one before it — collect the endpoints, claim a side for each, then space out
+ * whatever ended up sharing one.
+ */
+const routeAll = (graph: Graph, box: Map<string, Box>): (Pt[] | null)[] => {
+  const nodes = new Map(graph.nodes.map((n) => [n.id, n]));
+
+  // 1. Both ends of every edge, source first, in declaration order — and, per
+  //    node, the indices of the ends attached to it, in that same order.
+  const ends: (End | null)[] = [];
+  const attached = new Map<string, number[]>();
+  const add = (id: string, end: End): void => {
+    const list = attached.get(id);
+    if (list) list.push(ends.length);
+    else attached.set(id, [ends.length]);
+    ends.push(end);
+  };
+  for (const e of graph.edges) {
+    const from = nodes.get(e.from);
+    const to = nodes.get(e.to);
+    const a = box.get(e.from);
+    const b = box.get(e.to);
+    if (!from || !to || !a || !b) {
+      ends.push(null, null);
+      continue;
+    }
+    const half = { side: "top" as Side, f: 0.5 };
+    add(e.from, { kind: from.kind, b: a, aim: aim(from.kind, a, b.cx, b.cy), ...half });
+    add(e.to, { kind: to.kind, b, aim: aim(to.kind, b, a.cx, a.cy), ...half });
+  }
+
+  for (const node of graph.nodes) {
+    const list = attached.get(node.id);
+    if (list === undefined) continue;
+    const mine = (i: number): End => ends[i] as End;
+    const used: Fill = { top: 0, right: 0, bottom: 0, left: 0 };
+
+    // 2. Claim, fewest options first (D23): an endpoint whose counterpart is
+    //    straight above has exactly one side it can be approached from, and
+    //    would otherwise lose it to a diagonal neighbour that had a second
+    //    choice — three arrows into one node, two of them stacked on its top.
+    const order = [...list].sort((i, j) => options(mine(i).aim) - options(mine(j).aim) || i - j);
+    for (const i of order) mine(i).side = claim(used, mine(i).aim);
+
+    // 3. Space out the sides that ended up shared. `n` endpoints on one side sit
+    //    at 1/(n+1) … n/(n+1) along it — the midpoint when `n` is 1 — in
+    //    declaration order, so a fan reads left to right as the text does.
+    const seen: Fill = { top: 0, right: 0, bottom: 0, left: 0 };
+    for (const i of list) {
+      const end = mine(i);
+      seen[end.side] += 1;
+      end.f = seen[end.side] / (used[end.side] + 1);
+    }
+  }
+
+  const at = (end: End): Pt => port(end.b, end.kind, end.side, end.f);
+  return graph.edges.map((_, i) => {
+    const s = ends[2 * i];
+    const t = ends[2 * i + 1];
+    return s && t ? dogleg(at(s), s.side, at(t), t.side) : null;
+  });
 };
 
 /**
@@ -276,6 +429,7 @@ const painted = (
   box: Map<string, Box>,
   theme: Theme,
   hot: ReadonlySet<string>,
+  routes: readonly (Pt[] | null)[],
 ): Rect[] => {
   const out: Rect[] = [];
   for (const node of graph.nodes) {
@@ -284,12 +438,11 @@ const painted = (
     out.push(stroked(b, theme.nodeStrokeWidth));
     if (hot.has(node.id)) out.push(stroked(ringOf(b), theme.nodeStrokeWidth));
   }
-  for (const e of graph.edges) {
-    const a = box.get(e.from);
-    const b = box.get(e.to);
-    if (!a || !b || e.label === undefined || e.label === "") continue;
-    out.push(chipOf(e.label, labelPos(routeEdge(a, b)), theme));
-  }
+  graph.edges.forEach((e, i) => {
+    const pts = routes[i];
+    if (!pts || e.label === undefined || e.label === "") return;
+    out.push(chipOf(e.label, labelPos(pts), theme));
+  });
   return out;
 };
 
@@ -346,7 +499,8 @@ export const svgMeta = (
   const { theme, margin } = resolve(opts);
   const box = boxes(graph, positions, false);
   const hot = new Set(opts.highlight ?? []);
-  return metaOf(painted(graph, box, theme, hot), [...box.values()], margin);
+  const routes = routeAll(graph, box);
+  return metaOf(painted(graph, box, theme, hot, routes), [...box.values()], margin);
 };
 
 const shape = (node: Node, b: Box, theme: Theme): string => {
@@ -444,7 +598,8 @@ export const toSvg = (
   const { theme, margin } = resolve(opts);
   const box = boxes(graph, positions, true);
   const hot = new Set(opts.highlight ?? []);
-  const meta = metaOf(painted(graph, box, theme, hot), [...box.values()], margin);
+  const routes = routeAll(graph, box);
+  const meta = metaOf(painted(graph, box, theme, hot, routes), [...box.values()], margin);
 
   const parts: string[] = [];
   if (opts.title !== undefined) parts.push(el("title", {}, esc(opts.title)));
@@ -454,11 +609,9 @@ export const toSvg = (
   if (opts.debugGrid) parts.push(el("rect", { ...sheet, fill: `url(#${GRID_ID})` }));
 
   // Edges first, so a node's fill covers the stub of anything routed into it.
-  for (const e of graph.edges) {
-    const a = box.get(e.from);
-    const b = box.get(e.to);
-    if (!a || !b) continue;
-    const pts = routeEdge(a, b);
+  for (const [i, e] of graph.edges.entries()) {
+    const pts = routes[i];
+    if (!pts) continue;
     for (const p of pts) finite(`the route for edge "${edgeKey(e)}"`, p.x, p.y);
     const d = pts.map((p, i) => `${i ? "L" : "M"}${num(p.x)},${num(p.y)}`).join(" ");
     const accent = hot.has(edgeKey(e));

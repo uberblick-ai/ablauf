@@ -140,6 +140,48 @@ last one wins, with a warning; directive-list order is otherwise not
 significant, because movable nodes are resolved in graph document order, so
 two nodes claiming the same spot settle by document order, not list order.
 
+**D23. One endpoint per anchor; a diamond's exits leave through distinct
+vertices (owner, 2026-08-26).** Every node has four anchors — the side
+midpoints, which on a decision node *are* its four vertices — and each edge
+endpoint claims one, first come first served, in the order the next paragraph
+fixes. An endpoint prefers the side that best faces its counterpart: the dot
+product of
+the side's outward normal with the direction to the counterpart, scaled per
+axis by the node's own extents, so a wide, short box keeps a top-down chart
+flowing down rather than swinging out sideways. A **decision is the exception**
+and scores unscaled, which is the flowchart convention the owner cited (one
+entry on the top vertex, up to three exits, binary outcomes on opposite sides):
+a branch whose target sits to the left leaves through the left vertex, to the
+right through the right, straight below through the bottom. Assignment is
+geometric and never label-based — sniffing `yes`/`no` was rejected, because the
+positions are the user's (D4).
+
+A side is only eligible when it is **clear** — the counterpart's centre is past
+that side's plane — because the dumb router would otherwise reach a far-side
+anchor by crossing the box from the inside and strand the arrowhead pointing
+back out of it. A node therefore resolves its own endpoints **fewest options
+first**, counting the clear sides, with declaration order breaking the tie: an
+endpoint whose counterpart is straight above has exactly one side it can be
+approached from at all, and resolving in text order alone lets a diagonal
+neighbour that had a second choice take it first — which is how three arrows
+into one node ended up two-on-the-top instead of on its left, top and right.
+The loser of a contested anchor takes the nearest free one *by facing*, with an
+exact tie going clockwise from the top; a blind clockwise scan is what the
+scenario review rejected, since it sends `reject --> audit` in the `auth`
+fixture around to the target's right side when its left one is free and facing.
+When no clear side is free, the endpoint takes a share of its
+best-facing side: `n` endpoints on one side sit at `1/(n+1) … n/(n+1)` along it
+in declaration order, which is the midpoint when `n` is 1, and on a diamond the
+fanned point slides along the slanted edge instead of hanging in the empty
+corner beside it. The other four shapes keep their bounding box, which is never
+more than a few px off the outline they draw.
+
+Determinism (D5/D21) comes from three fixed orders and nothing else: edges in
+declaration order, sides in a clockwise list, and a resolution order that is a
+count plus that declaration order. Nothing here avoids obstacles — that
+stays deferred (below), and a fallback anchor can still route across whatever
+happens to be in the way.
+
 ## Grammar and format boundaries (v1)
 
 **D12. Strict subset, loud errors.** Supported: the `flowchart`/`graph`
@@ -220,7 +262,8 @@ demo page and a written host-integration proposal, not by zero dependencies.
 - **The Tiptap and React adapters** — deferred to the host integration per
   D22. The layout-store spec documents the host
   contract they implement; the demo page proves it runs.
-- **Edge routing.** v1 keeps the spike's dogleg router. If a real
+- **Edge routing.** v1 keeps the spike's dogleg router, with the per-node
+  anchor assignment of D23 in front of it. If a real
   obstacle-avoiding pass is ever needed, the structure is draw.io's:
   layout for nodes, a separate orthogonal routing pass treating every node as
   an obstacle. Router choice carries a licence question under D15:
