@@ -89,8 +89,9 @@ is clamped to start at the origin, keeping its size and carrying its text, so
 no character is ever cut — while decoration anchored to a node's geometry
 (a highlight ring, the outer half-stroke at `margin: 0`) cannot slide without
 moving the node, so **whatever it reaches past the gutter is cropped**, and
-that is the accepted boundary: at most the 8px a ring adds outside the box,
-cosmetic, never text.
+that is the accepted boundary: at most the ring pad plus half the node stroke,
+which is 8px at the default theme and scales with `nodeStrokeWidth` — cosmetic,
+never text.
 
 **D10. No runtime intelligence in the library (owner, 2026-08-25).** v1 is
 contracts plus enablement: formats, safety code, rendering, and the
