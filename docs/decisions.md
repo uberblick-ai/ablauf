@@ -273,6 +273,58 @@ so the routes do; spacing the detours as well needs a per-loop depth and is not
 worth the rule. Determinism (D5/D21) is two constants and the anchors D23
 already fixed: no search, no measurement, no approximated math.
 
+**D26. One corridor per edge, in the target's fan order (owner, 2026-08-26).**
+D23 makes the *attachment points* distinct; the corridor between them was still
+chosen blind, at the midpoint of the gap, so two edges could be drawn one on top
+of the other however far apart their anchors were. In the `deploy` fixture
+`Report failure --> Notify author` and `Block release --> Notify author` leave
+two boxes that are centred on the same x, so both doglegs ran down that one line
+— 94.5px of it drawn twice — before splitting to their two fanned anchors, and a
+trunk that forks reads as half a merge, which is exactly the merge rendering D23
+was chosen against. Documenting the shared trunk as deliberate was rejected for
+that reason.
+
+So a **forward** edge's elbow sits at the target end's own fan fraction `f` of
+the gap between the two anchors — `s + (t - s) · f`, on y for an upright pair
+and on x for the mirrored one — instead of at its midpoint. `f` is D23's ladder
+and nothing new: `1/(n+1) … n/(n+1)` for the `n` endpoints sharing a side, and
+exactly `0.5` for every endpoint that has its side to itself. What that
+guarantees is therefore small and exact: an **unfanned** edge keeps the midpoint
+corridor the spike drew, so nothing outside a fan moves at all; and the edges
+into **one fanned side** get nested corridors at that side's own fractions, in
+declaration order, so they no longer share a run where they used to. `f` is
+strictly between 0 and 1, so the elbow is strictly between the two anchors and
+cannot leave the gap — the bound is the rule's own arithmetic, not a clamp.
+
+It is a **heuristic, accepted as one** (owner, 2026-08-26): correct it when real
+charts demand it, not before. Two limits are known and accepted. Stacked sources
+into one target hold only while **declaration order matches vertical order** —
+the corridors are laid out in the order the edges are written, so declaring the
+lower source first hands it the shorter corridor and the two runs overlap again.
+And **fan-out** is not separated at all: one fanned source into two targets
+stacked in the same column still runs one corridor over the other, because the
+fraction comes from the target's side and those are two different sides. Both
+are the same missing input — the rule reads one edge's own two anchors and never
+another edge — and both are for the obstacle-avoiding pass below, or for a later
+correction against a real chart.
+
+What it deliberately does not do: it moves no node (D6), re-chooses no anchor
+(D23), and does not touch a **backward** edge, whose corridor is D24's — moving
+that elbow would change which backward edges the gutter is asked about, and
+that question is answered against the boxes rather than against the other
+edges. It is not obstacle avoidance either: the corridors are separated from
+each other, not from the boxes. The `deploy` edge above still crosses `Block
+release` on its way down — it did before, at x=1030 through the middle of it —
+and now turns its corner inside that box rather than below it, which is the
+accepted price: an elbow cannot be kept out of a box by a rule that never looks
+at one, and a chart reads worse with two edges drawn as one than with one edge
+crossing a box it was already crossing. The retrace detector over both goldens
+and all eight scenarios of the legibility ladder (`test/render.test.ts`) is a
+**corpus pin, not a proof**: it fails the day one of those charts starts
+drawing two edges as one, and it says nothing about the layouts above.
+Determinism (D5/D21) is one multiply-add on a fraction D23 already fixed: no
+search, no measurement, no approximated math.
+
 ## Grammar and format boundaries (v1)
 
 **D12. Strict subset, loud errors.** Supported: the `flowchart`/`graph`
@@ -355,10 +407,11 @@ demo page and a written host-integration proposal, not by zero dependencies.
   contract they implement; the demo page proves it runs.
 - **Edge routing.** v1 keeps the spike's dogleg router, with the per-node
   anchor assignment of D23 in front of it, the backward-edge gutter of D24
-  behind it, and the self-loop of D25 beside it. What those do not add up to
+  behind it, the self-loop of D25 beside it, and the per-edge corridor offset
+  of D26 inside it. What those do not add up to
   is a router: a **forward** edge
-  still runs wherever the midpoint corridor puts it, obstacles included (that
-  is where the shared mid-y corridor between two forward edges lives); a
+  still runs wherever its corridor puts it, obstacles included — D26 separates
+  the corridors from each other, never from the boxes; a
   backward edge gets exactly one alternative corridor and keeps its dogleg when
   that one is blocked too, so an edge boxed in on both sides still draws through
   a box; and nothing anywhere searches, backtracks, or bends an edge more than

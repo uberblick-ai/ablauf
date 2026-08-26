@@ -26,6 +26,10 @@
 //   * A backward edge whose dogleg would cross a box takes a gutter instead
 //     (D24): one corridor-choice rule for one edge class, not the deferred
 //     obstacle-avoiding routing pass.
+//   * Each edge gets its own corridor (D26): a forward dogleg's elbow sits at
+//     the target anchor's fan fraction of the gap rather than at its midpoint,
+//     so two edges into one node are no more drawn on top of each other than
+//     their anchors are.
 //   * A self-loop is drawn as a loop outside its node (D25), not as a dogleg
 //     between two anchors of the same box — which is a line along, or through,
 //     the box itself, with the arrowhead buried in its own border.
@@ -315,24 +319,33 @@ const options = ({ clear }: Aim): number => SIDES.filter((side) => clear[side]).
 /**
  * The spike's dogleg router, connecting two assigned anchors (D23) instead of
  * one fixed port per side. Two anchors on the same axis keep the spike's shapes
- * exactly — a mid-y elbow between two vertical anchors, a mid-x elbow between
- * two horizontal ones, a straight line when they are within 6px of aligned; a
+ * exactly — an elbow between two vertical anchors, a mirrored one between two
+ * horizontal ones, a straight line when they are within 6px of aligned; a
  * pair on different axes is a single corner, which is what lets an edge leave a
  * diamond's left vertex and drop into the top of the box below it.
+ *
+ * `f` is the **target** end's fan fraction (D23), and it is where the elbow
+ * sits in the gap between the two anchors (D26): the midpoint at `0.5`, which
+ * every unfanned edge has, and the same `1/(n+1) … n/(n+1)` ladder that spaces
+ * `n` anchors along one side when it is shared. Two edges into one node
+ * therefore get two corridors as well as two anchors, which is what keeps the
+ * runs of two stacked same-column sources from being drawn one on top of the
+ * other. `f` is strictly between 0 and 1, so the elbow is strictly between the
+ * two anchors and can never leave the gap.
  *
  * It is still deliberately dumb and knows nothing about obstacles: a real
  * orthogonal routing pass is deferred (see docs/decisions.md, "Deliberately
  * deferred") and is not smuggled in here.
  */
-const dogleg = (s: Pt, sSide: Side, t: Pt, tSide: Side): Pt[] => {
+const dogleg = (s: Pt, sSide: Side, t: Pt, tSide: Side, f: number): Pt[] => {
   if (upright(sSide) && upright(tSide)) {
     if (Math.abs(t.x - s.x) < 6) return [s, t];
-    const my = (s.y + t.y) / 2;
+    const my = s.y + (t.y - s.y) * f;
     return [s, { x: s.x, y: my }, { x: t.x, y: my }, t];
   }
   if (!upright(sSide) && !upright(tSide)) {
     if (Math.abs(t.y - s.y) < 6) return [s, t];
-    const mx = (s.x + t.x) / 2;
+    const mx = s.x + (t.x - s.x) * f;
     return [s, { x: mx, y: s.y }, { x: mx, y: t.y }, t];
   }
   const corner = upright(sSide) ? { x: s.x, y: t.y } : { x: t.x, y: s.y };
@@ -557,8 +570,13 @@ const routeAll = (graph: Graph, box: Map<string, Box>): (Pt[] | null)[] => {
     // A self-loop is neither forward nor backward — it has no corridor to
     // clear and no midpoint to park one at — so it never asks D24's question.
     if (e.from === e.to) return selfLoop(at(s), s.side, at(t), t.side);
-    const plain = dogleg(at(s), s.side, at(t), t.side);
-    if (t.b.cy >= s.b.cy || !blocked(plain, obstacles)) return plain;
+    // The corridor offset is a *forward* edge's rule (D26). A backward edge
+    // keeps the midpoint, because its corridor is D24's: moving the elbow would
+    // change which backward edges the gutter is asked about, and that question
+    // is answered against the boxes, not against the other edges.
+    const forward = t.b.cy >= s.b.cy;
+    const plain = dogleg(at(s), s.side, at(t), t.side, forward ? t.f : 0.5);
+    if (forward || !blocked(plain, obstacles)) return plain;
     const around = gutterRoute(at(s), s.side, at(t), t.side, obstacles);
     return around && !blocked(around, obstacles) ? around : plain;
   });
