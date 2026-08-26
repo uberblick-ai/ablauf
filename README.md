@@ -125,7 +125,7 @@ nothing about any consuming product: no sync, no CRDTs, no storage.
 
 ```
 mise run demo        # build + serve the drag demo (drag a node; everything else stays put)
-mise run acceptance  # the end-to-end gate + a gallery of the twelve spike scenarios
+mise run acceptance  # the end-to-end gate + a gallery: the legibility ladder, then the twelve spike scenarios
 ```
 
 ## Status

@@ -1,0 +1,6 @@
+flowchart TD
+  a([Start]) --> d{OK?}
+  d -->|yes| b1[Do thing]
+  d -->|no| b2[Fix it]
+  b1 --> e([End])
+  b2 --> e

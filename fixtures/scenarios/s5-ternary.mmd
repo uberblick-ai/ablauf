@@ -1,0 +1,8 @@
+flowchart TD
+  in([Alert fires]) --> sev{Severity?}
+  sev -->|low| log[Log it]
+  sev -->|medium| ticket[Open ticket]
+  sev -->|high| page[Page on-call]
+  log --> done([Done])
+  ticket --> done
+  page --> done

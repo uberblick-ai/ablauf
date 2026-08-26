@@ -1,5 +1,6 @@
-// The gallery: one HTML page showing what the shipped pipeline does to the
-// twelve spike scenarios, plus a cold-start column per fixture. It is the
+// The gallery: one HTML page showing the eight-chart legibility ladder
+// (`fixtures/scenarios/`), then what the shipped pipeline does to the twelve
+// spike scenarios, plus a cold-start column per fixture. It is the
 // owner's review surface and never a CI gate — CI compares the manifest
 // hashes; nothing here decides whether a build passes.
 //
@@ -44,6 +45,7 @@ td:first-child { border-left: 0; padding-left: 0; }
 .sub { color: #8896ad; font-weight: 400; }
 .frame { border: 1px solid #e2e7f0; border-radius: 6px; background: #fff; padding: 6px; }
 .frame svg { display: block; width: 100%; height: auto; }
+.frame pre { margin: 0; font-size: 12px; white-space: pre-wrap; color: #33405a; }
 .m { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11px; color: #5a6580; margin-top: 6px; }
 .good { color: #147a3d; font-weight: 600; }
 .warn { color: #a15c00; font-weight: 600; }
@@ -119,6 +121,38 @@ export const galleryHtml = () => {
   const sections = [];
   const toc = [];
 
+  // The legibility scenario ladder: eight fixed charts, each rendered from its
+  // committed positions with no snap pass and no directives, ordered by
+  // structural complexity. First on the page because this is the block a
+  // renderer change is judged against — the source text sits above every
+  // picture so the eye can check the drawing against what was asked for.
+  for (const s of readJson("fixtures/scenarios/scenarios.json").scenarios) {
+    const text = read(`fixtures/scenarios/${s.id}.mmd`);
+    const graph = parse(text);
+    toc.push(s.id);
+    sections.push(
+      section(
+        s.id,
+        s.id,
+        s.title,
+        s.note ?? "",
+        "",
+        cell(
+          "source",
+          `fixtures/scenarios/${s.id}.mmd`,
+          `<pre>${escapeHtml(text.trim())}</pre>`,
+          `<span>${graph.nodes.length} nodes, ${graph.edges.length} edges</span>`,
+        ) +
+          cell(
+            "rendered",
+            "committed positions, no directives",
+            toSvg(graph, s.positions, { title: s.title }),
+            "<span>no snap pass, no directives</span>",
+          ),
+      ),
+    );
+  }
+
   // Cold start: the same graph with an empty store, every position from the
   // fallback rule. Beside the hand-arranged layout, because the question the
   // owner is answering by looking is "how far off is a chart with no hand
@@ -182,9 +216,11 @@ export const galleryHtml = () => {
 <style>${CSS}</style></head><body>
 <h1>ablauf — what the pipeline does to a hand-arranged chart</h1>
 <p class="lede">Written by <code>mise run acceptance</code>, from the committed <code>.mmd</code> fixtures and the
-spike's twelve mutations. Every row is <b>before</b> (the layout the user last saw) and <b>after</b>
-(the same text mutated, run through parse → snap → render with <b>no</b> directives at all). The first two rows
-are cold starts: the same graphs with an empty layout store, so every position comes from the fallback rule.
+spike's twelve mutations. It opens with the <b>legibility ladder</b> (<code>s1…s8</code>): eight fixed charts of
+growing structural complexity, each drawn straight from its committed positions with no snap pass and no
+directives, and the block a renderer change is judged against. Then two <b>cold starts</b>: the fixtures with an
+empty layout store, so every position comes from the fallback rule. The rest is <b>before</b> (the layout the user
+last saw) and <b>after</b> (the same text mutated, run through parse → snap → render with <b>no</b> directives at all).
 Every SVG is inlined, so this file opens from <code>file://</code> on its own. This page is a review surface,
 not a gate — nothing in CI diffs it.</p>
 <div class="toc">${toc.map((id) => `<a href="#${escapeHtml(id)}">${escapeHtml(id)}</a>`).join("")}</div>

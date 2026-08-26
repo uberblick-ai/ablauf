@@ -1,0 +1,5 @@
+flowchart TD
+  start([Request arrives]) --> rate{Rate limited?}
+  rate -->|yes| queue[Queue request]
+  rate -->|no| allow[Open room]
+  queue --> start

@@ -1,0 +1,5 @@
+flowchart TD
+  a[Build fails] --> notify[Notify author]
+  b[Scan fails] --> notify
+  c[Deploy fails] --> notify
+  notify --> done([Done])

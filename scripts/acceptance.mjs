@@ -2,8 +2,9 @@
 // to the rendered bytes, with the safety properties asserted on the *rendered*
 // result rather than only in unit tests (D5/D8/D17/D18).
 //
-// One run: parse the `.mmd` fixtures (no JSON shortcut — this is the
-// fresh-clone path), load the committed positions as a layout store, apply the
+// One run: parse the `.mmd` fixtures and the legibility scenario ladder (no
+// JSON shortcut — this is the fresh-clone path), load the committed positions
+// as a layout store, apply the
 // committed directive sets from `fixtures/acceptance/directives.json` (hostile
 // one included), render every result to SVG, write it all to `out/acceptance/`
 // with a `manifest.json` of sha256 hashes, and compare that against the last
@@ -149,6 +150,20 @@ for (const name of FIXTURES) {
   const routed = backwardThroughBox(graph, store.snapshot(), svg);
   check(routed.length === 0, `${name}: no backward edge routed through a box (D24)`, routed.join(", "));
   base.set(name, { graph, store, svg });
+}
+
+// The legibility scenario ladder (`fixtures/scenarios/`): eight fixed charts of
+// growing structural complexity, down the same parse → store → render → hash
+// path as the two fixtures above and with no directives — they are charts, not
+// snap sets. The one thing they skip is the golden comparison: the ladder
+// exists to be *looked at* in the gallery when routing changes (D20), and the
+// double run's manifest already pins it against silent drift.
+for (const s of readJson("fixtures/scenarios/scenarios.json").scenarios) {
+  const graph = parse(read(`fixtures/scenarios/${s.id}.mmd`));
+  const store = jsonStore({ version: 1, nodes: s.positions });
+  const svg = emit(`${s.id}.svg`, toSvg(graph, store.snapshot(), { title: s.title }));
+  const routed = backwardThroughBox(graph, store.snapshot(), svg);
+  check(routed.length === 0, `${s.id}: no backward edge routed through a box (D24)`, routed.join(", "));
 }
 
 // 3 + 4. The committed directive sets, hostile one included.
