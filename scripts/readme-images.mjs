@@ -148,6 +148,11 @@ const trunk = (graph, at, ei, ej, [a, b], [c, d]) => {
 /** Every defect in one rendered frame, named so the failure says which edge. */
 const defects = (graph, at, svg) => {
   const lines = polylines(svg);
+  // An edge whose polyline never came back cannot be checked, and a check that
+  // reads nothing passes: one path spelling this reader stops recognising, and
+  // every frame is clean forever. So the count is the first assertion.
+  if (lines.length !== graph.edges.length)
+    return [`read ${lines.length} edge path(s) out of the SVG, but the graph has ${graph.edges.length}`];
   const segments = (i) => (lines[i] ?? []).slice(1).map((p, k) => [lines[i][k], p]);
   const bad = [];
   graph.edges.forEach((e, i) => {
