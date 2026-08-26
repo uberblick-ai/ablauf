@@ -140,6 +140,37 @@ const crossings = (line: Pt[], text: string, at: Record<string, [number, number]
   return hits;
 };
 
+/**
+ * Which pairs of distinct edges are drawn one on top of the other: two
+ * axis-aligned segments on the same line sharing more than a single point
+ * (D23/D26). Crossing at a point is fine and unavoidable; sharing a run is the
+ * defect — a doubled line the reader cannot take apart, and an arrowhead
+ * stranded in the middle of somebody else's edge.
+ */
+const retraced = (graph: Graph, svg: string): string[] => {
+  const lines = polylines(svg);
+  const segments = (pts: Pt[]): [Pt, Pt][] =>
+    pts.slice(1).map((p, i) => [pts[i] as Pt, p] as [Pt, Pt]);
+  const spans = (a: number, b: number, c: number, d: number): boolean =>
+    Math.min(a, b) < Math.max(c, d) && Math.min(c, d) < Math.max(a, b);
+  const retraces = ([a, b]: [Pt, Pt], [c, d]: [Pt, Pt]): boolean =>
+    (a[0] === b[0] && c[0] === d[0] && a[0] === c[0] && spans(a[1], b[1], c[1], d[1])) ||
+    (a[1] === b[1] && c[1] === d[1] && a[1] === c[1] && spans(a[0], b[0], c[0], d[0]));
+
+  const doubled: string[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    for (let j = i + 1; j < lines.length; j++) {
+      for (const p of segments(lines[i] ?? [])) {
+        for (const q of segments(lines[j] ?? [])) {
+          const [ei, ej] = [graph.edges[i], graph.edges[j]];
+          if (retraces(p, q)) doubled.push(`${ei?.from}->${ei?.to} × ${ej?.from}->${ej?.to}`);
+        }
+      }
+    }
+  }
+  return doubled;
+};
+
 // ---------------------------------------------------------------------------
 // the goldens
 // ---------------------------------------------------------------------------
@@ -359,38 +390,16 @@ describe("D23: one endpoint per anchor", () => {
   rate -->|yes| queue[Queue request]
   rate -->|no| allow[Open room]
   queue --> start`);
-    const lines = polylines(
-      toSvg(graph, {
-        start: { x: 320, y: 60 },
-        rate: { x: 320, y: 190 },
-        queue: { x: 620, y: 190 },
-        allow: { x: 320, y: 330 },
-      }),
-    );
-    const segments = (pts: Pt[]): [Pt, Pt][] =>
-      pts.slice(1).map((p, i) => [pts[i] as Pt, p] as [Pt, Pt]);
-    /** Two axis-aligned segments on one line, sharing more than a single point. */
-    const spans = (a: number, b: number, c: number, d: number): boolean =>
-      Math.min(a, b) < Math.max(c, d) && Math.min(c, d) < Math.max(a, b);
-    const retraces = ([a, b]: [Pt, Pt], [c, d]: [Pt, Pt]): boolean =>
-      (a[0] === b[0] && c[0] === d[0] && a[0] === c[0] && spans(a[1], b[1], c[1], d[1])) ||
-      (a[1] === b[1] && c[1] === d[1] && a[1] === c[1] && spans(a[0], b[0], c[0], d[0]));
-
-    const doubled: string[] = [];
-    for (let i = 0; i < lines.length; i++) {
-      for (let j = i + 1; j < lines.length; j++) {
-        for (const p of segments(lines[i] ?? [])) {
-          for (const q of segments(lines[j] ?? [])) {
-            const [ei, ej] = [graph.edges[i], graph.edges[j]];
-            if (retraces(p, q)) doubled.push(`${ei?.from}->${ei?.to} × ${ej?.from}->${ej?.to}`);
-          }
-        }
-      }
-    }
-    expect(doubled).toEqual([]);
+    const svg = toSvg(graph, {
+      start: { x: 320, y: 60 },
+      rate: { x: 320, y: 190 },
+      queue: { x: 620, y: 190 },
+      allow: { x: 320, y: 330 },
+    });
+    expect(retraced(graph, svg)).toEqual([]);
     // And the loop back really leaves upward and enters the far side, rather
     // than reversing back down the edge it came in on.
-    expect(lines[3]).toEqual([
+    expect(polylines(svg)[3]).toEqual([
       [620, 162],
       [620, 60],
       [401, 60],
@@ -601,6 +610,66 @@ describe("D25: a self-loop loops outside its node", () => {
       [220, 72],
     ]);
     expect(crossings(first, two, S8_AT).concat(crossings(second, two, S8_AT))).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// D26 — one corridor per edge
+// ---------------------------------------------------------------------------
+
+describe("D26: distinct edges share no segment", () => {
+  it.each(FIXTURES)("%s: no two edges are drawn on top of each other", (name) => {
+    const { graph, positions } = fixture(name);
+    expect(retraced(graph, toSvg(graph, positions, { title: titleOf(name) }))).toEqual([]);
+  });
+
+  // The whole legibility ladder, straight off disk — the same eight charts the
+  // acceptance gallery is looked at in, so the property is pinned where routing
+  // changes are reviewed. S5 and S7 are the merges: their edges have to share
+  // neither an anchor (D23) nor a corridor (D26).
+  const scenarios = (
+    JSON.parse(readFileSync(new URL("fixtures/scenarios/scenarios.json", ROOT), "utf8")) as {
+      scenarios: { id: string; title: string; positions: Record<string, Position> }[];
+    }
+  ).scenarios;
+
+  it.each(scenarios.map((s) => [s.id, s] as const))("%s: no two edges share a run", (id, s) => {
+    const graph = parse(readFileSync(new URL(`fixtures/scenarios/${id}.mmd`, ROOT), "utf8"));
+    expect(retraced(graph, toSvg(graph, s.positions, { title: s.title }))).toEqual([]);
+  });
+
+  it("gives the deploy fixture's two merge edges two corridors", () => {
+    // The defect this rule exists for: `fail` (bottom anchor at y=313) and
+    // `block` (at y=633) are both centred on x=1030, so both doglegs ran down
+    // that one line — 94.5px of it drawn twice — before splitting to `notify`'s
+    // two fanned top anchors. The elbows now sit at the anchors' own fan
+    // fractions of the gap, 1/3 and 2/3, so the first turns off well above the
+    // second starts.
+    const { graph, positions } = fixture("deploy");
+    const lines = polylines(toSvg(graph, positions, { title: titleOf("deploy") }));
+    expect(lines[5]).toEqual([
+      [1030, 313],
+      [1030, 589.3], // 313 + (1142 - 313) / 3
+      [1005.8, 589.3],
+      [1005.8, 1142],
+    ]);
+    expect(lines[10]).toEqual([
+      [1030, 633],
+      [1030, 972.3], // 633 + (1142 - 633) * 2 / 3
+      [1054.2, 972.3],
+      [1054.2, 1142],
+    ]);
+  });
+
+  it("leaves an unfanned edge on the midpoint the spike drew", () => {
+    // `f` is 0.5 for every endpoint that has its side to itself, so the elbow
+    // is the midpoint and nothing outside a fan moves at all.
+    expect(routes("flowchart TD\n  a[A] --> b[B]", { a: [100, 100], b: [400, 300] })[0]).toEqual([
+      [100, 128],
+      [100, 200],
+      [400, 200],
+      [400, 272],
+    ]);
   });
 });
 
