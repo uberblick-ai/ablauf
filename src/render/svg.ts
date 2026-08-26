@@ -29,8 +29,9 @@
 //     into one line instead of fanning onto the diamond's sloped boundary —
 //     which leaves the other three vertices to the exits.
 //   * An edge whose dogleg would cross a box takes a gutter instead (D24),
-//     backward and forward alike: one alternative corridor, taken only when it
-//     is itself clear, not the deferred obstacle-avoiding routing pass.
+//     backward and forward alike — a forward one only where the box stands in
+//     its own column: one alternative corridor, taken only when it is itself
+//     clear, not the deferred obstacle-avoiding routing pass.
 //   * Each edge gets its own corridor (D26): a forward dogleg's elbow sits at
 //     the target anchor's fan fraction of the gap rather than at its midpoint,
 //     so two edges into one node are no more drawn on top of each other than
@@ -452,12 +453,25 @@ const through = (r: Rect, a: Pt, b: Pt): boolean =>
   Math.min(a.y, b.y) < r.y + r.h &&
   Math.max(a.y, b.y) > r.y;
 
-/** Any segment of `pts` through any box: the one obstacle question asked (D24). */
-const blocked = (pts: readonly Pt[], obstacles: readonly Rect[]): boolean => {
+/**
+ * Any segment of `pts` through any box: the one obstacle question asked (D24).
+ *
+ * `uprightOnly` narrows it to the **vertical** runs, which is the question a
+ * *forward* edge asks (D24): a box standing in the edge's own column — the
+ * source's before the elbow, the target's after it — with a span that contains
+ * the run. A forward dogleg whose *horizontal* leg is the one crossing a box is
+ * a diagonal obstruction, and one vertical corridor is not the answer to it:
+ * the cost rule would happily send the edge round the far side of the chart to
+ * clear a box its own column never touched. That case is the deferred
+ * obstacle-avoiding pass, not this rule. A backward edge asks about every
+ * segment, exactly as it always has.
+ */
+const blocked = (pts: readonly Pt[], obstacles: readonly Rect[], uprightOnly = false): boolean => {
   for (let i = 0; i + 1 < pts.length; i++) {
     const a = pts[i];
     const b = pts[i + 1];
     if (!a || !b) continue;
+    if (uprightOnly && a.x !== b.x) continue;
     for (const r of obstacles) if (through(r, a, b)) return true;
   }
   return false;
@@ -690,7 +704,8 @@ const routeAll = (graph: Graph, box: Map<string, Box>): (Pt[] | null)[] => {
 
   // 6. Route. Every box, in document order (D21), is what a blocked edge's
   //    corridor has to clear (D24) — backward and forward alike, since a box
-  //    standing in a forward edge's own column is the same geometry.
+  //    standing in a forward edge's own column is the same geometry as one
+  //    standing in a backward edge's corridor.
   const obstacles: Box[] = [];
   for (const node of graph.nodes) {
     const b = box.get(node.id);
@@ -709,11 +724,15 @@ const routeAll = (graph: Graph, box: Map<string, Box>): (Pt[] | null)[] => {
     // is answered against the boxes, not against the other edges.
     const forward = t.b.cy >= s.b.cy;
     const plain = dogleg(at(s), s.side, at(t), t.side, forward ? t.f : 0.5);
-    // D24's question, asked of every blocked edge in either direction: one
-    // alternative corridor, taken only when it is itself clear, so the rule can
-    // never draw a chart worse than the dogleg already drew it. A forward edge
-    // that takes it has no D26 elbow left to place — the corridor replaces it.
-    const around = blocked(plain, obstacles)
+    // D24's question, asked in either direction: one alternative corridor,
+    // taken only when it is itself clear, so the rule can never draw a chart
+    // worse than the dogleg already drew it, and a forward edge that takes it
+    // has no D26 elbow left to place — the corridor replaces it. A *forward*
+    // edge asks only about its vertical runs: a box in its own column, which is
+    // the geometry one side corridor answers. A box across a horizontal leg is
+    // diagonal obstruction and stays the deferred pass's problem; a backward
+    // edge still asks about every segment, exactly as it always has.
+    const around = blocked(plain, obstacles, forward)
       ? gutterRoute(at(s), s.side, at(t), t.side, obstacles)
       : null;
     const leg = around && !blocked(around, obstacles) ? around : plain;

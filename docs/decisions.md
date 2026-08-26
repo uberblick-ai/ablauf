@@ -291,19 +291,28 @@ grows to hold it, because everything painted counts and edges now count too
 (D9). The gutter is taken only if it is itself clear, so the rule can never make
 a chart worse than the dogleg already drew it.
 
-It covers **both directions** (owner, 2026-08-26). It was written for backward
-edges — target centre above the source's — where the review's damage was; the
-`deploy` golden showed the same geometry pointing down, `fail --> notify` running
-from `Report failure` straight through `Block release` to `Notify author`, all
-three centred on x = 1030 with the blocking box squarely between them. That is
-one box standing in an edge's own column with a span that contains the run: the
-same question, and the same answer, so the direction test was dropped rather than
-a second rule written. The arithmetic needed nothing: the band is a `min`/`max`
-over the two turn points, so a run that goes down is the run that goes up. A
-forward edge that takes the gutter has **no D26 elbow** left to place — the
-corridor replaces it — and an inbound edge into a decision still ends at its
-junction from the side it claimed (D23), the gutter having moved only the leg
-before it.
+It covers **both directions**, asymmetrically (owner, 2026-08-26). It was
+written for backward edges — target centre above the source's — where the
+review's damage was; the `deploy` golden showed the same geometry pointing down,
+`fail --> notify` running from `Report failure` straight through `Block release`
+to `Notify author`, all three centred on x = 1030 with the blocking box squarely
+between them. That is one box standing in an edge's own column with a span that
+contains the run: the same question and the same answer, so a **forward** edge
+asks it too. The arithmetic needed nothing: the band is a `min`/`max` over the
+two turn points, so a run that goes down is the run that goes up.
+
+The asymmetry is what a forward edge asks *about*. A backward edge asks about
+every segment of its dogleg, as it always has. A forward one asks only about its
+**vertical** runs — its own column before the elbow and after it — because that
+is the geometry a single side corridor answers. A forward dogleg whose
+*horizontal* leg is the one crossing a box is diagonal obstruction, and costing
+two vertical corridors is not an answer to it: the cheaper of them sent a review
+case 320px sideways to clear a box neither of its columns touched, which is a
+worse chart drawn by a rule that was never asked the right question. That case
+keeps its dogleg and stays the deferred pass's, and a test says so. A forward
+edge that takes the gutter has **no D26 elbow** left to place — the corridor
+replaces it — and an inbound edge into a decision still ends at its junction from
+the side it claimed (D23), the gutter having moved only the leg before it.
 
 What it deliberately does not do: it moves no node (D6), it re-chooses no anchor
 (D23), and it searches nothing — one corridor is computed and either taken or
@@ -316,10 +325,12 @@ meaningful, while the boxes a forward edge can be blocked by are whatever its
 chart's columns hold. The forward half of the property is pinned instead as a
 corpus check over both goldens and all eight ladder scenarios in
 `test/render.test.ts` — no edge, in either direction, through any box — plus the
-two named cases: `fail --> notify`, and a forward edge boxed in on both sides
-that keeps the dogleg it had. It is still not obstacle avoidance: blockage that
-is not a box across the corridor — diagonal, cross-column, a second obstacle in
-the alternative corridor — is the deferred pass below.
+three named cases: `fail --> notify`, a forward edge boxed in on both sides that
+keeps the dogleg it had, and a forward edge blocked across its horizontal leg
+that keeps its dogleg because the question is never asked. It is still not
+obstacle avoidance: blockage that is not a box in the edge's own column —
+diagonal, cross-column, a second obstacle in the alternative corridor — is the
+deferred pass below.
 
 Determinism (D5/D21) is the band's two turn points, a min and a max over the
 node boxes in document order, and one comparison of two absolute differences —
@@ -511,8 +522,10 @@ demo page and a written host-integration proposal, not by zero dependencies.
   an edge gets **exactly one** alternative corridor and keeps its dogleg when
   that one is blocked too, so an edge boxed in on both sides still draws through
   a box (#21, left pinned rather than solved); the corridor is a *vertical* run
-  to one side, so the only blockage it answers is a box across the run — nothing
-  handles diagonal or cross-column obstruction, an obstacle in the alternative
+  to one side, so the only blockage it answers is a box in the edge's own column
+  — a forward edge blocked across its horizontal leg is not even asked, because
+  one vertical corridor is the wrong answer to diagonal obstruction, and nothing
+  handles that, cross-column obstruction, an obstacle in the alternative
   corridor, or the staircase two corridors would need; D26 separates corridors
   from each other and never from the boxes; a corridor is chosen by one cost
   comparison, so it can round the far side of a chart when a nearer detour with a

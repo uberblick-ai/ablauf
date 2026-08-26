@@ -716,6 +716,29 @@ describe("D24: a blocked edge clears the boxes between its ends", () => {
     ]);
   });
 
+  it("leaves a forward edge whose horizontal leg crosses a box on its dogleg", () => {
+    // Diagonal obstruction, deliberately out of scope (D24): `m` stands across
+    // the elbow's *horizontal* run, and neither column the edge runs down comes
+    // near it. One vertical corridor is not the answer to that — costing the two
+    // sides sent this edge 320px sideways, out to x=420, to clear a box its own
+    // columns never touched — so a forward edge asks D24's question only about
+    // its vertical runs. This one keeps the dogleg it had, still crossing `m`,
+    // and honestly so: it is the case the router does not handle, not one it
+    // handles badly. Routing it is the deferred obstacle-avoiding pass.
+    const text = `flowchart TD
+  a[A] --> c[C]
+  m[M]`;
+    const at: Record<string, [number, number]> = { a: [100, 100], c: [600, 400], m: [350, 250] };
+    const leg = routes(text, at)[0] as Pt[];
+    expect(leg).toEqual([
+      [100, 128],
+      [100, 250],
+      [600, 250],
+      [600, 372],
+    ]);
+    expect(crossings(leg, text, at)).toEqual(["m@seg1"]);
+  });
+
   it.each(FIXTURES)("%s: no edge runs through a box", (name) => {
     const { graph, positions } = fixture(name);
     expect(throughBoxes(graph, positions, toSvg(graph, positions, { title: titleOf(name) }))).toEqual(
