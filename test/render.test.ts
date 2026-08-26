@@ -93,6 +93,18 @@ const pair = (label?: string): Graph => ({
   edges: [{ from: "a", to: "b", style: "arrow", ...(label === undefined ? {} : { label }) }],
 });
 
+/**
+ * Every edge's polyline, in declaration order, read back out of the drawn
+ * paths: the renderer emits one `<path>` per edge, in that order, and its `d`
+ * is nothing but `M`/`L` moves (`src/render/svg.ts`). `</defs>` cuts off the
+ * arrow markers, which are paths too.
+ */
+type Pt = [number, number];
+const polylines = (svg: string): Pt[][] =>
+  [...(svg.split("</defs>")[1] ?? "").matchAll(/<path d="([^"]+)"/g)].map((m) =>
+    (m[1] ?? "").split(" ").map((p) => p.slice(1).split(",").map(Number) as Pt),
+  );
+
 // ---------------------------------------------------------------------------
 // the goldens
 // ---------------------------------------------------------------------------
@@ -167,6 +179,96 @@ it(
   },
   60_000,
 );
+
+// ---------------------------------------------------------------------------
+// D23 — one endpoint per anchor
+// ---------------------------------------------------------------------------
+
+describe("D23: no two endpoints share an anchor while a free one faces", () => {
+  // The legibility scenarios from issue #13, positions and all. Sizes come from
+  // `sizeOf`: a decision is `label*8.4 + 36 + 44` wide (min 164) and 74 tall, so
+  // `d` at (320, 180) is 164x74 — top vertex (320, 143), left (238, 180), right
+  // (402, 180) — and a 120x56 process box sits 28px above and below its centre.
+  const branch = () => ({
+    graph: parse(`flowchart TD
+  a([Start]) --> d{OK?}
+  d -->|yes| b1[Do thing]
+  d -->|no| b2[Fix it]
+  b1 --> e([End])
+  b2 --> e`),
+    positions: {
+      a: { x: 320, y: 60 },
+      d: { x: 320, y: 180 },
+      b1: { x: 180, y: 310 },
+      b2: { x: 460, y: 310 },
+      e: { x: 320, y: 440 },
+    } as Record<string, Position>,
+  });
+
+  it("routes a diamond's entry through the top vertex and its exits through two others", () => {
+    const { graph, positions } = branch();
+    const [entry, yes, no] = polylines(toSvg(graph, positions));
+    expect(entry?.at(-1)).toEqual([320, 143]);
+    expect(yes?.[0]).toEqual([238, 180]);
+    expect(no?.[0]).toEqual([402, 180]);
+  });
+
+  it("lands two arrows into one merge target on two different anchors", () => {
+    const { graph, positions } = branch();
+    const [, , , first, second] = polylines(toSvg(graph, positions));
+    // `e` is 120x56 at (320, 440): the top anchor, then the right one, because
+    // the first approach took the top and the right is the best still free.
+    expect(first?.at(-1)).toEqual([320, 412]);
+    expect(second?.at(-1)).toEqual([380, 440]);
+  });
+
+  it("draws no two edges on top of each other in the retry-loop scenario", () => {
+    // The old one-port-per-side router gave `queue --> start` the same left port
+    // `rate --> queue` had just arrived at, and 73px of the way back was drawn
+    // twice, arrowhead stranded in the middle of the other line.
+    const graph = parse(`flowchart TD
+  start([Request arrives]) --> rate{Rate limited?}
+  rate -->|yes| queue[Queue request]
+  rate -->|no| allow[Open room]
+  queue --> start`);
+    const lines = polylines(
+      toSvg(graph, {
+        start: { x: 320, y: 60 },
+        rate: { x: 320, y: 190 },
+        queue: { x: 620, y: 190 },
+        allow: { x: 320, y: 330 },
+      }),
+    );
+    const segments = (pts: Pt[]): [Pt, Pt][] =>
+      pts.slice(1).map((p, i) => [pts[i] as Pt, p] as [Pt, Pt]);
+    /** Two axis-aligned segments on one line, sharing more than a single point. */
+    const spans = (a: number, b: number, c: number, d: number): boolean =>
+      Math.min(a, b) < Math.max(c, d) && Math.min(c, d) < Math.max(a, b);
+    const retraces = ([a, b]: [Pt, Pt], [c, d]: [Pt, Pt]): boolean =>
+      (a[0] === b[0] && c[0] === d[0] && a[0] === c[0] && spans(a[1], b[1], c[1], d[1])) ||
+      (a[1] === b[1] && c[1] === d[1] && a[1] === c[1] && spans(a[0], b[0], c[0], d[0]));
+
+    const doubled: string[] = [];
+    for (let i = 0; i < lines.length; i++) {
+      for (let j = i + 1; j < lines.length; j++) {
+        for (const p of segments(lines[i] ?? [])) {
+          for (const q of segments(lines[j] ?? [])) {
+            const [ei, ej] = [graph.edges[i], graph.edges[j]];
+            if (retraces(p, q)) doubled.push(`${ei?.from}->${ei?.to} × ${ej?.from}->${ej?.to}`);
+          }
+        }
+      }
+    }
+    expect(doubled).toEqual([]);
+    // And the loop back really leaves upward and enters the far side, rather
+    // than reversing back down the edge it came in on.
+    expect(lines[3]).toEqual([
+      [620, 162],
+      [620, 60],
+      [401, 60],
+    ]);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // D9 — the canvas grows and nothing is clipped
