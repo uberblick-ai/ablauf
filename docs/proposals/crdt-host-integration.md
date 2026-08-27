@@ -139,7 +139,7 @@ undo puts the node back.
 `LayoutStore` is five members over whatever the host already has:
 
 ```ts
-import type { LayoutStore, Position } from "ablauf";
+import type { LayoutStore, Position } from "@uberblick/ablauf";
 
 export const crdtLayoutStore = (nodes: CrdtMap): LayoutStore => {
   const read = (id: string): Position | undefined => {

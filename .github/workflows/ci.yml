@@ -45,6 +45,12 @@ jobs:
       # defines, and must show every directive form (agent/README.md).
       - run: mise run agent-check
 
+      # The consumer gate: build, pack, and install what `npm publish` would
+      # upload into a throwaway project — tarball contents, published types
+      # under both resolutions, and parse → snap → render actually running
+      # with the tarball as the only dependency (D14, `docs/releasing.md`).
+      - run: mise run pack-check
+
   # The acceptance job — parse → snap → render, twice, byte-identical. The
   # second run is the gate: it compares every artifact's sha256 against the
   # manifest the first run left behind and fails on any drift, which is how the

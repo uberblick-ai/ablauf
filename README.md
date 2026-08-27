@@ -50,6 +50,29 @@ consumes. The two blocks above, rendered:
   every replica, byte for byte. There is no layout engine and no model in
   the render path.
 
+## Install
+
+```
+pnpm add @uberblick/ablauf     # or: npm install @uberblick/ablauf
+```
+
+```ts
+import { parse, snap, toSvg } from "@uberblick/ablauf";
+```
+
+ESM only, zero runtime dependencies, one export path. The package ships the
+built JavaScript and its type declarations, the agent procedure
+([`agent/`](agent/)) and the normative specs
+([`docs/spec/`](docs/spec/)) — so a host that installs it has the whole
+contract, not just the code.
+
+**Compatibility.** The public API is exactly what
+[`src/index.ts`](src/index.ts) exports; anything reachable by a deeper path is
+internal and may change in any release. This is pre-1.0, so the promise is the
+conservative one: a patch release (`0.1.0` → `0.1.1`) never breaks that
+surface, a minor release (`0.1.x` → `0.2.0`) may and will say so in its notes.
+Once 1.0 lands, breaking changes bump the major and nothing else does.
+
 ## How layout survives an edit
 
 The hard problem in this space is not drawing the chart, it is *not
