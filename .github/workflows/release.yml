@@ -24,10 +24,13 @@ on:
         type: string
 
 # One release at a time, and never cancel one in flight: a run interrupted
-# between `npm publish` and the tag is precisely the state to avoid.
+# between `npm publish` and the tag is precisely the state to avoid. `queue:
+# max` because the default, `single`, cancels the older *pending* run when a
+# third dispatch arrives — a queued release should wait its turn, not vanish.
 concurrency:
   group: release
   cancel-in-progress: false
+  queue: max
 
 permissions:
   contents: read

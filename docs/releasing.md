@@ -47,9 +47,10 @@ questions on a laptop, and prints every answer rather than the first failure:
 
 - the dispatched ref is `refs/heads/main` (checked in the workflow);
 - the input is a release version — `x.y.z`, no leading `v`, no prerelease or
-  build metadata (a prerelease goes the manual path);
-- `package.json` carries exactly that version, and declares no runtime
-  dependencies;
+  build metadata;
+- the manifest is `@uberblick/ablauf` (D14) and carries exactly that version;
+- it declares nothing installed at run time — `dependencies`,
+  `optionalDependencies` and `peerDependencies` all empty;
 - `HEAD` is the commit `origin/main` currently points at — asked again in the
   workflow immediately before the publish, since the gates take minutes and
   `main` can move under a run;
@@ -74,11 +75,12 @@ The publish itself is `npm publish --access public`, which runs `prepack` →
 
 Afterwards the workflow runs `node scripts/pack-check.mjs --registry 0.1.0`,
 which asks the same three questions of the copy npm is serving: it waits for
-the version to appear, requires the registry's own metadata to list no runtime
-dependencies, packs `@uberblick/ablauf@0.1.0` *from the registry*, checks the
-shipped paths, and installs that exact version into a throwaway consumer that
-typechecks the public API and runs parse → snap → render. Only then does the
-`tag` job push `v0.1.0` at the verified commit.
+the version to appear, requires the registry's own metadata to list no
+`dependencies`, `optionalDependencies` or `peerDependencies`, packs
+`@uberblick/ablauf@0.1.0` *from the registry*, checks the shipped paths, and
+installs that exact version into a throwaway consumer that typechecks the
+public API and runs parse → snap → render. Only then does the `tag` job push
+`v0.1.0` at the verified commit.
 
 Finally, create the GitHub release from the tag if you want release notes to
 have a home; nothing in the toolchain depends on one existing.
@@ -102,21 +104,26 @@ it reads the file; the value never reaches disk or the log.
 To set it up, once:
 
 1. On npmjs.com, as the account that owns the `@uberblick` org, create a
-   **granular access token** with *Read and write* permission on
-   `@uberblick/ablauf` only, no org or user scopes, and the shortest
-   expiry you are willing to renew. (A classic **automation** token works
-   too; it is just less scoped.) A granular token also skips 2FA on publish,
-   which is what makes an automated publish possible at all.
-2. GitHub → **Settings → Environments → New environment**, name it exactly
+   **granular access token**: *Read and write* on the package
+   `@uberblick/ablauf` only, no org or user scopes, and the shortest expiry
+   you are willing to renew. Classic tokens no longer exist — npm removed them
+   in November 2025 — so granular is the only kind there is.
+2. Enable **Bypass 2FA** on that token. It is an explicit option, not a
+   property granular tokens have by default, and without it an unattended
+   `npm publish` cannot complete. npm recommends **trusted publishing** (OIDC)
+   for CI instead, and has signalled that bypass tokens may lose the ability to
+   publish directly; re-read <https://docs.npmjs.com/about-access-tokens> when
+   you rotate, and move to trusted publishing if this stops working.
+3. GitHub → **Settings → Environments → New environment**, name it exactly
    `release`. Add yourself under **Required reviewers**, so a dispatch waits
    for a human approval before the job starts. Optionally limit its deployment
    branches to `main`.
-3. In that environment — not in *Secrets and variables → Actions* — add an
+4. In that environment — not in *Secrets and variables → Actions* — add an
    **environment secret** named `NPM_TOKEN` and paste the value. The workflow
    still refers to it as `secrets.NPM_TOKEN`; environment secrets resolve
    through the same context, they are just scoped to the job. Never put the
    value in a file, an issue, a PR, or a commit.
-4. Also recommended, configured in the repository rather than in YAML: protect
+5. Also recommended, configured in the repository rather than in YAML: protect
    `main` (required checks, no force-push). Do **not** add a tag protection
    rule or ruleset for `v*` casually — those apply to `GITHUB_TOKEN` as well,
    and a rule without a bypass for it makes the tag job fail *after* a
@@ -169,9 +176,11 @@ ruleset the workflow's token may not bypass (see owner setup).
 
 ## The manual path (fallback)
 
-Use this when Actions is unavailable, when publishing a prerelease, or when
-the token has to stay off GitHub. It is the same sequence by hand, in the same
-order. From a clean checkout of the commit you intend to release, on `main`:
+Use this when Actions is unavailable, or when the token has to stay off
+GitHub. It covers stable `x.y.z` versions, the same ones the workflow takes —
+prereleases are not covered by this procedure, and `release-preflight` rejects
+them. It is the same sequence by hand, in the same order. From a clean checkout
+of the commit you intend to release, on `main`:
 
 ```
 node scripts/release-preflight.mjs 0.1.0
@@ -205,7 +214,11 @@ If you want to look at the published artifact yourself, that is what the
 registry check does under the hood:
 
 ```
-npm view @uberblick/ablauf@0.1.0 dependencies   # expect empty
+# expect all three empty; ask one at a time, `npm view` flattens its output
+# when only one of several requested fields exists
+npm view @uberblick/ablauf@0.1.0 dependencies
+npm view @uberblick/ablauf@0.1.0 optionalDependencies
+npm view @uberblick/ablauf@0.1.0 peerDependencies
 npm pack @uberblick/ablauf@0.1.0                # the published tarball
 tar -tzf uberblick-ablauf-0.1.0.tgz             # the shipped paths
 ```

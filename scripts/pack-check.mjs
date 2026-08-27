@@ -32,6 +32,9 @@ import { fileURLToPath } from "node:url";
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const NAME = "@uberblick/ablauf";
 
+/** Every manifest section npm installs at run time, not just `dependencies`. */
+const RUNTIME_SECTIONS = ["dependencies", "optionalDependencies", "peerDependencies"];
+
 const argv = process.argv.slice(2);
 const flag = argv.indexOf("--registry");
 const registryVersion = flag === -1 ? null : argv[flag + 1];
@@ -149,16 +152,22 @@ try {
     console.log(`  serving ${waitForRegistry(spec)}`);
 
     // The registry's own metadata, not the checkout's manifest: a consumer
-    // installs what npm says, and what npm says must be zero dependencies.
-    const declared = view(spec, "dependencies");
-    if (declared === null) {
-      throw new Error(`could not ask the registry what ${spec} depends on`);
+    // installs what npm says, and what npm says must be nothing — across all
+    // three sections npm installs at run time, not just `dependencies`.
+    // One field per call on purpose: asked for several at once, `npm view`
+    // prints the bare object when only one of them exists and a keyed object
+    // when more do, which is exactly the ambiguity this check cannot afford.
+    for (const section of RUNTIME_SECTIONS) {
+      const declared = view(spec, section);
+      if (declared === null) {
+        throw new Error(`could not ask the registry for ${spec} ${section}`);
+      }
+      const names = Object.keys(declared ? JSON.parse(declared) : {});
+      if (names.length > 0) {
+        throw new Error(`the published ${spec} declares ${section}: ${names.join(", ")}`);
+      }
     }
-    const names = Object.keys(declared ? JSON.parse(declared) : {});
-    if (names.length > 0) {
-      throw new Error(`the published ${spec} declares runtime dependencies: ${names.join(", ")}`);
-    }
-    console.log("→ npm view dependencies: none");
+    console.log(`→ npm view ${RUNTIME_SECTIONS.join(", ")}: all empty`);
 
     console.log(`→ npm pack ${spec} (the published tarball, not a local build)`);
     const name = run("npm", ["pack", spec, "--pack-destination", work], work)

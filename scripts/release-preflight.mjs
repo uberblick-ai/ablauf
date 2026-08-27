@@ -28,6 +28,12 @@ const ROOT = fileURLToPath(new URL("../", import.meta.url));
 /** A release version: three numbers, no `v`, no prerelease, no build metadata. */
 const RELEASE_VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 
+/** The one package this repository publishes (D14). */
+const NAME = "@uberblick/ablauf";
+
+/** Every manifest section npm installs at run time, not just `dependencies`. */
+const RUNTIME_SECTIONS = ["dependencies", "optionalDependencies", "peerDependencies"];
+
 const version = process.argv[2];
 if (!version) {
   console.error("usage: node scripts/release-preflight.mjs <version>   # e.g. 0.1.0");
@@ -37,7 +43,7 @@ if (!version) {
 if (!RELEASE_VERSION.test(version)) {
   console.error(
     `"${version}" is not a release version — expected x.y.z, no leading "v", no ` +
-      "prerelease or build metadata (prereleases go the manual route). Nothing was published.",
+      "prerelease or build metadata. Nothing was published.",
   );
   process.exit(1);
 }
@@ -59,6 +65,18 @@ const manifest = JSON.parse(readFileSync(new URL("../package.json", import.meta.
 
 const checks = [
   [
+    "the manifest is the package this repository publishes",
+    () => {
+      // Whatever else is wrong, publishing under a different name than D14
+      // fixed is not a release — and it would reach a registry we never meant
+      // to write to. Refuse before any credential is anywhere near npm.
+      if (manifest.name !== NAME) {
+        throw new Error(`package.json says ${manifest.name}, and this releases ${NAME} only (D14)`);
+      }
+      return NAME;
+    },
+  ],
+  [
     "package.json carries exactly that version",
     () => {
       if (manifest.version !== version) {
@@ -71,11 +89,16 @@ const checks = [
     },
   ],
   [
-    "the manifest declares no runtime dependencies",
+    "the manifest declares nothing installed at run time",
     () => {
-      const deps = Object.keys(manifest.dependencies ?? {});
-      if (deps.length > 0) throw new Error(`package.json declares ${deps.join(", ")}`);
-      return "none";
+      // `dependencies` is not the whole story: modern npm installs optional
+      // and peer dependencies too, so all three have to be empty for the
+      // zero-dependency claim to hold for a consumer (D14, D15).
+      const declared = RUNTIME_SECTIONS.flatMap((section) =>
+        Object.keys(manifest[section] ?? {}).map((dep) => `${section}.${dep}`),
+      );
+      if (declared.length > 0) throw new Error(`package.json declares ${declared.join(", ")}`);
+      return `${RUNTIME_SECTIONS.join(", ")}: all empty`;
     },
   ],
   [
