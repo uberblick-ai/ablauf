@@ -1,0 +1,191 @@
+name: Release
+
+# Publishes one version of @uberblick/ablauf to npm, from main, on purpose.
+#
+# The only trigger is workflow_dispatch: merging a PR never publishes, pushing
+# never publishes, a tag never publishes. That is also what keeps NPM_TOKEN out
+# of reach of pull-request and fork-controlled code — no event a stranger can
+# cause ever starts this workflow, and the secret is read by exactly one step.
+#
+# The order is a hard rule (docs/releasing.md): gates → publish → verify the
+# registry copy → tag. A tag that names a version nobody can install is worse
+# than no tag, so tagging is a separate job that runs only after verification,
+# and it is the only place `contents: write` exists.
+#
+# Every non-trivial decision lives in a script under scripts/, runnable on a
+# laptop; this file is the sequence, not the logic.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish, e.g. 0.1.0 — no leading v, and package.json must already say exactly this"
+        required: true
+        type: string
+
+# One release at a time, and never cancel one in flight: a run interrupted
+# between `npm publish` and the tag is precisely the state to avoid. `queue:
+# max` because the default, `single`, cancels the older *pending* run when a
+# third dispatch arrives — a queued release should wait its turn, not vanish.
+concurrency:
+  group: release
+  cancel-in-progress: false
+  queue: max
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: gates → publish → verify
+    runs-on: ubuntu-latest
+    # NPM_TOKEN is an *environment* secret of `release`, so only this job can
+    # read it, and the environment's required reviewer is what stands between
+    # "can dispatch a workflow" and "can publish" (docs/releasing.md).
+    environment: release
+    outputs:
+      sha: ${{ steps.commit.outputs.sha }}
+    steps:
+      # workflow_dispatch runs the YAML of whatever ref was selected, so the
+      # refusal has to be inside the workflow. scripts/release-preflight.mjs
+      # then proves the checkout is the commit main currently points at.
+      - name: refuse any ref but main
+        env:
+          REF: ${{ github.ref }}
+        run: |
+          if [ "$REF" != "refs/heads/main" ]; then
+            echo "::error::releases run from main only — this dispatch selected $REF"
+            exit 1
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # The toolchain pinned in mise.toml, same as CI.
+      - uses: jdx/mise-action@3c2e0cf82a5b2e5249f0d3635a4d83d0ae861518 # v4
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.pnpm-store
+          key: pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-
+
+      - run: mise run install
+        env:
+          PNPM_STORE_DIR: ~/.pnpm-store
+
+      # Refuses before anything touches the registry: release version, manifest
+      # agreement, no runtime dependencies, HEAD == origin/main, no v<version>
+      # tag anywhere, version not already published.
+      - name: preflight
+        env:
+          VERSION: ${{ inputs.version }}
+        run: node scripts/release-preflight.mjs "$VERSION"
+
+      - run: mise run lint
+      - run: mise run typecheck
+      - run: mise run test
+      - run: mise run build
+      - run: mise run agent-check
+
+      - name: acceptance — first run
+        run: mise run acceptance
+      - name: acceptance — the byte-comparison
+        run: mise run acceptance
+
+      - run: mise run pack-check
+
+      - name: record the commit being released
+        id: commit
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      # Preflight proved this was main's tip before the gates ran, and the
+      # gates take minutes. Ask again with the publish one step away, so a
+      # merge that landed meanwhile cannot be published as "main".
+      - name: main has not moved since preflight
+        run: |
+          head="$(git rev-parse HEAD)"
+          tip="$(git ls-remote origin refs/heads/main | cut -f1)"
+          if [ "$head" != "$tip" ]; then
+            echo "::error::main moved during this run ($head → $tip). Nothing was published — dispatch again on the new commit."
+            exit 1
+          fi
+
+      # The one step that sees the credential. The token's value never reaches
+      # disk or the log: the npmrc holds the *name* of the variable, which npm
+      # interpolates from the environment when it reads the file.
+      - name: publish to npm
+        id: publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "::error::the NPM_TOKEN secret is not set — see docs/releasing.md"
+            exit 1
+          fi
+          npmrc="$RUNNER_TEMP/npmrc"
+          trap 'rm -f "$npmrc"' EXIT
+          printf '//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}\n' > "$npmrc"
+          NPM_CONFIG_USERCONFIG="$npmrc" npm publish --access public
+          echo "::notice::published @uberblick/ablauf@$VERSION"
+
+      # Deliberately without the token: everything below reads a public package
+      # as any consumer would. Registry metadata says zero dependencies, the
+      # published tarball carries the required paths and none of the forbidden
+      # ones, and a throwaway consumer installs that exact version, typechecks
+      # the public API and runs parse → snap → render.
+      - name: verify the registry copy
+        env:
+          VERSION: ${{ inputs.version }}
+        run: node scripts/pack-check.mjs --registry "$VERSION"
+
+      # Fires whenever the publish step ran at all — including when publish
+      # itself failed, because a publish can fail after the upload landed.
+      # Which of the two happened is a question only the registry can answer.
+      - name: recovery path (the publish step ran, the job failed)
+        if: failure() && steps.publish.outcome != 'skipped'
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          echo "::error::the publish step ran and the job failed — no tag was pushed."
+          echo "First find out whether the upload landed:"
+          echo "  npm view @uberblick/ablauf@$VERSION version"
+          echo "The registry lags a moment behind an upload, so an immediate 404 proves nothing."
+          echo "Ask again after a minute or two — pack-check --registry waits for the same reason."
+          echo "Only a 404 that persists means nothing was published: fix the cause and dispatch again."
+          echo "A version means it is on npm and unverified — recover per docs/releasing.md, 'If the run fails'."
+
+  # The only job with write access, and it cannot start unless every check
+  # above passed. Lightweight tag on the exact commit that was verified.
+  tag:
+    name: tag the verified commit
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.release.outputs.sha }}
+
+      - name: tag and push
+        env:
+          VERSION: ${{ inputs.version }}
+          SHA: ${{ needs.release.outputs.sha }}
+        run: |
+          git tag "v$VERSION" "$SHA"
+          git push origin "v$VERSION"
+          echo "::notice::pushed v$VERSION at $SHA"
+
+      # Nothing is wrong with the release: it is published and verified. Only
+      # the tag is missing, and it is one command away.
+      - name: recovery path (verified, but the tag was not pushed)
+        if: failure()
+        env:
+          VERSION: ${{ inputs.version }}
+          SHA: ${{ needs.release.outputs.sha }}
+        run: |
+          echo "::error::@uberblick/ablauf@$VERSION is published and verified, but v$VERSION was not pushed."
+          echo "Push it by hand from a clean checkout:"
+          echo "  git tag v$VERSION $SHA && git push origin v$VERSION"
+          echo "See docs/releasing.md, 'If the run fails'. Do not re-dispatch: the version cannot be published twice."
