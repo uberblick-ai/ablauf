@@ -4,7 +4,7 @@ Publishing is effectively permanent: npm allows a qualifying unpublish only
 within 72 hours of the publish, and after that the version is there for good.
 So the release path is deliberately narrow — one manually dispatched GitHub
 Actions workflow, run from `main` by the owner, with the npm credential held
-as a repository secret; plus the same procedure by hand as a fallback.
+as an environment secret; plus the same procedure by hand as a fallback.
 
 The package is `@uberblick/ablauf`, public, ESM-only, zero runtime
 dependencies. Versions follow the promise in the README: pre-1.0 a minor may
@@ -143,9 +143,11 @@ Only the registry knows, so ask it first:
 npm view @uberblick/ablauf@0.1.0 version
 ```
 
-A 404 means nothing was published: fix the cause and dispatch again. A version
-number means it is on npm, unverified, and untagged — intentional, and
-recoverable:
+The registry lags a moment behind an upload, so an immediate 404 proves
+nothing: ask again after a minute or two — `pack-check --registry` waits for
+the same reason. Only a 404 that persists means nothing was published, and then
+you fix the cause and dispatch again. A version number means it is on npm,
+unverified, and untagged — intentional, and recoverable:
 
 1. Read the failing step. The usual causes are a slow registry (the
    verification waits a minute and gives up) and a genuine packaging problem

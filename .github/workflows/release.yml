@@ -147,7 +147,9 @@ jobs:
           echo "::error::the publish step ran and the job failed — no tag was pushed."
           echo "First find out whether the upload landed:"
           echo "  npm view @uberblick/ablauf@$VERSION version"
-          echo "A 404 means nothing was published: fix the cause and dispatch again."
+          echo "The registry lags a moment behind an upload, so an immediate 404 proves nothing."
+          echo "Ask again after a minute or two — pack-check --registry waits for the same reason."
+          echo "Only a 404 that persists means nothing was published: fix the cause and dispatch again."
           echo "A version means it is on npm and unverified — recover per docs/releasing.md, 'If the run fails'."
 
   # The only job with write access, and it cannot start unless every check
