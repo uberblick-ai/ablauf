@@ -37,7 +37,9 @@ prints the recovery path below.
    nothing in the release run edits the manifest.
 2. **Actions → Release → Run workflow**, branch `main`, version `0.1.0`
    (no leading `v`).
-3. Watch the run. It publishes at most once, and tags only on success.
+3. Approve the run: the publish job targets the `release` environment, so it
+   waits for its required reviewer before a single step executes.
+4. Watch it. It publishes at most once, and tags only on success.
 
 Before it contacts npm with credentials, the run refuses unless every one of
 these holds — `node scripts/release-preflight.mjs 0.1.0` asks the same
@@ -48,7 +50,9 @@ questions on a laptop, and prints every answer rather than the first failure:
   build metadata (a prerelease goes the manual path);
 - `package.json` carries exactly that version, and declares no runtime
   dependencies;
-- `HEAD` is the commit `origin/main` currently points at;
+- `HEAD` is the commit `origin/main` currently points at — asked again in the
+  workflow immediately before the publish, since the gates take minutes and
+  `main` can move under a run;
 - no `v<version>` tag exists locally or on the remote;
 - the version is not already on the registry. A registry that cannot be
   reached is a failure, not a green light — "we could not ask" must never be
@@ -81,13 +85,19 @@ have a home; nothing in the toolchain depends on one existing.
 
 ## Owner setup: the npm credential
 
-The workflow reads the token from the repository secret `NPM_TOKEN` and gives
-it to one step, the publish. Nothing else in the run — the gates, the registry
-verification, the tag job — can see it, and no token, `.npmrc` or credential
-value is ever committed, uploaded as an artifact, or echoed. The `.npmrc` the
-publish step writes into the runner's temp directory contains the *name*
-`${NODE_AUTH_TOKEN}`, which npm interpolates from the environment when it
-reads the file; the value never reaches disk or the log.
+The token is an **environment secret** of the `release` environment, which the
+publish job declares. Only that job can read it, and reaching that job means
+passing the environment's required reviewer. Say the consequence plainly: with
+the token as a plain *repository* secret and no environment, anyone with write
+access who can dispatch a workflow could publish. The environment is the
+approval gate, not a formality.
+
+Within the job, the secret reaches one step, the publish. The gates, the
+registry verification and the tag job never see it, and no token, `.npmrc` or
+credential value is committed, uploaded as an artifact, or echoed. The
+`.npmrc` the publish step writes into the runner's temp directory contains the
+*name* `${NODE_AUTH_TOKEN}`, which npm interpolates from the environment when
+it reads the file; the value never reaches disk or the log.
 
 To set it up, once:
 
@@ -97,14 +107,22 @@ To set it up, once:
    expiry you are willing to renew. (A classic **automation** token works
    too; it is just less scoped.) A granular token also skips 2FA on publish,
    which is what makes an automated publish possible at all.
-2. GitHub → **Settings → Secrets and variables → Actions → New repository
-   secret**, name `NPM_TOKEN`, paste the value. Never put it in a file, an
-   issue, a PR, or a commit.
-3. Recommended, and configured in the repository rather than in YAML: protect
-   `main` (required checks, no force-push), add a **tag protection rule** for
-   `v*` so only this workflow's token can create release tags, and give the
-   `Release` workflow an **environment** with a required reviewer, so a
-   dispatch waits for a human approval before the job starts.
+2. GitHub → **Settings → Environments → New environment**, name it exactly
+   `release`. Add yourself under **Required reviewers**, so a dispatch waits
+   for a human approval before the job starts. Optionally limit its deployment
+   branches to `main`.
+3. In that environment — not in *Secrets and variables → Actions* — add an
+   **environment secret** named `NPM_TOKEN` and paste the value. The workflow
+   still refers to it as `secrets.NPM_TOKEN`; environment secrets resolve
+   through the same context, they are just scoped to the job. Never put the
+   value in a file, an issue, a PR, or a commit.
+4. Also recommended, configured in the repository rather than in YAML: protect
+   `main` (required checks, no force-push). Do **not** add a tag protection
+   rule or ruleset for `v*` casually — those apply to `GITHUB_TOKEN` as well,
+   and a rule without a bypass for it makes the tag job fail *after* a
+   successful publish, which is the one outcome this design exists to avoid.
+   If you do add one, verify the workflow's token is allowed to create `v*`
+   tags before the first real release.
 
 Rotation: create the new token first, update the secret, run one release with
 it, then revoke the old token on npmjs.com. Revoke immediately — and
@@ -114,11 +132,20 @@ token does.
 
 ## If the run fails
 
-**Before the publish step** — nothing happened. Fix the cause and dispatch
+**Before the publish step ran** — nothing happened. Fix the cause and dispatch
 again; the version is still unpublished and untagged.
 
-**After the publish step** — the version is on npm and was *not* verified, and
-no tag was pushed. That state is intentional and recoverable:
+**The publish step ran** — including when the publish step is itself the one
+that failed, because an upload can land and the step still fail afterwards.
+Only the registry knows, so ask it first:
+
+```
+npm view @uberblick/ablauf@0.1.0 version
+```
+
+A 404 means nothing was published: fix the cause and dispatch again. A version
+number means it is on npm, unverified, and untagged — intentional, and
+recoverable:
 
 1. Read the failing step. The usual causes are a slow registry (the
    verification waits a minute and gives up) and a genuine packaging problem
@@ -127,11 +154,16 @@ no tag was pushed. That state is intentional and recoverable:
    `node scripts/pack-check.mjs --registry 0.1.0`.
 3. If it passes, the artifact is good and only the tag is missing. Push it
    from a clean checkout of the released commit:
-   `git tag v0.1.0 <sha> && git push origin v0.1.0`.
+   `git tag v0.1.0 <sha> && git push origin v0.1.0`. Do not re-dispatch the
+   workflow: the version cannot be published twice.
 4. If it fails, do **not** tag. The version is broken on the registry: fix
    forward with a patch release, and deprecate the bad one
    (`npm deprecate @uberblick/ablauf@0.1.0 "…"`). Do not reuse the version
    number — npm never lets you.
+
+**The tag job failed** — the release is published and verified; only the tag
+is missing. Step 3 above is the whole repair. The likeliest cause is a tag
+ruleset the workflow's token may not bypass (see owner setup).
 
 ## The manual path (fallback)
 

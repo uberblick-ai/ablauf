@@ -36,6 +36,10 @@ jobs:
   release:
     name: gates → publish → verify
     runs-on: ubuntu-latest
+    # NPM_TOKEN is an *environment* secret of `release`, so only this job can
+    # read it, and the environment's required reviewer is what stands between
+    # "can dispatch a workflow" and "can publish" (docs/releasing.md).
+    environment: release
     outputs:
       sha: ${{ steps.commit.outputs.sha }}
     steps:
@@ -91,6 +95,18 @@ jobs:
         id: commit
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
+      # Preflight proved this was main's tip before the gates ran, and the
+      # gates take minutes. Ask again with the publish one step away, so a
+      # merge that landed meanwhile cannot be published as "main".
+      - name: main has not moved since preflight
+        run: |
+          head="$(git rev-parse HEAD)"
+          tip="$(git ls-remote origin refs/heads/main | cut -f1)"
+          if [ "$head" != "$tip" ]; then
+            echo "::error::main moved during this run ($head → $tip). Nothing was published — dispatch again on the new commit."
+            exit 1
+          fi
+
       # The one step that sees the credential. The token's value never reaches
       # disk or the log: the npmrc holds the *name* of the variable, which npm
       # interpolates from the environment when it reads the file.
@@ -120,13 +136,19 @@ jobs:
           VERSION: ${{ inputs.version }}
         run: node scripts/pack-check.mjs --registry "$VERSION"
 
-      - name: recovery path (published, but the run failed)
-        if: failure() && steps.publish.outcome == 'success'
+      # Fires whenever the publish step ran at all — including when publish
+      # itself failed, because a publish can fail after the upload landed.
+      # Which of the two happened is a question only the registry can answer.
+      - name: recovery path (the publish step ran, the job failed)
+        if: failure() && steps.publish.outcome != 'skipped'
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          echo "::error::@uberblick/ablauf@$VERSION is on npm but was not verified — no tag was pushed."
-          echo "Recovery: docs/releasing.md, 'If the run fails' → after the publish step."
+          echo "::error::the publish step ran and the job failed — no tag was pushed."
+          echo "First find out whether the upload landed:"
+          echo "  npm view @uberblick/ablauf@$VERSION version"
+          echo "A 404 means nothing was published: fix the cause and dispatch again."
+          echo "A version means it is on npm and unverified — recover per docs/releasing.md, 'If the run fails'."
 
   # The only job with write access, and it cannot start unless every check
   # above passed. Lightweight tag on the exact commit that was verified.
@@ -149,3 +171,16 @@ jobs:
           git tag "v$VERSION" "$SHA"
           git push origin "v$VERSION"
           echo "::notice::pushed v$VERSION at $SHA"
+
+      # Nothing is wrong with the release: it is published and verified. Only
+      # the tag is missing, and it is one command away.
+      - name: recovery path (verified, but the tag was not pushed)
+        if: failure()
+        env:
+          VERSION: ${{ inputs.version }}
+          SHA: ${{ needs.release.outputs.sha }}
+        run: |
+          echo "::error::@uberblick/ablauf@$VERSION is published and verified, but v$VERSION was not pushed."
+          echo "Push it by hand from a clean checkout:"
+          echo "  git tag v$VERSION $SHA && git push origin v$VERSION"
+          echo "See docs/releasing.md, 'If the run fails'. Do not re-dispatch: the version cannot be published twice."

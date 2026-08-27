@@ -62,10 +62,14 @@ const run = (cmd, args, cwd) =>
 /** A synchronous pause: the registry is allowed a moment to serve a new version. */
 const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
-/** `npm view`, minus the E404 noise: null when the registry has nothing to say. */
+// `npm view`, minus the E404 noise, keeping the distinction that matters:
+// `null` is "npm could not answer" (no such version, no network, a registry
+// error); `""` is "npm answered, and the answer is empty" — which is what a
+// package with no dependencies looks like. Treating the first as the second
+// would turn an unanswered question into a pass.
 const view = (spec, field) => {
   const res = spawnSync("npm", ["view", spec, field, "--json"], { encoding: "utf8" });
-  return res.status === 0 ? res.stdout.trim() || null : null;
+  return res.status === 0 ? res.stdout.trim() : null;
 };
 
 /** Poll until npm serves the version, so "not there yet" never reads as broken. */
@@ -146,7 +150,11 @@ try {
 
     // The registry's own metadata, not the checkout's manifest: a consumer
     // installs what npm says, and what npm says must be zero dependencies.
-    const names = Object.keys(JSON.parse(view(spec, "dependencies") ?? "{}"));
+    const declared = view(spec, "dependencies");
+    if (declared === null) {
+      throw new Error(`could not ask the registry what ${spec} depends on`);
+    }
+    const names = Object.keys(declared ? JSON.parse(declared) : {});
     if (names.length > 0) {
       throw new Error(`the published ${spec} declares runtime dependencies: ${names.join(", ")}`);
     }
