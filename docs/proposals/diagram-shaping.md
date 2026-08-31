@@ -48,8 +48,11 @@ else — no image, no model, no repository access.
 ### Outputs
 
 - **Two or more charts.** Each is a semantic source in the mermaid subset, plus
-  the directive set that places its nodes. Positions come back from `snap`;
-  the procedure never writes a coordinate it computed itself.
+  the directive set that places its nodes — `cell` for the one node that starts
+  a chart, `rel` off an already-placed node for every other. Positions come back
+  from `snap`; the procedure never writes a coordinate it computed itself. `at`
+  stays what D7 makes it, a pixel escape hatch for a drag, and the worked case
+  below needed none.
 - **A coverage inventory.** Every source node, every source edge and every
   branch outcome mapped onto the results, with cross-chart handoffs and
   deliberate duplicates named, and the source meaning of every shortened label
@@ -60,14 +63,25 @@ else — no image, no model, no repository access.
 
 Measured, not felt. Any one of these fires:
 
-1. **Cold start fails.** `snap(graph, {}, [])` returns any `displaced` or
-   `min-clamped` warning — the fallback placer could not seat the graph.
+1. **Cold start could not seat the graph.** `snap(graph, {}, [])` returns a
+   `displaced` warning: the fallback placer found a node's requested point
+   occupied and had to shove it somewhere else. `min-clamped` is deliberately
+   **not** part of this trigger. It is a property of the origin cell, not of the
+   graph: the fallback seats a root at `ORIGIN` `(100, 60)` and every movable
+   node clamps to `x >= MARGIN + w/2`, so any root whose label reaches 15
+   characters — a box wider than 160px — clamps. The two-node control
+   `A[A modest process box] --> B[Done]` cold-starts with one `min-clamped`
+   warning while having zero crossings, zero retraces, no hidden decision and a
+   263 × 229 canvas. A signal that a clean two-node chart trips is not a density
+   signal.
 2. **The drawing has defects.** The rendered SVG has an edge crossing a box
    interior, or two edges drawn as one line outside D23's trunk exemption.
 3. **A decision is drawn as a box.** Some non-`decision` node has more than one
    outbound edge and at least one of them is labelled.
-4. **The canvas is out of proportion.** `svgMeta`'s `width / height` outside
-   roughly 0.5–2.0 — a column so tall it cannot be read at one zoom level.
+4. **The canvas is out of proportion.** `svgMeta`'s `width / height` is **below
+   0.5 or above 2.0** — a column so tall, or a band so wide, that it cannot be
+   read at one zoom level. The bound is exact, and the boundary values
+   themselves do not fire, so two sessions measuring one chart get one answer.
 
 None firing is the answer "this chart is fine": the procedure stops there.
 
@@ -75,8 +89,10 @@ None firing is the answer "this chart is fine": the procedure stops there.
 
 - It never moves a node in the source chart, and never edits the source
   chart's store. The original is left exactly as it was.
-- It never invents a coordinate. Placement is expressed as `rel`/`delta`/
-  `cell`/`at` directives and resolved by `snap` (D7).
+- It never hands a chart a coordinate of its own. Placement is expressed as
+  directives and resolved by `snap` (D7), and the coarse forms carry it: one
+  `cell` per chart and `rel` for everything else. `at` remains D7's pixel escape
+  hatch for a drag — available, and not this procedure's vocabulary.
 - It never reads meaning out of a label. A branch is expressed by **placing**
   its targets; D23 turns that into vertices. Sniffing `yes`/`no` was rejected
   once already and is not reintroduced here.
@@ -91,10 +107,15 @@ None firing is the answer "this chart is fine": the procedure stops there.
 2. **Name the narratives.** One narrative answers one question. Cut where a
    reader would say *and then a different thing happens* — at a park, a
    terminal state, or a handoff to another actor. One chart per narrative.
-3. **Cut at handoffs, and draw both ends.** Every cut becomes two nodes: a
-   terminal in the upstream chart and an entry in the downstream one, each
-   naming the other chart. These are handoffs, and they are recorded as such —
-   not as duplicated content.
+3. **Cut at handoffs, and draw both ends.** Every cut becomes two drawn ends: a
+   terminal in the upstream chart naming the downstream one, and an entry in the
+   downstream chart. Both ends go in the handoff table, and a cut is never
+   recorded as duplicated content. The one exception is a cut that **re-enters a
+   state the downstream chart already draws**: its downstream end is that node
+   itself rather than a second stub beside it, because two nodes carrying one
+   word in one chart is the duplication this rule exists against. It is still a
+   cut, and it is still recorded as one — the chart-3 → 2 return in §4 is the
+   worked instance.
 4. **Make every hidden decision a diamond.** A process box with several
    outbound edges, at least one labelled, *is* a decision. Give it a diamond
    whose text is the question and hang the labelled exits off that. A chart
@@ -142,8 +163,10 @@ flowchart TD
 
 All four triggers fire, with no judgement involved:
 
-- **Cold start:** `min-clamped` on `H`, `P`; `displaced` on `A`, `C`, `D`, `U`,
-  `E`. Seven warnings.
+- **Cold start:** `displaced` on `A`, `C`, `D`, `U`, `E` — five nodes the
+  fallback could not seat where it wanted them. (Two more warnings, `min-clamped`
+  on `H` and `P`, are the origin-cell effect trigger 1 excludes; seven in total,
+  five of them the trigger.)
 - **Drawn defects:** five segments through a box interior, two pairs of edges
   drawn as one line.
 - **Hidden decisions:** `P` and `A`.
@@ -174,9 +197,12 @@ flowchart TD
 ```
 
 ```json
-{ "author": { "x": 600, "y": 60 },  "intake":    { "x": 600, "y": 200 },
-  "prep":   { "x": 600, "y": 340 }, "fits":      { "x": 600, "y": 480 },
-  "parent": { "x": 200, "y": 640 }, "clearance": { "x": 1000, "y": 640 } }
+[ { "id": "author",    "cell": { "col": 2, "row": 0 } },
+  { "id": "intake",    "rel": { "of": "author", "dir": "below" } },
+  { "id": "prep",      "rel": { "of": "intake", "dir": "below" } },
+  { "id": "fits",      "rel": { "of": "prep",   "dir": "below" } },
+  { "id": "parent",    "rel": { "of": "fits",   "dir": "below-left" } },
+  { "id": "clearance", "rel": { "of": "fits",   "dir": "below-right" } } ]
 ```
 
 **Chart 2 — clearance to ready.** *How does a shaped issue earn `ready`?*
@@ -196,11 +222,15 @@ flowchart TD
 ```
 
 ```json
-{ "shaped":    { "x": 700,  "y": 60 },  "trivial": { "x": 700,  "y": 180 },
-  "selfcheck": { "x": 300,  "y": 320 }, "adversary": { "x": 1100, "y": 320 },
-  "verdict":   { "x": 1100, "y": 460 }, "parked":  { "x": 1500, "y": 460 },
-  "applyfix":  { "x": 1100, "y": 600 }, "ready":   { "x": 700,  "y": 740 },
-  "delivery":  { "x": 700,  "y": 880 } }
+[ { "id": "shaped",    "cell": { "col": 3, "row": 0 } },
+  { "id": "trivial",   "rel": { "of": "shaped",  "dir": "below" } },
+  { "id": "selfcheck", "rel": { "of": "trivial", "dir": "below-left" } },
+  { "id": "adversary", "rel": { "of": "trivial", "dir": "below-right" } },
+  { "id": "verdict",   "rel": { "of": "adversary", "dir": "below" } },
+  { "id": "parked",    "rel": { "of": "verdict", "dir": "right", "steps": 2 } },
+  { "id": "applyfix",  "rel": { "of": "verdict", "dir": "below" } },
+  { "id": "ready",     "rel": { "of": "applyfix", "dir": "below-left" } },
+  { "id": "delivery",  "rel": { "of": "ready",   "dir": "below" } } ]
 ```
 
 **Chart 3 — owner decision and return.** *What happens to a parked question?*
@@ -213,13 +243,29 @@ flowchart TD
 ```
 
 ```json
-{ "parked":  { "x": 500, "y": 60 },  "requeued": { "x": 500, "y": 200 },
-  "refresh": { "x": 500, "y": 340 }, "ready":    { "x": 500, "y": 480 } }
+[ { "id": "parked",   "cell": { "col": 2, "row": 0 } },
+  { "id": "requeued", "rel": { "of": "parked",   "dir": "below" } },
+  { "id": "refresh",  "rel": { "of": "requeued", "dir": "below" } },
+  { "id": "ready",    "rel": { "of": "refresh",  "dir": "below" } } ]
 ```
 
 Chart 3 has no decision, so it has no diamond. That is rule 4 read as written:
 a decision is never drawn as a box, and a chart with no branch does not need
 one invented for it.
+
+**Every position in these three charts came out of `snap`.** Each list is the third
+argument of `snap(parse(source), {}, directives)` against an **empty** store, so
+every node is movable and nothing is frozen: one `cell` seats the chart's first
+node and every other node hangs off one already placed, which is the whole
+coarse vocabulary D7 asks for. The three calls return **zero warnings**, and the
+coordinates they return are what §5 measures and what drew the SVGs — not
+written here, because a derivable number stored beside its source is a number
+that rots.
+
+One `steps` value is not 1, and it is step 7 doing its job: `parked` one column
+right of `verdict` lands on the box beside it and comes back `displaced`, so it
+goes two. That is the whole iteration loop — the placement moved, the label did
+not.
 
 ### Both observations, for each chart
 
@@ -234,7 +280,7 @@ claimed. What the check establishes is that mermaid accepts the source and
 reads the same graph out of it; geometry lives outside the source anyway (D4),
 so a picture-for-picture comparison would not mean anything.
 
-**Warning-free in ablauf.** `parse` → `snap` → `toSvg` over the positions
+**Warning-free in ablauf.** `parse` → `snap` → `toSvg` over the directive lists
 above: **zero warnings on all three charts**, no two boxes overlapping, and
 zero drawn defects in both shipped themes. The numbers are in §5.
 
@@ -278,6 +324,14 @@ Every source edge. Fifteen in, fifteen accounted for.
 | 14 | `C --> Y` | 2: `applyfix --> ready` |
 | 15 | `Y --> E` | 2: `ready --> delivery` |
 
+**And the reverse direction**, which is the half that catches a severed path.
+The three results hold **18** edges (5 + 10 + 3). Seventeen are claimed by the
+rows above, each exactly once. The eighteenth is `prep --> fits` in chart 1: it
+has no source counterpart because it is the **stem** of the diamond rule 4
+extracts out of `P`, exactly as `adversary --> verdict` (row 7) is the stem
+extracted out of `A`. Two extracted nodes, two stems; neither adds meaning, and
+no result edge is unaccounted for.
+
 **Branch outcomes.** `T`'s two (`yes`, `no`) are chart 2's `trivial`. `A`'s
 three settled adversary outcomes — `clean`, `correctable`, `owner boundary`
 ([`../../.agents/roles/issue-adversary.md`](../../.agents/roles/issue-adversary.md))
@@ -285,20 +339,25 @@ three settled adversary outcomes — `clean`, `correctable`, `owner boundary`
 somewhere new. `P`'s implicit sizing choice, whose only labelled exit was
 `too large`, is chart 1's `fits`.
 
-**Cross-chart handoffs** — four nodes, two cuts, both drawn from both sides:
+**Cross-chart handoffs** — three cuts, each drawn from both sides:
 
 | Cut | Upstream terminal | Downstream entry |
 |---|---|---|
 | chart 1 → 2 | `clearance([To clearance, chart 2])` | `shaped([From intake, chart 1])` |
 | chart 2 → 3 | `parked([To owner decision, chart 3])` | `parked[needs-decision, one focused question]` |
+| chart 3 → 2 | `ready([ready, back to chart 2])` | `ready[ready]`, chart 2's own state node |
 
-**Deliberate duplicates** — two, both terminal:
+The third one is the return, and it closes the loop `R --> Y --> E` opens
+across the cut: a question answered in chart 3 comes back to `ready` in chart 2
+and leaves through `ready --> delivery` from there. It takes rule 3's stated
+exception — the downstream chart already draws that state, so the state node
+*is* the entry and no stub stands beside it. Reading the two `ready` nodes as a
+duplicate instead is what would leave the end-to-end return implicit, which is
+why it is in this table and not below it.
 
-- `ready` appears in chart 2 as the state itself and in chart 3 as the state
-  the return path re-enters. The alternative — a third handoff pair — costs two
-  nodes to say what one word already says.
-- `parked` names the same state on both sides of the chart-2/3 cut. In chart 2
-  it is the exit; in chart 3 it is the subject.
+**Deliberate duplicates** — **none**. Every id that appears in two charts is one
+end of a cut in the table above (`parked`, `ready`), and each of those pairs is
+recorded there. Nothing is copied into a second chart to save a handoff.
 
 **Two nodes with no source counterpart**, both from rule 4: `fits` (chart 1)
 and `verdict` (chart 2). Each carries the labelled exits of a source node that
@@ -320,7 +379,7 @@ Both shipped themes, one file each, the same geometry with a different palette
 
 | 1 — intake and sizing | 2 — clearance to ready | 3 — owner decision |
 | :---: | :---: | :---: |
-| <picture><source media="(prefers-color-scheme: dark)" srcset="../assets/shaping-intake-dark.svg"><img src="../assets/shaping-intake.svg" alt="Four boxes down a centre column into a Reviewable in one sitting? diamond, whose no branch leaves the left vertex to a coordination parent and whose yes branch leaves the right vertex to a handoff into chart 2"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="../assets/shaping-clearance-dark.svg"><img src="../assets/shaping-clearance.svg" alt="A Mechanical, local, clear, reversible? diamond branching left to a self-check and right to an adversary, the adversary feeding an Adversary verdict? diamond whose three exits leave its left, bottom and right vertices to ready, the fix step and a handoff into chart 3"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="../assets/shaping-decision-dark.svg"><img src="../assets/shaping-decision.svg" alt="A straight four-box column: needs-decision, an owner answer edge into needs-preparation, refresh affected grounding, and ready"></picture> |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="../assets/shaping-intake-dark.svg"><img src="../assets/shaping-intake.svg" alt="Three boxes down a centre column into a Reviewable in one sitting? diamond, whose no branch leaves the left vertex to a coordination parent and whose yes branch leaves the right vertex to a handoff into chart 2"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="../assets/shaping-clearance-dark.svg"><img src="../assets/shaping-clearance.svg" alt="A Mechanical, local, clear, reversible? diamond branching left to a self-check and right to an adversary, the adversary feeding an Adversary verdict? diamond whose three exits leave its left, bottom and right vertices to ready, the fix step and a handoff into chart 3"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="../assets/shaping-decision-dark.svg"><img src="../assets/shaping-decision.svg" alt="A straight four-box column: needs-decision, an owner answer edge into needs-preparation, refresh affected grounding, and ready"></picture> |
 
 The rubric is five measurements, each one a number a later session can
 reproduce. The first four predicates already exist in this repository —
@@ -335,8 +394,8 @@ goldens. Re-apply them; do not write a second copy.
 | **Branch origin** | for each diamond, which vertex each outbound edge leaves | `T`: **both exits fanned onto the bottom vertex's slopes**, (117.3, 451.3) and (202.7, 451.3) | `fits`: left / right | `trivial`: left / right; `verdict`: left / bottom / right | none |
 | **Edge retracing** | `retraces` pairs, minus D23's trunk exemption | **2** | 0 | 0 | 0 |
 | **Node crossings** | `cuts` — segments through a box interior | **5** | 0 | 0 | 0 |
-| **Canvas proportions** | `svgMeta` `width / height` | 560 × 1189 = **0.47** | 1127 × 689 = 1.64 | 1646 × 929 = 1.77 | 646 × 529 = 1.22 |
-| *(and the cold start)* | `snap` warnings | **7** | 0 | 0 | 0 |
+| **Canvas proportions** | `svgMeta` `width / height` | 560 × 1189 = **0.47** | 827 × 589 = 1.40 | 1446 × 829 = 1.74 | 646 × 469 = 1.38 |
+| *(and the cold start)* | `snap` warnings | **7 — 5 `displaced`, 2 `min-clamped`** | 0 | 0 | 0 |
 
 Two notes on reading it. The five defects in *Before* include `T -> S` and
 `T -> A` leaving through `T`'s own box interior, which is the fanned-anchor
