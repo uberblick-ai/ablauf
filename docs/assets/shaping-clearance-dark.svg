@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1446" height="829" viewBox="0 0 1446 829">
+<title>Clearance to ready</title>
+<defs><marker id="ablauf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#96a3ba"/></marker><marker id="ablauf-arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f59e0b"/></marker></defs>
+<rect x="0" y="0" width="1446" height="829" fill="#12151c"/>
+<path d="M700,88 L700,143" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M553,180 L500,180 L500,272" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="484.5" y="216" width="31" height="20" rx="4" fill="#12151c"/>
+<text x="500" y="230.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#96a3ba">yes</text>
+<path d="M847,180 L900,180 L900,272" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="888" y="216" width="24" height="20" rx="4" fill="#12151c"/>
+<text x="900" y="230.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#96a3ba">no</text>
+<path d="M900,328 L900,383" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M784.5,420 L700,420 L700,632" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="677.5" y="516" width="45" height="20" rx="4" fill="#12151c"/>
+<text x="700" y="530.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#96a3ba">clean</text>
+<path d="M900,457 L900,512" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="856.5" y="474.5" width="87" height="20" rx="4" fill="#12151c"/>
+<text x="900" y="488.8" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#96a3ba">correctable</text>
+<path d="M1015.5,420 L1175,420" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="1041.3" y="410" width="108" height="20" rx="4" fill="#12151c"/>
+<text x="1095.3" y="424.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#96a3ba">owner boundary</text>
+<path d="M500,328 L500,660 L640,660" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M900,568 L900,660 L760,660" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M700,688 L700,752" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="598" y="32" width="204" height="56" rx="28" fill="#162b22" stroke="#8ea3c4" stroke-width="2"/>
+<text x="700" y="65" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">From intake, chart 1</text>
+<polygon points="700,143 847,180 700,217 553,180" fill="#2e2618" stroke="#8ea3c4" stroke-width="2"/>
+<text x="700" y="185" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">Mechanical, local, clear, reversible?</text>
+<rect x="381" y="272" width="238" height="56" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
+<text x="500" y="305" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">Code-grounded self-check</text>
+<rect x="777" y="272" width="246" height="56" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
+<text x="900" y="305" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">One fresh issue adversary</text>
+<polygon points="900,383 1015.5,420 900,457 784.5,420" fill="#2e2618" stroke="#8ea3c4" stroke-width="2"/>
+<text x="900" y="425" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">Adversary verdict?</text>
+<rect x="640" y="632" width="120" height="56" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
+<text x="700" y="665" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">ready</text>
+<rect x="775" y="512" width="250" height="56" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
+<text x="900" y="545" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">Same preparer applies findings</text>
+<rect x="1175" y="392" width="250" height="56" rx="28" fill="#162b22" stroke="#8ea3c4" stroke-width="2"/>
+<text x="1300" y="425" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">To owner decision, chart 3</text>
+<rect x="589.5" y="752" width="221" height="56" rx="28" fill="#162b22" stroke="#8ea3c4" stroke-width="2"/>
+<text x="700" y="785" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">Separate delivery flow</text>
+</svg>

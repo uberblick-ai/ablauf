@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="827" height="589" viewBox="0 0 827 589">
+<title>Intake and sizing</title>
+<defs><marker id="ablauf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#96a3ba"/></marker><marker id="ablauf-arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f59e0b"/></marker></defs>
+<rect x="0" y="0" width="827" height="589" fill="#12151c"/>
+<path d="M500,88 L500,152" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M500,208 L500,272" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M500,328 L500,383" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M353,420 L300,420 L300,512" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="288" y="456" width="24" height="20" rx="4" fill="#12151c"/>
+<text x="300" y="470.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#96a3ba">no</text>
+<path d="M647,420 L700,420 L700,512" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="684.5" y="456" width="31" height="20" rx="4" fill="#12151c"/>
+<text x="700" y="470.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#96a3ba">yes</text>
+<rect x="375" y="32" width="250" height="56" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
+<text x="500" y="65" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">Human or LLM files a request</text>
+<rect x="375" y="152" width="250" height="56" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
+<text x="500" y="185" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">Issue intake, needs-preparation</text>
+<rect x="375" y="272" width="250" height="56" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
+<text x="500" y="305" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">Preparer grounds and shapes it</text>
+<polygon points="500,383 647,420 500,457 353,420" fill="#2e2618" stroke="#8ea3c4" stroke-width="2"/>
+<text x="500" y="425" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">Reviewable in one sitting?</text>
+<rect x="175" y="512" width="250" height="56" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
+<text x="300" y="545" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">Coordination parent, child intakes</text>
+<rect x="594" y="512" width="212" height="56" rx="28" fill="#162b22" stroke="#8ea3c4" stroke-width="2"/>
+<text x="700" y="545" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">To clearance, chart 2</text>
+</svg>
