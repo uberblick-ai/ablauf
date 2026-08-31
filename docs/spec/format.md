@@ -157,6 +157,26 @@ showed the character it names.
 A bare label may not be empty (`A[]` is an error). `A[""]` is an empty label,
 and round-trips as one.
 
+### Line breaks
+
+A label may carry mermaid's line break — `<br>`, `<br/>` or `<br />`, in either
+ASCII case and with the internal whitespace mermaid allows: the regex
+`/<br\s*\/?>/i`, which is mermaid's own splitter, and nothing else. `</br>` and
+every other tag are ordinary text, drawn and escaped as written; ablauf never
+interprets HTML in a label.
+
+A break is **presentation, not grammar**. Nothing in the accepted subset moves
+for it: the parser reads it as label text and it stays in the label value
+verbatim. A **node** is sized and drawn from the lines it names — one visible
+line per segment, the marker itself never drawn, a leading, trailing or
+repeated break an empty line ([layout-store.md](layout-store.md), "Node size").
+An **edge** label is drawn on one line whatever it carries; the chip behind it
+has its own width and placement, and multiline edge labels are not part of v1.
+
+`A[one<br/>two]` therefore serializes as `A["one<br/>two"]`, quoted only
+because `<` and `>` have no bare spelling here — and mermaid splits a quoted
+label too, so the break survives the round-trip in both renderers.
+
 ## Emitted constructs
 
 This is the serializer's entire vocabulary — every line it can produce, and the

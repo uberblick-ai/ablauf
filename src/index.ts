@@ -4,6 +4,7 @@
 export {
   COL,
   GRID,
+  LINE_HEIGHT,
   MARGIN,
   PAD,
   ROW,
