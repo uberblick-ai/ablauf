@@ -520,7 +520,25 @@ question.
 
 **D16. Issue → branch → PR, CI-gated.** Replaces "direct commits to main are
 fine", which was an escape hatch from the parent project's own process
-applied to its least-understood code. See `CLAUDE.md`.
+applied to its least-understood code. Delivery within that shape is executed
+by the role contracts under `.agents/roles/` (D28). See `CLAUDE.md`.
+
+**D28. The role-based delivery workflow, ported from the parent project
+(owner, 2026-08-31).** Replaces the single do-everything coordinator loop.
+Six role contracts under `.agents/roles/` are the source of truth —
+issue-preparer, issue-adversary, implementer, implementation-reviewer,
+integrator, program-coordinator — with thin per-runtime adapters under
+`.claude/agents/` and `.codex/agents/` whose structure
+`scripts/check-agent-roles.mjs` enforces through the test gate. Issues reach
+`ready` through one issue-preparer pass over a `needs-preparation` queue;
+claims and handoffs are durable GitHub records; the challenge leg prefers the
+other runtime via `codex exec`. Deliberately not ported: retrospective
+posting to discussions, the immutable Docker review gate (gates run in
+throwaway worktrees at the recorded head instead), and the MCP corpus —
+ablauf's product intent lives in the README charter, this file and
+`docs/spec/`. The normative homes stay `CLAUDE.md` (gates, merge tiers),
+`AGENTS.md` (agent-neutral workflow) and `.github/ISSUE_SPEC.md` (issue
+grammar and lifecycle); this entry records only the adoption.
 
 **D22. Adapters wait; the demo page is v1's consumer.** The Tiptap and React
 adapters leave v1: what genuinely needs validation there (ProseMirror

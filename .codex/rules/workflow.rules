@@ -1,0 +1,46 @@
+# Read and write only the PR coordination records ablauf reviewers own.
+prefix_rule(
+    pattern = ["gh", "pr", "comment"],
+    decision = "allow",
+    justification = "Reviewers must write their durable claim and verdict on the assigned PR.",
+    match = [
+        "gh pr comment 42 --body Done",
+        "gh pr comment https://github.com/uberblick-ai/ablauf/pull/42 --body-file verdict.md",
+    ],
+    not_match = ["gh issue comment 42 --body Done"],
+)
+
+prefix_rule(
+    pattern = ["gh", "pr", ["view", "diff"]],
+    decision = "allow",
+    justification = "PR inspection is read-only review input.",
+    match = [
+        "gh pr view 42 --comments",
+        "gh pr diff 42",
+    ],
+)
+
+prefix_rule(
+    pattern = ["gh", "issue", "view"],
+    decision = "allow",
+    justification = "Issue inspection is read-only review input.",
+    match = ["gh issue view 55 --comments"],
+)
+
+# These are the repository's documented, non-destructive validation tasks.
+prefix_rule(
+    pattern = ["mise", "run", ["lint", "typecheck", "test", "build", "acceptance"]],
+    decision = "allow",
+    justification = "Reviewers may run the documented exact-head validation tasks without a human babysitting the pane.",
+    match = [
+        "mise run lint",
+        "mise run typecheck",
+        "mise run test",
+        "mise run build",
+        "mise run acceptance",
+    ],
+    not_match = [
+        "mise run demo",
+        "mise trust /tmp/review/mise.toml",
+    ],
+)
