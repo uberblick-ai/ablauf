@@ -36,7 +36,9 @@
     "pack-check": "node scripts/pack-check.mjs",
     "lint": "biome lint --error-on-warnings .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run && npm run test:preflight && npm run test:agent-roles",
+    "test:preflight": "node --test .claude/skills/next-issue/preflight-tier.test.mjs",
+    "test:agent-roles": "node scripts/check-agent-roles.mjs && node --test scripts/check-agent-roles.test.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.9",

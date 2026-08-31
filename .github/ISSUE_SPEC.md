@@ -1,10 +1,9 @@
-# Issue spec — loop-ready issues
+# Issue spec — the lifecycle and grammar of implementable issues
 
-The contract for issues the implementation loop (`/next-issue`) may pick up.
-The loop's triage step lints against this spec: an issue labeled `ready` that
-fails any check below gets a comment listing exactly what's missing, loses the
-`ready` label, and is skipped. Bad input is bounced, never interpreted — the
-loop must not fill gaps by guessing.
+The contract for issues the delivery roles may pick up. An issue labeled
+`ready` that fails any check below gets a comment listing exactly what's
+missing, loses the `ready` label, and is skipped. Bad input is bounced, never
+interpreted — no role fills gaps by guessing.
 
 Design principle: anything **derivable** (blocked state, execution order) is
 computed, never stored; anything **not derivable** (dependencies, footprint,
@@ -17,65 +16,191 @@ The first lines of the issue body, before any heading:
 ```
 Depends-on: #2, #3
 Touches: core, docs
+Parent: #40
 ```
 
 - **`Depends-on`** — mandatory, even when empty. `none` or a comma-separated
   list of issue refs. Grammar: `^Depends-on: (none|#[0-9]+(, #[0-9]+)*)$`.
-  A missing line means *untriaged*, which is different from `none`; untriaged
-  issues are never eligible.
+  A missing line means *untriaged*, which is different from `none`
+  (*consciously independent*); untriaged issues are never eligible.
+  When ordering depends on an open PR, name the issue that PR closes; PR refs do
+  not belong in this header. If the PR closes no issue, record the overlap in
+  Pointers and let the file-overlap rule queue it instead of inventing a
+  dependency.
 - **`Touches`** — mandatory. Comma-separated footprint names, lowercase, from:
   `core` (parser, layout, renderer — the dependency-free library), `demo`
   (the dependency-free demo page and gallery under `demo/`), `docs` (README,
-  docs/), `repo` (root config, CI, `.github/`, `.claude/`). Grammar:
-  `^Touches: [a-z0-9-]+(, [a-z0-9-]+)*$`, every name from that list.
-- **`Priority`** — optional third line. `high`, `normal`, or `low`; absent
-  means `normal`. Grammar when present: `^Priority: (high|normal|low)$`.
+  docs/), `repo` (root config, CI, `.github/`, `.claude/`, `.agents/`,
+  `.codex/`). Grammar: `^Touches: [a-z0-9-]+(, [a-z0-9-]+)*$`, every name from
+  that list.
+- **`Parent`** — optional, at most one line, directly after `Touches`. Grammar:
+  `^Parent: #[0-9]+$`. It is the reservation relation, and the only one: while
+  the named issue is open, this child belongs to that program — only that
+  program dispatches it, and global implementer pickup excludes it. Closing the
+  parent releases the child; reopening it reserves the child again. A parent
+  body's list of children is reading order for a human, never the authority; the
+  headers on the children are. No line at all means unreserved, which is the
+  ordinary case.
+
+  Anything else **fails closed**: more than one `Parent` line, one naming an
+  issue that does not exist or cannot be read, a self-reference, or a cycle
+  through parents makes the child dispatchable by *no* role until a human fixes
+  the header. That is a header defect — say so in a comment and move to the next
+  candidate; never guess which parent was meant. (A delegated subagent's
+  `Parent: <role> <run id>` claim comment is a different record in a different
+  place, and is not this header.)
+- **`Priority`** — optional, after `Touches` (and `Parent`, where present).
+  `high`, `normal`, or `low`; absent means `normal`. Grammar when present:
+  `^Priority: (high|normal|low)$`. The product owner owns every explicit value;
+  agents never write it.
 
 ### Scheduling semantics
 
 - **Eligible** = labeled `ready` AND every `Depends-on` issue is closed AND
-  not claimed.
-- Parallelism is judged at **file** level, not `Touches`-set level. From the
-  issues' scope and Pointers the loop forms an expectation of which files each
-  will edit, and dispatches in parallel (separate worktrees) whenever those
-  are expected to be disjoint; where files cannot be foreseen with confidence,
-  the issues queue. A wrong expectation costs a rebase, not a lost gate.
+  not claimed AND not reserved by an open `Parent`.
+- **Work in flight** is counted in **distinct work units**, reconstructed from
+  GitHub: one unit per item, whether that item is a live claim, an unmerged PR,
+  or both at once — an unmerged PR and the claim that produced it are one piece
+  of work in flight, not two. The cap is 4: when the count is 4, no new issue is
+  picked up until one leaves it — the bottleneck is the gates, not
+  implementation. Unmerged PRs occupy their slots first, because a PR cannot
+  withdraw and a claim can.
+- **A claim is tentative until it is recounted.** Observing the count before
+  claiming does not admit you, because a concurrent claimer observed the same
+  number. After posting the claim, re-read GitHub and count the units again with
+  your own now among them. A successful claimant posts exactly
+  `Admitted: N/4 work units.` and no constituent-unit narration. Over the cap,
+  the earliest units by the claim order
+  `.agents/roles/README.md` defines keep their slots, and every later claimer
+  posts a one-line withdrawal and stops — before creating a branch or worktree,
+  and before editing anything in the repository. Two claimers that admitted
+  themselves on the same reading therefore resolve deterministically instead of
+  both proceeding. A fix-up PR already occupies its unit and needs no admission
+  recount.
+- Parallelism is judged at **file** level, not `Touches`-set level: overlapping
+  `Touches` sets do not by themselves queue. From the issues' scope and
+  Pointers each role forms an expectation of which files each will edit, and
+  work proceeds in parallel (separate worktrees) whenever those are expected to
+  be disjoint; where files cannot be foreseen with confidence, the issues
+  queue. A wrong expectation costs a rebase and fresh exact-head gates, not a
+  lost gate.
 - `core` grammar changes (the parser's accepted subset or the serializer)
   **serialize globally** — every adapter depends on them; nothing else is
-  dispatched while such an issue is in flight.
+  picked up while such an issue is in flight.
 - Order among eligible issues: dependency topology, then `Priority`
-  (high → normal → low), then ascending issue number.
+  (high → normal → low), then ascending issue number. An unset value sorts as
+  `normal`; it does not make prepared work ineligible.
 
 ### Gate check
 
 `Touches` is a declared claim, verified at review time: the PR diff must stay
 within the declared footprint. A diff that escapes it is a finding — either
-the issue was mis-scoped or the agent scope-crept. Resolve explicitly, never
-silently.
+the issue was mis-scoped or the agent scope-crept. The resolution is explicit
+(fix the scope or re-declare), never silent.
 
 ## Labels — lifecycle
 
 | Label | Meaning | Set by |
 |---|---|---|
-| *(none)* | Draft — invisible to the loop | — |
-| `ready` | Spec-complete; the loop may claim it | Human (or agent with human sign-off) |
-| `in-progress` | Claimed; branch named in a comment | Loop |
-| `needs-decision` | Parked on a question only a human can answer | Loop |
+| *(none)* | Draft — invisible to every queue | — |
+| `needs-preparation` | Queued for one issue-preparer pass | Human or intake template |
+| `ready` | Spec-complete; implementers may claim it | Human, or issue-preparer after one-pass clearance |
+| `in-progress` | Claimed; branch named in a comment | Implementer |
+| `needs-decision` | Parked on a question only the owner can answer | Preparer or implementer |
+
+(`needs-human` and `human-approved` are PR labels; CLAUDE.md's merge policy
+owns them.)
 
 There is deliberately **no `blocked` label**: blocked is derived from
-`Depends-on` plus issue closed-state.
+`Depends-on` plus issue closed-state, and stored copies of derivable state
+rot.
 
-`needs-decision` exit path: the loop asks the question as an issue comment
-(concrete options, its recommendation). A human answers in a comment; whoever
-resolves it removes `needs-decision` and restores `ready` — restoring `ready`
-asserts the decision is now written into the issue body, not just the thread.
+Preparation is one foreground issue-preparer run. A narrowly mechanical, local,
+understood and easily reversible issue gets a code-grounded self-check and no
+adversary. Every other issue gets exactly one fresh issue-adversary subagent,
+preferably from the other runtime/model; the same preparer applies correctable
+findings and sets `ready` when recorded owner-approved authority covers the
+result. Unresolved product, agent-authority, safety or fundamentally unsafe-shape
+findings take `needs-decision`. Another adversary is exceptional and requires an
+explicit owner request, never an automatic preparation loop.
+
+Preparation may instead end in `split`. Decide from the expected diff, never
+the issue body's length: split when the combined change is not reviewable in
+one sitting or a child has an independently useful outcome; keep cohesive work
+together when a proposed child only enables its sibling. Technical decomposition
+is preparer judgment; choosing product behavior is an owner decision. Thousands
+of hand-written changed lines are a strong presumption to split. The source
+becomes a coordination-only parent: remove `needs-preparation`, never add
+`ready`, and close it after its independently reviewable children. Give each
+child `needs-preparation`, `Parent: #N`, and only real ordering dependencies.
+
+`needs-decision` exit path: the preparer asks one focused question as an issue
+comment, with concrete options and its recommendation, and replaces
+`needs-preparation` or `ready` with `needs-decision`. A direct answer from the
+product owner to that question is authority. Another person's comment is
+evidence unless the owner explicitly adopts it; an off-GitHub owner answer may
+be recorded only with clear provenance. Once the answer is durable, replace
+`needs-decision` with `needs-preparation`. A fresh preparer assignment reuses
+the previous handoff, adversary verdict, question and answer, and rechecks only
+the affected grounding and intervening upstream changes. It does not repeat
+classification or run another adversary by default.
+
+A top-level implementer returns a stale, unsafe, unnecessarily complex, or
+owner-bound contract with this issue comment:
+
+```text
+Returned: implementer <opus|codex> <session-or-agent id>
+Grounding: <origin/main SHA>
+Reason: <stale-contract|unsafe|unnecessary-complexity|owner-decision> — <one sentence>
+Evidence: <URL or concise pointer>
+```
+
+The first consecutive return since the latest product-owner answer to a return
+question removes `ready` and `in-progress` and adds `needs-preparation`. Its
+preparer reuses the prior pass and refreshes only the affected contract and
+grounding; another adversary is not the default. A second consecutive return
+removes `ready`, `in-progress` and `needs-preparation`, adds `needs-decision`,
+and appends one focused question with concrete options and a recommendation. A
+return already at an owner boundary may take that path immediately. The answer
+to that question resets the return count. Thus an issue gets at most one
+automatic `ready` → `needs-preparation` → `ready` repair cycle before human
+escalation.
 
 ### Claim protocol
 
-On claiming, the loop adds `in-progress` and comments `Claimed: <branch>`
-(e.g. `Claimed: feat/parser-subgraphs`). Recovery rule: an issue carrying
-`in-progress` whose named branch has no live worktree and no open PR is stale
-and may be reclaimed. Claims live on GitHub, never in a session's memory.
+The cross-agent workflow lives in [`AGENTS.md`](../AGENTS.md). Its minimum
+durable records use this issue grammar. On claim, add `in-progress` and post:
+
+```text
+Claimed: feat/parser-subgraphs
+Implementer: opus a12a538d
+```
+
+`Implementer` is `<opus|codex> <session-or-agent id>`. Completion is a PR body
+recording the outcome, verification, material findings, and KISS/overtesting
+self-review. A fix-up claim is posted on the PR:
+
+```text
+Claimed: <existing branch>
+Implementer: <opus|codex> <session-or-agent id>
+Ruling: <integrator comment URL>
+```
+
+After opening or updating the PR, post only:
+
+```text
+Done: implementer <opus|codex> <session-or-agent id>
+Grounding: <origin/main SHA>
+```
+
+The PR supplies the branch, head SHA, diff and check state; do not copy them
+into the handoff or add a second completion comment to the issue. Recovery and
+independent-review rules live only in `AGENTS.md`.
+
+The executable routing detail lives under `.claude/skills/next-issue/`: it owns
+the grounded trivial-vs-challenged classification, challenge questions, recheck
+and focused parity test. This spec owns only the authority and lifecycle above;
+do not grow a second copy of that procedure here or in `AGENTS.md`.
 
 ## Body sections
 
@@ -86,40 +211,74 @@ doesn't answer? Then the issue is not `ready`.**
 - **What** — one paragraph, the outcome in behavioral terms.
 - **Why** — a sentence or two, tied to the README charter or a decision in
   `docs/decisions.md`. Keeps the agent from "improving" beyond intent.
-- **Acceptance criteria** — a checkbox list (`- [ ]`) where **every item is
-  verifiable by running something**: a test, a command, an observable
-  behavior. For ablauf the standing bar is the mermaid contract: "this input
-  renders identically in mermaid" and "the hint round-trip survives edit X"
-  are the shape of a good criterion.
-- **Out of scope** — explicit non-goals, or `None.`
-- **Pointers** — where a fresh agent should look first: files, prior PRs
-  and issues, CLAUDE.md sections, `docs/decisions.md` entries, known
-  gotchas. Cite, never restate. `None.` only when CLAUDE.md genuinely
-  covers it.
+- **Acceptance criteria** — a short checkbox list (`- [ ]`) of **distinct,
+  observable and non-obvious outcomes or invariants**. Use one to five; regroup
+  or split when the contract needs more. State what must be true, not how to
+  prove it: test scenarios, test files and implementation steps belong in
+  Pointers, not in checkboxes. Repository hygiene and delivery gates — lint,
+  typecheck, the general test suite, review and CI — already live in
+  `AGENTS.md`, `CLAUDE.md` and CI; they are never issue acceptance criteria.
+  For ablauf the standing bar is the mermaid contract: "this input renders
+  identically in mermaid" and "the hint round-trip survives edit X" are the
+  shape of a good criterion.
+- **Out of scope** — explicit non-goals, or `None.` if genuinely none. This
+  is the "least code wins" principle made enforceable: it is what scope
+  creep gets rejected against.
+- **Pointers** — where a fresh agent should look before writing anything:
+  relevant files/modules, prior PRs and issues, CLAUDE.md sections,
+  `docs/decisions.md` entries, `docs/spec/` sections, and known gotchas. Cite,
+  never restate: the agent reads the doc itself at pickup, so a pointer that
+  copies its content only ages. `None.` only when CLAUDE.md genuinely covers
+  it. Every implementing agent starts with zero session memory; this section
+  is what makes that cheap instead of expensive.
 
 ## Sizing
 
-One issue = one PR by default, reviewable in one sitting. Work that needs
-multiple PRs becomes a parent issue split into loop-ready children; parents
-are never labeled `ready`.
+A request may become a coordination-only parent with several bite-sized
+children. One `ready` implementation child describes at most one independently
+reviewable PR; each PR closes its child, and the parent closes after its required
+children. Parents live outside the preparation and implementation queues — only
+their children carry `needs-preparation` or `ready`.
 
 The exception runs the other way: individually-trivial issues declaring the
-same `Touches` set may go to one agent as one PR closing several
-(`Closes #a, #b`), provided the combined diff is reviewable in one sitting,
-the gate check is applied to the combined diff, and the PR carries a merge
-report checking each issue's acceptance criteria separately.
+same `Touches` set may be implemented by one agent as one PR closing several
+(`Closes #a, #b`), provided the combined diff is still reviewable in one
+sitting, the gate check above is applied to that combined diff against the
+shared set, and the PR carries the tier-2 merge report of CLAUDE.md's merge
+policy, checking each issue's acceptance criteria separately — a batch PR
+carries that report even where it would otherwise be tier 1.
+
+### Body focus, and what a body is for
+
+An issue body records the **final contract**, not the history of arriving at
+it. Material review corrections, superseded decisions and decision chronology
+belong in **comments** — searchable, and out of the way of the person
+implementing. Do not copy the original intake verbatim into a new comment after
+preparation; preserve its material intent in the final contract and rely on the
+issue's edit history for the raw draft. Keep every body as short as complete. A
+complex or contract-sensitive issue may carry more context when it changes a
+decision; a coordination parent carries only the shared outcome and child
+routing. Length alone never decides whether to split. Acceptance criteria stay
+at one to five distinct outcomes. Mechanism belongs in `docs/decisions.md` or
+`docs/spec/`, not an issue body; issues cite those documents and never restate
+them.
+
+Close a parent when its final child closes.
 
 ## Lint — the exact checks
 
 An issue labeled `ready` must pass all of:
 
-1. `Depends-on` line present, first section, matching the grammar.
+1. `Depends-on` line present, first section, matching the grammar above.
 2. `Touches` line present, matching the grammar, every name valid.
-3. `Priority` line, when present, matches its grammar.
-4. All five `##` sections present: What, Why, Acceptance criteria,
+3. `Parent`, where present, occurs once, matches the grammar, and names a
+   readable issue that is neither this one nor a cycle through parents.
+4. `Priority`, where present, matches its grammar.
+5. All five `##` sections present: What, Why, Acceptance criteria,
    Out of scope, Pointers.
-5. At least one `- [ ]` checkbox under Acceptance criteria.
-6. Out of scope and Pointers are non-empty (explicit `None.` is acceptable).
+6. At least one `- [ ]` checkbox under Acceptance criteria.
+7. Out of scope and Pointers are non-empty (explicit `None.` is acceptable).
 
 Sizing and decision-completeness are judgment calls, not lintable — the
-coordinator applies them when granting or revoking `ready`.
+issue-preparer applies them when granting `ready`, and any role that finds a
+`ready` issue failing them says so and skips it.
