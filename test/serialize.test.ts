@@ -123,6 +123,21 @@ describe("serialize", () => {
     );
   });
 
+  // A mermaid line break is presentation, not grammar: it stays in the label
+  // value, nothing in the accepted subset or the emitted vocabulary moves for
+  // it, and the label comes back quoted only because `BARE` excludes `<` and
+  // `>` (D13) — mermaid's splitter runs on a quoted label too.
+  it("keeps a mermaid line break in the label, through the round-trip", () => {
+    for (const marker of ["<br>", "<br/>", "<br />", "<BR/>", "<Br  />"]) {
+      const source = `flowchart TD\n  A[one${marker}two]\n  A -->|yes${marker}no| B((done))\n`;
+      const graph = parse(source);
+      expect(graph.nodes[0]?.label).toBe(`one${marker}two`);
+      expect(graph.edges[0]?.label).toBe(`yes${marker}no`);
+      expect(serialize(graph)).toContain(`A["one${marker}two"]`);
+      expect(parse(serialize(graph))).toEqual(graph);
+    }
+  });
+
   it("round-trips every graph it emits", () => {
     for (const source of [serialize(CANONICAL), ...SOURCES.map(read)]) {
       const graph = parse(source);

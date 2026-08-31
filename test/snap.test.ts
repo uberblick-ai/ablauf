@@ -26,7 +26,7 @@ import {
   sizeOf,
   snap,
 } from "../src/index.js";
-import type { Directive, Graph, Node, NodeKind, Position, SnapResult } from "../src/index.js";
+import type { Directive, Graph, Node, NodeKind, Position, Size, SnapResult } from "../src/index.js";
 
 const SPEC = readFileSync(new URL("../docs/spec/layout-store.md", import.meta.url), "utf8");
 
@@ -140,12 +140,27 @@ const DIRS = [
 
 const anId = fc.constantFrom(...IDS, "ghost");
 
+// Some labels carry a mermaid line break, so the properties below are asserted
+// at the taller boxes a multiline label produces and not only at h=56/74. A
+// generator that only ever draws one-line labels is how a geometry property
+// quietly stops covering the geometry.
+const aLabel = fc.oneof(
+  fc.string({ maxLength: 32 }),
+  fc
+    .tuple(
+      fc.string({ maxLength: 12 }),
+      fc.constantFrom("<br>", "<br/>", "<br />", "<BR/>"),
+      fc.string({ maxLength: 12 }),
+    )
+    .map((parts) => parts.join("")),
+);
+
 const aGraph: fc.Arbitrary<Graph> = fc.record({
   direction: fc.constant("TD" as const),
   nodes: fc.uniqueArray(
     fc.record({
       id: fc.constantFrom(...IDS),
-      label: fc.string({ maxLength: 32 }),
+      label: aLabel,
       kind: fc.constantFrom(...KINDS),
     }),
     { selector: (n) => n.id, minLength: 1, maxLength: IDS.length },
@@ -237,6 +252,28 @@ describe("geometry", () => {
     // clamped at both ends
     expect(sizeOf({ id: "a", label: "", kind: "process" }).w).toBe(120);
     expect(sizeOf({ id: "a", label: "x".repeat(200), kind: "process" }).w).toBe(250);
+  });
+
+  // Width comes from the longest *visible* line and height from how many there
+  // are, so a broken label is narrower and taller than the same text on one
+  // line — never the other way round, which is what it used to be.
+  it("sizes a broken label from its visible lines", () => {
+    const size = (label: string, kind: NodeKind = "process"): Size => sizeOf({ id: "a", label, kind });
+    expect(size("Write audit log")).toEqual({ w: 162, h: 56 });
+    expect(size("Write<br/>audit log")).toEqual({ w: 120, h: 76 });
+    expect(size("Valid<br/>token?", "decision")).toEqual({ w: 164, h: 94 });
+    // every spelling mermaid's own splitter takes, and no other tag
+    for (const marker of ["<br>", "<br/>", "<br />", "<BR/>", "<Br  />"]) {
+      expect(size(`ab${marker}cd`), marker).toEqual({ w: 120, h: 76 });
+    }
+    for (const inert of ["</br>", "<brx/>", "< br/>", "<br", "br/>"]) {
+      expect(size(`ab${inert}cd`).h, inert).toBe(56);
+    }
+    // a leading, trailing or repeated break is an empty line, counted like any
+    // other: line count is exactly one more than the number of breaks
+    expect(size("<br/>x").h).toBe(76);
+    expect(size("x<br/>").h).toBe(76);
+    expect(size("a<br/><br/>b")).toEqual({ w: 120, h: 96 });
   });
 
   it("boxes are centred on the position", () => {
@@ -599,6 +636,25 @@ describe("regressions", () => {
     expect(frozen[0]?.ids).toEqual(["reject", "rate"]);
     // and being outside the bound does not move it either
     expect(out.warnings.filter((w) => w.code === "frozen-out-of-bounds").map((w) => w.ids)).toEqual([["reject"]]);
+  });
+
+  // The height half of the same rule: adding a line to a frozen node's label
+  // grows its box around the centre it already has, and D17 reports the
+  // collision that grows into rather than resolving it.
+  it("frozen overlap (D17): a break grows the box around the unchanged centre", () => {
+    const one = chart([["a", "Fetch the token"], ["b", "Store it"]]);
+    const two = chart([["a", "Fetch<br/>the token"], ["b", "Store it"]]);
+    const prev = { a: { x: 200, y: 200 }, b: { x: 200, y: 270 } };
+    expect(sizeOf(one.nodes[0] as Node).h).toBe(56);
+    expect(sizeOf(two.nodes[0] as Node).h).toBe(76);
+    expect(boxOf(two.nodes[0] as Node, prev.a).cy).toBe(200);
+
+    expect(snap(one, prev, []).warnings.filter((w) => w.code === "frozen-overlap")).toEqual([]);
+    const out = snap(two, prev, []);
+    expect(out.positions).toEqual(prev);
+    const frozen = out.warnings.filter((w) => w.code === "frozen-overlap");
+    expect(frozen).toHaveLength(1);
+    expect(frozen[0]?.ids).toEqual(["a", "b"]);
   });
 
   // The bound a frozen position is judged against is the geometric one. Grid

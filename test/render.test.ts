@@ -1283,6 +1283,100 @@ describe("bad input", () => {
 });
 
 // ---------------------------------------------------------------------------
+// multiline labels
+// ---------------------------------------------------------------------------
+
+/**
+ * A mermaid line break is presentation (D5): the marker stays in the label and
+ * the renderer draws the lines it names, inside the box `sizeOf` grew for
+ * exactly those lines. Edge labels are deliberately not part of this — the
+ * chip has its own width, height and placement rules.
+ */
+describe("a node label carrying a mermaid line break", () => {
+  const at = { a: { x: 300, y: 300 } };
+  const drawn = (label: string): string =>
+    toSvg({ direction: "TD", nodes: [node("a", label)], edges: [] }, at);
+  /**
+   * How far apart two baselines have to be, read off the box rather than off a
+   * shared constant: the point of the assertion is that the renderer spaces
+   * lines by exactly what `sizeOf` grew the box by, so taking both from the
+   * same import would assert nothing.
+   */
+  const step = sizeOf(node("a", "a<br/>b")).h - sizeOf(node("a", "a")).h;
+  /** Every `<tspan>` the node text carries: its centre line, baseline and text. */
+  const lines = (svg: string): { x: number; y: number; text: string }[] =>
+    [...svg.matchAll(/<tspan x="([^"]+)" y="([^"]+)">([^<]*)<\/tspan>/g)].map((m) => ({
+      x: Number(m[1]),
+      y: Number(m[2]),
+      text: m[3] ?? "",
+    }));
+
+  it("draws one line per segment and never the marker itself", () => {
+    for (const marker of ["<br>", "<br/>", "<br />", "<BR/>", "<Br  />"]) {
+      const svg = drawn(`one${marker}two`);
+      expect(lines(svg).map((l) => l.text), marker).toEqual(["one", "two"]);
+      expect(svg, marker).not.toMatch(/<br/i);
+      expect(svg, marker).not.toMatch(/&lt;\s*br/i);
+    }
+  });
+
+  // `</br>` is in this list because issue #56 scoped it out, not because
+  // mermaid agrees: mermaid's splitter breaks on it. Widening the set is its
+  // own change; this pins where the line currently is.
+  it("leaves anything that is not a break as one escaped line", () => {
+    for (const inert of ["</br>", "<brx/>", "< br/>"]) {
+      const svg = drawn(`one${inert}two`);
+      expect(lines(svg), inert).toEqual([]);
+      expect(svg, inert).toContain(`>one${inert.replaceAll("<", "&lt;").replaceAll(">", "&gt;")}two<`);
+    }
+  });
+
+  it("escapes every line, so only the break becomes structure", () => {
+    const svg = drawn(`a & <b><br/><script>alert("x")</script>`);
+    expect(lines(svg).map((l) => l.text)).toEqual([
+      "a &amp; &lt;b&gt;",
+      "&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;",
+    ]);
+    expect(svg).not.toContain("<script");
+    expect(svg.match(/</g)?.length).toBe(svg.match(/>/g)?.length);
+  });
+
+  it("centres the lines in the box that sizeOf grew for them", () => {
+    const label = "one<br/>two<br/>three";
+    const box = boxOf(node("a", label), at.a);
+    const drawnLines = lines(drawn(label));
+    expect(drawnLines.map((l) => l.text)).toEqual(["one", "two", "three"]);
+    expect(drawnLines.map((l) => l.x)).toEqual([box.cx, box.cx, box.cx]);
+    const ys = drawnLines.map((l) => l.y);
+    expect(ys[1]! - ys[0]!).toBe(step);
+    expect(ys[2]! - ys[1]!).toBe(step);
+    // The block is centred on the box, and no baseline leaves it.
+    expect((ys[0]! + ys[2]!) / 2).toBe(box.cy + DEFAULT_THEME.fontSize / 3);
+    for (const y of ys) {
+      expect(y).toBeGreaterThan(box.y);
+      expect(y).toBeLessThan(box.y + box.h);
+    }
+  });
+
+  it("changes nothing about a one-line label, marker or no marker", () => {
+    const plain = drawn("one two");
+    expect(plain).toContain(">one two</text>");
+    expect(lines(plain)).toEqual([]);
+    // and the first line of a broken label starts where a single line would
+    // have, shifted up by half the block it now belongs to
+    const broken = lines(drawn("one<br/>two"));
+    const single = /<text x="300" y="([^"]+)"/.exec(plain)?.[1];
+    expect(broken[0]?.y).toBe(Number(single) - step / 2);
+  });
+
+  it("leaves an edge label alone: the chip is one line, out of scope here", () => {
+    const svg = toSvg(pair("yes<br/>no"), { a: { x: 300, y: 100 }, b: { x: 300, y: 400 } });
+    expect(svg).toContain("&lt;br/&gt;");
+    expect(lines(svg)).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // the renderer measures nothing
 // ---------------------------------------------------------------------------
 

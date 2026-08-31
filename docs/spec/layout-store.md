@@ -41,13 +41,26 @@ Size is a pure function of the label and the kind — no font metrics, no
 measurement, no environment ([D5](../decisions.md)):
 
 ```
-w = min(250, max(120, round(label.length * 8.4) + 36))
-decision → { w: w + 44, h: 74 }
-otherwise → { w, h: 56 }
+lines   = the label split on every mermaid line break — <br>, <br/> or <br />,
+          in either ASCII case and with mermaid's internal whitespace, which is
+          the regex /<br\s*\/?>/i and nothing else (format.md, "Line breaks",
+          for what that set excludes); a label carrying no break is one line
+longest = max over lines of line.length
+grown   = (count of lines - 1) * 20
+w       = min(250, max(120, round(longest * 8.4) + 36))
+decision → { w: w + 44, h: 74 + grown }
+otherwise → { w, h: 56 + grown }
 ```
 
-`label.length` is UTF-16 code units. These numbers are part of the determinism
-contract, not a tuning knob: changing them changes which charts collide.
+A line's length is UTF-16 code units. A leading, trailing or repeated break
+makes an empty line, counted like any other. These numbers are part of the
+determinism contract, not a tuning knob: changing them changes which charts
+collide.
+
+Because a broken label is taller, a relabel that adds a break grows a frozen
+node's box around a centre that does not move — which is the second half of
+[D17](../decisions.md), and reported rather than resolved like any other
+frozen overlap.
 
 A node's box is centred on its position: `x = cx - w/2`, `y = cy - h/2`. Two
 boxes **overlap** when they are closer than `PAD` on both axes:

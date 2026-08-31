@@ -44,7 +44,7 @@
 // precision, literal theme tokens, no generated ids beyond the two arrow
 // markers and the grid pattern, no clock, no randomness, no font measurement,
 // and none of the approximated math D21 bans.
-import { MARGIN, boxOf } from "../geometry.js";
+import { LINE_HEIGHT, MARGIN, boxOf, labelLines } from "../geometry.js";
 import type { Box, Position } from "../geometry.js";
 import { isPosition } from "../layout/store.js";
 import type { Edge, Graph, Node, NodeKind } from "../types.js";
@@ -939,12 +939,42 @@ const shape = (node: Node, b: Box, theme: Theme): string => {
   return el("rect", { x: b.x, y: b.y, width: b.w, height: b.h, rx, ...skin });
 };
 
-const label = (x: number, y: number, size: number, fill: string, theme: Theme, text: string): string =>
+/** One `<text>`, with `body` already escaped or built out of escaped pieces. */
+const textEl = (
+  x: number,
+  y: number,
+  size: number,
+  fill: string,
+  theme: Theme,
+  body: string,
+): string =>
   el(
     "text",
     { x, y, "text-anchor": "middle", "font-family": theme.fontFamily, "font-size": size, fill },
-    esc(text),
+    body,
   );
+
+const label = (x: number, y: number, size: number, fill: string, theme: Theme, text: string): string =>
+  textEl(x, y, size, fill, theme, esc(text));
+
+/**
+ * A node's label, as many lines as `labelLines` finds in it (D5) — the same
+ * lines `sizeOf` grew the box for, so the text always fits the box it is drawn
+ * in. A one-line label is byte-for-byte the `<text>` it has always been; a
+ * multiline one adds one `<tspan>` per line at an **absolute** y, so no line
+ * depends on a renderer accumulating `dy`, and the block is centred on the box.
+ * Only a recognized break becomes structure: every line still goes through
+ * `esc`, because `el` emits its body verbatim.
+ */
+const nodeLabel = (b: Box, theme: Theme, text: string): string => {
+  const lines = labelLines(text);
+  const first = b.cy + theme.fontSize / 3 - ((lines.length - 1) * LINE_HEIGHT) / 2;
+  if (lines.length === 1) return label(b.cx, first, theme.fontSize, theme.text, theme, text);
+  const body = lines
+    .map((line, i) => el("tspan", { x: b.cx, y: first + i * LINE_HEIGHT }, esc(line)))
+    .join("");
+  return textEl(b.cx, first, theme.fontSize, theme.text, theme, body);
+};
 
 const GRID_ID = "ablauf-grid";
 const GRID_CELL = 200;
@@ -1087,7 +1117,7 @@ export const toSvg = (
         }),
       );
     }
-    parts.push(label(b.cx, b.cy + theme.fontSize / 3, theme.fontSize, theme.text, theme, node.label));
+    parts.push(nodeLabel(b, theme, node.label));
   }
 
   // One element per line. Whitespace between elements draws nothing, and it is

@@ -21,16 +21,50 @@ export const ROW = 120;
 export const PAD = 14;
 /** The left/top gutter every movable node stays out of (D9: no maximum). */
 export const MARGIN = 20;
+/**
+ * How much taller a box gets, and how far apart the renderer sets baselines,
+ * for every label line after the first.
+ */
+export const LINE_HEIGHT = 20;
 
 /**
- * Width grows with the label, clamped to a readable range; a decision is wider
- * and taller than the rest because its diamond wastes its corners. The
- * constants are part of the determinism contract — changing them changes every
- * chart's collision behaviour, so they are spec'd, not tuned.
+ * A mermaid line break: `<br>`, `<br/>` and `<br />`, in either ASCII case and
+ * with the internal whitespace mermaid allows. Everything else is ordinary
+ * label text and stays visible as written.
+ *
+ * That is the set issue #56 scoped, and it is *narrower* than mermaid's own
+ * splitter, which is `/<\/?br\s*\/?>/gi` and also breaks the malformed-but-
+ * common `</br>`. #56 put `</br>` out of scope explicitly, so widening this is
+ * its own change against the "renders the same in mermaid" rule, not a free
+ * one to make here.
+ */
+const BREAK = /<br\s*\/?>/i;
+
+/**
+ * The visible lines of a label. Breaking a label is presentation, so it is a
+ * pure function of the label (D5) and this is the single definition of it: the
+ * size below and the renderer read the same lines, so a box can never disagree
+ * with the text drawn inside it. The marker stays in `Node.label` — turning it
+ * into a newline would rewrite the user's semantics and hit `serialize`'s
+ * refusal (D4, D13). A label with no break is one line, the empty label
+ * included.
+ */
+export const labelLines = (label: string): string[] => label.split(BREAK);
+
+/**
+ * Width grows with the longest visible line and height with the number of
+ * lines, both clamped to a readable range; a decision is wider and taller than
+ * the rest because its diamond wastes its corners. The constants are part of
+ * the determinism contract — changing them changes every chart's collision
+ * behaviour, so they are spec'd, not tuned.
  */
 export const sizeOf = (node: Node): Size => {
-  const w = Math.min(250, Math.max(120, Math.round(node.label.length * 8.4) + 36));
-  return node.kind === "decision" ? { w: w + 44, h: 74 } : { w, h: 56 };
+  const lines = labelLines(node.label);
+  let longest = 0;
+  for (const line of lines) longest = Math.max(longest, line.length);
+  const w = Math.min(250, Math.max(120, Math.round(longest * 8.4) + 36));
+  const grown = (lines.length - 1) * LINE_HEIGHT;
+  return node.kind === "decision" ? { w: w + 44, h: 74 + grown } : { w, h: 56 + grown };
 };
 
 export const boxOf = (node: Node, p: Position): Box => {
