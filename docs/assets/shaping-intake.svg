@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1127" height="689" viewBox="0 0 1127 689">
+<title>Intake and sizing</title>
+<defs><marker id="ablauf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5a6580"/></marker><marker id="ablauf-arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c2410c"/></marker></defs>
+<rect x="0" y="0" width="1127" height="689" fill="#ffffff"/>
+<path d="M600,88 L600,172" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M600,228 L600,312" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M600,368 L600,443" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M453,480 L200,480 L200,612" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="314.5" y="470" width="24" height="20" rx="4" fill="#ffffff"/>
+<text x="326.5" y="484.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#5a6580">no</text>
+<path d="M747,480 L1000,480 L1000,612" fill="none" stroke="#5a6580" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="858" y="470" width="31" height="20" rx="4" fill="#ffffff"/>
+<text x="873.5" y="484.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#5a6580">yes</text>
+<rect x="475" y="32" width="250" height="56" rx="0" fill="#eef2f8" stroke="#33405a" stroke-width="2"/>
+<text x="600" y="65" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#16203a">Human or LLM files a request</text>
+<rect x="475" y="172" width="250" height="56" rx="0" fill="#eef2f8" stroke="#33405a" stroke-width="2"/>
+<text x="600" y="205" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#16203a">Issue intake, needs-preparation</text>
+<rect x="475" y="312" width="250" height="56" rx="0" fill="#eef2f8" stroke="#33405a" stroke-width="2"/>
+<text x="600" y="345" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#16203a">Preparer grounds and shapes it</text>
+<polygon points="600,443 747,480 600,517 453,480" fill="#fdf3dd" stroke="#33405a" stroke-width="2"/>
+<text x="600" y="485" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#16203a">Reviewable in one sitting?</text>
+<rect x="75" y="612" width="250" height="56" rx="0" fill="#eef2f8" stroke="#33405a" stroke-width="2"/>
+<text x="200" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#16203a">Coordination parent, child intakes</text>
+<rect x="894" y="612" width="212" height="56" rx="28" fill="#e6f6ec" stroke="#33405a" stroke-width="2"/>
+<text x="1000" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#16203a">To clearance, chart 2</text>
+</svg>

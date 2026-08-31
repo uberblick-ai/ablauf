@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="1189" viewBox="0 0 560 1189">
+<title>The issue-review workflow as one chart</title>
+<defs><marker id="ablauf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#96a3ba"/></marker><marker id="ablauf-arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f59e0b"/></marker></defs>
+<rect x="0" y="0" width="560" height="1189" fill="#12151c"/>
+<path d="M140,88 L140,142" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M140,218 L140,245 L160,245 L160,272" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M160,328 L160,373" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M117.3,451.3 L117.3,481.7 L160,481.7 L160,512" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="123.2" y="471.7" width="31" height="20" rx="4" fill="#12151c"/>
+<text x="138.7" y="486" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#96a3ba">yes</text>
+<path d="M202.7,451.3 L202.7,521.7 L160,521.7 L160,592" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="148" y="546.8" width="24" height="20" rx="4" fill="#12151c"/>
+<text x="160" y="561.2" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#96a3ba">no</text>
+<path d="M98.5,648 L98.5,669.3 L140,669.3 L140,712" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="117.5" y="680.7" width="45" height="20" rx="4" fill="#12151c"/>
+<text x="140" y="695" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#96a3ba">clean</text>
+<path d="M160,648 L160,658 L90,658 L90,782 L118.3,782 L118.3,792" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="46.5" y="710" width="87" height="20" rx="4" fill="#12151c"/>
+<text x="90" y="724.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#96a3ba">correctable</text>
+<path d="M221.5,648 L221.5,658 L25,658 L25,852 L160,852 L160,862" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="69.3" y="648" width="108" height="20" rx="4" fill="#12151c"/>
+<text x="123.3" y="662.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#96a3ba">owner boundary</text>
+<path d="M160,938 L160,982" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="113" y="950" width="94" height="20" rx="4" fill="#12151c"/>
+<text x="160" y="964.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#96a3ba">owner answer</text>
+<path d="M160,1058 L160,1076 L118.3,1076 L118.3,1112" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M160,568 L160,578 L293,578 L293,702 L180,702 L180,712" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M201.7,792 L201.7,780 L140,780 L140,768" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M201.7,1112 L201.7,1102 L295,1102 L295,778 L180,778 L180,768" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M285,300 L293,300 L293,320 L301,320" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="256.5" y="300" width="73" height="20" rx="4" fill="#12151c"/>
+<text x="293" y="314.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#96a3ba">too large</text>
+<path d="M220,740 L249.5,740" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="38" y="32" width="204" height="56" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
+<text x="140" y="65" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">Human + optional LLM</text>
+<rect x="46.5" y="142" width="187" height="76" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
+<text x="140" y="175" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7"><tspan x="140" y="175">Short issue intake</tspan><tspan x="140" y="195">needs-preparation</tspan></text>
+<rect x="35" y="272" width="250" height="56" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
+<text x="160" y="305" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">Issue preparer grounds and shapes</text>
+<polygon points="160,373 288,420 160,467 32,420" fill="#2e2618" stroke="#8ea3c4" stroke-width="2"/>
+<text x="160" y="415" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7"><tspan x="160" y="415">Mechanical, local,</tspan><tspan x="160" y="435">clear and reversible?</tspan></text>
+<rect x="41" y="512" width="238" height="56" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
+<text x="160" y="545" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">Code-grounded self-check</text>
+<rect x="37" y="592" width="246" height="56" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
+<text x="160" y="625" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">One fresh issue adversary</text>
+<rect x="100" y="712" width="120" height="56" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
+<text x="160" y="745" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">ready</text>
+<rect x="35" y="792" width="250" height="56" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
+<text x="160" y="825" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">Same preparer applies findings</text>
+<rect x="58" y="862" width="204" height="76" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
+<text x="160" y="895" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7"><tspan x="160" y="895">needs-decision</tspan><tspan x="160" y="915">one focused question</tspan></text>
+<rect x="70.5" y="982" width="179" height="76" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
+<text x="160" y="1015" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7"><tspan x="160" y="1015">needs-preparation</tspan><tspan x="160" y="1035">reuse prior work</tspan></text>
+<rect x="35" y="1112" width="250" height="56" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
+<text x="160" y="1145" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">Refresh affected grounding only</text>
+<rect x="301" y="282" width="238" height="76" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
+<text x="420" y="315" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7"><tspan x="420" y="315">Coordination parent</tspan><tspan x="420" y="335">bite-sized child intakes</tspan></text>
+<rect x="249.5" y="712" width="221" height="56" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
+<text x="360" y="745" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">Separate delivery flow</text>
+</svg>

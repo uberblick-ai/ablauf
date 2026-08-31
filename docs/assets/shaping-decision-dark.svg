@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="646" height="529" viewBox="0 0 646 529">
+<title>Owner decision and return</title>
+<defs><marker id="ablauf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#96a3ba"/></marker><marker id="ablauf-arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f59e0b"/></marker></defs>
+<rect x="0" y="0" width="646" height="529" fill="#12151c"/>
+<path d="M500,88 L500,172" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="453" y="120" width="94" height="20" rx="4" fill="#12151c"/>
+<text x="500" y="134.3" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#96a3ba">owner answer</text>
+<path d="M500,228 L500,312" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<path d="M500,368 L500,452" fill="none" stroke="#96a3ba" stroke-width="1.8" marker-end="url(#ablauf-arrow)"/>
+<rect x="375" y="32" width="250" height="56" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
+<text x="500" y="65" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">needs-decision, one focused question</text>
+<rect x="375" y="172" width="250" height="56" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
+<text x="500" y="205" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">needs-preparation, reuse prior work</text>
+<rect x="375" y="312" width="250" height="56" rx="0" fill="#1e2530" stroke="#8ea3c4" stroke-width="2"/>
+<text x="500" y="345" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">Refresh affected grounding only</text>
+<rect x="389.5" y="452" width="221" height="56" rx="28" fill="#162b22" stroke="#8ea3c4" stroke-width="2"/>
+<text x="500" y="485" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#e7edf7">ready, back to chart 2</text>
+</svg>
