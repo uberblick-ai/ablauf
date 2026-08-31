@@ -43,8 +43,8 @@ measurement, no environment ([D5](../decisions.md)):
 ```
 lines   = the label split on every mermaid line break — <br>, <br/> or <br />,
           in either ASCII case and with mermaid's internal whitespace, which is
-          the regex /<br\s*\/?>/i and nothing else; a label carrying no break
-          is one line
+          the regex /<br\s*\/?>/i and nothing else (format.md, "Line breaks",
+          for what that set excludes); a label carrying no break is one line
 longest = max over lines of line.length
 grown   = (count of lines - 1) * 20
 w       = min(250, max(120, round(longest * 8.4) + 36))

@@ -21,7 +21,6 @@ import { describe, expect, it } from "vitest";
 import {
   DARK_THEME,
   DEFAULT_THEME,
-  LINE_HEIGHT,
   MARGIN,
   RenderError,
   boxOf,
@@ -1297,6 +1296,13 @@ describe("a node label carrying a mermaid line break", () => {
   const at = { a: { x: 300, y: 300 } };
   const drawn = (label: string): string =>
     toSvg({ direction: "TD", nodes: [node("a", label)], edges: [] }, at);
+  /**
+   * How far apart two baselines have to be, read off the box rather than off a
+   * shared constant: the point of the assertion is that the renderer spaces
+   * lines by exactly what `sizeOf` grew the box by, so taking both from the
+   * same import would assert nothing.
+   */
+  const step = sizeOf(node("a", "a<br/>b")).h - sizeOf(node("a", "a")).h;
   /** Every `<tspan>` the node text carries: its centre line, baseline and text. */
   const lines = (svg: string): { x: number; y: number; text: string }[] =>
     [...svg.matchAll(/<tspan x="([^"]+)" y="([^"]+)">([^<]*)<\/tspan>/g)].map((m) => ({
@@ -1314,6 +1320,9 @@ describe("a node label carrying a mermaid line break", () => {
     }
   });
 
+  // `</br>` is in this list because issue #56 scoped it out, not because
+  // mermaid agrees: mermaid's splitter breaks on it. Widening the set is its
+  // own change; this pins where the line currently is.
   it("leaves anything that is not a break as one escaped line", () => {
     for (const inert of ["</br>", "<brx/>", "< br/>"]) {
       const svg = drawn(`one${inert}two`);
@@ -1339,8 +1348,8 @@ describe("a node label carrying a mermaid line break", () => {
     expect(drawnLines.map((l) => l.text)).toEqual(["one", "two", "three"]);
     expect(drawnLines.map((l) => l.x)).toEqual([box.cx, box.cx, box.cx]);
     const ys = drawnLines.map((l) => l.y);
-    expect(ys[1]! - ys[0]!).toBe(LINE_HEIGHT);
-    expect(ys[2]! - ys[1]!).toBe(LINE_HEIGHT);
+    expect(ys[1]! - ys[0]!).toBe(step);
+    expect(ys[2]! - ys[1]!).toBe(step);
     // The block is centred on the box, and no baseline leaves it.
     expect((ys[0]! + ys[2]!) / 2).toBe(box.cy + DEFAULT_THEME.fontSize / 3);
     for (const y of ys) {
@@ -1357,7 +1366,7 @@ describe("a node label carrying a mermaid line break", () => {
     // have, shifted up by half the block it now belongs to
     const broken = lines(drawn("one<br/>two"));
     const single = /<text x="300" y="([^"]+)"/.exec(plain)?.[1];
-    expect(broken[0]?.y).toBe(Number(single) - LINE_HEIGHT / 2);
+    expect(broken[0]?.y).toBe(Number(single) - step / 2);
   });
 
   it("leaves an edge label alone: the chip is one line, out of scope here", () => {

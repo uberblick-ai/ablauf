@@ -28,10 +28,15 @@ export const MARGIN = 20;
 export const LINE_HEIGHT = 20;
 
 /**
- * A mermaid line break, spelled the way mermaid's own label splitter spells it:
- * `<br>`, `<br/>` and `<br />`, in either ASCII case and with the internal
- * whitespace mermaid allows. Nothing else is a break — `</br>` and every other
- * tag are ordinary label text and stay visible as written.
+ * A mermaid line break: `<br>`, `<br/>` and `<br />`, in either ASCII case and
+ * with the internal whitespace mermaid allows. Everything else is ordinary
+ * label text and stays visible as written.
+ *
+ * That is the set issue #56 scoped, and it is *narrower* than mermaid's own
+ * splitter, which is `/<\/?br\s*\/?>/gi` and also breaks the malformed-but-
+ * common `</br>`. #56 put `</br>` out of scope explicitly, so widening this is
+ * its own change against the "renders the same in mermaid" rule, not a free
+ * one to make here.
  */
 const BREAK = /<br\s*\/?>/i;
 
