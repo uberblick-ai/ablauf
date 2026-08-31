@@ -40,8 +40,7 @@ callable roles, say so and return.
    > `.agents/roles/<role>.md`. Identifiers: role `<role>`, run id `<the stable
    > run id created above>`, launched by session `<this session's id>`.
 
-   For an integrator or
-   implementation-reviewer launch, explicitly state that the child shares this
+   For an integrator launch, explicitly state that the child shares this
    launching session's authorship identity and must apply the role's durable
    trailer/claim independence check before claiming; its fresh run id does not
    create independence.
