@@ -1,0 +1,80 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='700' style='font-size:initial;' class="pikchr" viewBox="0 0 882.72 1169.14" data-pikchr-date="2026-10-13">
+<text x="412.56" y="15.768" text-anchor="middle" font-style="italic" fill="rgb(0,0,0)" font-size="90%" dominant-baseline="central">A maintainer adds the first label</text>
+<polygon points="412.56,101.376 408.24,89.856 416.88,89.856" style="fill:rgb(0,0,0)"/>
+<path d="M412.56,29.376L412.56,95.616"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<path d="M327.6,147.456L497.52,147.456A23.04 23.04 0 0 0 520.56 124.416A23.04 23.04 0 0 0 497.52 101.376L327.6,101.376A23.04 23.04 0 0 0 304.56 124.416A23.04 23.04 0 0 0 327.6 147.456Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="412.56" y="124.416" text-anchor="middle" font-family="monospace" fill="rgb(0,0,0)" font-size="90%" dominant-baseline="central">needs-preparation</text>
+<polygon points="412.56,219.456 408.24,207.936 416.88,207.936" style="fill:rgb(0,0,0)"/>
+<path d="M412.56,147.456L412.56,213.696"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="412.56" y="183.456" text-anchor="start" fill="rgb(0,0,0)" font-size="90%" dominant-baseline="central">trigger</text>
+<path d="M282.96,284.256L542.16,284.256L542.16,219.456L282.96,219.456Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="412.56" y="242.784" text-anchor="middle" font-weight="bold" fill="rgb(0,0,0)" font-size="90%" dominant-baseline="central">issue-preparer</text>
+<text x="412.56" y="259.114" text-anchor="middle" fill="rgb(0,0,0)" font-size="72%" dominant-baseline="central">writes scope and criteria</text>
+<polygon points="412.56,356.256 408.24,344.736 416.88,344.736" style="fill:rgb(0,0,0)"/>
+<path d="M412.56,284.256L412.56,350.496"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="412.56" y="320.256" text-anchor="start" fill="rgb(0,0,0)" font-size="90%" dominant-baseline="central">prepared</text>
+<path d="M378,402.336L447.12,402.336A23.04 23.04 0 0 0 470.16 379.296A23.04 23.04 0 0 0 447.12 356.256L378,356.256A23.04 23.04 0 0 0 354.96 379.296A23.04 23.04 0 0 0 378 402.336Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="412.56" y="379.296" text-anchor="middle" font-family="monospace" fill="rgb(0,0,0)" font-size="90%" dominant-baseline="central">ready</text>
+<polygon points="412.56,474.336 408.24,462.816 416.88,462.816" style="fill:rgb(0,0,0)"/>
+<path d="M412.56,402.336L412.56,468.576"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<path d="M282.96,539.136L542.16,539.136L542.16,474.336L282.96,474.336Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="412.56" y="497.664" text-anchor="middle" font-weight="bold" fill="rgb(0,0,0)" font-size="90%" dominant-baseline="central">implementer</text>
+<text x="412.56" y="513.994" text-anchor="middle" fill="rgb(0,0,0)" font-size="72%" dominant-baseline="central">codes, checks, opens the PR</text>
+<polygon points="412.56,611.136 408.24,599.616 416.88,599.616" style="fill:rgb(0,0,0)"/>
+<path d="M412.56,539.136L412.56,605.376"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="412.56" y="575.136" text-anchor="start" fill="rgb(0,0,0)" font-size="90%" dominant-baseline="central">handed-off</text>
+<path d="M349.2,657.216L475.92,657.216A23.04 23.04 0 0 0 498.96 634.176A23.04 23.04 0 0 0 475.92 611.136L349.2,611.136A23.04 23.04 0 0 0 326.16 634.176A23.04 23.04 0 0 0 349.2 657.216Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="412.56" y="634.176" text-anchor="middle" font-family="monospace" fill="rgb(0,0,0)" font-size="90%" dominant-baseline="central">needs-review</text>
+<polygon points="412.56,729.216 408.24,717.696 416.88,717.696" style="fill:rgb(0,0,0)"/>
+<path d="M412.56,657.216L412.56,723.456"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<path d="M282.96,794.016L542.16,794.016L542.16,729.216L282.96,729.216Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="412.56" y="752.544" text-anchor="middle" font-weight="bold" fill="rgb(0,0,0)" font-size="90%" dominant-baseline="central">reviewer</text>
+<text x="412.56" y="768.874" text-anchor="middle" fill="rgb(0,0,0)" font-size="72%" dominant-baseline="central">reviews the exact head SHA</text>
+<polygon points="412.56,866.016 408.24,854.496 416.88,854.496" style="fill:rgb(0,0,0)"/>
+<path d="M412.56,794.016L412.56,860.256"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="412.56" y="830.016" text-anchor="start" fill="rgb(0,0,0)" font-size="90%" dominant-baseline="central">approved</text>
+<path d="M342,912.096L483.12,912.096A23.04 23.04 0 0 0 506.16 889.056A23.04 23.04 0 0 0 483.12 866.016L342,866.016A23.04 23.04 0 0 0 318.96 889.056A23.04 23.04 0 0 0 342 912.096Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="412.56" y="889.056" text-anchor="middle" font-family="monospace" fill="rgb(0,0,0)" font-size="90%" dominant-baseline="central">ready-to-merge</text>
+<polygon points="412.56,984.096 408.24,972.576 416.88,972.576" style="fill:rgb(0,0,0)"/>
+<path d="M412.56,912.096L412.56,978.336"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<path d="M282.96,1048.9L542.16,1048.9L542.16,984.096L282.96,984.096Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="412.56" y="1007.42" text-anchor="middle" font-weight="bold" fill="rgb(0,0,0)" font-size="90%" dominant-baseline="central">integrator</text>
+<text x="412.56" y="1023.75" text-anchor="middle" fill="rgb(0,0,0)" font-size="72%" dominant-baseline="central">updates base, checks, merges</text>
+<polygon points="412.56,1120.9 408.24,1109.38 416.88,1109.38" style="fill:rgb(0,0,0)"/>
+<path d="M412.56,1048.9L412.56,1115.14"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="412.56" y="1084.9" text-anchor="start" fill="rgb(0,0,0)" font-size="90%" dominant-baseline="central">merged</text>
+<path d="M313.2,1166.98L511.92,1166.98A23.04 23.04 0 0 0 534.96 1143.94A23.04 23.04 0 0 0 511.92 1120.9L313.2,1120.9A23.04 23.04 0 0 0 290.16 1143.94A23.04 23.04 0 0 0 313.2 1166.98Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,128,0);" />
+<text x="412.56" y="1143.94" text-anchor="middle" fill="rgb(0,128,0)" font-size="90%" dominant-baseline="central">Merged · issue closed</text>
+<path d="M25.2,784.656L166.32,784.656A23.04 23.04 0 0 0 189.36 761.616A23.04 23.04 0 0 0 166.32 738.576L25.2,738.576A23.04 23.04 0 0 0 2.16 761.616A23.04 23.04 0 0 0 25.2 784.656Z"  style="fill:none;stroke-width:2.16;stroke:rgb(166,95,12);" />
+<text x="95.76" y="761.616" text-anchor="middle" font-family="monospace" fill="rgb(166,95,12)" font-size="90%" dominant-baseline="central">needs-changes</text>
+<polygon points="189.36,761.616 200.88,757.296 200.88,765.936" style="fill:rgb(166,95,12)"/>
+<path d="M282.96,761.616L195.12,761.616"  style="fill:none;stroke-width:2.16;stroke:rgb(166,95,12);" />
+<text x="236.16" y="750.924" text-anchor="middle" fill="rgb(166,95,12)" font-size="90%" dominant-baseline="central">changes-requested</text>
+<polygon points="95.76,784.656 100.08,796.176 91.44,796.176" style="fill:rgb(166,95,12)"/>
+<path d="M318.96,889.056L95.76,889.056L95.76,790.416"  style="fill:none;stroke-width:2.16;stroke-linejoin:round;stroke:rgb(166,95,12);stroke-dasharray:7.2,7.2;" />
+<text x="232.56" y="874.656" text-anchor="middle" fill="rgb(0,0,0)" font-size="72%" dominant-baseline="central">on-conflict · launcher</text>
+<polygon points="30.5083,777.908 34.8283,789.428 26.1883,789.428" style="fill:rgb(166,95,12)"/>
+<path d="M282.96,1016.5L30.5083,1016.5L30.5083,783.668"  style="fill:none;stroke-width:2.16;stroke-linejoin:round;stroke:rgb(166,95,12);" />
+<text x="174.96" y="1002.1" text-anchor="middle" fill="rgb(0,0,0)" font-size="72%" dominant-baseline="central">changes-requested</text>
+<polygon points="282.96,506.736 271.44,511.056 271.44,502.416" style="fill:rgb(166,95,12)"/>
+<path d="M95.76,738.576L95.76,506.736L277.2,506.736"  style="fill:none;stroke-width:2.16;stroke-linejoin:round;stroke:rgb(166,95,12);" />
+<text x="124.56" y="492.336" text-anchor="middle" fill="rgb(0,0,0)" font-size="72%" dominant-baseline="central">revise the same PR</text>
+<path d="M606.96,862.416L880.56,862.416L880.56,660.816L606.96,660.816Z"  style="fill:none;stroke-width:2.16;stroke:rgb(178,56,47);stroke-dasharray:7.2,7.2;" />
+<text x="743.76" y="728.957" text-anchor="middle" font-family="monospace" fill="rgb(178,56,47)" font-size="90%" dominant-baseline="central">needs-human</text>
+<text x="743.76" y="745.286" text-anchor="middle" fill="rgb(178,56,47)" font-size="72%" dominant-baseline="central">or an Action needed comment</text>
+<text x="743.76" y="761.616" text-anchor="middle" font-weight="bold" fill="rgb(178,56,47)" font-size="90%" dominant-baseline="central">A person decides</text>
+<text x="743.76" y="777.946" text-anchor="middle" fill="rgb(178,56,47)" font-size="72%" dominant-baseline="central">adds the trigger of any role</text>
+<text x="743.76" y="792.461" text-anchor="middle" fill="rgb(178,56,47)" font-size="72%" dominant-baseline="central">blocked, same role: retry</text>
+<path d="M542.16,251.856L837.36,251.856L837.36,660.816L837.36,660.816"  style="fill:none;stroke-width:2.16;stroke-linejoin:round;stroke:rgb(178,56,47);" />
+<polygon points="664.56,660.816 660.24,649.296 668.88,649.296" style="fill:rgb(178,56,47)"/>
+<path d="M542.16,506.736L664.56,506.736L664.56,655.056"  style="fill:none;stroke-width:2.16;stroke-linejoin:round;stroke:rgb(178,56,47);" />
+<polygon points="606.96,761.616 595.44,765.936 595.44,757.296" style="fill:rgb(178,56,47)"/>
+<path d="M542.16,761.616L601.2,761.616"  style="fill:none;stroke-width:2.16;stroke:rgb(178,56,47);" />
+<polygon points="743.76,862.416 748.08,873.936 739.44,873.936" style="fill:rgb(178,56,47)"/>
+<path d="M542.16,1016.5L743.76,1016.5L743.76,868.176"  style="fill:none;stroke-width:2.16;stroke-linejoin:round;stroke:rgb(178,56,47);" />
+<text x="606.96" y="237.456" text-anchor="middle" fill="rgb(0,0,0)" font-size="72%" dominant-baseline="central">needs-human</text>
+<text x="585.36" y="492.336" text-anchor="middle" fill="rgb(0,0,0)" font-size="72%" dominant-baseline="central">blocked</text>
+<text x="585.36" y="747.216" text-anchor="middle" fill="rgb(0,0,0)" font-size="72%" dominant-baseline="central">blocked</text>
+<text x="671.76" y="1002.1" text-anchor="middle" fill="rgb(0,0,0)" font-size="72%" dominant-baseline="central">maintainer-merge, blocked</text>
+</svg>
+

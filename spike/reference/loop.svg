@@ -1,0 +1,139 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="700" viewBox="0 0 780 700" role="img" aria-label="Label flow: needs-preparation to issue-preparer to ready to implementer, which opens a PR with needs-review, then reviewer to ready-to-merge, then integrator merges. Reviewer or integrator can send work back through needs-changes to the implementer. The preparer and integrator can stop at needs-human for a person.">
+<style>/* SVG parts, colored from the same tokens */
+text { font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif; fill: #17202c; }
+.t-mono { font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+.t-12 { font-size: 12px; } .t-11 { font-size: 11px; } .t-13 { font-size: 13px; }
+.t-muted { fill: #5a6575; }
+.t-agent { fill: #0b6b67; font-weight: 600; }
+.t-rework { fill: #a65f0c; } .t-stop { fill: #b2382f; } .t-done { fill: #2a7845; font-weight: 600; }
+.t-bold { font-weight: 600; }
+.t-cap { font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 11px; letter-spacing: .08em; fill: #5a6575; }
+.band { fill: #e9eef5; }
+.pill { fill: #ffffff; stroke: #d3d9e2; stroke-width: 1.2; }
+.agent { fill: #dff1ee; stroke: #0b6b67; stroke-width: 1.5; }
+.launcher { fill: #fbefdc; stroke: #a65f0c; stroke-width: 1.5; }
+.lane-box { fill: #ffffff; stroke: #d3d9e2; stroke-width: 1.2; }
+.stopbox { fill: #f9e2df; stroke: #b2382f; stroke-width: 1.2; stroke-dasharray: 5 4; }
+.donebox { fill: #e0f1e5; stroke: #2a7845; stroke-width: 1.5; }
+.reworkbox { fill: #fbefdc; stroke: #a65f0c; stroke-width: 1.2; }
+.plainbox { fill: #ffffff; stroke: #d3d9e2; stroke-width: 1.2; }
+.edge { fill: none; stroke: #5a6575; stroke-width: 1.6; }
+.edge-rework { fill: none; stroke: #a65f0c; stroke-width: 1.6; }
+.edge-dash { fill: none; stroke: #a65f0c; stroke-width: 1.6; stroke-dasharray: 6 5; }
+.edge-stop { fill: none; stroke: #b2382f; stroke-width: 1.6; }
+.edge-agent { fill: none; stroke: #0b6b67; stroke-width: 1.6; }
+.lane { stroke: #d3d9e2; stroke-width: 1.2; stroke-dasharray: 3 5; }
+.axis { stroke: #5a6575; stroke-width: 1.4; }
+.mk-ink { fill: #5a6575; } .mk-rework { fill: #a65f0c; } .mk-stop { fill: #b2382f; } .mk-agent { fill: #0b6b67; }
+.d-muted { fill: #5a6575; } .d-agent { fill: #0b6b67; } .d-done { fill: #2a7845; } .d-rework { fill: #a65f0c; } .d-stop { fill: #b2382f; }
+.leasebar { fill: #dff1ee; stroke: #0b6b67; stroke-width: 1.2; }
+.leasebar-end { fill: #f9e2df; stroke: #b2382f; stroke-width: 1.2; }
+
+</style>
+<defs>
+<marker id="a-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="mk-ink"/></marker>
+<marker id="a-rework" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="mk-rework"/></marker>
+<marker id="a-stop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="mk-stop"/></marker>
+</defs>
+<!-- bands -->
+<rect x="8" y="290" width="764" height="404" class="band"/>
+<line x1="8" y1="290" x2="772" y2="290" class="lane"/>
+<text x="20" y="60" class="t-cap">ISSUE</text>
+<text x="20" y="684" class="t-cap">PULL REQUEST</text>
+<!-- person start -->
+<text x="400" y="17" text-anchor="middle" class="t-12 t-muted">A maintainer adds the first label</text>
+<line x1="400" y1="25" x2="400" y2="52" class="edge" marker-end="url(#a-ink)"/>
+<!-- spine edges -->
+<line x1="400" y1="87" x2="400" y2="116" class="edge" marker-end="url(#a-ink)"/>
+<text x="410" y="106" class="t-mono t-11 t-muted">trigger</text>
+<line x1="400" y1="163" x2="400" y2="192" class="edge" marker-end="url(#a-ink)"/>
+<text x="410" y="182" class="t-mono t-11">prepared</text>
+<line x1="400" y1="227" x2="400" y2="266" class="edge" marker-end="url(#a-ink)"/>
+<line x1="400" y1="313" x2="400" y2="352" class="edge" marker-end="url(#a-ink)"/>
+<text x="410" y="337" class="t-mono t-11">handed-off</text>
+<line x1="400" y1="387" x2="400" y2="416" class="edge" marker-end="url(#a-ink)"/>
+<line x1="400" y1="463" x2="400" y2="492" class="edge" marker-end="url(#a-ink)"/>
+<text x="410" y="482" class="t-mono t-11">approved</text>
+<line x1="400" y1="527" x2="400" y2="556" class="edge" marker-end="url(#a-ink)"/>
+<line x1="400" y1="603" x2="400" y2="632" class="edge" marker-end="url(#a-ink)"/>
+<text x="410" y="622" class="t-mono t-11">merged</text>
+<!-- labels (pills) -->
+<g>
+<rect x="321" y="53" width="158" height="34" rx="17" class="pill"/>
+<circle cx="335" cy="70" r="5" class="d-muted"/>
+<text x="347" y="74" class="t-mono t-12">needs-preparation</text>
+</g>
+<g>
+<rect x="364" y="193" width="72" height="34" rx="17" class="pill"/>
+<circle cx="378" cy="210" r="5" class="d-done"/>
+<text x="390" y="214" class="t-mono t-12">ready</text>
+</g>
+<g>
+<rect x="339" y="353" width="122" height="34" rx="17" class="pill"/>
+<circle cx="353" cy="370" r="5" class="d-agent"/>
+<text x="365" y="374" class="t-mono t-12">needs-review</text>
+</g>
+<g>
+<rect x="331" y="493" width="138" height="34" rx="17" class="pill"/>
+<circle cx="345" cy="510" r="5" class="d-done"/>
+<text x="357" y="514" class="t-mono t-12">ready-to-merge</text>
+</g>
+<!-- agents -->
+<g>
+<rect x="310" y="117" width="180" height="46" rx="8" class="agent"/>
+<text x="400" y="136" text-anchor="middle" class="t-mono t-13 t-agent">issue-preparer</text>
+<text x="400" y="153" text-anchor="middle" class="t-11 t-muted">writes scope and criteria</text>
+</g>
+<g>
+<rect x="310" y="267" width="180" height="46" rx="8" class="agent"/>
+<text x="400" y="286" text-anchor="middle" class="t-mono t-13 t-agent">implementer</text>
+<text x="400" y="303" text-anchor="middle" class="t-11 t-muted">codes, checks, opens the PR</text>
+</g>
+<g>
+<rect x="310" y="417" width="180" height="46" rx="8" class="agent"/>
+<text x="400" y="436" text-anchor="middle" class="t-mono t-13 t-agent">reviewer</text>
+<text x="400" y="453" text-anchor="middle" class="t-11 t-muted">reviews the exact head SHA</text>
+</g>
+<g>
+<rect x="310" y="557" width="180" height="46" rx="8" class="agent"/>
+<text x="400" y="576" text-anchor="middle" class="t-mono t-13 t-agent">integrator</text>
+<text x="400" y="593" text-anchor="middle" class="t-11 t-muted">updates base, checks, merges</text>
+</g>
+<!-- done -->
+<rect x="315" y="633" width="170" height="34" rx="17" class="donebox"/>
+<text x="400" y="654" text-anchor="middle" class="t-12 t-done">Merged · issue closed</text>
+<!-- rework branch (left) -->
+<path d="M310,440 H166" class="edge-rework" marker-end="url(#a-rework)"/>
+<text x="237" y="432" text-anchor="middle" class="t-mono t-11 t-rework">changes-requested</text>
+<path d="M331,510 H130 V458" class="edge-dash" marker-end="url(#a-rework)"/>
+<text x="322" y="502" text-anchor="end" class="t-mono t-11 t-rework">on-conflict · launcher</text>
+<path d="M310,580 H70 V458" class="edge-rework" marker-end="url(#a-rework)"/>
+<text x="300" y="572" text-anchor="end" class="t-mono t-11 t-rework">changes-requested</text>
+<path d="M100,423 V298 H309" class="edge-rework" marker-end="url(#a-rework)"/>
+<text x="205" y="318" text-anchor="middle" class="t-11 t-rework">revise the same PR</text>
+<g>
+<rect x="35" y="423" width="130" height="34" rx="17" class="pill"/>
+<circle cx="49" cy="440" r="5" class="d-rework"/>
+<text x="61" y="444" class="t-mono t-12">needs-changes</text>
+</g>
+<!-- stop branch (right) -->
+<path d="M490,140 H700 V321" class="edge-stop" marker-end="url(#a-stop)"/>
+<text x="500" y="132" class="t-mono t-11 t-stop">needs-human</text>
+<path d="M490,290 H630 V321" class="edge-stop" marker-end="url(#a-stop)"/>
+<text x="500" y="282" class="t-mono t-11 t-stop">blocked</text>
+<path d="M490,440 H579" class="edge-stop" marker-end="url(#a-stop)"/>
+<text x="500" y="432" class="t-mono t-11 t-stop">blocked</text>
+<path d="M490,580 H675 V473" class="edge-stop" marker-end="url(#a-stop)"/>
+<text x="500" y="572" class="t-mono t-11 t-stop">maintainer-merge, blocked</text>
+<rect x="580" y="322" width="190" height="150" rx="10" class="stopbox"/>
+<g>
+<rect x="617" y="334" width="116" height="30" rx="15" class="pill"/>
+<circle cx="631" cy="349" r="5" class="d-stop"/>
+<text x="643" y="353" class="t-mono t-12">needs-human</text>
+</g>
+<text x="675" y="382" text-anchor="middle" class="t-11 t-muted">or an Action needed comment</text>
+<line x1="596" y1="394" x2="754" y2="394" class="lane"/>
+<text x="675" y="414" text-anchor="middle" class="t-12 t-bold">A person decides</text>
+<text x="675" y="432" text-anchor="middle" class="t-11">adds the trigger of any role</text>
+<text x="675" y="448" text-anchor="middle" class="t-11 t-muted">blocked, same role: retry</text>
+</svg>

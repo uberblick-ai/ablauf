@@ -1,0 +1,50 @@
+flow v0
+columns side main stop
+
+section "Issue stage"
+text maintainer "A maintainer adds the first label" col=main
+pill needs-preparation tone=muted
+box issue-preparer "writes scope and criteria" tone=agent
+pill prep-stop "needs-human" col=stop row=issue-preparer tone=stop
+pill ready col=main tone=done
+
+section "Pull-request stage"
+box implementer "codes, checks, opens the PR" tone=agent
+pill needs-changes col=side row=implementer tone=rework
+pill needs-review col=main tone=agent
+box reviewer "reviews the exact head SHA" tone=agent
+pill needs-security tone=agent
+box security-reviewer "checks secrets and permissions" tone=agent
+pill ready-to-merge tone=done
+box integrator "updates base, checks, merges" tone=agent
+end merged "Merged · issue closed"
+panel stops col=stop row=implementer span=7 tone=stop
+  strong "Stop"
+  pill blocked
+  pill needs-human
+  muted "needs-human label or an Action needed comment"
+  rule
+  muted "A person decides and adds the trigger label of any role"
+  muted "After blocked, the same role retries"
+
+maintainer --> needs-preparation
+needs-preparation --> issue-preparer
+issue-preparer --> ready : prepared
+issue-preparer --> prep-stop tone=stop : stop
+ready --> implementer
+implementer --> needs-review : handed-off
+needs-review --> reviewer
+reviewer --> needs-security : approve
+needs-security --> security-reviewer
+security-reviewer --> ready-to-merge : approve
+ready-to-merge --> integrator
+integrator --> merged : merge
+reviewer --> needs-changes tone=rework from=left to=bottom.4 : request changes
+security-reviewer --> needs-changes tone=rework from=left to=bottom.3 : request changes
+ready-to-merge -.-> needs-changes tone=rework from=left to=bottom.2 : on-conflict · launcher
+integrator --> needs-changes tone=rework from=left to=bottom.1 : request changes
+needs-changes --> implementer tone=rework : revise same PR
+implementer --> stops tone=stop from=right to=left.1 : blocked
+reviewer --> stops tone=stop from=right to=left.3 : blocked
+security-reviewer --> stops tone=stop from=right to=left.6 : blocked
+integrator --> stops tone=stop from=right to=left.9 label=end : blocked · maintainer merge

@@ -1,0 +1,43 @@
+flow v0
+columns side main stop
+
+section "Issue stage"
+text maintainer col=main "A maintainer adds the first label"
+pill needs-preparation tone=muted
+box issue-preparer "writes scope and criteria" tone=agent
+pill prep-stop "needs-human" col=stop row=issue-preparer tone=stop
+pill ready col=main tone=done
+
+section "Pull-request stage"
+box implementer "codes, checks, opens the PR" tone=agent
+pill needs-review tone=agent
+box reviewer "reviews the exact head SHA" tone=agent
+pill needs-changes col=side row=reviewer tone=rework
+pill ready-to-merge col=main tone=done
+box integrator "updates base, checks, merges" tone=agent
+end merged "Merged · issue closed"
+panel stop col=stop row=reviewer span=3 tone=stop
+  strong "Stop"
+  pill needs-human
+  muted "or an “Action needed” comment"
+  rule
+  text "A person decides and adds the trigger label of any role"
+  muted "After blocked, the same role retries"
+
+maintainer --> needs-preparation
+needs-preparation --> issue-preparer : picks up
+issue-preparer --> ready tone=done : prepared
+issue-preparer --> prep-stop tone=stop : stops
+ready --> implementer : takes
+implementer --> needs-review : opens PR · handed-off
+needs-review --> reviewer
+reviewer --> ready-to-merge tone=done : approves
+ready-to-merge --> integrator
+integrator --> merged : merges
+reviewer --> needs-changes tone=rework : requests changes
+ready-to-merge -.-> needs-changes tone=rework to=bottom.2 : on-conflict · launcher
+integrator --> needs-changes tone=rework to=bottom.1 : requests changes
+needs-changes --> implementer tone=rework from=top to=left label=end : revises same PR
+implementer --> stop tone=stop : blocked
+reviewer --> stop tone=stop : blocked
+integrator --> stop tone=stop : blocked · maintainer merge
