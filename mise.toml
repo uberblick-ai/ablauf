@@ -1,0 +1,40 @@
+[tools]
+# The spike runs its TypeScript through Node's built-in type stripping, so Node
+# is the only tool and nothing needs installing.
+node = "26"
+
+# The quick-start, once per checkout entry with `mise activate`. The script
+# decides whether to say anything at all; see its header.
+[hooks]
+enter = { run = 'sh "{{config_root}}/bin/mise-welcome.sh"' }
+
+[tasks.welcome]
+description = "Show the quick-start"
+quiet = true
+run = 'sh "{{config_root}}/bin/mise-welcome.sh"'
+
+[tasks.test]
+description = "Run the spike's tests"
+dir = "{{config_root}}/spike"
+run = "node --test flow.test.ts"
+
+[tasks.render]
+description = "Render every spike/examples/*.flow to spike/out/*.svg and list its diagnostics"
+dir = "{{config_root}}/spike"
+run = "node render.ts"
+
+# Runs from the caller's directory, so the path can be relative to where you are.
+[tasks.check]
+description = "Render one .flow file to an .svg beside it and list its problems"
+usage = 'arg "<file>" help="A .flow file"'
+dir = "{{cwd}}"
+run = 'node "{{config_root}}/spike/check.ts" "${usage_file?}"'
+
+[tasks.measure]
+description = "Show how far each node, route and label moved between two examples (default: loop, loop-insert)"
+usage = '''
+arg "[before]" help="Example name in spike/examples" default="loop"
+arg "[after]" help="Example name in spike/examples" default="loop-insert"
+'''
+dir = "{{config_root}}/spike"
+run = 'node measure.ts "${usage_before:-loop}" "${usage_after:-loop-insert}"'
