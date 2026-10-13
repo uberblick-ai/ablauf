@@ -1,0 +1,46 @@
+# Entering the directory with `mise activate` installs dependencies when
+# node_modules is missing or older than the lockfile, then lists common commands.
+[tools]
+node = "26"
+pnpm = "10"
+
+[tasks.setup]
+description = "Install dependencies from the lockfile"
+sources = ["package.json", "pnpm-lock.yaml"]
+outputs = ["node_modules/.modules.yaml"]
+quiet = true
+run = "pnpm install --frozen-lockfile --silent"
+
+[tasks.playground]
+description = "Serve the review page on localhost:4620 (or a free port)"
+depends = ["setup"]
+run = "node spike/playground/server.ts"
+
+[tasks.check]
+description = "Render one .flow file next to itself and list its problems"
+usage = 'arg "<file>" help="Path to a .flow file"'
+run = 'node spike/check.ts "${usage_file?}"'
+
+[tasks.render]
+description = "Render every example to spike/out/"
+run = "node spike/render.ts"
+
+[tasks.measure]
+description = "Show what moved between the loop and the loop with a role inserted"
+run = "node spike/measure.ts"
+
+[tasks.test]
+description = "Run the renderer tests"
+depends = ["setup"]
+run = "node --test spike/flow.test.ts"
+
+[tasks.ci]
+description = "Lint, typecheck and test, as a contributor runs them before pushing"
+depends = ["setup"]
+run = ["pnpm -s lint", "pnpm -s typecheck", "node --test spike/flow.test.ts"]
+
+[hooks]
+enter = [
+  { task = "setup" },
+  "echo 'ablauf: mise run playground · mise run check FILE · mise run ci · mise tasks' >&2",
+]

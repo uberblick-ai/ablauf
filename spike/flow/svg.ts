@@ -11,7 +11,7 @@ import {
 } from "./grid.ts";
 import type { Tone } from "./parse.ts";
 
-const LIGHT = {
+export const LIGHT = {
 	ink: "#17202c",
 	muted: "#5a6575",
 	line: "#d3d9e2",
@@ -26,7 +26,7 @@ const LIGHT = {
 	done: "#2a7845",
 	"done-bg": "#e0f1e5",
 };
-const DARK: typeof LIGHT = {
+export const DARK: typeof LIGHT = {
 	ink: "#e5e9ef",
 	muted: "#98a2b0",
 	line: "#2c3440",
@@ -84,7 +84,7 @@ export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 	const tones = [...new Set(layout.routes.map((r) => r.tone))].sort();
 	const out: string[] = [];
 	out.push(
-		`<svg xmlns="http://www.w3.org/2000/svg" class="ab" viewBox="0 0 ${layout.width} ${layout.height}" width="${layout.width}" height="${layout.height}" role="img"${options.title ? ` aria-label="${esc(options.title)}"` : ""}>`,
+		`<svg xmlns="http://www.w3.org/2000/svg" class="ab" viewBox="0 0 ${layout.width} ${layout.height}" width="${layout.width}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? describe(layout))}">`,
 	);
 	out.push(`<style>${STYLE}</style>`);
 	out.push("<defs>");
@@ -100,6 +100,14 @@ export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 	for (const r of layout.routes) if (r.label) out.push(edgeLabel(r));
 	out.push("</svg>");
 	return `${out.join("\n")}\n`;
+}
+
+// Without a title, the accessible name lists the nodes top to bottom.
+function describe(layout: Layout): string {
+	const names = [...layout.nodes]
+		.sort((a, b) => a.y - b.y || a.x - b.x)
+		.map((p) => p.node.label);
+	return `Flow: ${names.join(", ")}`;
 }
 
 function band(b: Band, width: number): string {

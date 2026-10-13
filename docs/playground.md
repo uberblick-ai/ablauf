@@ -4,6 +4,14 @@ Draft for review, 2026-10-13. Modelled on wireframe-md's playground
 (`playground/` there, `mise run playground`). It goes into the fresh
 `uberblick-ai/ablauf` repository once the spike's direction is accepted.
 
+## Status
+
+A first cut runs on the spike branch: `mise run playground`. It has the
+sidebar, the editor beside a live render, clickable diagnostics, Save, the
+light/dark and 710 px toggles, a node-box overlay, and the hand-drawn
+reference beside the loop. Approval, entry pages, hover links and the
+what-moved view are still to come.
+
 ## What it is for
 
 It is a local page for people to review flows. You write or paste a flow, see

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ablauf playground</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/playground.css">
+<script type="module" src="/playground/app.ts"></script>
+</head>
+<body>
+<header class="pg-header">
+  <h1>ablauf playground</h1>
+  <fieldset class="pg-toggle">
+    <legend>Scheme</legend>
+    <label><input type="radio" name="scheme" value="light" checked>Light</label>
+    <label><input type="radio" name="scheme" value="dark">Dark</label>
+  </fieldset>
+  <fieldset class="pg-toggle">
+    <legend>Host</legend>
+    <label><input type="radio" name="host" value="bare" checked>Bare page</label>
+    <label><input type="radio" name="host" value="column">Document column, 710 px</label>
+  </fieldset>
+  <label class="pg-check"><input type="checkbox" id="pg-grid">Show node boxes</label>
+</header>
+<div class="pg-layout">
+  <nav class="pg-sidebar" aria-label="Flows">
+    <div id="pg-groups"></div>
+    <a class="pg-item" href="#scratch">Scratch</a>
+  </nav>
+  <main class="pg-main">
+    <div class="pg-bar">
+      <h2 id="pg-title">Scratch</h2>
+      <span class="pg-status" id="pg-status"></span>
+      <button type="button" id="pg-save" disabled>Save</button>
+    </div>
+    <div class="pg-panes">
+      <div class="pg-source">
+        <textarea id="pg-editor" spellcheck="false" aria-label="Flow source"></textarea>
+        <ul class="pg-diagnostics" id="pg-diagnostics" aria-label="Problems"></ul>
+      </div>
+      <div class="pg-renders">
+        <figure class="pg-render" id="pg-host"><div id="pg-render"></div></figure>
+        <figure class="pg-render pg-reference" id="pg-reference" hidden>
+          <figcaption>Hand-drawn reference</figcaption>
+          <img src="/reference/loop.svg" alt="The hand-drawn loop figure">
+        </figure>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

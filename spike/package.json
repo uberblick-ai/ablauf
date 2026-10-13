@@ -1,9 +1,0 @@
-{
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "render": "node render.ts",
-    "measure": "node measure.ts",
-    "test": "node --test flow.test.ts"
-  }
-}

@@ -1,0 +1,26 @@
+{
+  "name": "@uberblick/ablauf",
+  "version": "0.2.0-spike",
+  "private": true,
+  "description": "Diagrams that agents lay out as text and a renderer draws as themed SVG.",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@10.34.5",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "lint": "biome lint --error-on-warnings .",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test spike/flow.test.ts",
+    "render": "node spike/render.ts",
+    "check": "node spike/check.ts",
+    "measure": "node spike/measure.ts",
+    "playground": "node spike/playground/server.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.9",
+    "@types/node": "^26.6.5",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.9/schema.json",
+
+  // Lint only, as in wireframe-md and uberblick-2: no formatter, no assist actions.
+  "formatter": { "enabled": false },
+  "assist": { "enabled": false },
+
+  // Reuse .gitignore so node_modules/ stays out.
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+
+  // Pikchr's output is a third-party baseline, kept as it renders.
+  "files": { "includes": ["**", "!spike/baseline"] },
+
+  "linter": {
+    "enabled": true,
+    "rules": { "preset": "recommended" }
+  }
+}

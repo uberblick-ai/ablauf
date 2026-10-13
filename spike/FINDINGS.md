@@ -22,8 +22,11 @@ reports every overlap with a line number.
 | edit-1 to edit-5 | 16, 35, 2, 7, 3 | 3, 1, 1, 1, 1 |
 
 All ten finished with no problems. Each agent used about 55k to 67k tokens, most
-of it reading the primer and the task. All five writers chose the same shape:
-main path in the middle, rework on the left, stops on the right, two sections.
+of it reading the primer and the task. All five writers used the same frame:
+main path in the middle, rework on the left, stops on the right, and two
+sections. The details differ. Three used one shared stop panel, one used two
+panels, and one gave each role its own "blocked" pill. needs-changes sits in
+the implementer's, reviewer's or ready-to-merge's row.
 
 ## What the trials found, and what changed
 

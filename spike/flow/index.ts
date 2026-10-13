@@ -3,6 +3,7 @@ import { parse } from "./parse.ts";
 import { type SvgOptions, toSvg } from "./svg.ts";
 
 export type { Diagnostic } from "./parse.ts";
+export { DARK, LIGHT } from "./svg.ts";
 
 export function render(source: string, options: SvgOptions = {}) {
 	const { model, diagnostics } = parse(source);

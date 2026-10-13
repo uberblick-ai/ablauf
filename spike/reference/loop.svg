@@ -1,4 +1,35 @@
-<svg viewBox="0 0 780 700" role="img" aria-label="Label flow: needs-preparation to issue-preparer to ready to implementer, which opens a PR with needs-review, then reviewer to ready-to-merge, then integrator merges. Reviewer or integrator can send work back through needs-changes to the implementer. The preparer and integrator can stop at needs-human for a person.">
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="700" viewBox="0 0 780 700" role="img" aria-label="Label flow: needs-preparation to issue-preparer to ready to implementer, which opens a PR with needs-review, then reviewer to ready-to-merge, then integrator merges. Reviewer or integrator can send work back through needs-changes to the implementer. The preparer and integrator can stop at needs-human for a person.">
+<style>/* SVG parts, colored from the same tokens */
+text { font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif; fill: #17202c; }
+.t-mono { font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+.t-12 { font-size: 12px; } .t-11 { font-size: 11px; } .t-13 { font-size: 13px; }
+.t-muted { fill: #5a6575; }
+.t-agent { fill: #0b6b67; font-weight: 600; }
+.t-rework { fill: #a65f0c; } .t-stop { fill: #b2382f; } .t-done { fill: #2a7845; font-weight: 600; }
+.t-bold { font-weight: 600; }
+.t-cap { font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 11px; letter-spacing: .08em; fill: #5a6575; }
+.band { fill: #e9eef5; }
+.pill { fill: #ffffff; stroke: #d3d9e2; stroke-width: 1.2; }
+.agent { fill: #dff1ee; stroke: #0b6b67; stroke-width: 1.5; }
+.launcher { fill: #fbefdc; stroke: #a65f0c; stroke-width: 1.5; }
+.lane-box { fill: #ffffff; stroke: #d3d9e2; stroke-width: 1.2; }
+.stopbox { fill: #f9e2df; stroke: #b2382f; stroke-width: 1.2; stroke-dasharray: 5 4; }
+.donebox { fill: #e0f1e5; stroke: #2a7845; stroke-width: 1.5; }
+.reworkbox { fill: #fbefdc; stroke: #a65f0c; stroke-width: 1.2; }
+.plainbox { fill: #ffffff; stroke: #d3d9e2; stroke-width: 1.2; }
+.edge { fill: none; stroke: #5a6575; stroke-width: 1.6; }
+.edge-rework { fill: none; stroke: #a65f0c; stroke-width: 1.6; }
+.edge-dash { fill: none; stroke: #a65f0c; stroke-width: 1.6; stroke-dasharray: 6 5; }
+.edge-stop { fill: none; stroke: #b2382f; stroke-width: 1.6; }
+.edge-agent { fill: none; stroke: #0b6b67; stroke-width: 1.6; }
+.lane { stroke: #d3d9e2; stroke-width: 1.2; stroke-dasharray: 3 5; }
+.axis { stroke: #5a6575; stroke-width: 1.4; }
+.mk-ink { fill: #5a6575; } .mk-rework { fill: #a65f0c; } .mk-stop { fill: #b2382f; } .mk-agent { fill: #0b6b67; }
+.d-muted { fill: #5a6575; } .d-agent { fill: #0b6b67; } .d-done { fill: #2a7845; } .d-rework { fill: #a65f0c; } .d-stop { fill: #b2382f; }
+.leasebar { fill: #dff1ee; stroke: #0b6b67; stroke-width: 1.2; }
+.leasebar-end { fill: #f9e2df; stroke: #b2382f; stroke-width: 1.2; }
+
+</style>
 <defs>
 <marker id="a-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="mk-ink"/></marker>
 <marker id="a-rework" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="mk-rework"/></marker>
