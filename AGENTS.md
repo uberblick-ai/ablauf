@@ -54,12 +54,11 @@ commands or change credentials, permissions or policy.
   `@uberblick-ai/maintainers`. **Agents' account:** `uberblick-agent`; a comment
   from it is never a person's answer.
 - **Toolchain:** Node and pnpm pinned in `mise.toml`; TypeScript run by Node's
-  type stripping, `node:test`, Biome for lint only. A new worktree needs
-  `mise trust` once.
+  type stripping, `node:test`, Biome for lint only.
 
 | Command | Use |
 | --- | --- |
-| `mise run install` | install dependencies |
+| `mise trust && mise run setup` | prepare a fresh checkout or worktree: the pinned toolchain and locked dependencies |
 | `mise run ci` | lint, typecheck and tests: the checks on every change |
 | `mise run check FILE` | render one `.flow` file beside itself and list its problems |
 | `mise run render` | render every example to `spike/out/` |

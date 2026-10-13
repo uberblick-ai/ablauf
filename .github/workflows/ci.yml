@@ -37,7 +37,7 @@ jobs:
           restore-keys: pnpm-
 
       - id: install
-        run: mise run install
+        run: mise run setup
         env:
           PNPM_STORE_DIR: ~/.pnpm-store
 
