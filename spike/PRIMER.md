@@ -66,6 +66,23 @@ Tones: `ink`, `muted`, `agent`, `done`, `rework`, `stop`.
   bottom gives one bend; otherwise there are two.
 - `label=end` puts the label at the target end instead of the source end.
 
+## Legend
+
+A `legend` line with indented entries adds fine print under the diagram: a
+small sample of each shape and what it means. Give one whenever a reader
+could ask what a shape or colour stands for.
+
+```
+legend
+  pill "GitHub label"
+  box "agent role"
+  panel tone=stop "a person decides"
+  dashed tone=rework "set by the launcher"
+```
+
+Entries are `pill`, `box`, `end`, `panel`, `edge` or `dashed`, with an
+optional `tone=` and the meaning in quotes.
+
 ## Making it look good
 
 - Keep the main path in one column going down, and put branches in side columns.

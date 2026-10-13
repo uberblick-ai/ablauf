@@ -1,0 +1,34 @@
+flow v0
+columns fix main manual
+
+pill push col=main tone=muted "push to main"
+box build "compile and package"
+box test "unit and integration tests"
+box staging "deploy to staging"
+box smoke "smoke tests"
+box production "deploy to production"
+end live "Live"
+
+pill failed col=fix row=test tone=rework "checks failed"
+box rollback col=fix row=production tone=rework "restore the last release"
+panel approve col=manual row=smoke tone=stop
+  strong "Release manager"
+  muted "approves the release"
+
+push --> build : on push
+build --> test
+test --> staging : green
+staging --> smoke
+smoke --> approve tone=stop : passed
+approve --> production tone=stop from=bottom to=right label=end : approved
+production --> live : healthy
+build --> failed tone=rework to=top.2 : fails
+test --> failed tone=rework : red
+failed --> push tone=rework from=top.1 to=left label=end : fix and push
+production --> rollback tone=rework : unhealthy
+
+legend
+  pill "event or state"
+  box "automated job"
+  panel "manual step"
+  edge tone=rework "failure path"

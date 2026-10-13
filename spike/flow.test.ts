@@ -98,3 +98,52 @@ test("a pinned scheme carries one palette and no media query", () => {
 	assert.ok(!svg.includes("prefers-color-scheme"));
 	assert.ok(svg.includes("var(--ab-ink,#e5e9ef)"));
 });
+
+test("row= chains reach the row's first node, and loops are reported", () => {
+	const chain = render(
+		"flow v0\ncolumns a b c d\nbox one col=a\nbox two col=b row=one\nbox three col=c row=two\nbox four col=d row=three\n",
+	);
+	assert.deepEqual(chain.diagnostics, []);
+	assert.equal(new Set(chain.layout.nodes.map((p) => p.y)).size, 1);
+	assert.ok(!chain.svg.includes("NaN"));
+	const loop = render(
+		"flow v0\ncolumns a b\nbox one col=a row=two\nbox two col=b row=one\n",
+	);
+	assert.ok(loop.diagnostics.some((d) => d.line === 3 && /row=two/.test(d.message)));
+	assert.ok(!loop.svg.includes("NaN"));
+});
+
+test("marker ids keep only safe characters", () => {
+	const { svg } = render(example("loop"), { idPrefix: '"><script>' });
+	assert.ok(!svg.includes("<script>"));
+	assert.ok(svg.includes('id="---script--ink"'));
+});
+
+test("loops and labels stay inside the canvas", () => {
+	const { layout } = render(
+		"flow v0\ncolumns a\nbox one col=a\nbox two\nbox three\none --> three from=left to=left : a long label that reaches far\nthree --> one from=right to=right label=end : and back round the right side\n",
+	);
+	const xs = layout.routes.flatMap((r) => r.points.map((p) => p[0]));
+	assert.ok(Math.min(...xs) >= 0);
+	assert.ok(Math.max(...xs) <= layout.width);
+	for (const r of layout.routes) {
+		const l = r.label;
+		assert.ok(l);
+		const left = l.anchor === "start" ? l.x : l.x - l.w;
+		assert.ok(left >= 0 && left + l.w <= layout.width, l.text);
+	}
+});
+
+test("a legend draws under the diagram and names its keys", () => {
+	const { svg, diagnostics, layout } = render(example("deploy"));
+	assert.deepEqual(diagnostics, []);
+	assert.equal(layout.legend?.keys.length, 4);
+	const bottom = Math.max(...layout.nodes.map((p) => p.y + p.h));
+	assert.ok(layout.legend.keys.every((k) => k.y > bottom));
+	assert.match(svg, /Legend: event or state, automated job/);
+	assert.ok(
+		render("flow v0\nbox a col=main\nlegend\n  shape \"x\"\n").diagnostics.some(
+			(d) => d.line === 4,
+		),
+	);
+});

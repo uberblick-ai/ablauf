@@ -5,6 +5,7 @@ export type Kind = "text" | "pill" | "box" | "end" | "panel";
 export type SideName = "top" | "right" | "bottom" | "left";
 export type LabelAt = "start" | "end";
 export type ChildKind = "pill" | "text" | "muted" | "strong" | "rule";
+export type LegendKind = "pill" | "box" | "end" | "panel" | "edge" | "dashed";
 
 export interface Diagnostic {
 	line: number;
@@ -15,6 +16,14 @@ export interface Diagnostic {
 export interface Child {
 	kind: ChildKind;
 	text: string;
+}
+
+// One entry of the legend: a small sample of a shape and what it means.
+export interface LegendItem {
+	kind: LegendKind;
+	tone: Tone;
+	text: string;
+	line: number;
 }
 
 export interface FlowNode {
@@ -50,11 +59,20 @@ export interface Model {
 	edges: FlowEdge[];
 	sections: string[];
 	columns: string[];
+	legend: LegendItem[];
 }
 
 const KINDS: Kind[] = ["text", "pill", "box", "end", "panel"];
 const TONES: Tone[] = ["ink", "muted", "agent", "done", "rework", "stop"];
 const CHILD_KINDS: ChildKind[] = ["pill", "text", "muted", "strong", "rule"];
+const LEGEND_KINDS: LegendKind[] = [
+	"pill",
+	"box",
+	"end",
+	"panel",
+	"edge",
+	"dashed",
+];
 const DEFAULT_TONE: Record<Kind, Tone> = {
 	text: "muted",
 	pill: "muted",
@@ -81,11 +99,19 @@ export function parse(source: string): {
 	diagnostics: Diagnostic[];
 } {
 	const diagnostics: Diagnostic[] = [];
-	const model: Model = { nodes: [], edges: [], sections: [], columns: [] };
+	const model: Model = {
+		nodes: [],
+		edges: [],
+		sections: [],
+		columns: [],
+		legend: [],
+	};
 	const byId = new Map<string, FlowNode>();
 	let sawHeader = false;
 	let section = -1;
 	let lastPanel: FlowNode | null = null;
+	let inLegend = false;
+	let sawLegend = false;
 	const warn = (line: number, message: string) =>
 		diagnostics.push({ line, severity: "warning", message });
 	const error = (line: number, message: string) =>
@@ -111,6 +137,37 @@ export function parse(source: string): {
 			warn(line, "first line should be `flow v0`; assuming v0");
 		}
 
+		if (indented && inLegend) {
+			const [kind, ...rest] = tokens(text);
+			if (!LEGEND_KINDS.includes(kind as LegendKind)) {
+				error(
+					line,
+					`unknown legend line \`${kind}\`; use ${LEGEND_KINDS.join(", ")}`,
+				);
+				continue;
+			}
+			const item: LegendItem = {
+				kind: kind as LegendKind,
+				tone:
+					kind === "edge" || kind === "dashed"
+						? "ink"
+						: DEFAULT_TONE[kind as Kind],
+				text: "",
+				line,
+			};
+			const words: string[] = [];
+			for (const t of rest) {
+				const kv = /^([a-z]+)=(.+)$/.exec(t);
+				if (!kv) words.push(unquote(t));
+				else if (kv[1] !== "tone") warn(line, `unknown key \`${kv[1]}\``);
+				else if (TONES.includes(kv[2] as Tone)) item.tone = kv[2] as Tone;
+				else warn(line, `unknown tone \`${kv[2]}\`; using ${item.tone}`);
+			}
+			item.text = words.join(" ");
+			if (!item.text) warn(line, "a legend line needs its meaning in quotes");
+			model.legend.push(item);
+			continue;
+		}
 		if (indented) {
 			if (!lastPanel) {
 				error(line, "indented line outside a panel");
@@ -130,6 +187,12 @@ export function parse(source: string): {
 			continue;
 		}
 		lastPanel = null;
+		inLegend = false;
+		if (text === "legend") {
+			if (sawLegend) error(line, "the legend is declared once");
+			sawLegend = inLegend = true;
+			continue;
+		}
 
 		const edge = EDGE.exec(text);
 		if (edge) {
@@ -266,8 +329,18 @@ export function parse(source: string): {
 		if (!other || other === n) {
 			error(n.line, `row=${n.row} must name another node; starting a new row`);
 			n.row = "";
-		} else if (other.row) {
-			n.row = other.row; // join the row's owner, not a node that joined it
+		} else {
+			// Follow the chain to the row's owner, the node that started the row.
+			const seen = new Set([n]);
+			let owner = other;
+			while (owner.row && !seen.has(owner)) {
+				seen.add(owner);
+				owner = byId.get(owner.row) ?? owner;
+			}
+			if (seen.has(owner) || owner.row) {
+				error(n.line, `row=${n.row} does not lead to a row's first node (a loop or an unknown id); starting a new row`);
+				n.row = "";
+			} else n.row = owner.id;
 		}
 	}
 	model.edges = model.edges.filter((e) => {

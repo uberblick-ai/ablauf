@@ -47,3 +47,9 @@ issue-preparer --> human tone=stop to=top.2 : needs-human
 implementer --> human tone=stop to=top.1 : blocked
 reviewer --> human tone=stop : blocked
 integrator --> human tone=stop : maintainer-merge, blocked
+
+legend
+  pill "GitHub label"
+  box "agent role"
+  panel tone=stop "a person decides"
+  dashed tone=rework "set by the launcher"

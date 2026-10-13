@@ -12,31 +12,50 @@ number.
 The first kind is a flow. Early work: the format is v0 and nothing is published
 from this repository yet.
 
-## Example
+## Examples
+
+### A deploy pipeline
 
 ```
 flow v0
-columns side main stop
+columns fix main manual
 
-pill needs-work col=main tone=muted
-box worker "does the work"
-end done "Finished"
+pill push col=main tone=muted "push to main"
+box build "compile and package"
+box test "unit and integration tests"
+box staging "deploy to staging"
+box smoke "smoke tests"
+box production "deploy to production"
+end live "Live"
 
-pill retry col=side row=worker tone=rework
-panel person col=stop row=worker tone=stop
-  pill needs-human
-  muted "a person decides"
+pill failed col=fix row=test tone=rework "checks failed"
+box rollback col=fix row=production tone=rework "restore the last release"
+panel approve col=manual row=smoke tone=stop
+  strong "Release manager"
+  muted "approves the release"
 
-needs-work --> worker : start
-worker --> done : finished
-worker --> retry tone=rework : failed
-retry --> needs-work tone=rework from=top to=left label=end : again
-worker --> person tone=stop : stuck
+push --> build : on push
+build --> test
+test --> staging : green
+staging --> smoke
+smoke --> approve tone=stop : passed
+approve --> production tone=stop from=bottom to=right label=end : approved
+production --> live : healthy
+build --> failed tone=rework to=top.2 : fails
+test --> failed tone=rework : red
+failed --> push tone=rework from=top.1 to=left label=end : fix and push
+production --> rollback tone=rework : unhealthy
+
+legend
+  pill "event or state"
+  box "automated job"
+  panel "manual step"
+  edge tone=rework "failure path"
 ```
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/primer-dark.svg">
-  <img alt="The example flow: needs-work leads to worker, which ends in Finished, sends failures to retry and back, and stops at a person when stuck." src="docs/images/primer-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/deploy-dark.svg">
+  <img alt="A deploy pipeline: push, build, test, staging, smoke tests, a release manager's approval, production and live, with failed checks going back to a fix and an unhealthy release rolled back." src="docs/images/deploy-light.svg">
 </picture>
 
 - `columns` names the columns left to right. Each node starts a new row unless
@@ -44,13 +63,25 @@ worker --> person tone=stop : stuck
 - Nodes are `text`, `pill`, `box`, `end` or `panel`, coloured by a tone.
 - Edges use Mermaid's arrows. `from=` and `to=` pick the sides an edge leaves
   and enters; each pair of sides has one fixed shape.
+- `legend` explains the shapes in fine print under the diagram.
 
 [spike/PRIMER.md](spike/PRIMER.md) is the full format on one page, and the
 page an agent reads before writing a flow.
 
-## A larger flow
+### An online order
 
-The ub-agents delivery loop, from 49 lines in
+From [spike/examples/checkout.flow](spike/examples/checkout.flow), with two
+sections:
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/checkout-dark.svg">
+  <img alt="An online order: cart, address and payment in a checkout section, then pick, ship and delivered, with a declined card retried and risky orders sent to fraud review." src="docs/images/checkout-light.svg">
+</picture>
+
+### The ub-agents delivery loop
+
+The loop [ub-agents](https://github.com/uberblick-ai/ub-agents) runs on
+Uberblick's repositories, from
 [spike/examples/loop.flow](spike/examples/loop.flow):
 
 <picture>

@@ -3,10 +3,12 @@
 
 import {
 	type Band,
+	type Key,
 	type Layout,
 	type Placed,
 	type Route,
 	panelContentHeight,
+	SAMPLE_W,
 	wrap,
 } from "./grid.ts";
 import type { Tone } from "./parse.ts";
@@ -85,8 +87,16 @@ export interface SvgOptions {
 }
 
 export function toSvg(layout: Layout, options: SvgOptions = {}): string {
-	const id = options.idPrefix ?? "ab";
-	const tones = [...new Set(layout.routes.map((r) => r.tone))].sort();
+	// Marker ids go into attributes and url(), so only safe characters stay.
+	const id = (options.idPrefix ?? "ab").replace(/[^A-Za-z0-9_-]/g, "-");
+	const tones = [
+		...new Set([
+			...layout.routes.map((r) => r.tone),
+			...(layout.legend?.keys ?? [])
+				.filter((k) => k.item.kind === "edge" || k.item.kind === "dashed")
+				.map((k) => k.item.tone),
+		]),
+	].sort();
 	const out: string[] = [];
 	out.push(
 		`<svg xmlns="http://www.w3.org/2000/svg" class="ab" viewBox="0 0 ${layout.width} ${layout.height}" width="${layout.width}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? describe(layout))}">`,
@@ -103,6 +113,12 @@ export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 	for (const r of layout.routes) out.push(route(r, id));
 	for (const p of layout.nodes) out.push(node(p));
 	for (const r of layout.routes) if (r.label) out.push(edgeLabel(r));
+	if (layout.legend) {
+		out.push(
+			`<line x1="8" y1="${layout.legend.y}" x2="${layout.width - 8}" y2="${layout.legend.y}" class="rule"/>`,
+		);
+		for (const k of layout.legend.keys) out.push(key(k, id));
+	}
 	out.push("</svg>");
 	return `${out.join("\n")}\n`;
 }
@@ -112,7 +128,8 @@ function describe(layout: Layout): string {
 	const names = [...layout.nodes]
 		.sort((a, b) => a.y - b.y || a.x - b.x)
 		.map((p) => p.node.label);
-	return `Flow: ${names.join(", ")}`;
+	const keys = (layout.legend?.keys ?? []).map((k) => k.item.text);
+	return `Flow: ${names.join(", ")}${keys.length ? `. Legend: ${keys.join(", ")}` : ""}`;
 }
 
 function band(b: Band, width: number): string {
@@ -129,6 +146,20 @@ function band(b: Band, width: number): string {
 		`<text x="20" y="${b.y + 22}" class="cap">${esc(b.label.toUpperCase())}</text>`,
 	);
 	return parts.join("\n");
+}
+
+// A small sample of the shape, then its meaning in fine print.
+function key(k: Key, id: string): string {
+	const { item, x, y } = k;
+	const w = SAMPLE_W;
+	const t = item.tone;
+	const sample =
+		item.kind === "edge" || item.kind === "dashed"
+			? `<path d="M${x},${y} L${x + w},${y}" class="e e-${t}${item.kind === "dashed" ? " dash" : ""}" marker-end="url(#${id}-${t})"/>`
+			: item.kind === "pill"
+				? `<rect x="${x}" y="${y - 6}" width="${w}" height="12" rx="6" class="pill"/><circle cx="${x + 7}" cy="${y}" r="3" class="t-${t}"/>`
+				: `<rect x="${x}" y="${y - 6}" width="${w}" height="12" rx="${item.kind === "end" ? 6 : 3}" class="k-${t}${item.kind === "panel" ? " panel" : ""}"/>`;
+	return `<g>${sample}<text x="${x + w + 6}" y="${y + 4}" class="s11 muted">${esc(item.text)}</text></g>`;
 }
 
 function route(r: Route, id: string): string {

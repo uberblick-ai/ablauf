@@ -6,6 +6,7 @@ import type {
 	Diagnostic,
 	FlowEdge,
 	FlowNode,
+	LegendItem,
 	Model,
 	SideName,
 	Tone,
@@ -43,12 +44,20 @@ export interface Band {
 	shaded: boolean;
 }
 
+// A legend entry: its sample sits at x, its text after it, both centred on y.
+export interface Key {
+	item: LegendItem;
+	x: number;
+	y: number;
+}
+
 export interface Layout {
 	width: number;
 	height: number;
 	nodes: Placed[];
 	routes: Route[];
 	bands: Band[];
+	legend: { y: number; keys: Key[] } | null;
 	diagnostics: Diagnostic[];
 }
 
@@ -69,6 +78,10 @@ const LABEL_PAD = 10;
 const LOOP_OUT = 24;
 
 const len = (s: string) => [...s].length;
+// The legend is fine print in rows under the diagram.
+export const SAMPLE_W = 24;
+const KEY_GAP = 20;
+const KEY_ROW = 20;
 const WRAP_CHARS = 34;
 
 // Panel text wraps at a fixed number of characters, so a long note grows
@@ -413,25 +426,82 @@ export function grid(
 		});
 	}
 
-	let right = Math.max(0, ...nodes.map((p) => p.x + p.w));
-	for (const r of routes)
-		if (r.label)
-			right = Math.max(
-				right,
-				r.label.anchor === "start" ? r.label.x + r.label.w : r.label.x,
-			);
-	const width = Math.round(right + MARGIN);
-	const height = Math.round(
-		Math.max(0, ...nodes.map((p) => p.y + p.h)) + MARGIN,
+	// Bounds cover every drawn part: nodes, routes (loops reach past their
+	// nodes), labels and section captions. Anything left of or above the
+	// margin shifts the whole drawing right or down.
+	const labelRects = routes.flatMap((r) => (r.label ? [labelRect(r.label)] : []));
+	const xs = [
+		...routes.flatMap((r) => r.points.map((p) => p[0])),
+		...labelRects.map((l) => l.x),
+	];
+	const ys = [
+		...routes.flatMap((r) => r.points.map((p) => p[1])),
+		...labelRects.map((l) => l.y),
+	];
+	const dx = Math.max(0, MARGIN - Math.min(MARGIN, ...xs));
+	const dy = Math.max(0, MARGIN - Math.min(MARGIN, ...ys));
+	if (dx || dy) {
+		for (const p of nodes) {
+			p.x += dx;
+			p.y += dy;
+		}
+		for (const r of routes) {
+			r.points = r.points.map(([x, y]) => [x + dx, y + dy]);
+			if (r.label) {
+				r.label.x += dx;
+				r.label.y += dy;
+			}
+		}
+		for (let i = 0; i < boundaries.length; i++) boundaries[i] += dy;
+	}
+	const CAPTION_CHAR = CHAR.mono11 + 0.88; // .08em letter-spacing at 11px
+	const right = Math.max(
+		0,
+		...nodes.map((p) => p.x + p.w),
+		...routes.flatMap((r) => r.points.map((p) => p[0])),
+		...labelRects.map((l) => l.x + l.w + dx),
+		...model.sections.map((t) => 20 + Math.round(len(t) * CAPTION_CHAR)),
+	);
+	const keyW = (k: LegendItem) =>
+		SAMPLE_W + 6 + Math.round(len(k.text) * CHAR.sans11);
+	const width = Math.round(
+		Math.max(right, MARGIN + Math.max(0, ...model.legend.map(keyW))) + MARGIN,
+	);
+	const content = Math.round(
+		Math.max(
+			0,
+			...nodes.map((p) => p.y + p.h),
+			...routes.flatMap((r) => r.points.map((p) => p[1])),
+			...labelRects.map((l) => l.y + l.h + dy),
+		) + MARGIN,
 	);
 	const bands: Band[] = model.sections.map((label, i) => {
-		const top = i === 0 ? 0 : (boundaries[i - 1] ?? height);
-		const bottom = boundaries[i] ?? height;
+		const top = i === 0 ? 0 : (boundaries[i - 1] ?? content);
+		const bottom = boundaries[i] ?? content;
 		return { label, y: top, h: bottom - top, shaded: i % 2 === 1 };
 	});
 
+	// Legend keys run left to right and wrap onto further rows.
+	let legend: Layout["legend"] = null;
+	let height = content;
+	if (model.legend.length) {
+		const keys: Key[] = [];
+		let x = MARGIN;
+		let y = content + 10 + KEY_ROW / 2;
+		for (const item of model.legend) {
+			if (x > MARGIN && x + keyW(item) > width - MARGIN) {
+				x = MARGIN;
+				y += KEY_ROW;
+			}
+			keys.push({ item, x, y });
+			x += keyW(item) + KEY_GAP;
+		}
+		legend = { y: content, keys };
+		height = y + KEY_ROW / 2 + 8;
+	}
+
 	check(nodes, routes, bands, warn);
-	return { width, height, nodes, routes, bands, diagnostics };
+	return { width, height, nodes, routes, bands, legend, diagnostics };
 }
 
 // A label sits next to the end it belongs to: above a horizontal segment,

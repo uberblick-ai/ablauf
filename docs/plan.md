@@ -73,11 +73,12 @@ integrator --> human tone=stop : maintainer-merge, blocked
 | The author decides | The renderer decides |
 | --- | --- |
 | Named columns, left to right | Column widths and gaps, from node and label widths |
-| Rows: each node starts a new row unless `row=<id>` joins another node's row; `span=` covers several rows | Row heights; a spanning node is centred on the rows it covers |
+| Rows: each node starts a new row unless `row=<id>` joins another node's row; `span=` covers several rows | Row heights; a spanning node fills the rows it covers, so each of them can meet it with a straight edge |
 | Sections (the horizontal bands) | Band shading and labels |
 | Node kind (`text`, `pill`, `box`, `end`, `panel`) and tone | Shapes, colours, fonts, light and dark |
 | Which side an edge leaves and enters (`from=`, `to=`) and its slot on that side (`bottom.2`) | The elbow those sides imply: straight, one bend (L) or two bends (Z), one fixed rule each |
 | Edge tone, dashed or solid, and whether the label sits at the start or end | Label position next to that end, port spacing along a side |
+| A legend: which shapes and tones to explain, and what each means | Fine print under the diagram, wrapping onto further rows |
 
 When the author leaves out `from=` or `to=`, three small rules apply: same
 column goes bottom to top, same row goes between facing sides, otherwise the
@@ -109,8 +110,8 @@ there from the text and the diagnostics alone, without seeing the image.
 - Ids are the labels people read (`reviewer`, `needs-changes`) unless `title=`
   says otherwise, so the source reads like the picture.
 - Inserting a step is two new lines in the source and nothing else changes.
-  In pixels, everything below the insert moves down by one row and nothing
-  moves sideways.
+  In pixels, everything below the insert moves down by one row. Nothing moves
+  sideways unless a wider node widens its column.
 
 ## Rendering rules
 

@@ -1,0 +1,32 @@
+flow v0
+columns retry main review
+
+section "Checkout"
+pill cart col=main tone=muted "cart"
+box address "shipping address"
+box payment "authorise the card"
+section "Fulfilment"
+box pick "pick and pack"
+box ship "hand to the carrier"
+end delivered "Delivered"
+
+pill declined col=retry row=payment tone=rework "card declined"
+panel fraud col=review row=payment tone=stop
+  strong "Fraud review"
+  muted "an analyst checks risky orders"
+
+cart --> address : check out
+address --> payment
+payment --> pick : authorised
+pick --> ship
+ship --> delivered : tracked
+payment --> declined tone=rework : declined
+declined --> address tone=rework from=top to=left label=end : try another card
+payment --> fraud tone=stop : flagged
+fraud --> pick tone=stop from=bottom to=right label=end : cleared
+
+legend
+  pill "state"
+  box "automated step"
+  panel "manual review"
+  edge tone=rework "customer retries"

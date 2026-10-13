@@ -107,9 +107,14 @@ async function sidebar() {
 
 save.addEventListener("click", async () => {
 	if (!current) return;
-	const response = await fetch(`/api/flow/${current.folder}/${current.name}`, { method: "PUT", body: editor.value });
-	if (response.ok) saved = editor.value;
-	status.textContent = response.ok ? "Saved" : `Not saved: ${await response.text()}`;
+	// Keep what was sent: typing or switching flows during the request must not count as saved.
+	const flow = current;
+	const body = editor.value;
+	const response = await fetch(`/api/flow/${flow.folder}/${flow.name}`, { method: "PUT", body });
+	const message = response.ok ? "Saved" : `Not saved: ${await response.text()}`;
+	if (current !== flow) return;
+	if (response.ok) saved = body;
+	status.textContent = message;
 	save.disabled = editor.value === saved;
 });
 editor.addEventListener("input", draw);
