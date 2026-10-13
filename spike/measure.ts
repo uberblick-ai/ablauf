@@ -21,11 +21,22 @@ for (const p of a.nodes) {
 			`node  ${p.node.id.padEnd(20)} ${moved(q.x - p.x, q.y - p.y)}${q.w !== p.w ? ` w ${p.w}->${q.w}` : ""}`,
 		);
 }
-const key = (r: (typeof a.routes)[number]) => `${r.edge.from} -> ${r.edge.to}`;
-for (const r of a.routes) {
-	const s = b.routes.find((x) => key(x) === key(r));
+// Edges are matched by their ends and, between the same two nodes, by order.
+type R = (typeof a.routes)[number];
+const keyed = (routes: R[]) => {
+	const seen = new Map<string, number>();
+	return routes.map((r) => {
+		const ends = `${r.edge.from} -> ${r.edge.to}`;
+		const n = (seen.get(ends) ?? 0) + 1;
+		seen.set(ends, n);
+		return { key: n > 1 ? `${ends} #${n}` : ends, r };
+	});
+};
+const after = new Map(keyed(b.routes).map((k) => [k.key, k.r]));
+for (const { key, r } of keyed(a.routes)) {
+	const s = after.get(key);
 	if (!s) {
-		console.log(`edge  ${key(r).padEnd(36)} removed`);
+		console.log(`edge  ${key.padEnd(36)} removed`);
 		continue;
 	}
 	const same = JSON.stringify(r.points) === JSON.stringify(s.points);
@@ -33,5 +44,13 @@ for (const r of a.routes) {
 		r.points.length === s.points.length
 			? ""
 			: ` shape ${r.points.length - 1}->${s.points.length - 1} segments`;
-	console.log(`edge  ${key(r).padEnd(36)} ${same ? "still" : `moved${shape}`}`);
+	const label =
+		r.label && s.label
+			? r.label.x !== s.label.x || r.label.y !== s.label.y
+				? ` label ${moved(s.label.x - r.label.x, s.label.y - r.label.y)}${r.label.anchor !== s.label.anchor ? ` anchor ${r.label.anchor}->${s.label.anchor}` : ""}`
+				: ""
+			: r.label || s.label
+				? " label added or removed"
+				: "";
+	console.log(`edge  ${key.padEnd(36)} ${same ? "still" : `moved${shape}`}${label}`);
 }

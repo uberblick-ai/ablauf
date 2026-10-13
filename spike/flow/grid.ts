@@ -193,14 +193,12 @@ export function grid(
 		if (n.row) rowOf.set(n.id, rowOf.get(n.row) as number);
 	const rows = rowSection.length;
 	const first = (p: Placed) => rowOf.get(p.node.id) as number;
-	const last = (p: Placed) => {
-		const end = first(p) + p.node.span - 1;
-		if (end >= rows) {
+	for (const p of nodes)
+		if (first(p) + p.node.span > rows) {
 			warn(p.node.line, `span=${p.node.span} runs past the last row`);
-			return rows - 1;
+			p.node.span = rows - first(p);
 		}
-		return end;
-	};
+	const last = (p: Placed) => first(p) + p.node.span - 1;
 
 	const rowH: number[] = new Array(rows).fill(16);
 	for (const p of nodes)
@@ -215,11 +213,15 @@ export function grid(
 		if (covered < p.h) rowH[last(p)] += p.h - covered;
 	}
 	const rowY: number[] = [];
-	const boundaries: number[] = [];
+	// Where each section's band starts, keyed by the section, so a section
+	// without rows takes no band.
+	const sectionTop = new Map<number, number>();
+	if (rows) sectionTop.set(rowSection[0], 0);
 	let y = MARGIN;
 	for (let r = 0; r < rows; r++) {
 		if (r > 0) {
-			if (gapAbove(r) === SECTION_GAP) boundaries.push(y + SECTION_GAP / 2);
+			if (gapAbove(r) === SECTION_GAP)
+				sectionTop.set(rowSection[r], y + SECTION_GAP / 2);
 			y += gapAbove(r);
 		}
 		rowY.push(y);
@@ -418,6 +420,13 @@ export function grid(
 			}
 		} else if (horizontal(a.side)) points = [a.point, [bx, ay], b.point];
 		else points = [a.point, [ax, by], b.point];
+		// An edge must leave its source and enter its target from outside.
+		const out = (side: SideName, [x0, y0]: Point, [x1, y1]: Point) =>
+			side === "top" ? y1 < y0 : side === "bottom" ? y1 > y0 : side === "left" ? x1 < x0 : x1 > x0;
+		if (!out(a.side, points[0], points[1]))
+			warn(e.line, `edge ${e.from} → ${e.to} leaves ${e.from}'s ${a.side} back through ${e.from}; choose other sides`);
+		else if (!out(b.side, points.at(-1) as Point, points.at(-2) as Point))
+			warn(e.line, `edge ${e.from} → ${e.to} enters ${e.to}'s ${b.side} through ${e.to}; choose other sides`);
 		routes.push({
 			edge: e,
 			points,
@@ -452,7 +461,7 @@ export function grid(
 				r.label.y += dy;
 			}
 		}
-		for (let i = 0; i < boundaries.length; i++) boundaries[i] += dy;
+		for (const [s, top] of sectionTop) if (top) sectionTop.set(s, top + dy);
 	}
 	const CAPTION_CHAR = CHAR.mono11 + 0.88; // .08em letter-spacing at 11px
 	const right = Math.max(
@@ -475,10 +484,10 @@ export function grid(
 			...labelRects.map((l) => l.y + l.h + dy),
 		) + MARGIN,
 	);
-	const bands: Band[] = model.sections.map((label, i) => {
-		const top = i === 0 ? 0 : (boundaries[i - 1] ?? content);
-		const bottom = boundaries[i] ?? content;
-		return { label, y: top, h: bottom - top, shaded: i % 2 === 1 };
+	const tops = [...sectionTop].filter(([s]) => s < model.sections.length);
+	const bands: Band[] = tops.map(([s, top], i) => {
+		const bottom = tops[i + 1]?.[1] ?? content;
+		return { label: model.sections[s], y: top, h: bottom - top, shaded: i % 2 === 1 };
 	});
 
 	// Legend keys run left to right and wrap onto further rows.

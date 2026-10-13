@@ -147,3 +147,39 @@ test("a legend draws under the diagram and names its keys", () => {
 		),
 	);
 });
+
+test("an edge that runs back through its own node is reported", () => {
+	const { diagnostics } = render(
+		"flow v0\ncolumns a\nbox one col=a\nbox two\none --> two from=top to=bottom\n",
+	);
+	assert.ok(diagnostics.some((d) => d.line === 5 && /through one/.test(d.message)));
+});
+
+test("an empty section is reported and takes no band", () => {
+	const { diagnostics, layout, svg } = render(
+		'flow v0\ncolumns a\nsection "Empty"\nsection "Actual"\nbox one col=a\nsection "Later"\nbox two\n',
+	);
+	assert.ok(diagnostics.some((d) => d.line === 3));
+	assert.deepEqual(
+		layout.bands.map((b) => b.label),
+		["Actual", "Later"],
+	);
+	const later = layout.bands[1];
+	const two = layout.nodes.find((p) => p.node.id === "two");
+	assert.ok(two && two.y > later.y && later.y + later.h <= layout.height);
+	assert.ok(!svg.includes("NaN"));
+});
+
+test("title= names text and end nodes too", () => {
+	const { layout, diagnostics } = render(
+		'flow v0\ncolumns a\nend done col=a title="All done"\ntext note title=Hello "and more"\n',
+	);
+	assert.equal(layout.nodes[0].node.label, "All done");
+	assert.equal(layout.nodes[1].node.label, "Hello");
+	assert.ok(diagnostics.some((d) => d.line === 4));
+});
+
+test("a span past the last row is reported once", () => {
+	const { diagnostics } = render("flow v0\ncolumns a b\nbox one col=a\nbox two col=b row=one span=3\n");
+	assert.equal(diagnostics.filter((d) => /span=3/.test(d.message)).length, 1);
+});

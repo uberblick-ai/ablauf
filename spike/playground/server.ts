@@ -7,10 +7,10 @@
 // Listens on localhost only. Writes nothing but existing or new .flow files in
 // examples/ and trials/, and only for requests from its own page.
 
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { closeSync, constants, lstatSync, openSync, readdirSync, readFileSync, realpathSync, writeSync } from "node:fs";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { stripTypeScriptTypes } from "node:module";
-import { join, normalize } from "node:path";
+import { join, normalize, sep } from "node:path";
 
 process.removeAllListeners("warning"); // stripTypeScriptTypes is marked experimental
 const ROOT = join(import.meta.dirname, "..");
@@ -33,17 +33,39 @@ function catalog() {
   }));
 }
 
+// A flow's file, only inside the real examples/ or trials/ folder and never
+// through a symlink, so a link can't send reads or writes elsewhere.
 function flowPath(folder: string, name: string): string | null {
-  return FOLDERS.includes(folder) && NAME.test(name) ? join(ROOT, folder, `${name}.flow`) : null;
+  if (!FOLDERS.includes(folder) || !NAME.test(name)) return null;
+  const dir = join(ROOT, folder);
+  if (realpathSync(dir) !== join(realpathSync(ROOT), folder)) return null;
+  const file = join(dir, `${name}.flow`);
+  try {
+    if (lstatSync(file).isSymbolicLink()) return null;
+  } catch {
+    // a new file
+  }
+  return file.startsWith(dir + sep) ? file : null;
 }
 
 async function body(req: IncomingMessage): Promise<string> {
-  let text = "";
-  for await (const chunk of req) {
-    text += chunk;
-    if (text.length > 200_000) throw new Error("too large");
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of req as AsyncIterable<Buffer>) {
+    size += chunk.length;
+    if (size > 200_000) throw new Error("too large");
+    chunks.push(chunk);
   }
-  return text;
+  return Buffer.concat(chunks).toString("utf8"); // decoded once, so no character splits
+}
+
+function write(file: string, text: string) {
+  const fd = openSync(file, constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC | constants.O_NOFOLLOW);
+  try {
+    writeSync(fd, text);
+  } finally {
+    closeSync(fd);
+  }
 }
 
 const server = createServer(async (req, res) => {
@@ -67,7 +89,7 @@ const server = createServer(async (req, res) => {
       if (req.headers.origin !== `http://localhost:${port()}` && req.headers.origin !== `http://127.0.0.1:${port()}`) {
         return send(res, 403, "text/plain", "writes must come from the playground page");
       }
-      writeFileSync(file, await body(req));
+      write(file, await body(req));
       return send(res, 200, "text/plain", "saved");
     }
     send(res, 404, "text/plain", "not found");

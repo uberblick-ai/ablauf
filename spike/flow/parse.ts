@@ -109,6 +109,8 @@ export function parse(source: string): {
 	const byId = new Map<string, FlowNode>();
 	let sawHeader = false;
 	let section = -1;
+	const sectionLines: number[] = [];
+	const filled = new Set<number>();
 	let lastPanel: FlowNode | null = null;
 	let inLegend = false;
 	let sawLegend = false;
@@ -239,6 +241,7 @@ export function parse(source: string): {
 		if (parts[0] === "section") {
 			model.sections.push(unquote(parts.slice(1).join(" ")));
 			section = model.sections.length - 1;
+			sectionLines.push(line);
 			continue;
 		}
 		if (parts[0] === "columns") {
@@ -282,6 +285,7 @@ export function parse(source: string): {
 			line,
 		};
 		const words: string[] = [];
+		let titled = false;
 		for (const t of rest) {
 			const kv = /^([a-z]+)=(.+)$/.exec(t);
 			if (!kv) {
@@ -305,7 +309,10 @@ export function parse(source: string): {
 				const n = Number(value);
 				if (Number.isInteger(n) && n >= 1) node.span = n;
 				else warn(line, "span= takes a whole number of rows");
-			} else if (key === "title") node.label = value;
+			} else if (key === "title") {
+				node.label = value;
+				titled = true;
+			}
 			else warn(line, `unknown key \`${key}\``);
 		}
 		if (!node.col) {
@@ -315,14 +322,20 @@ export function parse(source: string): {
 		}
 		const quoted = words.join(" ");
 		if (kind === "box") node.sub = quoted;
-		else if (kind === "text" || kind === "end") node.label = quoted || id;
+		else if (titled && quoted)
+			warn(line, "title= and the quoted text both name this node; using title=");
 		else if (quoted) node.label = quoted;
+		else if (!titled && (kind === "text" || kind === "end")) node.label = id;
+		filled.add(node.section);
 
 		model.nodes.push(node);
 		byId.set(id, node);
 		if (kind === "panel") lastPanel = node;
 	}
 
+	sectionLines.forEach((l, i) => {
+		if (!filled.has(i)) warn(l, `section "${model.sections[i]}" has no nodes and is not drawn`);
+	});
 	for (const n of model.nodes) {
 		if (!n.row) continue;
 		const other = byId.get(n.row);

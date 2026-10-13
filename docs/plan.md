@@ -77,7 +77,7 @@ integrator --> human tone=stop : maintainer-merge, blocked
 | Sections (the horizontal bands) | Band shading and labels |
 | Node kind (`text`, `pill`, `box`, `end`, `panel`) and tone | Shapes, colours, fonts, light and dark |
 | Which side an edge leaves and enters (`from=`, `to=`) and its slot on that side (`bottom.2`) | The elbow those sides imply: straight, one bend (L) or two bends (Z), one fixed rule each |
-| Edge tone, dashed or solid, and whether the label sits at the start or end | Label position next to that end, port spacing along a side |
+| Edge tone, dashed or solid, and whether the label sits at the start or end | Label position next to that end, port spacing along a side. Where two facing sides overlap, the port on the longer side slides to meet the other end head on, so the edge runs straight; a slot there sets the order, not the exact point |
 | A legend: which shapes and tones to explain, and what each means | Fine print under the diagram, wrapping onto further rows |
 
 When the author leaves out `from=` or `to=`, three small rules apply: same

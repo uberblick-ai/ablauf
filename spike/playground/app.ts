@@ -30,15 +30,22 @@ function setScheme(scheme: string) {
 function draw() {
 	const { svg, diagnostics, layout } = render(editor.value, { idPrefix: "pg" });
 	target.innerHTML = svg;
-	if (grid.checked) {
-		const svgEl = target.querySelector("svg");
-		const boxes = layout.nodes
-			.map(
-				(p: { node: { id: string }; x: number; y: number; w: number; h: number }) =>
-					`<rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" class="pg-box"/><text x="${p.x + 2}" y="${p.y - 3}" class="pg-box-id">${p.node.id}</text>`,
-			)
-			.join("");
-		svgEl?.insertAdjacentHTML("beforeend", `<g>${boxes}</g>`);
+	const svgEl = target.querySelector("svg");
+	if (grid.checked && svgEl) {
+		// Built as elements, so an id in the source is only ever text.
+		const NS = "http://www.w3.org/2000/svg";
+		const make = (tag: string, attrs: Record<string, string | number>) => {
+			const el = document.createElementNS(NS, tag);
+			for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
+			return el;
+		};
+		const group = make("g", {});
+		for (const p of layout.nodes) {
+			const label = make("text", { x: p.x + 2, y: p.y - 3, class: "pg-box-id" });
+			label.textContent = p.node.id;
+			group.append(make("rect", { x: p.x, y: p.y, width: p.w, height: p.h, class: "pg-box" }), label);
+		}
+		svgEl.append(group);
 	}
 	problems.replaceChildren(
 		...diagnostics.map((d: { line: number; severity: string; message: string }) => {
@@ -66,7 +73,17 @@ function selectLine(line: number) {
 	editor.scrollTop = Math.max(0, (line - 4) * lineHeight);
 }
 
+let shown = location.hash;
+let loads = 0;
+
 async function open() {
+	// Leaving a flow with unsaved edits asks first; staying puts the address back.
+	if (location.hash !== shown && current && editor.value !== saved && !confirm("Discard unsaved changes?")) {
+		history.replaceState(null, "", shown || "#scratch");
+		return;
+	}
+	shown = location.hash;
+	const load = ++loads;
 	const hash = decodeURIComponent(location.hash.slice(1));
 	const match = /^([a-z]+)\/([a-z0-9-]+)$/.exec(hash);
 	for (const a of document.querySelectorAll(".pg-item")) a.toggleAttribute("aria-current", a.getAttribute("href") === `#${hash || "scratch"}`);
@@ -78,12 +95,17 @@ async function open() {
 	} else {
 		const [, folder, name] = match;
 		const response = await fetch(`/api/flow/${folder}/${name}`);
+		const text = response.ok ? await response.text() : "";
+		if (load !== loads) return; // a newer selection is loading
 		if (!response.ok) {
+			current = null;
+			saved = editor.value = "";
 			$("pg-title").textContent = `Unknown flow: ${hash}`;
+			draw();
 			return;
 		}
 		current = { folder, name };
-		saved = await response.text();
+		saved = text;
 		editor.value = saved;
 		$("pg-title").textContent = `${folder}/${name}.flow`;
 	}

@@ -21,7 +21,9 @@ reports every overlap with a line number.
 | write-1 to write-5 | 2, 2, 1, 2, 1 | 2, 1, 0, 0, 0 |
 | edit-1 to edit-5 | 16, 35, 2, 7, 3 | 3, 1, 1, 1, 1 |
 
-All ten finished with no problems. Each agent used about 55k to 67k tokens, most
+All ten finished with no problems. After the review fixes, the renderer also
+reports an edge that runs back through its own node: edit-2 and edit-5 enter
+their stop panel from below through the panel, and now show that. Each agent used about 55k to 67k tokens, most
 of it reading the primer and the task. All five writers used the same frame:
 main path in the middle, rework on the left, stops on the right, and two
 sections. The details differ. Three used one shared stop panel, one used two
