@@ -1,0 +1,50 @@
+name: CI
+
+# The merge gate: lint, typecheck and tests on every pull request and on main.
+# No secrets: none of these steps needs one.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: lint, typecheck and tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      # Test the pull request's head itself, not GitHub's merge with main.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      # Installs the toolchain pinned in mise.toml and puts `mise` on PATH.
+      - uses: jdx/mise-action@3c2e0cf82a5b2e5249f0d3635a4d83d0ae861518 # v4
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.pnpm-store
+          key: pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-
+
+      - id: install
+        run: mise run install
+        env:
+          PNPM_STORE_DIR: ~/.pnpm-store
+
+      # Each check runs even when an earlier one fails.
+      - if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: mise run lint
+      - if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: mise run typecheck
+      - if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: mise run test

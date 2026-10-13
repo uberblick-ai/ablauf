@@ -4,17 +4,34 @@
 node = "26"
 pnpm = "10"
 
-[tasks.setup]
-description = "Install dependencies from the lockfile"
+[tasks.install]
+description = "Install dependencies (frozen lockfile)"
 sources = ["package.json", "pnpm-lock.yaml"]
 outputs = ["node_modules/.modules.yaml"]
-quiet = true
-run = "pnpm install --frozen-lockfile --silent"
+# PNPM_STORE_DIR is set by CI to the store it caches; unset locally.
+run = 'pnpm install --frozen-lockfile --silent ${PNPM_STORE_DIR:+--store-dir "$PNPM_STORE_DIR"}'
+
+[tasks.lint]
+description = "Lint with Biome"
+run = "pnpm -s lint"
+
+[tasks.typecheck]
+description = "Typecheck with tsc"
+run = "pnpm -s typecheck"
+
+[tasks.test]
+description = "Run the renderer tests"
+run = "pnpm -s test"
+
+[tasks.ci]
+description = "Lint, typecheck and tests, before you push"
+depends = ["install"]
+run = ["pnpm -s lint", "pnpm -s typecheck", "pnpm -s test"]
 
 [tasks.playground]
 description = "Serve the review page on localhost:4620 (or a free port)"
-depends = ["setup"]
-run = "node spike/playground/server.ts"
+depends = ["install"]
+run = "pnpm -s playground"
 
 [tasks.check]
 description = "Render one .flow file next to itself and list its problems"
@@ -23,24 +40,14 @@ run = 'node spike/check.ts "${usage_file?}"'
 
 [tasks.render]
 description = "Render every example to spike/out/"
-run = "node spike/render.ts"
+run = "pnpm -s render"
 
 [tasks.measure]
 description = "Show what moved between the loop and the loop with a role inserted"
-run = "node spike/measure.ts"
-
-[tasks.test]
-description = "Run the renderer tests"
-depends = ["setup"]
-run = "node --test spike/flow.test.ts"
-
-[tasks.ci]
-description = "Lint, typecheck and test, as a contributor runs them before pushing"
-depends = ["setup"]
-run = ["pnpm -s lint", "pnpm -s typecheck", "node --test spike/flow.test.ts"]
+run = "pnpm -s measure"
 
 [hooks]
 enter = [
-  { task = "setup" },
+  { task = "install" },
   "echo 'ablauf: mise run playground · mise run check FILE · mise run ci · mise tasks' >&2",
 ]

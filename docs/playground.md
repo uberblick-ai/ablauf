@@ -94,8 +94,9 @@ Each step is one small PR:
 - An AI assistant panel.
 - Any layout or routing help beyond showing problems.
 
-## Questions for you
+## Decided
 
-- Port 4620, beside wireframe-md's 4610?
-- Should approvals cover light and dark with one fingerprint, as in wireframe-md?
-- Should the showcase site wait until there are three kinds, or ship with flows alone?
+- Port 4620, beside wireframe-md's 4610.
+- One fingerprint covers light and dark, unless that causes a problem.
+- The showcase site waits until there are at least three kinds and more common
+  examples.
