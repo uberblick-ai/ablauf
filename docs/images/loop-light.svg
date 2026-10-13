@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="ab" viewBox="0 0 786 694" width="786" height="694" role="img" aria-label="Flow: A maintainer adds the first label, needs-preparation, issue-preparer, ready, implementer, needs-review, human, reviewer, needs-changes, ready-to-merge, integrator, Merged · issue closed">
+<style>.ab{--ink:var(--ab-ink,#17202c);--muted:var(--ab-muted,#5a6575);--line:var(--ab-line,#d3d9e2);--band:var(--ab-band,#e9eef5);--surface:var(--ab-surface,#ffffff);--agent:var(--ab-agent,#0b6b67);--agent-bg:var(--ab-agent-bg,#dff1ee);--rework:var(--ab-rework,#a65f0c);--rework-bg:var(--ab-rework-bg,#fbefdc);--stop:var(--ab-stop,#b2382f);--stop-bg:var(--ab-stop-bg,#f9e2df);--done:var(--ab-done,#2a7845);--done-bg:var(--ab-done-bg,#e0f1e5);}
+.ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
+.ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.ab .s11{font-size:11px}.ab .s12{font-size:12px}.ab .s13{font-size:13px}
+.ab .muted{fill:var(--muted)}.ab .b{font-weight:600}
+.ab .cap{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.08em;fill:var(--muted)}
+.ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
+.ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
+.ab .t-ink{fill:var(--muted)}.ab .e-ink{stroke:var(--muted)}.ab .k-ink{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-muted{fill:var(--muted)}.ab .e-muted{stroke:var(--muted)}.ab .k-muted{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-agent{fill:var(--agent)}.ab .e-agent{stroke:var(--agent)}.ab .k-agent{fill:var(--agent-bg);stroke:var(--agent);stroke-width:1.5}.ab .t-done{fill:var(--done)}.ab .e-done{stroke:var(--done)}.ab .k-done{fill:var(--done-bg);stroke:var(--done);stroke-width:1.5}.ab .t-rework{fill:var(--rework)}.ab .e-rework{stroke:var(--rework)}.ab .k-rework{fill:var(--rework-bg);stroke:var(--rework);stroke-width:1.5}.ab .t-stop{fill:var(--stop)}.ab .e-stop{stroke:var(--stop)}.ab .k-stop{fill:var(--stop-bg);stroke:var(--stop);stroke-width:1.5}
+.ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}</style>
+<defs>
+<marker id="loop-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker>
+<marker id="loop-rework" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-rework"/></marker>
+<marker id="loop-stop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-stop"/></marker>
+</defs>
+<text x="20" y="22" class="cap">ISSUE</text>
+<rect x="8" y="262" width="770" height="424" class="band"/>
+<line x1="8" y1="262" x2="778" y2="262" class="rule"/>
+<text x="20" y="284" class="cap">PULL REQUEST</text>
+<path d="M378,32 L378,62" class="e e-ink" marker-end="url(#loop-ink)"/>
+<path d="M378,96 L378,126" class="e e-ink" marker-end="url(#loop-ink)"/>
+<path d="M378,172 L378,202" class="e e-ink" marker-end="url(#loop-ink)"/>
+<path d="M378,236 L378,288" class="e e-ink" marker-end="url(#loop-ink)"/>
+<path d="M378,334 L378,364" class="e e-ink" marker-end="url(#loop-ink)"/>
+<path d="M378,398 L378,428" class="e e-ink" marker-end="url(#loop-ink)"/>
+<path d="M378,474 L378,504" class="e e-ink" marker-end="url(#loop-ink)"/>
+<path d="M378,538 L378,568" class="e e-ink" marker-end="url(#loop-ink)"/>
+<path d="M378,614 L378,644" class="e e-ink" marker-end="url(#loop-ink)"/>
+<path d="M278,451 L146,451" class="e e-rework" marker-end="url(#loop-rework)"/>
+<path d="M309,521 L103,521 L103,468" class="e e-rework dash" marker-end="url(#loop-rework)"/>
+<path d="M278,591 L59,591 L59,468" class="e e-rework" marker-end="url(#loop-rework)"/>
+<path d="M81,434 L81,311 L278,311" class="e e-rework" marker-end="url(#loop-rework)"/>
+<path d="M477,149 L698,149 L698,364" class="e e-stop" marker-end="url(#loop-stop)"/>
+<path d="M477,311 L626,311 L626,364" class="e e-stop" marker-end="url(#loop-stop)"/>
+<path d="M477,451 L554,451" class="e e-stop" marker-end="url(#loop-stop)"/>
+<path d="M477,591 L662,591 L662,538" class="e e-stop" marker-end="url(#loop-stop)"/>
+<text x="378" y="28" text-anchor="middle" class="s12 muted">A maintainer adds the first label</text>
+<g><rect x="299" y="62" width="158" height="34" rx="17" class="pill"/>
+<circle cx="313" cy="79" r="5" class="t-muted"/>
+<text x="325" y="83" class="m s12">needs-preparation</text></g>
+<g>
+<rect x="278" y="126" width="199" height="46" rx="8" class="k-agent"/>
+<text x="378" y="145" text-anchor="middle" class="m s13 b t-agent">issue-preparer</text>
+<text x="378" y="162" text-anchor="middle" class="s11 muted">writes scope and criteria</text>
+</g>
+<g><rect x="342" y="202" width="72" height="34" rx="17" class="pill"/>
+<circle cx="356" cy="219" r="5" class="t-done"/>
+<text x="368" y="223" class="m s12">ready</text></g>
+<g>
+<rect x="278" y="288" width="199" height="46" rx="8" class="k-agent"/>
+<text x="378" y="307" text-anchor="middle" class="m s13 b t-agent">implementer</text>
+<text x="378" y="324" text-anchor="middle" class="s11 muted">codes, checks, opens the PR</text>
+</g>
+<g><rect x="317" y="364" width="122" height="34" rx="17" class="pill"/>
+<circle cx="331" cy="381" r="5" class="t-agent"/>
+<text x="343" y="385" class="m s12">needs-review</text></g>
+<g>
+<rect x="278" y="428" width="199" height="46" rx="8" class="k-agent"/>
+<text x="378" y="447" text-anchor="middle" class="m s13 b t-agent">reviewer</text>
+<text x="378" y="464" text-anchor="middle" class="s11 muted">reviews the exact head SHA</text>
+</g>
+<g><rect x="309" y="504" width="137" height="34" rx="17" class="pill"/>
+<circle cx="323" cy="521" r="5" class="t-done"/>
+<text x="335" y="525" class="m s12">ready-to-merge</text></g>
+<g>
+<rect x="278" y="568" width="199" height="46" rx="8" class="k-agent"/>
+<text x="378" y="587" text-anchor="middle" class="m s13 b t-agent">integrator</text>
+<text x="378" y="604" text-anchor="middle" class="s11 muted">updates base, checks, merges</text>
+</g>
+<rect x="287" y="644" width="181" height="34" rx="17" class="k-done"/>
+<text x="378" y="665" text-anchor="middle" class="s12 b t-done">Merged · issue closed</text>
+<g><rect x="16" y="434" width="130" height="34" rx="17" class="pill"/>
+<circle cx="30" cy="451" r="5" class="t-rework"/>
+<text x="42" y="455" class="m s12">needs-changes</text></g>
+<g><rect x="554" y="364" width="216" height="174" rx="10" class="k-stop panel"/>
+<rect x="605" y="392" width="115" height="30" rx="15" class="pill"/>
+<circle cx="619" cy="407" r="5" class="t-stop"/>
+<text x="631" y="411" class="m s12">needs-human</text>
+<text x="662" y="441" text-anchor="middle" class="s11 muted">or an Action needed comment</text>
+<line x1="570" y1="453" x2="754" y2="453" class="rule"/>
+<text x="662" y="473" text-anchor="middle" class="s12 b">A person decides</text>
+<text x="662" y="491" text-anchor="middle" class="s11">adds the trigger of any role</text>
+<text x="662" y="509" text-anchor="middle" class="s11 muted">blocked, same role: retry</text></g>
+<text x="388" y="115" class="m s11">trigger</text>
+<text x="388" y="191" class="m s11">prepared</text>
+<text x="388" y="353" class="m s11">handed-off</text>
+<text x="388" y="493" class="m s11">approved</text>
+<text x="388" y="633" class="m s11">merged</text>
+<text x="268" y="444" text-anchor="end" class="m s11 t-rework">changes-requested</text>
+<text x="299" y="514" text-anchor="end" class="m s11 t-rework">on-conflict · launcher</text>
+<text x="268" y="584" text-anchor="end" class="m s11 t-rework">changes-requested</text>
+<text x="268" y="304" text-anchor="end" class="m s11 t-rework">revise the same PR</text>
+<text x="487" y="142" class="m s11 t-stop">needs-human</text>
+<text x="487" y="304" class="m s11 t-stop">blocked</text>
+<text x="487" y="444" class="m s11 t-stop">blocked</text>
+<text x="487" y="584" class="m s11 t-stop">maintainer-merge, blocked</text>
+</svg>

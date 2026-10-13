@@ -92,3 +92,9 @@ test("every row a spanning panel covers meets it with a straight edge", () => {
 		assert.equal(r.points.length, 2, `${r.edge.from} → p should be straight`);
 	}
 });
+
+test("a pinned scheme carries one palette and no media query", () => {
+	const { svg } = render(example("loop"), { scheme: "dark" });
+	assert.ok(!svg.includes("prefers-color-scheme"));
+	assert.ok(svg.includes("var(--ab-ink,#e5e9ef)"));
+});

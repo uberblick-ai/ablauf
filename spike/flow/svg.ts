@@ -46,9 +46,12 @@ const vars = (t: typeof LIGHT) =>
 		.map(([k, v]) => `--${k}:var(--ab-${k},${v});`)
 		.join("");
 
+const palette = (scheme?: "light" | "dark") =>
+	scheme
+		? `.ab{${vars(scheme === "dark" ? DARK : LIGHT)}}`
+		: `.ab{${vars(LIGHT)}}@media (prefers-color-scheme:dark){.ab{${vars(DARK)}}}`;
+
 const STYLE = `
-.ab{${vars(LIGHT)}}
-@media (prefers-color-scheme:dark){.ab{${vars(DARK)}}}
 .ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
 .ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
 .ab .s11{font-size:11px}.ab .s12{font-size:12px}.ab .s13{font-size:13px}
@@ -77,6 +80,8 @@ const esc = (s: string) =>
 export interface SvgOptions {
 	idPrefix?: string;
 	title?: string;
+	/** Pin one palette instead of following prefers-color-scheme. */
+	scheme?: "light" | "dark";
 }
 
 export function toSvg(layout: Layout, options: SvgOptions = {}): string {
@@ -86,7 +91,7 @@ export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 	out.push(
 		`<svg xmlns="http://www.w3.org/2000/svg" class="ab" viewBox="0 0 ${layout.width} ${layout.height}" width="${layout.width}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? describe(layout))}">`,
 	);
-	out.push(`<style>${STYLE}</style>`);
+	out.push(`<style>${palette(options.scheme)}\n${STYLE}</style>`);
 	out.push("<defs>");
 	for (const t of tones) {
 		out.push(
