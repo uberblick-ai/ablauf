@@ -1,0 +1,44 @@
+# The ub-agents loop in Pikchr, as a baseline. Relative placement only.
+linewid = 0.3
+boxwid = 1.8
+boxht = 0.45
+fontscale = 0.9
+down
+T: text "A maintainer adds the first label" italic
+arrow
+NP: box "needs-preparation" mono rad 0.2 wid 1.5 ht 0.32
+arrow "trigger" ljust
+IP: box "issue-preparer" bold "writes scope and criteria" small
+arrow "prepared" ljust
+R: box "ready" mono rad 0.2 wid 0.8 ht 0.32
+arrow
+IM: box "implementer" bold "codes, checks, opens the PR" small
+arrow "handed-off" ljust
+NR: box "needs-review" mono rad 0.2 wid 1.2 ht 0.32
+arrow
+RV: box "reviewer" bold "reviews the exact head SHA" small
+arrow "approved" ljust
+RM: box "ready-to-merge" mono rad 0.2 wid 1.3 ht 0.32
+arrow
+IN: box "integrator" bold "updates base, checks, merges" small
+arrow "merged" ljust
+M: box "Merged · issue closed" rad 0.2 wid 1.7 ht 0.32 color green
+
+NC: box "needs-changes" mono rad 0.2 wid 1.3 ht 0.32 color 0xa65f0c at 2.2in west of RV
+arrow from RV.w to NC.e "changes-requested" above color 0xa65f0c
+arrow from RM.w left until even with NC.s then to NC.s dashed color 0xa65f0c
+text "on-conflict · launcher" small at 0.6in west of RM.w + (0,0.1)
+arrow from IN.w left until even with NC.sw+(0.15,0) then to NC.sw+(0.15,0) color 0xa65f0c
+text "changes-requested" small at 0.75in west of IN.w + (0,0.1)
+arrow from NC.n up until even with IM then to IM.w color 0xa65f0c
+text "revise the same PR" small at 1.1in west of IM.w + (0,0.1)
+
+H: box "needs-human" mono "or an Action needed comment" small "A person decides" bold "adds the trigger of any role" small "blocked, same role: retry" small wid 1.9 ht 1.4 dashed color 0xb2382f at 2.3in east of RV
+arrow from IP.e right until even with H.ne-(0.3,0) then down until even with H.n then to H.ne-(0.3,0) color 0xb2382f
+arrow from IM.e right until even with H.nw+(0.4,0) then to H.nw+(0.4,0) color 0xb2382f
+arrow from RV.e to (H.w.x, RV.e.y) color 0xb2382f
+arrow from IN.e right until even with H.s then to H.s color 0xb2382f
+text "needs-human" small at 0.45in east of IP.e + (0,0.1)
+text "blocked" small at 0.3in east of IM.e + (0,0.1)
+text "blocked" small at 0.3in east of RV.e + (0,0.1)
+text "maintainer-merge, blocked" small at 0.9in east of IN.e + (0,0.1)
