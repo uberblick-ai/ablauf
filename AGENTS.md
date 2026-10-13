@@ -23,8 +23,7 @@ Uberblick documents, in light and dark, is the one hard requirement.
   authors only (below).
 - **Code and tests:** implemented behavior.
 - **uberblick-2:** how Uberblick shows the block, and the figures its documents
-  need, through the read-only `uberblick-product-corpus` MCP server
-  (`.mcp.json`). Never edit that corpus.
+  need.
 
 A discrepancy is a gap to resolve, not permission to silently override another
 source.
