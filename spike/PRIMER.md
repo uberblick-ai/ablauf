@@ -29,8 +29,8 @@ worker --> person tone=stop : stuck
 
 - `columns a b c` names the columns from left to right, once, before any node.
 - Each node starts a new row below the previous one. `row=<id>` puts it in the
-  same row as that node instead. `span=N` lets it cover N rows from there, and
-  it is centred on them.
+  same row as that node instead. `span=N` makes it cover N rows from there,
+  top to bottom.
 - `col=<name>` picks the column. Without it, a node uses the column of the
   node declared before it, so the first node always needs `col=`.
 - `section "Title"` starts a horizontal band. The rows that follow belong to it.
@@ -60,15 +60,18 @@ Tones: `ink`, `muted`, `agent`, `done`, `rework`, `stop`.
 - If you leave the sides out: in the same column, an edge goes from bottom to
   top. In overlapping rows, it goes between the facing sides. Otherwise it
   leaves the side facing the target and enters the target's top or bottom.
-- The shape follows from the sides. It is a straight line when the ends line
-  up, one bend from a side to a top or bottom, and two bends between two sides
-  of the same kind.
+- The shape follows from the sides. An edge between facing sides is straight
+  whenever the target's side reaches the source's row, so a node that spans
+  several rows takes a straight edge from each of them. A side to a top or
+  bottom gives one bend; otherwise there are two.
 - `label=end` puts the label at the target end instead of the source end.
 
 ## Making it look good
 
 - Keep the main path in one column going down, and put branches in side columns.
 - Put a branch node in the row of the node it belongs to (`row=`).
-- When several edges enter one side, give the nearest edge the slot nearest
-  the main column. Nested edges then never cross.
+- When several edges enter a top or bottom, give the nearest edge the slot
+  nearest the main column. Nested edges then never cross.
+- A stop or note that several rows point at: put it in a side column with
+  `span=` over those rows, and leave the edges' sides out.
 - Fix every problem the check reports. Never leave a crossing.

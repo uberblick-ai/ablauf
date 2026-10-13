@@ -73,6 +73,16 @@ const WRAP_CHARS = 34;
 
 // Panel text wraps at a fixed number of characters, so a long note grows
 // the panel downwards instead of sideways.
+export function panelContentHeight(n: FlowNode): number {
+	let h = 12;
+	for (const c of n.children) {
+		if (c.kind === "pill") h += 36;
+		else if (c.kind === "rule") h += 14;
+		else h += 18 + (wrap(c.text).length - 1) * 15;
+	}
+	return h + 8;
+}
+
 export function wrap(text: string): string[] {
 	const lines: string[] = [];
 	let line = "";
@@ -111,23 +121,17 @@ function size(n: FlowNode): { w: number; h: number } {
 				h: 46,
 			};
 		case "panel": {
-			let h = 12;
 			let w = 190;
 			for (const c of n.children) {
-				if (c.kind === "pill") {
-					h += 36;
-					w = Math.max(w, Math.round(36 + len(c.text) * CHAR.mono12 + 28));
-				} else if (c.kind === "rule") h += 14;
-				else {
-					const lines = wrap(c.text);
-					h += 18 + (lines.length - 1) * 15;
-					w = Math.max(
-						w,
-						Math.round(Math.max(...lines.map(len)) * CHAR.sans12 + 28),
-					);
-				}
+				const width =
+					c.kind === "pill"
+						? 36 + len(c.text) * CHAR.mono12
+						: c.kind === "rule"
+							? 0
+							: Math.max(...wrap(c.text).map(len)) * CHAR.sans12;
+				w = Math.max(w, Math.round(width + 28));
 			}
-			return { w, h: h + 8 };
+			return { w, h: panelContentHeight(n) };
 		}
 	}
 }
@@ -211,6 +215,8 @@ export function grid(
 	for (const p of nodes) {
 		const top = rowY[first(p)];
 		const bottom = rowY[last(p)] + rowH[last(p)];
+		// A spanning node fills its rows, so every row meets it head on.
+		if (p.node.span > 1) p.h = bottom - top;
 		p.y = Math.round(top + (bottom - top - p.h) / 2);
 	}
 
@@ -342,25 +348,28 @@ export function grid(
 						? [p.x, Math.round(p.y + p.h * f)]
 						: [p.x + p.w, Math.round(p.y + p.h * f)];
 	}
-	// A lone port faces a neighbour it can meet head on: line them up so the edge is straight.
+	// An edge between two parallel sides runs straight when the longer side
+	// can meet the other end head on without crowding its other ports.
 	for (const e of model.edges) {
 		const [a, b] = ends.filter((x) => x.edge === e);
-		if (horizontal(a.side) !== horizontal(b.side)) continue;
+		if (horizontal(a.side) !== horizontal(b.side) || a.side === b.side)
+			continue;
 		const k = horizontal(a.side) ? 1 : 0;
-		for (const [mover, fixed] of [
-			[b, a],
-			[a, b],
-		]) {
-			if (mover.count !== 1) continue;
-			const lo = k ? mover.node.y + 6 : mover.node.x + 6;
-			const hi = k
-				? mover.node.y + mover.node.h - 6
-				: mover.node.x + mover.node.w - 6;
-			if (fixed.point[k] >= lo && fixed.point[k] <= hi) {
-				mover.point[k] = fixed.point[k];
-				break;
-			}
-		}
+		const extent = (end: End) => (k ? end.node.h : end.node.w);
+		const [mover, fixed] = extent(b) >= extent(a) ? [b, a] : [a, b];
+		const lo = (k ? mover.node.y : mover.node.x) + 6;
+		const hi =
+			(k ? mover.node.y + mover.node.h : mover.node.x + mover.node.w) - 6;
+		const target = fixed.point[k];
+		if (target < lo || target > hi) continue;
+		const crowded = ends.some(
+			(o) =>
+				o !== mover &&
+				o.node === mover.node &&
+				o.side === mover.side &&
+				Math.abs(o.point[k] - target) < 10,
+		);
+		if (!crowded) mover.point[k] = target;
 	}
 
 	// Elbows: one fixed shape per pair of sides.

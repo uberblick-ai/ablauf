@@ -66,3 +66,29 @@ test("broken input never throws", () => {
 		["unknown node `missing`; edge dropped"],
 	);
 });
+
+test("every row a spanning panel covers meets it with a straight edge", () => {
+	const source = [
+		"flow v0",
+		"columns main stop",
+		"box a col=main",
+		"box b",
+		"box c",
+		"box d",
+		"panel p col=stop row=a span=4",
+		'  strong "A person decides"',
+		"a --> b",
+		"b --> c",
+		"c --> d",
+		"a --> p : blocked",
+		"b --> p : blocked",
+		"c --> p : blocked",
+		"d --> p : blocked, maintainer merge",
+		"",
+	].join("\n");
+	const { diagnostics, layout } = render(source);
+	assert.deepEqual(diagnostics, []);
+	for (const r of layout.routes.filter((r) => r.edge.to === "p")) {
+		assert.equal(r.points.length, 2, `${r.edge.from} → p should be straight`);
+	}
+});

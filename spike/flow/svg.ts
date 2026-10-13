@@ -6,6 +6,7 @@ import {
 	type Layout,
 	type Placed,
 	type Route,
+	panelContentHeight,
 	wrap,
 } from "./grid.ts";
 import type { Tone } from "./parse.ts";
@@ -172,7 +173,7 @@ function node(p: Placed): string {
 			const parts = [
 				`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" class="k-${n.tone} panel"/>`,
 			];
-			let cy = y + 12;
+			let cy = Math.round(y + 12 + (h - panelContentHeight(n)) / 2);
 			for (const c of n.children) {
 				if (c.kind === "pill") {
 					const pw = Math.round(36 + [...c.text].length * 7.2);

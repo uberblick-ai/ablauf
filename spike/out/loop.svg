@@ -33,10 +33,10 @@
 <path d="M309,521 L103,521 L103,468" class="e e-rework dash" marker-end="url(#loop-rework)"/>
 <path d="M278,591 L59,591 L59,468" class="e e-rework" marker-end="url(#loop-rework)"/>
 <path d="M81,434 L81,311 L278,311" class="e e-rework" marker-end="url(#loop-rework)"/>
-<path d="M477,149 L698,149 L698,380" class="e e-stop" marker-end="url(#loop-stop)"/>
-<path d="M477,311 L626,311 L626,380" class="e e-stop" marker-end="url(#loop-stop)"/>
+<path d="M477,149 L698,149 L698,364" class="e e-stop" marker-end="url(#loop-stop)"/>
+<path d="M477,311 L626,311 L626,364" class="e e-stop" marker-end="url(#loop-stop)"/>
 <path d="M477,451 L554,451" class="e e-stop" marker-end="url(#loop-stop)"/>
-<path d="M477,591 L662,591 L662,522" class="e e-stop" marker-end="url(#loop-stop)"/>
+<path d="M477,591 L662,591 L662,538" class="e e-stop" marker-end="url(#loop-stop)"/>
 <text x="378" y="28" text-anchor="middle" class="s12 muted">A maintainer adds the first label</text>
 <g><rect x="299" y="62" width="158" height="34" rx="17" class="pill"/>
 <circle cx="313" cy="79" r="5" class="t-muted"/>
@@ -75,7 +75,7 @@
 <g><rect x="16" y="434" width="130" height="34" rx="17" class="pill"/>
 <circle cx="30" cy="451" r="5" class="t-rework"/>
 <text x="42" y="455" class="m s12">needs-changes</text></g>
-<g><rect x="554" y="380" width="216" height="142" rx="10" class="k-stop panel"/>
+<g><rect x="554" y="364" width="216" height="174" rx="10" class="k-stop panel"/>
 <rect x="605" y="392" width="115" height="30" rx="15" class="pill"/>
 <circle cx="619" cy="407" r="5" class="t-stop"/>
 <text x="631" y="411" class="m s12">needs-human</text>
