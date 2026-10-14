@@ -1,0 +1,51 @@
+flow v0
+# gate's milestone-first launcher selection, chosen again on every pass.
+
+columns side main skip
+
+pill pass col=main tone=muted "A launcher's pass"
+box readable title="GitHub data readable?" "checked first, on every pass"
+box bypass title="New issue work?" "PR work, owned runs, recovery and launch N skip the rest"
+box rank title="Rank open milestones" "creation time, then number; only those with open issues or PRs"
+box startable title="Startable issue in the earliest one?" "an issue this launcher can start now"
+box next title="Take its next issue" "effective priority, creation time, number"
+box override title="Unmilestoned issue ranks higher?" "strictly higher effective priority only"
+end start "Start the milestone issue"
+
+panel stops col=skip row=readable tone=stop
+  strong "Selection stops visibly"
+  muted "never read as nothing to start"
+box usual col=side row=bypass tone=done title="Runs as usual" "milestones never hold it"
+panel skipped col=skip row=startable span=2 tone=rework
+  strong "Skipped, holds nothing"
+  muted "no trigger label"
+  muted "stop label, e.g. needs-human"
+  muted "an open blocker"
+  muted "claimed by another launcher"
+  muted "retry limit exhausted"
+  muted "approval pending"
+  muted "a role it doesn't run"
+  muted "runtime unavailable"
+box fallback col=side row=startable title="Unmilestoned work" "or closed milestones, by priority; idle only if none"
+box first col=side row=override tone=done title="Start it first" "equal priority is not enough"
+text later col=skip row=override "A later milestone never goes ahead on priority"
+
+pass --> readable
+readable --> bypass : yes
+readable --> stops tone=stop : no
+bypass --> rank : yes
+bypass --> usual tone=done : no
+rank --> startable
+startable --> next : yes
+startable --> skipped tone=rework : no
+skipped --> startable tone=rework from=top to=top label=end : next milestone
+startable --> fallback : none left
+next --> override
+override --> first tone=done : yes
+override --> start : no
+
+legend
+  box "step or question"
+  panel tone=rework "issue skipped, milestone not held"
+  panel tone=stop "selection stops"
+  edge tone=done "starts work"
