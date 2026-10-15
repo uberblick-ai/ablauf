@@ -20,9 +20,8 @@ queue:
 
 # Default arguments for each CLI; add the other CLI's entry for mixed runtimes.
 # Grants unattended edits and git/gh/report commands: https://github.com/uberblick-ai/ub-agents/blob/main/docs/configuration.md#runtime-permissions
-# Add the project's check commands to --allowedTools: "Bash(<project check command>)".
 runtime-args:
-  claude: ["--permission-mode", "acceptEdits", "--permission-prompts", "none", "--allowedTools", "Bash(git *)", "Bash(gh *)", "Bash({report_command} report *)", "Bash({report_command} read *)", "Bash({report_command} retrospective *)", "--add-dir", "{scratch}"]
+  claude: ["--permission-mode", "acceptEdits", "--permission-prompts", "none", "--allowedTools", "Bash(git *)", "Bash(gh *)", "Bash({report_command} report *)", "Bash({report_command} read *)", "Bash({report_command} retrospective *)", "Bash(mise trust)", "Bash(mise run *)", "--add-dir", "{scratch}"]
 # An agent's runtime-args list or mapping replaces these defaults entirely.
 # Omit the agent key to inherit; an empty list or mapping disables the defaults.
 
