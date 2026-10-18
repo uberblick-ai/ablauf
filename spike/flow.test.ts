@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
-import { render } from "./flow/index.ts";
+import { chromium } from "playwright";
+import { DARK, LIGHT, render } from "./flow/index.ts";
 
 const example = (name: string) =>
 	readFileSync(join(import.meta.dirname, "examples", `${name}.flow`), "utf8");
@@ -97,6 +98,83 @@ test("a pinned scheme carries one palette and no media query", () => {
 	const { svg } = render(example("loop"), { scheme: "dark" });
 	assert.ok(!svg.includes("prefers-color-scheme"));
 	assert.ok(svg.includes("var(--ab-ink,#e5e9ef)"));
+});
+
+test("inline diagrams keep independent palettes in every order and system scheme", async () => {
+	const browser = await chromium.launch();
+	try {
+		const page = await browser.newPage();
+		const source = "flow v0\nbox a tone=agent\n";
+		const diagrams = {
+			light: render(source, { scheme: "light", idPrefix: "light" }).svg,
+			dark: render(source, { scheme: "dark", idPrefix: "dark" }).svg,
+			auto: render(source, { idPrefix: "auto" }).svg,
+		};
+		const orders = [
+			["light", "dark", "auto"],
+			["light", "auto", "dark"],
+			["dark", "light", "auto"],
+			["dark", "auto", "light"],
+			["auto", "light", "dark"],
+			["auto", "dark", "light"],
+		] as const;
+		const rgb = (hex: string) =>
+			`rgb(${[1, 3, 5].map((i) => Number.parseInt(hex.slice(i, i + 2), 16)).join(", ")})`;
+		for (const order of orders) {
+			await page.setContent(
+				`<!doctype html><html><body>${order.map((mode) => diagrams[mode]).join("\n")}</body></html>`,
+			);
+			for (const colorScheme of ["light", "dark"] as const) {
+				await page.emulateMedia({ colorScheme });
+				const actual = await page.locator("svg").evaluateAll(
+					(roots, names) => roots.map((root) => {
+						const text = root.querySelector("text");
+						const box = root.querySelector(".k-agent");
+						if (!text || !box) throw new Error("Missing rendered node");
+						return {
+							classes: root.getAttribute("class"),
+							// Inspect every palette colour through SVG's computed fill,
+							// including colours this small fixture doesn't otherwise use.
+							palette: Object.fromEntries(
+								names.map((name) => {
+									const swatch = document.createElementNS(
+										"http://www.w3.org/2000/svg", "rect",
+									);
+									swatch.style.fill = `var(--${name})`;
+									root.append(swatch);
+									const fill = getComputedStyle(swatch).fill;
+									swatch.remove();
+									return [name, fill];
+								}),
+							),
+							text: getComputedStyle(text).fill,
+							fill: getComputedStyle(box).fill,
+							stroke: getComputedStyle(box).stroke,
+						};
+					}),
+					Object.keys(LIGHT),
+				);
+				const expected = order.map((mode) => {
+					const palette =
+						(mode === "auto" ? colorScheme : mode) === "dark" ? DARK : LIGHT;
+					return {
+						classes: `ab ab-${mode}`,
+						palette: Object.fromEntries(
+							Object.entries(palette).map(([name, hex]) => [name, rgb(hex)]),
+						),
+						text: rgb(palette.agent),
+						fill: rgb(palette["agent-bg"]),
+						stroke: rgb(palette.agent),
+					};
+				});
+				assert.deepEqual(
+					actual, expected, `${order.join(", ")} under ${colorScheme}`,
+				);
+			}
+		}
+	} finally {
+		await browser.close();
+	}
 });
 
 test("row= chains reach the row's first node, and loops are reported", () => {

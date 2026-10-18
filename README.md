@@ -99,7 +99,7 @@ mise trust && mise run setup
 
 | Command | What it does |
 | --- | --- |
-| `mise run setup` | Installs the pinned Node and pnpm and the locked dependencies. |
+| `mise run setup` | Installs the pinned Node and pnpm, locked dependencies and headless Chromium for the browser regression test. |
 | `mise run playground` | Serves the review page at http://localhost:4620 (another port if that one is busy). Open `#examples/loop` to see the loop beside its hand-drawn reference. |
 | `mise run check FILE` | Renders one `.flow` file to an `.svg` beside it and lists its problems with line numbers. |
 | `mise run render` | Renders every example to `spike/out/` and refreshes the figures in this README. |

@@ -120,7 +120,10 @@ there from the text and the diagnostics alone, without seeing the image.
   to box subtitles and panel lines, measured with a fixed estimate.
 - Colours are CSS variables inside the SVG with `--ab-*` overrides for a host,
   switching on `prefers-color-scheme`. This works in Uberblick, in artifacts
-  and on GitHub, where SVGs are shown as images.
+  and on GitHub, where SVGs are shown as images. The `scheme` render option can
+  pin light or dark instead. Roots carry `ab ab-auto`, `ab ab-light` or
+  `ab ab-dark`, and palette rules target only the matching mode, so inline
+  diagrams keep their palettes independently of document order and system theme.
 - Marker and element ids carry a prefix, so several diagrams can share a page.
 
 ## The spike (now)

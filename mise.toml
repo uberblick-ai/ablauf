@@ -16,7 +16,10 @@ run = 'sh "{{config_root}}/bin/mise-welcome.sh"'
 [tasks.setup]
 description = "Install the pinned toolchain and frozen dependencies"
 # PNPM_STORE_DIR is set by CI to the store it caches; unset locally.
-run = 'pnpm install --frozen-lockfile --silent ${PNPM_STORE_DIR:+--store-dir "$PNPM_STORE_DIR"}'
+run = [
+  'pnpm install --frozen-lockfile --silent ${PNPM_STORE_DIR:+--store-dir "$PNPM_STORE_DIR"}',
+  'pnpm exec playwright install chromium --only-shell',
+]
 
 [tasks.lint]
 description = "Lint with Biome"

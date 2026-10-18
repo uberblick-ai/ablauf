@@ -41,6 +41,9 @@ jobs:
         env:
           PNPM_STORE_DIR: ~/.pnpm-store
 
+      - if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: pnpm exec playwright install-deps chromium
+
       # Each check runs even when an earlier one fails.
       - if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: mise run lint
