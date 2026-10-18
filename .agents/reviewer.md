@@ -8,10 +8,10 @@ before reviewing. Report blocked if they differ.
 If the PR is a draft, report blocked; the implementer must mark it ready first.
 Never add ready-to-merge to a draft.
 
-This starter uses the configured runtime without claiming independent authorship.
-If the project requires independent cross-provider review, configure
-different-runtime-from and an eligible runtime. Changing effort or
-resetting the author's conversation does not establish independent review.
+You run on Claude, and `different-runtime-from: implementer` keeps you on a
+different runtime from the Codex implementer, so the review is independent.
+Changing effort or resetting the author's conversation does not establish
+independent review.
 
 If the project's shared guidance asks PRs to carry changelog entries, a missing or
 inaccurate entry for a user-facing change is a required correction. So is a check that passes only after changing the environment
