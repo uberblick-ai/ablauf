@@ -118,6 +118,9 @@ there from the text and the diagnostics alone, without seeing the image.
 - SVG as a string, with no browser and no DOM, and the same bytes for the same input.
 - Labels in monospace, so text widths are predictable. Sans text is limited
   to box subtitles and panel lines, measured with a fixed estimate.
+- The canvas includes every drawn section caption, measuring its uppercase
+  text with letter spacing. A section without nodes gets a line-numbered
+  diagnostic and draws no band or caption.
 - Colours use the base `--ab-ink`, `--ab-muted`, `--ab-line`, `--ab-band` and
   `--ab-surface` overrides, plus `--ab-agent`, `--ab-done`, `--ab-rework` and
   `--ab-stop` foregrounds and each tone's `--ab-<tone>-bg` background.
@@ -128,7 +131,14 @@ there from the text and the diagnostics alone, without seeing the image.
   Without overrides, defaults follow `prefers-color-scheme`, or stay fixed
   when the render option `scheme` is explicitly `"light"` or `"dark"`.
   The internal defaults also work when SVGs are shown as images.
-- Marker and element ids carry a prefix, so several diagrams can share a page.
+- Marker ids carry a prefix, so several diagrams can share a page. Hosts must
+  supply distinct `idPrefix` values for diagrams on the same page; the default
+  is `ab`. Prefixes containing only `[A-Za-z0-9_-]`, including the empty prefix,
+  stay unchanged. Each other UTF-16 code unit becomes `.` followed by four
+  lowercase hexadecimal digits, including literal dots, so the encoding is
+  reversible and distinct prefixes never collide. For example, `doc.1`,
+  `doc:1` and `doc-1` become `doc.002e1`, `doc.003a1` and `doc-1`. Routes and
+  legend samples reference the same encoded marker ids.
 
 ## The spike (now)
 
