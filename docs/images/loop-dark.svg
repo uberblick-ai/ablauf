@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" class="ab" viewBox="0 0 786 732" width="786" height="732" role="img" aria-label="Flow: A maintainer adds the first label, needs-preparation, issue-preparer, ready, implementer, needs-review, human, reviewer, needs-changes, ready-to-merge, integrator, Merged · issue closed. Legend: GitHub label, agent role, a person decides, set by the launcher">
-<style>.ab{--ink:var(--ab-ink,#e5e9ef);--muted:var(--ab-muted,#98a2b0);--line:var(--ab-line,#2c3440);--band:var(--ab-band,#151b23);--surface:var(--ab-surface,#1d232d);--agent:var(--ab-agent,#5cc5bb);--agent-bg:var(--ab-agent-bg,#12302d);--rework:var(--ab-rework,#e3a250);--rework-bg:var(--ab-rework-bg,#33250f);--stop:var(--ab-stop,#ef7f73);--stop-bg:var(--ab-stop-bg,#3a1916);--done:var(--ab-done,#72cf91);--done-bg:var(--ab-done-bg,#142e1d);}
+<style>.ab{--bg:var(--ab-bg,#171c24);--ink:var(--ab-ink,#e5e9ef);--muted:var(--ab-muted,#98a2b0);--line:var(--ab-line,#2c3440);--band:var(--ab-band,#151b23);--surface:var(--ab-surface,#1d232d);--agent:var(--ab-agent,#5cc5bb);--agent-bg:var(--ab-agent-bg,#12302d);--rework:var(--ab-rework,#e3a250);--rework-bg:var(--ab-rework-bg,#33250f);--stop:var(--ab-stop,#ef7f73);--stop-bg:var(--ab-stop-bg,#3a1916);--done:var(--ab-done,#72cf91);--done-bg:var(--ab-done-bg,#142e1d);}
 .ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
 .ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
 .ab .s11{font-size:11px}.ab .s12{font-size:12px}.ab .s13{font-size:13px}
@@ -8,6 +8,8 @@
 .ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
 .ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
 .ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
+.ab .knockout{fill:none;stroke:var(--bg);stroke-width:5.6}.ab .knockout-band{stroke:var(--band)}
+.ab .arrow{fill:none;stroke:none}
 .ab .t-ink{fill:var(--muted)}.ab .e-ink{stroke:var(--muted)}.ab .k-ink{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-muted{fill:var(--muted)}.ab .e-muted{stroke:var(--muted)}.ab .k-muted{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-agent{fill:var(--agent)}.ab .e-agent{stroke:var(--agent)}.ab .k-agent{fill:var(--agent-bg);stroke:var(--agent);stroke-width:1.5}.ab .t-done{fill:var(--done)}.ab .e-done{stroke:var(--done)}.ab .k-done{fill:var(--done-bg);stroke:var(--done);stroke-width:1.5}.ab .t-rework{fill:var(--rework)}.ab .e-rework{stroke:var(--rework)}.ab .k-rework{fill:var(--rework-bg);stroke:var(--rework);stroke-width:1.5}.ab .t-stop{fill:var(--stop)}.ab .e-stop{stroke:var(--stop)}.ab .k-stop{fill:var(--stop-bg);stroke:var(--stop);stroke-width:1.5}
 .ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}</style>
 <defs>
@@ -15,27 +17,45 @@
 <marker id="loop-rework" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-rework"/></marker>
 <marker id="loop-stop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-stop"/></marker>
 </defs>
-<text x="20" y="22" class="cap">ISSUE</text>
+
 <rect x="8" y="262" width="770" height="424" class="band"/>
 <line x1="8" y1="262" x2="778" y2="262" class="rule"/>
+<path d="M378,32 L378,62" class="e e-ink"/>
+<path d="M378,96 L378,126" class="e e-ink"/>
+<path d="M378,172 L378,202" class="e e-ink"/>
+<path d="M378,236 L378,288" class="e e-ink"/>
+<path d="M378,334 L378,364" class="e e-ink"/>
+<path d="M378,398 L378,428" class="e e-ink"/>
+<path d="M378,474 L378,504" class="e e-ink"/>
+<path d="M378,538 L378,568" class="e e-ink"/>
+<path d="M378,614 L378,644" class="e e-ink"/>
+<path d="M278,451 L146,451" class="e e-rework"/>
+<path d="M309,521 L103,521 L103,468" class="e e-rework dash"/>
+<path d="M278,591 L59,591 L59,468" class="e e-rework"/>
+<path d="M81,434 L81,311 L278,311" class="e e-rework"/>
+<path d="M477,149 L698,149 L698,364" class="e e-stop"/>
+<path d="M477,311 L626,311 L626,364" class="e e-stop"/>
+<path d="M477,451 L554,451" class="e e-stop"/>
+<path d="M477,591 L662,591 L662,538" class="e e-stop"/>
+<path d="M378,32 L378,62" class="arrow" marker-end="url(#loop-ink)"/>
+<path d="M378,96 L378,126" class="arrow" marker-end="url(#loop-ink)"/>
+<path d="M378,172 L378,202" class="arrow" marker-end="url(#loop-ink)"/>
+<path d="M378,236 L378,288" class="arrow" marker-end="url(#loop-ink)"/>
+<path d="M378,334 L378,364" class="arrow" marker-end="url(#loop-ink)"/>
+<path d="M378,398 L378,428" class="arrow" marker-end="url(#loop-ink)"/>
+<path d="M378,474 L378,504" class="arrow" marker-end="url(#loop-ink)"/>
+<path d="M378,538 L378,568" class="arrow" marker-end="url(#loop-ink)"/>
+<path d="M378,614 L378,644" class="arrow" marker-end="url(#loop-ink)"/>
+<path d="M278,451 L146,451" class="arrow" marker-end="url(#loop-rework)"/>
+<path d="M103,521 L103,468" class="arrow" marker-end="url(#loop-rework)"/>
+<path d="M59,591 L59,468" class="arrow" marker-end="url(#loop-rework)"/>
+<path d="M81,311 L278,311" class="arrow" marker-end="url(#loop-rework)"/>
+<path d="M698,149 L698,364" class="arrow" marker-end="url(#loop-stop)"/>
+<path d="M626,311 L626,364" class="arrow" marker-end="url(#loop-stop)"/>
+<path d="M477,451 L554,451" class="arrow" marker-end="url(#loop-stop)"/>
+<path d="M662,591 L662,538" class="arrow" marker-end="url(#loop-stop)"/>
+<text x="20" y="22" class="cap">ISSUE</text>
 <text x="20" y="284" class="cap">PULL REQUEST</text>
-<path d="M378,32 L378,62" class="e e-ink" marker-end="url(#loop-ink)"/>
-<path d="M378,96 L378,126" class="e e-ink" marker-end="url(#loop-ink)"/>
-<path d="M378,172 L378,202" class="e e-ink" marker-end="url(#loop-ink)"/>
-<path d="M378,236 L378,288" class="e e-ink" marker-end="url(#loop-ink)"/>
-<path d="M378,334 L378,364" class="e e-ink" marker-end="url(#loop-ink)"/>
-<path d="M378,398 L378,428" class="e e-ink" marker-end="url(#loop-ink)"/>
-<path d="M378,474 L378,504" class="e e-ink" marker-end="url(#loop-ink)"/>
-<path d="M378,538 L378,568" class="e e-ink" marker-end="url(#loop-ink)"/>
-<path d="M378,614 L378,644" class="e e-ink" marker-end="url(#loop-ink)"/>
-<path d="M278,451 L146,451" class="e e-rework" marker-end="url(#loop-rework)"/>
-<path d="M309,521 L103,521 L103,468" class="e e-rework dash" marker-end="url(#loop-rework)"/>
-<path d="M278,591 L59,591 L59,468" class="e e-rework" marker-end="url(#loop-rework)"/>
-<path d="M81,434 L81,311 L278,311" class="e e-rework" marker-end="url(#loop-rework)"/>
-<path d="M477,149 L698,149 L698,364" class="e e-stop" marker-end="url(#loop-stop)"/>
-<path d="M477,311 L626,311 L626,364" class="e e-stop" marker-end="url(#loop-stop)"/>
-<path d="M477,451 L554,451" class="e e-stop" marker-end="url(#loop-stop)"/>
-<path d="M477,591 L662,591 L662,538" class="e e-stop" marker-end="url(#loop-stop)"/>
 <text x="378" y="28" text-anchor="middle" class="s12 muted">A maintainer adds the first label</text>
 <g><rect x="299" y="62" width="158" height="34" rx="17" class="pill"/>
 <circle cx="313" cy="79" r="5" class="t-muted"/>

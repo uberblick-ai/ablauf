@@ -122,6 +122,19 @@ there from the text and the diagnostics alone, without seeing the image.
   switching on `prefers-color-scheme`. This works in Uberblick, in artifacts
   and on GitHub, where SVGs are shown as images.
 - Marker and element ids carry a prefix, so several diagrams can share a page.
+- At each interior edge crossing, the edge declared later in the source passes
+  above the earlier edge. A solid canvas-colour under-stroke, 5.6 px wide
+  (4 px wider than the edge), covers up to 6 px along that later edge on each
+  side of the crossing, stopping at segment ends. This leaves a short knockout
+  break in the earlier edge, with no bridge arc or fade. Swapping declarations
+  swaps which edge has the break; routes, tones and dashed styling stay as authored.
+- Knockouts use `--ab-bg` (white in light, `#171c24` in dark); over shaded
+  section bands they use `--ab-band`. Hosts can override both to match their
+  canvas. Arrowheads, section captions, nodes and edge labels draw above the
+  knockouts. Knockouts introduce no markers or element ids.
+- Crossing diagnostics and their source lines stay unchanged. Shared endpoints
+  and collinear overlaps get no knockout. A visible break does not make a
+  crossing acceptable: fix every diagnostic before calling the diagram done.
 
 ## The spike (now)
 

@@ -6,14 +6,18 @@ import {
 	type Key,
 	type Layout,
 	type Placed,
+	type Point,
 	type Route,
 	panelContentHeight,
 	SAMPLE_W,
+	segments,
+	segSeg,
 	wrap,
 } from "./grid.ts";
 import type { Tone } from "./parse.ts";
 
 export const LIGHT = {
+	bg: "#ffffff",
 	ink: "#17202c",
 	muted: "#5a6575",
 	line: "#d3d9e2",
@@ -29,6 +33,7 @@ export const LIGHT = {
 	"done-bg": "#e0f1e5",
 };
 export const DARK: typeof LIGHT = {
+	bg: "#171c24",
 	ink: "#e5e9ef",
 	muted: "#98a2b0",
 	line: "#2c3440",
@@ -62,6 +67,8 @@ const STYLE = `
 .ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
 .ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
 .ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
+.ab .knockout{fill:none;stroke:var(--bg);stroke-width:5.6}.ab .knockout-band{stroke:var(--band)}
+.ab .arrow{fill:none;stroke:none}
 ${(["ink", "muted", "agent", "done", "rework", "stop"] as Tone[])
 	.map((t) => {
 		const c = t === "ink" ? "muted" : t;
@@ -110,7 +117,15 @@ export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 	}
 	out.push("</defs>");
 	for (const b of layout.bands) out.push(band(b, layout.width));
-	for (const r of layout.routes) out.push(route(r, id));
+	for (let i = 0; i < layout.routes.length; i++) {
+		const r = layout.routes[i];
+		out.push(...knockouts(r, layout.routes.slice(0, i), layout.bands));
+		out.push(route(r));
+	}
+	// Knockouts affect edge strokes only; all foreground content follows them.
+	for (const r of layout.routes) out.push(arrow(r, id));
+	for (const b of layout.bands)
+		out.push(`<text x="20" y="${b.y + 22}" class="cap">${esc(b.label.toUpperCase())}</text>`);
 	for (const p of layout.nodes) out.push(node(p));
 	for (const r of layout.routes) if (r.label) out.push(edgeLabel(r));
 	if (layout.legend) {
@@ -142,9 +157,6 @@ function band(b: Band, width: number): string {
 		parts.push(
 			`<line x1="8" y1="${b.y}" x2="${width - 8}" y2="${b.y}" class="rule"/>`,
 		);
-	parts.push(
-		`<text x="20" y="${b.y + 22}" class="cap">${esc(b.label.toUpperCase())}</text>`,
-	);
 	return parts.join("\n");
 }
 
@@ -162,9 +174,45 @@ function key(k: Key, id: string): string {
 	return `<g>${sample}<text x="${x + w + 6}" y="${y + 4}" class="s11 muted">${esc(item.text)}</text></g>`;
 }
 
-function route(r: Route, id: string): string {
+// Use the diagnostic's exact interior-crossing test, in source order. Keep
+// each solid under-stroke local, even when the upper route itself is dashed.
+function knockouts(r: Route, earlier: Route[], bands: Band[]): string[] {
+	const out: string[] = [];
+	for (const s of segments(r)) {
+		const horizontal = s[0][1] === s[1][1];
+		const k = horizontal ? 0 : 1;
+		for (const other of earlier) {
+			for (const t of segments(other)) {
+				if (segSeg(s, t) !== "cross") continue;
+				const point: Point = horizontal ? [t[0][0], s[0][1]] : [s[0][0], t[0][1]];
+				const a: Point = [...point];
+				const b: Point = [...point];
+				a[k] = Math.max(point[k] - 6, Math.min(s[0][k], s[1][k]));
+				b[k] = Math.min(point[k] + 6, Math.max(s[0][k], s[1][k]));
+				// Split at band boundaries so a gap matches the canvas underneath.
+				const cuts = horizontal ? [] : bands.flatMap((band) => [band.y, band.y + band.h - 8]);
+				const stops = [a[k], ...cuts.filter((v) => v > a[k] && v < b[k]), b[k]].sort((x, y) => x - y);
+				for (let i = 1; i < stops.length; i++) {
+					a[k] = stops[i - 1];
+					b[k] = stops[i];
+					const y = (a[1] + b[1]) / 2;
+					const shaded = bands.some((band) => band.shaded && y >= band.y && y < band.y + band.h - 8);
+					out.push(`<path d="M${a[0]},${a[1]} L${b[0]},${b[1]}" class="knockout${shaded ? " knockout-band" : ""}"/>`);
+				}
+			}
+		}
+	}
+	return out;
+}
+
+function route(r: Route): string {
 	const d = r.points.map(([x, y], i) => `${i ? "L" : "M"}${x},${y}`).join(" ");
-	return `<path d="${d}" class="e e-${r.tone}${r.edge.dashed ? " dash" : ""}" marker-end="url(#${id}-${r.tone})"/>`;
+	return `<path d="${d}" class="e e-${r.tone}${r.edge.dashed ? " dash" : ""}"/>`;
+}
+
+function arrow(r: Route, id: string): string {
+	const [a, b] = r.points.slice(-2);
+	return `<path d="M${a[0]},${a[1]} L${b[0]},${b[1]}" class="arrow" marker-end="url(#${id}-${r.tone})"/>`;
 }
 
 function edgeLabel(r: Route): string {

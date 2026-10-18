@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" class="ab" viewBox="0 0 728 558" width="728" height="558" role="img" aria-label="Flow: push to main, build, test, checks failed, staging, approve, smoke, rollback, production, Live. Legend: event or state, automated job, manual step, failure path">
-<style>.ab{--ink:var(--ab-ink,#17202c);--muted:var(--ab-muted,#5a6575);--line:var(--ab-line,#d3d9e2);--band:var(--ab-band,#e9eef5);--surface:var(--ab-surface,#ffffff);--agent:var(--ab-agent,#0b6b67);--agent-bg:var(--ab-agent-bg,#dff1ee);--rework:var(--ab-rework,#a65f0c);--rework-bg:var(--ab-rework-bg,#fbefdc);--stop:var(--ab-stop,#b2382f);--stop-bg:var(--ab-stop-bg,#f9e2df);--done:var(--ab-done,#2a7845);--done-bg:var(--ab-done-bg,#e0f1e5);}
+<style>.ab{--bg:var(--ab-bg,#ffffff);--ink:var(--ab-ink,#17202c);--muted:var(--ab-muted,#5a6575);--line:var(--ab-line,#d3d9e2);--band:var(--ab-band,#e9eef5);--surface:var(--ab-surface,#ffffff);--agent:var(--ab-agent,#0b6b67);--agent-bg:var(--ab-agent-bg,#dff1ee);--rework:var(--ab-rework,#a65f0c);--rework-bg:var(--ab-rework-bg,#fbefdc);--stop:var(--ab-stop,#b2382f);--stop-bg:var(--ab-stop-bg,#f9e2df);--done:var(--ab-done,#2a7845);--done-bg:var(--ab-done-bg,#e0f1e5);}
 .ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
 .ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
 .ab .s11{font-size:11px}.ab .s12{font-size:12px}.ab .s13{font-size:13px}
@@ -8,6 +8,8 @@
 .ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
 .ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
 .ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
+.ab .knockout{fill:none;stroke:var(--bg);stroke-width:5.6}.ab .knockout-band{stroke:var(--band)}
+.ab .arrow{fill:none;stroke:none}
 .ab .t-ink{fill:var(--muted)}.ab .e-ink{stroke:var(--muted)}.ab .k-ink{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-muted{fill:var(--muted)}.ab .e-muted{stroke:var(--muted)}.ab .k-muted{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-agent{fill:var(--agent)}.ab .e-agent{stroke:var(--agent)}.ab .k-agent{fill:var(--agent-bg);stroke:var(--agent);stroke-width:1.5}.ab .t-done{fill:var(--done)}.ab .e-done{stroke:var(--done)}.ab .k-done{fill:var(--done-bg);stroke:var(--done);stroke-width:1.5}.ab .t-rework{fill:var(--rework)}.ab .e-rework{stroke:var(--rework)}.ab .k-rework{fill:var(--rework-bg);stroke:var(--rework);stroke-width:1.5}.ab .t-stop{fill:var(--stop)}.ab .e-stop{stroke:var(--stop)}.ab .k-stop{fill:var(--stop-bg);stroke:var(--stop);stroke-width:1.5}
 .ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}</style>
 <defs>
@@ -15,17 +17,28 @@
 <marker id="deploy-rework" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-rework"/></marker>
 <marker id="deploy-stop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-stop"/></marker>
 </defs>
-<path d="M369,50 L369,80" class="e e-ink" marker-end="url(#deploy-ink)"/>
-<path d="M369,126 L369,156" class="e e-ink" marker-end="url(#deploy-ink)"/>
-<path d="M369,202 L369,232" class="e e-ink" marker-end="url(#deploy-ink)"/>
-<path d="M369,278 L369,313" class="e e-ink" marker-end="url(#deploy-ink)"/>
-<path d="M462,336 L522,336" class="e e-stop" marker-end="url(#deploy-stop)"/>
-<path d="M617,364 L617,417 L462,417" class="e e-stop" marker-end="url(#deploy-stop)"/>
-<path d="M369,440 L369,470" class="e e-ink" marker-end="url(#deploy-ink)"/>
-<path d="M275,103 L128,103 L128,162" class="e e-rework" marker-end="url(#deploy-rework)"/>
-<path d="M275,179 L171,179" class="e e-rework" marker-end="url(#deploy-rework)"/>
-<path d="M84,162 L84,33 L308,33" class="e e-rework" marker-end="url(#deploy-rework)"/>
-<path d="M275,417 L196,417" class="e e-rework" marker-end="url(#deploy-rework)"/>
+<path d="M369,50 L369,80" class="e e-ink"/>
+<path d="M369,126 L369,156" class="e e-ink"/>
+<path d="M369,202 L369,232" class="e e-ink"/>
+<path d="M369,278 L369,313" class="e e-ink"/>
+<path d="M462,336 L522,336" class="e e-stop"/>
+<path d="M617,364 L617,417 L462,417" class="e e-stop"/>
+<path d="M369,440 L369,470" class="e e-ink"/>
+<path d="M275,103 L128,103 L128,162" class="e e-rework"/>
+<path d="M275,179 L171,179" class="e e-rework"/>
+<path d="M84,162 L84,33 L308,33" class="e e-rework"/>
+<path d="M275,417 L196,417" class="e e-rework"/>
+<path d="M369,50 L369,80" class="arrow" marker-end="url(#deploy-ink)"/>
+<path d="M369,126 L369,156" class="arrow" marker-end="url(#deploy-ink)"/>
+<path d="M369,202 L369,232" class="arrow" marker-end="url(#deploy-ink)"/>
+<path d="M369,278 L369,313" class="arrow" marker-end="url(#deploy-ink)"/>
+<path d="M462,336 L522,336" class="arrow" marker-end="url(#deploy-stop)"/>
+<path d="M617,417 L462,417" class="arrow" marker-end="url(#deploy-stop)"/>
+<path d="M369,440 L369,470" class="arrow" marker-end="url(#deploy-ink)"/>
+<path d="M128,103 L128,162" class="arrow" marker-end="url(#deploy-rework)"/>
+<path d="M275,179 L171,179" class="arrow" marker-end="url(#deploy-rework)"/>
+<path d="M84,33 L308,33" class="arrow" marker-end="url(#deploy-rework)"/>
+<path d="M275,417 L196,417" class="arrow" marker-end="url(#deploy-rework)"/>
 <g><rect x="308" y="16" width="122" height="34" rx="17" class="pill"/>
 <circle cx="322" cy="33" r="5" class="t-muted"/>
 <text x="334" y="37" class="m s12">push to main</text></g>
