@@ -109,6 +109,12 @@ there from the text and the diagnostics alone, without seeing the image.
   already know that spelling. Nothing else is Mermaid.
 - Ids are the labels people read (`reviewer`, `needs-changes`) unless `title=`
   says otherwise, so the source reads like the picture.
+- Wherever `tone=` is supported (nodes, edges and legend entries), it accepts
+  `ink`, `muted`, `neutral`, `agent`, `done`, `rework` or `stop`. `neutral` gives
+  boxes, panels and end states a grey fill distinct from the surface and
+  section bands, with a neutral foreground for titles, outlines, edges,
+  arrowheads and pill dots. Legend samples use the same styles as the diagram.
+  `ink` and `muted` keep surface-filled boxes and panels; defaults are unchanged.
 - Inserting a step is two new lines in the source and nothing else changes.
   In pixels, everything below the insert moves down by one row. Nothing moves
   sideways unless a wider node widens its column.
@@ -121,6 +127,8 @@ there from the text and the diagnostics alone, without seeing the image.
 - Colours are CSS variables inside the SVG with `--ab-*` overrides for a host,
   switching on `prefers-color-scheme`. This works in Uberblick, in artifacts
   and on GitHub, where SVGs are shown as images.
+  The neutral foreground and fill use `--ab-neutral` and `--ab-neutral-bg`,
+  respectively, with readable light and dark defaults.
 - Marker and element ids carry a prefix, so several diagrams can share a page.
 
 ## The spike (now)

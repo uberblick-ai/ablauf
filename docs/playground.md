@@ -12,6 +12,10 @@ light/dark and 710 px toggles, a node-box overlay, and the hand-drawn
 reference beside the loop. Approval, entry pages, hover links and the
 what-moved view are still to come.
 
+Open `#examples/neutral` for filled grey boxes and panels beside the
+surface-filled `ink` and `muted` variants, with matching neutral legend samples,
+pill dots and edges. Use the scheme toggle to review light and dark.
+
 ## What it is for
 
 It is a local page for people to review flows. You write or paste a flow, see
