@@ -7,8 +7,8 @@ import {
 	type Layout,
 	type Placed,
 	type Route,
+	legendSampleSize,
 	panelContentHeight,
-	SAMPLE_W,
 	wrap,
 } from "./grid.ts";
 import type { Tone } from "./parse.ts";
@@ -128,7 +128,9 @@ function describe(layout: Layout): string {
 	const names = [...layout.nodes]
 		.sort((a, b) => a.y - b.y || a.x - b.x)
 		.map((p) => p.node.label);
-	const keys = (layout.legend?.keys ?? []).map((k) => k.item.text);
+	const keys = (layout.legend?.keys ?? []).map((k) =>
+		k.item.sample ? `${k.item.sample}: ${k.item.text}` : k.item.text,
+	);
 	return `Flow: ${names.join(", ")}${keys.length ? `. Legend: ${keys.join(", ")}` : ""}`;
 }
 
@@ -151,15 +153,18 @@ function band(b: Band, width: number): string {
 // A small sample of the shape, then its meaning in fine print.
 function key(k: Key, id: string): string {
 	const { item, x, y } = k;
-	const w = SAMPLE_W;
+	const { w, h } = legendSampleSize(item);
 	const t = item.tone;
 	const sample =
 		item.kind === "edge" || item.kind === "dashed"
 			? `<path d="M${x},${y} L${x + w},${y}" class="e e-${t}${item.kind === "dashed" ? " dash" : ""}" marker-end="url(#${id}-${t})"/>`
 			: item.kind === "pill"
-				? `<rect x="${x}" y="${y - 6}" width="${w}" height="12" rx="6" class="pill"/><circle cx="${x + 7}" cy="${y}" r="3" class="t-${t}"/>`
-				: `<rect x="${x}" y="${y - 6}" width="${w}" height="12" rx="${item.kind === "end" ? 6 : 3}" class="k-${t}${item.kind === "panel" ? " panel" : ""}"/>`;
-	return `<g>${sample}<text x="${x + w + 6}" y="${y + 4}" class="s11 muted">${esc(item.text)}</text></g>`;
+				? `<rect x="${x}" y="${y - h / 2}" width="${w}" height="${h}" rx="${h / 2}" class="pill"/><circle cx="${x + 7}" cy="${y}" r="3" class="t-${t}"/>`
+				: `<rect x="${x}" y="${y - h / 2}" width="${w}" height="${h}" rx="${item.kind === "end" ? h / 2 : 3}" class="k-${t}${item.kind === "panel" ? " panel" : ""}"/>`;
+	const label = item.sample
+		? `<text x="${item.kind === "pill" ? x + 15 : x + w / 2}" y="${y + 4}"${item.kind === "pill" ? "" : ' text-anchor="middle"'} class="m s11${item.kind === "pill" ? "" : ` t-${t}`}">${esc(item.sample)}</text>`
+		: "";
+	return `<g>${sample}${label}<text x="${x + w + 6}" y="${y + 4}" class="s11 muted">${esc(item.text)}</text></g>`;
 }
 
 function route(r: Route, id: string): string {

@@ -78,7 +78,7 @@ integrator --> human tone=stop : maintainer-merge, blocked
 | Node kind (`text`, `pill`, `box`, `end`, `panel`) and tone | Shapes, colours, fonts, light and dark |
 | Which side an edge leaves and enters (`from=`, `to=`) and its slot on that side (`bottom.2`) | The elbow those sides imply: straight, one bend (L) or two bends (Z), one fixed rule each |
 | Edge tone, dashed or solid, and whether the label sits at the start or end | Label position next to that end, port spacing along a side. Where two facing sides overlap, the port on the longer side slides to meet the other end head on, so the edge runs straight; a slot there sets the order, not the exact point |
-| A legend: which shapes and tones to explain, and what each means | Fine print under the diagram, wrapping onto further rows |
+| A legend: which shapes and tones to explain, optional sample text, and what each means | Fine print under the diagram, sizing samples to fit their text and wrapping entries onto further rows |
 
 When the author leaves out `from=` or `to=`, three small rules apply: same
 column goes bottom to top, same row goes between facing sides, otherwise the
@@ -109,6 +109,12 @@ there from the text and the diagnostics alone, without seeing the image.
   already know that spelling. Nothing else is Mermaid.
 - Ids are the labels people read (`reviewer`, `needs-changes`) unless `title=`
   says otherwise, so the source reads like the picture.
+- A `legend` has indented entries: `kind tone=done "meaning"`. Shape entries
+  (`pill`, `box`, `end`, `panel`) also accept `sample=ready` or
+  `sample="two words"`, drawn inside the sample with its shape and tone.
+  The meaning in quotes is still required alongside it. Samples without text
+  keep their small size. `edge` and `dashed` stay line samples and diagnose
+  `sample=` on their source line.
 - Inserting a step is two new lines in the source and nothing else changes.
   In pixels, everything below the insert moves down by one row. Nothing moves
   sideways unless a wider node widens its column.
@@ -122,6 +128,9 @@ there from the text and the diagnostics alone, without seeing the image.
   switching on `prefers-color-scheme`. This works in Uberblick, in artifacts
   and on GitHub, where SVGs are shown as images.
 - Marker and element ids carry a prefix, so several diagrams can share a page.
+- Legend sample text uses monospace and the existing themed text colours.
+  Sample widths and row heights grow to fit it; entry wrapping includes both
+  the sample and its meaning, and the canvas fits the widest entry.
 
 ## The spike (now)
 

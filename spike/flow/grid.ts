@@ -84,6 +84,17 @@ const KEY_GAP = 20;
 const KEY_ROW = 20;
 const WRAP_CHARS = 34;
 
+export function legendSampleSize(item: LegendItem): { w: number; h: number } {
+	if (!item.sample) return { w: SAMPLE_W, h: 12 };
+	return {
+		w: Math.max(
+			SAMPLE_W,
+			Math.ceil(len(item.sample) * CHAR.mono11 + (item.kind === "pill" ? 24 : 16)),
+		),
+		h: 20,
+	};
+}
+
 // Panel text wraps at a fixed number of characters, so a long note grows
 // the panel downwards instead of sideways.
 export function panelContentHeight(n: FlowNode): number {
@@ -472,7 +483,7 @@ export function grid(
 		...model.sections.map((t) => 20 + Math.round(len(t) * CAPTION_CHAR)),
 	);
 	const keyW = (k: LegendItem) =>
-		SAMPLE_W + 6 + Math.round(len(k.text) * CHAR.sans11);
+		legendSampleSize(k).w + 6 + Math.round(len(k.text) * CHAR.sans11);
 	const width = Math.round(
 		Math.max(right, MARGIN + Math.max(0, ...model.legend.map(keyW))) + MARGIN,
 	);
@@ -496,17 +507,29 @@ export function grid(
 	if (model.legend.length) {
 		const keys: Key[] = [];
 		let x = MARGIN;
-		let y = content + 10 + KEY_ROW / 2;
+		let top = content + 10;
+		let rowHeight = KEY_ROW;
+		let row: Key[] = [];
+		const finishRow = () => {
+			for (const k of row) k.y = top + rowHeight / 2;
+			top += rowHeight;
+			row = [];
+			rowHeight = KEY_ROW;
+		};
 		for (const item of model.legend) {
 			if (x > MARGIN && x + keyW(item) > width - MARGIN) {
 				x = MARGIN;
-				y += KEY_ROW;
+				finishRow();
 			}
-			keys.push({ item, x, y });
+			const k = { item, x, y: 0 };
+			keys.push(k);
+			row.push(k);
+			rowHeight = Math.max(rowHeight, legendSampleSize(item).h + 8);
 			x += keyW(item) + KEY_GAP;
 		}
+		finishRow();
 		legend = { y: content, keys };
-		height = y + KEY_ROW / 2 + 8;
+		height = top + 8;
 	}
 
 	check(nodes, routes, bands, warn);
