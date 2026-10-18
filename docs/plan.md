@@ -118,10 +118,6 @@ there from the text and the diagnostics alone, without seeing the image.
 - SVG as a string, with no browser and no DOM, and the same bytes for the same input.
 - Labels in monospace, so text widths are predictable. Sans text is limited
   to box subtitles and panel lines, measured with a fixed estimate.
-- Colours are CSS variables inside the SVG with `--ab-*` overrides for a host,
-  switching on `prefers-color-scheme`. This works in Uberblick, in artifacts
-  and on GitHub, where SVGs are shown as images.
-- Marker and element ids carry a prefix, so several diagrams can share a page.
 - At each interior edge crossing, the edge declared later in the source passes
   above the earlier edge. A solid canvas-colour under-stroke, 5.6 px wide
   (4 px wider than the edge), covers up to 6 px along that later edge on each
@@ -135,6 +131,34 @@ there from the text and the diagnostics alone, without seeing the image.
 - Crossing diagnostics and their source lines stay unchanged. Shared endpoints
   and collinear overlaps get no knockout. A visible break does not make a
   crossing acceptable: fix every diagnostic before calling the diagram done.
+- Box subtitles and panel text wrap at word boundaries around 34 characters;
+  longer individual words stay intact. Subtitle lines are centered, with 15px
+  between baselines. A box keeps its 46px minimum height and grows by 15px for
+  each extra subtitle line. Its width is the maximum of 180px, the title width
+  plus 32px, and the longest wrapped subtitle line width plus 28px. Boxes in
+  one column share the widest box's width. Row sizing and edge ports use the
+  resulting box dimensions; box titles do not wrap.
+- The canvas includes every drawn section caption, measuring its uppercase
+  text with letter spacing. A section without nodes gets a line-numbered
+  diagnostic and draws no band or caption.
+- Colours use the base `--ab-bg`, `--ab-ink`, `--ab-muted`, `--ab-line`, `--ab-band` and
+  `--ab-surface` overrides, plus `--ab-agent`, `--ab-done`, `--ab-rework` and
+  `--ab-stop` foregrounds and each tone's `--ab-<tone>-bg` background.
+  [Host page themes](theming.md) documents every property and complete CSS
+  for root `data-theme="light"` / `data-theme="dark"`. Host overrides update
+  inline SVG without rerendering and take precedence over the system theme
+  and a pinned `scheme`. Page CSS cannot reach SVGs embedded as images.
+  Without overrides, defaults follow `prefers-color-scheme`, or stay fixed
+  when the render option `scheme` is explicitly `"light"` or `"dark"`.
+  The internal defaults also work when SVGs are shown as images.
+- Marker ids carry a prefix, so several diagrams can share a page. Hosts must
+  supply distinct `idPrefix` values for diagrams on the same page; the default
+  is `ab`. Prefixes containing only `[A-Za-z0-9_-]`, including the empty prefix,
+  stay unchanged. Each other UTF-16 code unit becomes `.` followed by four
+  lowercase hexadecimal digits, including literal dots, so the encoding is
+  reversible and distinct prefixes never collide. For example, `doc.1`,
+  `doc:1` and `doc-1` become `doc.002e1`, `doc.003a1` and `doc-1`. Routes and
+  legend samples reference the same encoded marker ids.
 
 ## The spike (now)
 
