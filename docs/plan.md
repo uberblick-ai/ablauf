@@ -118,6 +118,13 @@ there from the text and the diagnostics alone, without seeing the image.
 - SVG as a string, with no browser and no DOM, and the same bytes for the same input.
 - Labels in monospace, so text widths are predictable. Sans text is limited
   to box subtitles and panel lines, measured with a fixed estimate.
+- Box subtitles and panel text wrap at word boundaries around 34 characters;
+  longer individual words stay intact. Subtitle lines are centered, with 15px
+  between baselines. A box keeps its 46px minimum height and grows by 15px for
+  each extra subtitle line. Its width is the maximum of 180px, the title width
+  plus 32px, and the longest wrapped subtitle line width plus 28px. Boxes in
+  one column share the widest box's width. Row sizing and edge ports use the
+  resulting box dimensions; box titles do not wrap.
 - Colours are CSS variables inside the SVG with `--ab-*` overrides for a host,
   switching on `prefers-color-scheme`. This works in Uberblick, in artifacts
   and on GitHub, where SVGs are shown as images.
