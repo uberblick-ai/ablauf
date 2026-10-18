@@ -118,6 +118,9 @@ there from the text and the diagnostics alone, without seeing the image.
 - SVG as a string, with no browser and no DOM, and the same bytes for the same input.
 - Labels in monospace, so text widths are predictable. Sans text is limited
   to box subtitles and panel lines, measured with a fixed estimate.
+- The canvas includes every drawn section caption, measuring its uppercase
+  text with letter spacing. A section without nodes gets a line-numbered
+  diagnostic and draws no band or caption.
 - Colours are CSS variables inside the SVG with `--ab-*` overrides for a host,
   switching on `prefers-color-scheme`. This works in Uberblick, in artifacts
   and on GitHub, where SVGs are shown as images.
