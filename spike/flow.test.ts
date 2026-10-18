@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { setImmediate } from "node:timers/promises";
 import { CHAR } from "./flow/grid.ts";
-import { render } from "./flow/index.ts";
+import { DARK, LIGHT, render } from "./flow/index.ts";
 
 const example = (name: string) =>
 	readFileSync(join(import.meta.dirname, "examples", `${name}.flow`), "utf8");
@@ -95,10 +95,39 @@ test("every row a spanning panel covers meets it with a straight edge", () => {
 	}
 });
 
-test("a pinned scheme carries one palette and no media query", () => {
-	const { svg } = render(example("loop"), { scheme: "dark" });
-	assert.ok(!svg.includes("prefers-color-scheme"));
-	assert.ok(svg.includes("var(--ab-ink,#e5e9ef)"));
+test("automatic and pinned palettes keep every host override", () => {
+	const automatic = render(example("loop")).svg;
+	assert.match(automatic, /@media \(prefers-color-scheme:dark\)/);
+	for (const scheme of ["light", "dark"] as const) {
+		const colors = scheme === "light" ? LIGHT : DARK;
+		const pinned = render(example("loop"), { scheme }).svg;
+		assert.ok(!pinned.includes("prefers-color-scheme"));
+		for (const [name, value] of Object.entries(colors)) {
+			const declaration = `--${name}:var(--ab-${name},${value});`;
+			assert.ok(automatic.includes(declaration), declaration);
+			assert.ok(pinned.includes(declaration), declaration);
+		}
+	}
+});
+
+test("the documented host CSS supplies both complete palettes", () => {
+	const doc = readFileSync(
+		join(import.meta.dirname, "../docs/theming.md"),
+		"utf8",
+	);
+	const css = doc.match(/```css\n([\s\S]*?)\n```/)?.[1];
+	assert.ok(css, "a copyable host CSS example");
+	const palettes = Object.fromEntries(
+		[...css.matchAll(/:root\[data-theme="(light|dark)"\]\s*\{([^}]+)\}/g)]
+			.map(([, scheme, body]) => [
+				scheme,
+				Object.fromEntries(
+					[...body.matchAll(/--ab-([\w-]+):\s*(#[\da-f]+);/g)]
+						.map(([, name, value]) => [name, value]),
+				),
+			]),
+	);
+	assert.deepEqual(palettes, { light: LIGHT, dark: DARK });
 });
 
 test("row= chains reach the row's first node, and loops are reported", () => {
