@@ -15,6 +15,28 @@ test("the same source gives the same bytes", () => {
 	assert.equal(render(example("loop")).svg, render(example("loop")).svg);
 });
 
+test("wide and narrow approvals preserve content and fit their host widths", () => {
+	const wide = render(example("approval-wide"));
+	const narrow = render(example("approval-narrow"));
+	const content = ({ layout }: ReturnType<typeof render>) => ({
+		nodes: layout.nodes.map(({ node: n }) => ({
+			id: n.id, kind: n.kind, label: n.label, sub: n.sub,
+			tone: n.tone, children: n.children,
+		})).sort((a, b) => a.id.localeCompare(b.id)),
+		edges: layout.routes.map(({ edge: e }) => ({
+			from: e.from, to: e.to, label: e.label, tone: e.tone, dashed: e.dashed,
+		})),
+		legend: layout.legend?.keys.map(({ item }) => ({
+			kind: item.kind, tone: item.tone, text: item.text,
+		})),
+	});
+	assert.deepEqual(wide.diagnostics, []);
+	assert.deepEqual(narrow.diagnostics, []);
+	assert.deepEqual(content(narrow), content(wide));
+	assert.ok(narrow.layout.width <= 400, "complete narrow SVG must fit 400 CSS px");
+	assert.ok(wide.layout.width <= 568, "wide SVG must fit at the host breakpoint");
+});
+
 test("the rendered loop matches the checked-in figure", () => {
 	assert.equal(
 		render(example("loop"), { idPrefix: "loop" }).svg,

@@ -1,0 +1,24 @@
+flow v0
+# Same content as approval-narrow.flow; only placement and edge sides differ.
+columns main side
+
+pill ready col=main tone=muted "ready"
+box check "runs the checks"
+end done tone=done "Finished"
+
+panel person col=side row=check tone=stop
+  pill needs-human
+  strong "A person decides"
+  text "Resolves the blocked check"
+  muted "Then the work can continue."
+
+ready --> check : trigger
+check --> done : passed
+check --> person tone=stop : blocked
+person --> done tone=stop from=bottom to=right : cleared
+
+legend
+  pill "state"
+  box "automated step"
+  panel tone=stop "human decision"
+  edge tone=stop "manual path"
