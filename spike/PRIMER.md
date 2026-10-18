@@ -65,8 +65,10 @@ Tones: `ink`, `muted`, `agent`, `done`, `rework`, `stop`.
   slots in left-to-right order. With two slots, `top.1` sits left of the main
   arrow and `top.2` right. More entries round the slot count up to an even
   number, half on each side, without moving the main arrow. Unnumbered side
-  entries fill unused slots in source order. Numbering either main end opts
-  out of the centre reservation.
+  entries fill unused slots on the half facing their other node's column,
+  in source order within each half; the slot count grows until both halves
+  have room. Same-column entries then fill remaining gaps in source order.
+  Numbering either main end opts out of the centre reservation.
 - The shape follows from the sides. An edge between facing sides is straight
   whenever the target's side reaches the source's row, so a node that spans
   several rows takes a straight edge from each of them. A side to a top or

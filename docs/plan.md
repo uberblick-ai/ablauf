@@ -77,7 +77,7 @@ integrator --> human tone=stop : maintainer-merge, blocked
 | Sections (the horizontal bands) | Band shading and labels |
 | Node kind (`text`, `pill`, `box`, `end`, `panel`) and tone | Shapes, colours, fonts, light and dark |
 | Which side an edge leaves and enters (`from=`, `to=`) and its slot on that side (`bottom.2`) | The elbow those sides imply: straight, one bend (L) or two bends (Z), one fixed rule each |
-| Edge tone, dashed or solid, and whether the label sits at the start or end | Label position next to that end, port spacing along a side. Where two facing sides overlap, the port on the longer side slides to meet the other end head on, so the edge runs straight; sides with a reserved main centre keep their ports fixed |
+| Edge tone, dashed or solid, and whether the label sits at the start or end | Label position next to that end, port spacing along a side. Where two facing sides overlap, the port on the longer side slides to meet the other end head on, so the edge runs straight; a slot there sets the order, not the exact point. Sides with a reserved main centre keep their ports fixed |
 | A legend: which shapes and tones to explain, and what each means | Fine print under the diagram, wrapping onto further rows |
 
 When the author leaves out `from=` or `to=`, three small rules apply: same
@@ -110,18 +110,22 @@ there from the text and the diagnostics alone, without seeing the image.
 - Ids are the labels people read (`reviewer`, `needs-changes`) unless `title=`
   says otherwise, so the source reads like the picture.
 - Slots count left to right on a top or bottom, top to bottom on a left or
-  right. Explicit slots are assigned first; unnumbered ends fill gaps in
-  source order. Without a reserved centre, ports are evenly spaced along the
-  side using the larger of the number of ends and the highest explicit slot.
+  right. Explicit slots are assigned first. Without a reserved centre,
+  unnumbered ends fill gaps in source order, and ports are evenly spaced along
+  the side using the larger of the number of ends and the highest explicit slot.
 - A same-column edge leaving the bottom and entering the top, with neither
   end numbered, reserves the shared column centreline at both ends. It stays
   straight there, within pixel rounding, even when other edges share a side.
   On each such side, the other ends use separate slots: round their slot
   count up to an even number, at least two, and space them evenly with a gap
   for the centre. Half the slots sit on each side of the centre; with two
-  slots, `top.1` is left and `top.2` is right. Numbering either end of the
-  main edge opts out of the centre reservation. Return edges use the same
-  ports; their sides and loop paths remain the author's choice.
+  slots, `top.1` is left and `top.2` is right. Unnumbered ends use free slots
+  on the half facing their other node's column, in source order within each
+  half. Increase the even slot count until both halves have room. Ends whose
+  other node is in the same column then fill remaining gaps in source order.
+  Numbering either end of the main edge opts out of the centre reservation.
+  Return edges use the same ports; their sides and loop paths remain the
+  author's choice.
 - Inserting a step is two new lines in the source and nothing else changes.
   In pixels, everything below the insert moves down by one row. Nothing moves
   sideways unless a wider node widens its column.

@@ -258,7 +258,8 @@ export function grid(
 		return [e.from_side ?? from, e.to_side ?? to];
 	};
 
-	// Slots: explicit ones first, the rest fill the gaps in source order.
+	// Slots: explicit ones first; unnumbered ends beside a reserved centre use
+	// the half facing their other node. Within each half, fill in source order.
 	const ends: End[] = [];
 	for (const e of model.edges) {
 		const [fs, ts] = sides(e);
@@ -307,12 +308,35 @@ export function grid(
 				);
 			taken.add(g.slot);
 		}
-		let next = 1;
-		for (const g of slotted) {
-			if (g.slot) continue;
-			while (taken.has(next)) next++;
-			g.slot = next;
-			taken.add(next);
+		const unnumbered = slotted.filter((g) => !g.slot);
+		const direction = (g: End) => {
+			const other = P(g.edge.from === g.node.node.id ? g.edge.to : g.edge.from);
+			return reserve ? Math.sign(colIndex(other) - colIndex(g.node)) : 0;
+		};
+		const left = unnumbered.filter((g) => direction(g) < 0);
+		const right = unnumbered.filter((g) => direction(g) > 0);
+		const neutral = unnumbered.filter((g) => direction(g) === 0);
+		// Grow both halves until each can hold its explicit and unnumbered ends.
+		if (reserve) {
+			while (
+				left.length + [...taken].filter((s) => s <= count / 2).length >
+					count / 2 ||
+				right.length + [...taken].filter((s) => s > count / 2).length >
+					count / 2
+			)
+				count += 2;
+		}
+		for (const [pending, start] of [
+			[left, 1],
+			[right, count / 2 + 1],
+			[neutral, 1],
+		] as const) {
+			let next = start;
+			for (const g of pending) {
+				while (taken.has(next)) next++;
+				g.slot = next;
+				taken.add(next);
+			}
 		}
 		for (const g of slotted)
 			g.fraction = (g.slot + (reserve && g.slot > count / 2 ? 1 : 0)) /
