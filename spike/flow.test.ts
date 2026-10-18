@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
+import { setImmediate } from "node:timers/promises";
 import { chromium } from "playwright";
 import { DARK, LIGHT, render } from "./flow/index.ts";
 
@@ -260,4 +261,161 @@ test("title= names text and end nodes too", () => {
 test("a span past the last row is reported once", () => {
 	const { diagnostics } = render("flow v0\ncolumns a b\nbox one col=a\nbox two col=b row=one span=3\n");
 	assert.equal(diagnostics.filter((d) => /span=3/.test(d.message)).length, 1);
+});
+
+test("playground saves serialize requests and track only confirmed text", async (t) => {
+	// The page only needs these DOM operations with a valid flow and no grid.
+	class Element extends EventTarget {
+		value = "";
+		checked = false;
+		disabled = false;
+		textContent = "";
+		className = "";
+		innerHTML = "";
+		hidden = false;
+		style = { setProperty() {} };
+		querySelector() { return null; }
+		replaceChildren() {}
+		click() { if (!this.disabled) this.dispatchEvent(new Event("click")); }
+	}
+	const elements = new Map<string, Element>();
+	const element = (id: string) => {
+		let el = elements.get(id);
+		if (!el) {
+			el = new Element();
+			elements.set(id, el);
+		}
+		return el;
+	};
+	const page = new EventTarget();
+	const location = { hash: "#examples/loop" };
+	const globals = {
+		document: {
+			getElementById: element,
+			querySelectorAll: () => [],
+			documentElement: { dataset: {} },
+		},
+		window: page,
+		location,
+		confirm: () => true,
+	};
+	for (const [key, value] of Object.entries(globals)) {
+		const original = Object.getOwnPropertyDescriptor(globalThis, key);
+		Object.defineProperty(globalThis, key, { configurable: true, value });
+		t.after(() => {
+			if (original) Object.defineProperty(globalThis, key, original);
+			else Reflect.deleteProperty(globalThis, key);
+		});
+	}
+	const source = (label: string) => `flow v0\nbox a "${label}"\n`;
+	const requests: { url: string; body: string; resolve: (response: Response) => void; reject: (error: Error) => void }[] = [];
+	let inFlight = 0;
+	let maxInFlight = 0;
+	t.mock.method(globalThis, "fetch", async (url: string, options?: RequestInit) => {
+		if (url === "/api/catalog") return Response.json([]);
+		if (options?.method !== "PUT") return new Response(source("initial"));
+		maxInFlight = Math.max(maxInFlight, ++inFlight);
+		try {
+			return await new Promise<Response>((resolve, reject) => {
+				requests.push({ url, body: String(options.body), resolve, reject });
+			});
+		} finally {
+			inFlight--;
+		}
+	});
+	await import("./playground/app.ts");
+	const editor = element("pg-editor");
+	const save = element("pg-save");
+	const edit = (label: string) => {
+		editor.value = source(label);
+		editor.dispatchEvent(new Event("input"));
+	};
+	const shortcut = (modifier: "ctrlKey" | "metaKey") => {
+		const event = Object.assign(new Event("keydown", { cancelable: true }), { key: "s", [modifier]: true });
+		editor.dispatchEvent(event);
+		assert.equal(event.defaultPrevented, true);
+	};
+	const unsaved = () => {
+		const event = new Event("beforeunload", { cancelable: true });
+		page.dispatchEvent(event);
+		return event.defaultPrevented;
+	};
+	const respond = async (index: number, status = 200) => {
+		requests[index].resolve(new Response(status === 200 ? "saved" : "write failed", { status }));
+		await setImmediate();
+	};
+	assert.equal(save.disabled, true);
+	edit("first");
+	save.click();
+	assert.equal(requests[0].url, "/api/flow/examples/loop");
+	assert.equal(requests[0].body, source("first"));
+	assert.equal(save.disabled, false);
+	edit("queued");
+	shortcut("ctrlKey");
+	save.click();
+	shortcut("metaKey");
+	assert.equal(requests.length, 1);
+	// Save stays available even when edits temporarily match the old baseline.
+	edit("initial");
+	assert.equal(save.disabled, false);
+	save.click();
+	edit("latest before follow-up");
+	await respond(0);
+	assert.equal(requests.length, 2);
+	assert.equal(requests[1].body, source("latest before follow-up"));
+	assert.equal(save.disabled, false);
+	assert.equal(unsaved(), true);
+	edit("first");
+	assert.equal(save.disabled, false);
+	assert.equal(unsaved(), false);
+	edit("later edit");
+	await respond(1);
+	assert.equal(requests.length, 2);
+	assert.equal(save.disabled, false);
+	assert.equal(unsaved(), true);
+	edit("latest before follow-up");
+	assert.equal(save.disabled, true);
+	assert.equal(unsaved(), false);
+
+	// Neither a failed request nor its failed follow-up advances the baseline.
+	edit("failed first");
+	save.click();
+	edit("failed follow-up");
+	save.click();
+	await respond(2, 500);
+	assert.equal(requests[3].body, source("failed follow-up"));
+	assert.equal(unsaved(), true);
+	edit("latest before follow-up");
+	assert.equal(save.disabled, false);
+	assert.equal(unsaved(), false);
+	await respond(3, 500);
+	assert.equal(save.disabled, true);
+	assert.equal(element("pg-status").textContent, "Not saved: write failed");
+
+	edit("network failure");
+	save.click();
+	requests[4].reject(new Error("offline"));
+	await setImmediate();
+	assert.equal(save.disabled, false);
+	assert.equal(unsaved(), true);
+	assert.equal(element("pg-status").textContent, "Not saved: offline");
+	save.click();
+	await respond(5);
+	assert.equal(save.disabled, true);
+	assert.equal(unsaved(), false);
+
+	// Discarding a flow also discards its queued save and ignores its response.
+	edit("discarded");
+	save.click();
+	save.click();
+	location.hash = "#examples/deploy";
+	page.dispatchEvent(new Event("hashchange"));
+	await setImmediate();
+	await respond(6);
+	assert.equal(requests.length, 7);
+	assert.equal(editor.value, source("initial"));
+	assert.equal(save.disabled, true);
+	assert.equal(unsaved(), false);
+	assert.equal(maxInFlight, 1);
+	assert.equal(inFlight, 0);
 });
