@@ -87,8 +87,13 @@ export interface SvgOptions {
 }
 
 export function toSvg(layout: Layout, options: SvgOptions = {}): string {
-	// Marker ids go into attributes and url(), so only safe characters stay.
-	const id = (options.idPrefix ?? "ab").replace(/[^A-Za-z0-9_-]/g, "-");
+	// A dot plus four hex digits encodes each unsafe UTF-16 code unit. Dots
+	// are escaped too, so this is reversible and cannot collide with safe input.
+	// The resulting alphabet is safe in both attributes and local url(#...) refs.
+	const id = (options.idPrefix ?? "ab").replace(
+		/[^A-Za-z0-9_-]/g,
+		(c) => `.${c.charCodeAt(0).toString(16).padStart(4, "0")}`,
+	);
 	const tones = [
 		...new Set([
 			...layout.routes.map((r) => r.tone),

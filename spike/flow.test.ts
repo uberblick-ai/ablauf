@@ -113,10 +113,97 @@ test("row= chains reach the row's first node, and loops are reported", () => {
 	assert.ok(!loop.svg.includes("NaN"));
 });
 
-test("marker ids keep only safe characters", () => {
-	const { svg } = render(example("loop"), { idPrefix: '"><script>' });
-	assert.ok(!svg.includes("<script>"));
-	assert.ok(svg.includes('id="---script--ink"'));
+test("safe and default prefixes retain the complete SVG bytes", () => {
+	const source = example("loop");
+	const figure = readFileSync(join(import.meta.dirname, "out", "loop.svg"), "utf8");
+	const expected = (prefix: string) =>
+		figure
+			.replaceAll('<marker id="loop-', `<marker id="${prefix}-`)
+			.replaceAll('marker-end="url(#loop-', `marker-end="url(#${prefix}-`);
+	for (const idPrefix of [
+		"",
+		"ab",
+		"doc-1",
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-",
+	]) {
+		assert.equal(render(source, { idPrefix }).svg, expected(idPrefix));
+	}
+	assert.equal(render(source).svg, expected("ab"));
+	assert.equal(render(source, { idPrefix: undefined }).svg, expected("ab"));
+});
+
+test("marker prefix encoding is reversible, including Unicode and escape syntax", () => {
+	const source = "flow v0\nbox a\nbox b\na --> b\n";
+	const cases = [
+		["doc.1", "doc.002e1"],
+		["doc:1", "doc.003a1"],
+		["doc-1", "doc-1"],
+		["doc.002e1", "doc.002e002e1"],
+		["doc-002e1", "doc-002e1"],
+		[".003a", ".002e003a"],
+		["é", ".00e9"],
+		["e\u0301", "e.0301"],
+		["图😀", ".56fe.d83d.de00"],
+		["\ud800", ".d800"],
+		["\udc00", ".dc00"],
+		["\ufffd", ".fffd"],
+		["\u0000\t\n", ".0000.0009.000a"],
+	];
+	const ids = new Set<string>();
+	for (const [idPrefix, encoded] of cases) {
+		const { svg } = render(source, { idPrefix });
+		const id = /<marker id="([^"]+)"/.exec(svg)?.[1];
+		assert.equal(id, `${encoded}-ink`);
+		assert.ok(!ids.has(id));
+		ids.add(id);
+		assert.equal(
+			encoded.replace(/\.([0-9a-f]{4})/g, (_, hex) =>
+				String.fromCharCode(Number.parseInt(hex, 16)),
+			),
+			idPrefix,
+		);
+		assert.equal(svg, render(source, { idPrefix }).svg);
+	}
+});
+
+test("route and legend references resolve within their own diagram on a page", () => {
+	const source = [
+		"flow v0",
+		"box a",
+		"box b",
+		"a --> b",
+		"legend",
+		'  edge tone=ink "route"',
+		'  edge tone=agent "legend only"',
+		'  dashed tone=stop "dashed legend only"',
+		"",
+	].join("\n");
+	const diagrams = [
+		"doc.1",
+		"doc:1",
+		"doc-1",
+		"doc.002e1",
+		"图😀",
+		"",
+		'"><script> & url(#other)\\',
+	].map((idPrefix) => {
+		const { svg, diagnostics } = render(source, { idPrefix });
+		assert.deepEqual(diagnostics, []);
+		assert.ok(!svg.includes("<script>"));
+		return svg;
+	});
+	const page = diagrams.join("\n");
+	const ids = [...page.matchAll(/<marker id="([^"]+)"/g)].map((m) => m[1]);
+	assert.equal(ids.length, diagrams.length * 3);
+	assert.equal(new Set(ids).size, ids.length);
+	for (const svg of diagrams) {
+		const ownIds = [...svg.matchAll(/<marker id="([^"]+)"/g)].map((m) => m[1]);
+		for (const id of ownIds) assert.match(id, /^[A-Za-z0-9_.-]+$/);
+		const references = [...svg.matchAll(/marker-end="url\(#([^)]*)\)"/g)];
+		assert.equal(references.length, 4);
+		for (const [, id] of references) assert.ok(ownIds.includes(id));
+		assert.deepEqual(new Set(references.map((m) => m[1])), new Set(ownIds));
+	}
 });
 
 test("loops and labels stay inside the canvas", () => {
