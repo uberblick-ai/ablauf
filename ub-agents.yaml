@@ -1,6 +1,12 @@
 # Project-owned starter. Customize models, checks, instructions, and merge authority.
 repository: "uberblick-ai/ablauf"
 shared-instructions: .agents/ub_agents.md
+# Launchers run as the agents' account, which needs the write role here.
+launchers: [uberblick-agent]
+# Only a maintainer's label starts work, as AGENTS.md trusts only the team.
+approvals: on
+# The Copilot reviewer, which AGENTS.md trusts: its reviews count as feedback.
+trusted-bots: [copilot-pull-request-reviewer]
 queue:
   milestones: ignore
   dependencies: wait
@@ -14,7 +20,7 @@ queue:
 # Reinstall control-checkout dependencies after watched files change on refresh.
 # Upgrade every launcher before enabling this setting.
 # checkout-setup:
-#   command: [mise, run, install]
+#   command: [mise, run, setup]
 #   when-changed: [pnpm-lock.yaml, mise.toml]
 #   timeout-seconds: 600
 
