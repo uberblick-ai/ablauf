@@ -87,8 +87,13 @@ export interface SvgOptions {
 }
 
 export function toSvg(layout: Layout, options: SvgOptions = {}): string {
-	// Marker ids go into attributes and url(), so only safe characters stay.
-	const id = (options.idPrefix ?? "ab").replace(/[^A-Za-z0-9_-]/g, "-");
+	// A dot plus four hex digits encodes each unsafe UTF-16 code unit. Dots
+	// are escaped too, so this is reversible and cannot collide with safe input.
+	// The resulting alphabet is safe in both attributes and local url(#...) refs.
+	const id = (options.idPrefix ?? "ab").replace(
+		/[^A-Za-z0-9_-]/g,
+		(c) => `.${c.charCodeAt(0).toString(16).padStart(4, "0")}`,
+	);
 	const tones = [
 		...new Set([
 			...layout.routes.map((r) => r.tone),
@@ -214,7 +219,12 @@ function node(p: Placed): string {
 				`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="8" class="k-${n.tone}"/>`,
 				`<text x="${cx}" y="${y + 19}" text-anchor="middle" class="m s13 b t-${n.tone === "muted" ? "ink" : n.tone}">${esc(n.label)}</text>`,
 				n.sub
-					? `<text x="${cx}" y="${y + 36}" text-anchor="middle" class="s11 muted">${esc(n.sub)}</text>`
+					? wrap(n.sub)
+							.map(
+								(line, i) =>
+									`<text x="${cx}" y="${y + 36 + i * 15}" text-anchor="middle" class="s11 muted">${esc(line)}</text>`,
+							)
+							.join("\n")
 					: "",
 				"</g>",
 			].join("\n");

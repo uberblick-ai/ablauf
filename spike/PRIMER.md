@@ -49,6 +49,11 @@ worker --> person tone=stop : stuck
 
 Tones: `ink`, `muted`, `agent`, `done`, `rework`, `stop`.
 
+Box subtitles and panel text wrap at word boundaries around 34 characters,
+keeping longer words intact. Long subtitles add centered lines and grow the
+box and its row vertically. Box titles stay on one line; boxes in a column
+share a width measured from their titles and wrapped subtitles.
+
 ## Edges
 
 `a --> b key=value : label`. Use `-.->` for dashed. The keys go before the colon.
@@ -86,7 +91,8 @@ Shape entries (`pill`, `box`, `end`, `panel`) can add `sample=ready` or
 `sample="two words"` to put text inside the sample. The meaning is still
 required alongside it. Samples grow to fit the text and entries wrap to new
 rows. Without `sample=`, the small sample stays the same. `edge` and `dashed`
-are line samples; `sample=` on either reports a diagnostic.
+are line samples; `sample=` on either reports a diagnostic. Empty sample text
+also reports a diagnostic and leaves the small sample.
 
 ## Making it look good
 

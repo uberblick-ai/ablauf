@@ -95,8 +95,6 @@ export function legendSampleSize(item: LegendItem): { w: number; h: number } {
 	};
 }
 
-// Panel text wraps at a fixed number of characters, so a long note grows
-// the panel downwards instead of sideways.
 export function panelContentHeight(n: FlowNode): number {
 	let h = 12;
 	for (const c of n.children) {
@@ -107,6 +105,8 @@ export function panelContentHeight(n: FlowNode): number {
 	return h + 8;
 }
 
+// Panel text and box subtitles wrap at a fixed number of characters, so long
+// text grows the node downwards instead of sideways.
 export function wrap(text: string): string[] {
 	const lines: string[] = [];
 	let line = "";
@@ -133,17 +133,19 @@ function size(n: FlowNode): { w: number; h: number } {
 				w: Math.round(Math.max(170, len(n.label) * CHAR.sans12 + 40)),
 				h: 34,
 			};
-		case "box":
+		case "box": {
+			const lines = wrap(n.sub);
 			return {
 				w: Math.round(
 					Math.max(
 						180,
 						len(n.label) * CHAR.mono13 + 32,
-						len(n.sub) * CHAR.sans11 + 28,
+						Math.max(...lines.map(len)) * CHAR.sans11 + 28,
 					),
 				),
-				h: 46,
+				h: 46 + (lines.length - 1) * 15,
 			};
+		}
 		case "panel": {
 			let w = 190;
 			for (const c of n.children) {
@@ -480,7 +482,7 @@ export function grid(
 		...nodes.map((p) => p.x + p.w),
 		...routes.flatMap((r) => r.points.map((p) => p[0])),
 		...labelRects.map((l) => l.x + l.w + dx),
-		...model.sections.map((t) => 20 + Math.round(len(t) * CAPTION_CHAR)),
+		...model.sections.map((t) => 20 + Math.round(len(t.toUpperCase()) * CAPTION_CHAR)),
 	);
 	const keyW = (k: LegendItem) =>
 		legendSampleSize(k).w + 6 + Math.round(len(k.text) * CHAR.sans11);
