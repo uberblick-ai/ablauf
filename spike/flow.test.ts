@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { setImmediate } from "node:timers/promises";
+import { CHAR } from "./flow/grid.ts";
 import { render } from "./flow/index.ts";
 
 const example = (name: string) =>
@@ -256,6 +257,51 @@ test("an empty section is reported and takes no band", () => {
 	const two = layout.nodes.find((p) => p.node.id === "two");
 	assert.ok(two && two.y > later.y && later.y + later.h <= layout.height);
 	assert.ok(!svg.includes("NaN"));
+});
+
+test("a section-only flow reports its empty section and draws no caption or band", () => {
+	const { diagnostics, layout, svg } = render('flow v0\nsection "Empty"\n');
+	assert.deepEqual(diagnostics, [
+		{
+			line: 2,
+			severity: "warning",
+			message: 'section "Empty" has no nodes and is not drawn',
+		},
+	]);
+	assert.deepEqual(layout.bands, []);
+	assert.doesNotMatch(svg, /class="(?:cap|band)"/);
+});
+
+test("a trailing empty section is reported and draws no caption or band", () => {
+	const populated = 'flow v0\nsection "Actual"\nbox one\n';
+	const { diagnostics, layout, svg } = render(`${populated}section "Empty"\n`);
+	assert.ok(
+		diagnostics.some(
+			(d) =>
+				d.line === 4 &&
+				d.message === 'section "Empty" has no nodes and is not drawn',
+		),
+	);
+	assert.deepEqual(layout.bands, render(populated).layout.bands);
+	assert.equal([...svg.matchAll(/class="cap"/g)].length, 1);
+	assert.doesNotMatch(svg, /class="cap">EMPTY<|class="band"/);
+});
+
+test("section captions fit the canvas after uppercase expansion and letter spacing", () => {
+	const caption = "ß".repeat(30);
+	const { layout, svg } = render(
+		`flow v0\nsection "Start"\ntext one\nsection "${caption}"\ntext two\n`,
+	);
+	const captions = [
+		...svg.matchAll(/<text x="(\d+)" y="(\d+)" class="cap">([^<]*)<\/text>/g),
+	];
+	assert.deepEqual(captions.map((c) => c[3]), ["START", "SS".repeat(30)]);
+	assert.ok(layout.width > Math.max(...layout.nodes.map((p) => p.x + p.w)) + 16);
+	for (const [, x, y, text] of captions) {
+		const width = [...text].length * (CHAR.mono11 + 0.08 * 11);
+		assert.ok(Number(x) >= 0 && Number(x) + width <= layout.width, text);
+		assert.ok(Number(y) - 9 >= 0 && Number(y) + 3 <= layout.height, text);
+	}
 });
 
 test("title= names text and end nodes too", () => {
