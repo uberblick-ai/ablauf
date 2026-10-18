@@ -121,7 +121,14 @@ there from the text and the diagnostics alone, without seeing the image.
 - Colours are CSS variables inside the SVG with `--ab-*` overrides for a host,
   switching on `prefers-color-scheme`. This works in Uberblick, in artifacts
   and on GitHub, where SVGs are shown as images.
-- Marker and element ids carry a prefix, so several diagrams can share a page.
+- Marker ids carry a prefix, so several diagrams can share a page. Hosts must
+  supply distinct `idPrefix` values for diagrams on the same page; the default
+  is `ab`. Prefixes containing only `[A-Za-z0-9_-]`, including the empty prefix,
+  stay unchanged. Each other UTF-16 code unit becomes `.` followed by four
+  lowercase hexadecimal digits, including literal dots, so the encoding is
+  reversible and distinct prefixes never collide. For example, `doc.1`,
+  `doc:1` and `doc-1` become `doc.002e1`, `doc.003a1` and `doc-1`. Routes and
+  legend samples reference the same encoded marker ids.
 
 ## The spike (now)
 
