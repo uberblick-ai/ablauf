@@ -1,0 +1,33 @@
+# Project loop policy
+
+## Checks
+
+Project checks are documented in `AGENTS.md`.
+
+Run the relevant checks before handoff and record the results. A check that passes
+only after changing its environment or skipping tests has not passed.
+
+## Merging
+
+The integrator squash-merges only when the project's merge policy authorizes it
+and every required review and check applies to the current head. Define those gates
+before launch. Leave changes to workflow, permissions and release policy to
+`@bk-one`; customize this list with the project's owners.
+Never enable auto-merge, approve your own PR, change branch protection or publish
+releases. Implementation PR bodies start with `Closes #N`.
+
+## Human decisions
+
+`@bk-one` answers scope and policy questions. An issue's author may answer only if they have write
+access. Use the responsible role's correction or handoff route when that role must
+act next.
+
+## Review focus
+
+Defaults; adjust them to the project's priorities.
+
+- The change stays within the issue's scope; other ideas become follow-up issues.
+- New behavior has tests that fail without the change.
+- No secrets, and no untrusted text reaching commands or output.
+- Changed behavior is documented where users and agents read it.
+- The simplest working change wins; no dead code or speculative options.

@@ -1,0 +1,112 @@
+# Project-owned starter. Customize models, checks, instructions, and merge authority.
+repository: "uberblick-ai/ablauf"
+shared-instructions: .agents/ub_agents.md
+queue:
+  milestones: ignore
+  dependencies: wait
+  priority:
+    labels:
+    - prio:urgent
+    - prio:high
+    - prio:medium
+    - prio:low
+
+# Reinstall control-checkout dependencies after watched files change on refresh.
+# Upgrade every launcher before enabling this setting.
+# checkout-setup:
+#   command: [mise, run, install]
+#   when-changed: [pnpm-lock.yaml, mise.toml]
+#   timeout-seconds: 600
+
+# Default arguments for each CLI; add the other CLI's entry for mixed runtimes.
+# Grants full access without the Codex sandbox: https://github.com/uberblick-ai/ub-agents/blob/main/docs/configuration.md#runtime-permissions
+runtime-args:
+  codex: [--sandbox, danger-full-access]
+# An agent's runtime-args list or mapping replaces these defaults entirely.
+# Omit the agent key to inherit; an empty list or mapping disables the defaults.
+
+# Update the agent CLI and gh once a day between runs, each with its own updater.
+runtime-updates:
+  codex: auto
+  gh: auto
+
+# Customize these outcomes and rules with the project's owners.
+agents:
+  issue-preparer:
+    runtime: "codex:gpt-6.1-sol:high"
+    kind: issue
+    trigger: needs-preparation
+    outcomes:
+      prepared: {add: [ready]}
+      review: {add: [needs-review]}
+      split: {}
+      needs-human: {add: [needs-human]}
+    instructions: .agents/issue-preparer.md
+    retrospectives: 7
+    worktree: true
+    agent-timeout-minutes: 60
+
+  issue-reviewer:
+    runtime: "codex:gpt-6.1-sol:high"
+    kind: issue
+    trigger: needs-review
+    outcomes:
+      approved: {add: [ready]}
+      changes-requested: {add: [needs-preparation]}
+      needs-human: {add: [needs-human]}
+    instructions: .agents/issue-reviewer.md
+    retrospectives: 26
+    worktree: true
+    agent-timeout-minutes: 60
+    # Run this role on a different runtime from issue-preparer for independent review.
+    # This is a recommendation: different-runtime-from currently requires a PR.
+
+  implementer:
+    runtime: "codex:gpt-6.1-sol:high"
+    trigger: [ready, needs-changes]
+    outcomes:
+      handed-off: {add: [needs-review]}
+    instructions: .agents/implementer.md
+    retrospectives: 8
+    worktree: true
+    agent-timeout-minutes: 180
+
+  reviewer:
+    runtime: "codex:gpt-6.1-sol:high"
+    kind: pr
+    trigger: needs-review
+    outcomes:
+      approved: {add: [ready-to-merge]}
+      changes-requested: {add: [needs-changes], max-rounds: 3}
+    instructions: .agents/reviewer.md
+    retrospectives: 9
+    worktree: true
+    agent-timeout-minutes: 180
+    # For independent cross-provider review, configure an eligible alternative:
+    # runtime: "claude:claude-opus-5-5:high"
+    # different-runtime-from: implementer
+    # Native GitHub approval requires an identity other than the PR author.
+
+  integrator:
+    runtime: "codex:gpt-6.1-sol:high"
+    kind: pr
+    trigger: ready-to-merge
+    outcomes:
+      merged: {}
+      maintainer-merge: {add: [needs-human]}
+      changes-requested: {add: [needs-changes]}
+    # A PR GitHub reports as conflicting goes straight back to the implementer.
+    on-conflict: changes-requested
+    instructions: .agents/integrator.md
+    retrospectives: 10
+    worktree: true
+    agent-timeout-minutes: 180
+
+limits:
+  agent-timeout-minutes: 180
+  max-attempts: 5
+  retry-backoff-seconds: 60
+  max-backoff-seconds: 3600
+
+poll-seconds: 30
+stop-labels: [needs-human]

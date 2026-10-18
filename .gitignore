@@ -1,3 +1,7 @@
 node_modules/
 dist/
 .DS_Store
+
+# Local ub-agents configuration and execution artifacts
+.ub-agents/
+ub-agents.local.yaml
