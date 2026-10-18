@@ -9,6 +9,19 @@ import { render } from "./flow/index.ts";
 const example = (name: string) =>
 	readFileSync(join(import.meta.dirname, "examples", `${name}.flow`), "utf8");
 
+const panelText = (svg: string) => {
+	const pattern = new RegExp(
+		'<text x="[\\d.]+" y="([\\d.]+)" text-anchor="middle"' +
+			' class="(s11|s11 muted|s12 b)">([^<]*)</text>',
+		"g",
+	);
+	return [...svg.matchAll(pattern)].map((m) => ({
+		y: Number(m[1]),
+		style: m[2],
+		text: m[3],
+	}));
+};
+
 test("the loop renders with no diagnostics", () => {
 	assert.deepEqual(render(example("loop")).diagnostics, []);
 });
@@ -115,11 +128,9 @@ test("panel text uses a wide child pill's width for every text style", () => {
 		assert.equal(panel.w, 287, "automatic width still comes from the pill");
 		const cls =
 			kind === "strong" ? "s12 b" : kind === "muted" ? "s11 muted" : "s11";
-		const lines = [
-			...svg.matchAll(/<text x="[\d.]+" y="([\d.]+)" text-anchor="middle" class="([^"]+)">([^<]*)<\/text>/g),
-		].filter((m) => m[2] === cls);
-		assert.deepEqual(lines.map((m) => m[3]), [fitting, fitting, "again"], kind);
-		assert.deepEqual(lines.map((m) => Number(m[1]) - panel.y), [61, 79, 94]);
+		const lines = panelText(svg).filter((line) => line.style === cls);
+		assert.deepEqual(lines.map((line) => line.text), [fitting, fitting, "again"], kind);
+		assert.deepEqual(lines.map((line) => line.y - panel.y), [61, 79, 94]);
 		assert.equal(panel.h, 157, "height includes exactly one extra text line");
 		assert.ok(svg.includes(`y1="${panel.y + 106}"`), "rule follows wrapped text");
 		assert.ok(after.y >= panel.y + panel.h + 30);
@@ -128,9 +139,32 @@ test("panel text uses a wide child pill's width for every text style", () => {
 		);
 		assert.equal(
 			narrow.layout.nodes[0].w,
-			242,
+			243,
 			"notes still have bounded automatic widths",
 		);
+		assert.deepEqual(
+			panelText(narrow.svg).map((line) => line.text),
+			[
+				"Pick the newest item then oldest",
+				"item",
+				"Pick the newest item then oldest",
+				"item again",
+			],
+			kind,
+		);
+	}
+});
+
+test("automatically sized strong panels keep their widest line whole", () => {
+	const prefix = "Wait for a maintainer ";
+	for (let length = 25; length <= 34; length++) {
+		const text = prefix + "a".repeat(length - prefix.length);
+		const { svg, layout, diagnostics } = render(
+			`flow v0\npanel note\n  strong "${text}"\n`,
+		);
+		assert.deepEqual(diagnostics, []);
+		assert.deepEqual(panelText(svg).map((line) => line.text), [text], `${length} characters`);
+		assert.equal(layout.nodes[0].h, 38, `${length} characters stay one line high`);
 	}
 });
 
@@ -171,10 +205,10 @@ test("spanning panels size and centre content using the rendered line breaks", (
 		if (extraRows) assert.ok(panel.h > contentHeight);
 		else assert.equal(panel.h, contentHeight, "wrapped text grows the spanned rows");
 		const offset = Math.round(panel.y + 12 + (panel.h - contentHeight) / 2);
-		const lines = [
-			...svg.matchAll(/<text x="[\d.]+" y="([\d.]+)" text-anchor="middle" class="(s11|s11 muted|s12 b)">([^<]*)<\/text>/g),
-		].filter((m) => m[3].startsWith("Pick") || m[3] === "again" || m[3] === "now");
-		assert.deepEqual(lines.map((m) => m[3]), [
+		const lines = panelText(svg).filter(
+			(line) => line.text.startsWith("Pick") || line.text === "again" || line.text === "now",
+		);
+		assert.deepEqual(lines.map((line) => line.text), [
 			"Pick the newest item then oldest item",
 			"Pick the newest item then oldest item",
 			"again",
@@ -182,8 +216,8 @@ test("spanning panels size and centre content using the rendered line breaks", (
 			"Pick the newest item then oldest item",
 			"now",
 		]);
-		assert.deepEqual(lines.map((m) => Number(m[1]) - offset), [49, 67, 82, 100, 118, 133]);
-		assert.ok(Number(lines[0][1]) - 12 >= panel.y + 12);
+		assert.deepEqual(lines.map((line) => line.y - offset), [49, 67, 82, 100, 118, 133]);
+		assert.ok(lines[0].y - 12 >= panel.y + 12);
 		assert.ok(svg.includes(`y1="${offset + 145}"`), "rule is below all six text lines");
 		assert.ok(offset + 152 + 30 <= panel.y + panel.h - 8, "final pill stays inside the panel");
 		if (!extraRows) {

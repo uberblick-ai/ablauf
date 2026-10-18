@@ -151,9 +151,12 @@ function size(n: FlowNode): { w: number; h: number } {
 						? 36 + len(c.text) * CHAR.mono12
 						: c.kind === "rule"
 							? 0
-							: Math.max(
-									...wrap(c.text, PANEL_TEXT_WIDTH, CHAR.sans12).map(len),
-								) * CHAR.sans12;
+							// Round text widths up so the widest line still fits when drawn.
+							: Math.ceil(
+									Math.max(
+										...wrap(c.text, PANEL_TEXT_WIDTH, CHAR.sans12).map(len),
+									) * CHAR.sans12,
+								);
 				w = Math.max(w, Math.round(width + 2 * PANEL_PAD));
 			}
 			return { w, h: panelContentHeight(n, w) };
