@@ -49,6 +49,10 @@ worker --> person tone=stop : stuck
 
 Tones: `ink`, `muted`, `agent`, `done`, `rework`, `stop`.
 
+Panel sizes are automatic. Their `text`, `muted` and `strong` lines wrap at
+word boundaries to fit the panel's inner width; a long child pill widens the
+panel and gives its text more room. Wrapped lines also grow its height.
+
 ## Edges
 
 `a --> b key=value : label`. Use `-.->` for dashed. The keys go before the colon.

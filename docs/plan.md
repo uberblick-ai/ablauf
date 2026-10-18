@@ -118,6 +118,12 @@ there from the text and the diagnostics alone, without seeing the image.
 - SVG as a string, with no browser and no DOM, and the same bytes for the same input.
 - Labels in monospace, so text widths are predictable. Sans text is limited
   to box subtitles and panel lines, measured with a fixed estimate.
+- Panel widths are sized automatically from their contents, with a bounded
+  preferred text width so long notes grow downwards. Panel `text`, `muted` and
+  `strong` lines then wrap at word boundaries within the actual panel width,
+  minus 14px padding on each side, using their font-width estimates. A wider
+  child pill gives the text more room. Panel height and vertical centring use
+  those same line breaks, including when a panel spans rows.
 - Colours are CSS variables inside the SVG with `--ab-*` overrides for a host,
   switching on `prefers-color-scheme`. This works in Uberblick, in artifacts
   and on GitHub, where SVGs are shown as images.

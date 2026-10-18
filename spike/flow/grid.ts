@@ -3,6 +3,7 @@
 // node or picks a route; problems become diagnostics for the author.
 
 import type {
+	Child,
 	Diagnostic,
 	FlowEdge,
 	FlowNode,
@@ -82,25 +83,34 @@ const len = (s: string) => [...s].length;
 export const SAMPLE_W = 24;
 const KEY_GAP = 20;
 const KEY_ROW = 20;
-const WRAP_CHARS = 34;
+const PANEL_PAD = 14;
+// Keep automatic sizing bounded: notes grow downwards unless another child
+// needs more width. This preferred width only sizes the panel, not its lines.
+const PANEL_TEXT_WIDTH = 34 * CHAR.sans12;
 
-// Panel text wraps at a fixed number of characters, so a long note grows
-// the panel downwards instead of sideways.
-export function panelContentHeight(n: FlowNode): number {
+export function panelLines(c: Child, width: number): string[] {
+	return wrap(
+		c.text,
+		width - 2 * PANEL_PAD,
+		c.kind === "strong" ? CHAR.sans12 : CHAR.sans11,
+	);
+}
+
+export function panelContentHeight(n: FlowNode, width: number): number {
 	let h = 12;
 	for (const c of n.children) {
 		if (c.kind === "pill") h += 36;
 		else if (c.kind === "rule") h += 14;
-		else h += 18 + (wrap(c.text).length - 1) * 15;
+		else h += 18 + (panelLines(c, width).length - 1) * 15;
 	}
 	return h + 8;
 }
 
-export function wrap(text: string): string[] {
+function wrap(text: string, width: number, charWidth: number): string[] {
 	const lines: string[] = [];
 	let line = "";
 	for (const word of text.split(/\s+/).filter(Boolean)) {
-		if (line && len(line) + 1 + len(word) > WRAP_CHARS) {
+		if (line && (len(line) + 1 + len(word)) * charWidth > width) {
 			lines.push(line);
 			line = word;
 		} else line = line ? `${line} ${word}` : word;
@@ -141,10 +151,12 @@ function size(n: FlowNode): { w: number; h: number } {
 						? 36 + len(c.text) * CHAR.mono12
 						: c.kind === "rule"
 							? 0
-							: Math.max(...wrap(c.text).map(len)) * CHAR.sans12;
-				w = Math.max(w, Math.round(width + 28));
+							: Math.max(
+									...wrap(c.text, PANEL_TEXT_WIDTH, CHAR.sans12).map(len),
+								) * CHAR.sans12;
+				w = Math.max(w, Math.round(width + 2 * PANEL_PAD));
 			}
-			return { w, h: panelContentHeight(n) };
+			return { w, h: panelContentHeight(n, w) };
 		}
 	}
 }
