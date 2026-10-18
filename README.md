@@ -92,6 +92,13 @@ Uberblick's repositories, from
   <img alt="The ub-agents delivery loop: issue preparation, implementation, review and integration, with a rework column on the left and a person's decision on the right." src="docs/images/loop-light.svg">
 </picture>
 
+## Host page themes
+
+Inline SVGs can follow a page's `data-theme="light"` / `data-theme="dark"`
+switch through the existing `--ab-*` CSS properties, without rerendering.
+See [host page themes](docs/theming.md) for the complete base and tone palette,
+copyable host CSS and the difference between inline SVG and image embedding.
+
 ## Start here
 
 You need [mise](https://mise.jdx.dev). In a fresh checkout or worktree:
