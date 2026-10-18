@@ -54,6 +54,11 @@ arrowheads and pill dots, with matching legend samples in light and dark.
 Hosts can override its foreground and fill with `--ab-neutral` and
 `--ab-neutral-bg`.
 
+Box subtitles and panel text wrap at word boundaries around 34 characters,
+keeping longer words intact. Long subtitles add centered lines and grow the
+box and its row vertically. Box titles stay on one line; boxes in a column
+share a width measured from their titles and wrapped subtitles.
+
 ## Edges
 
 `a --> b key=value : label`. Use `-.->` for dashed. The keys go before the colon.
