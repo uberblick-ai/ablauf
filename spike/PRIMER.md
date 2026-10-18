@@ -51,9 +51,9 @@ Tones: `ink`, `muted`, `agent`, `system`, `done`, `rework`, `stop`.
 
 Use `box ... tone=system` for an automated system step, such as a launcher.
 It has a blue title, border and tinted background, distinct from the teal
-agent role (`box`), red person panel (`panel tone=stop`), dotted label (`pill`)
-and neutral note (`panel tone=muted`). `title=` overrides the id as the visible
-title; the quoted text remains the subtitle:
+agent role (`box`), red person panel (`panel tone=stop`), label with a coloured
+dot (`pill`) and neutral note (`panel tone=muted`). `title=` overrides the id
+as the visible title; the quoted text remains the subtitle:
 
 ```
 box loop col=main tone=system title="The loop" "claims eligible items in order"

@@ -8,6 +8,11 @@ interface Group {
 	names: string[];
 }
 
+interface Flow {
+	folder: string;
+	name: string;
+}
+
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const editor = $<HTMLTextAreaElement>("pg-editor");
 const target = $<HTMLDivElement>("pg-render");
@@ -17,8 +22,10 @@ const save = $<HTMLButtonElement>("pg-save");
 const status = $<HTMLSpanElement>("pg-status");
 const grid = $<HTMLInputElement>("pg-grid");
 
-let current: { folder: string; name: string } | null = null;
+let current: Flow | null = null;
 let saved = "";
+let saving = false;
+let saveAgain: Flow | null = null;
 const SCRATCH = "flow v0\ncolumns main\n\nbox start col=main \"say what happens first\"\nend done \"Finished\"\n\nstart --> done : then\n";
 
 function setScheme(scheme: string) {
@@ -61,7 +68,11 @@ function draw() {
 	);
 	status.textContent = diagnostics.length ? `${diagnostics.length} problem${diagnostics.length > 1 ? "s" : ""}` : "No problems";
 	status.className = `pg-status ${diagnostics.length ? "bad" : "good"}`;
-	save.disabled = !current || editor.value === saved;
+	updateSave();
+}
+
+function updateSave() {
+	save.disabled = !current || (!saving && editor.value === saved);
 }
 
 function selectLine(line: number) {
@@ -127,18 +138,37 @@ async function sidebar() {
 	);
 }
 
-save.addEventListener("click", async () => {
+async function saveCurrent() {
 	if (!current) return;
+	if (saving) {
+		saveAgain = current;
+		return;
+	}
 	// Keep what was sent: typing or switching flows during the request must not count as saved.
 	const flow = current;
 	const body = editor.value;
-	const response = await fetch(`/api/flow/${flow.folder}/${flow.name}`, { method: "PUT", body });
-	const message = response.ok ? "Saved" : `Not saved: ${await response.text()}`;
-	if (current !== flow) return;
-	if (response.ok) saved = body;
-	status.textContent = message;
-	save.disabled = editor.value === saved;
-});
+	saving = true;
+	updateSave();
+	try {
+		const response = await fetch(`/api/flow/${flow.folder}/${flow.name}`, { method: "PUT", body });
+		const message = response.ok ? "Saved" : `Not saved: ${await response.text()}`;
+		if (current === flow) {
+			if (response.ok) saved = body;
+			status.textContent = message;
+		}
+	} catch (error) {
+		if (current === flow) status.textContent = `Not saved: ${error instanceof Error ? error.message : String(error)}`;
+	} finally {
+		saving = false;
+		const next = saveAgain;
+		saveAgain = null;
+		// A queued save reads the latest text, and never follows a discarded flow.
+		if (next && next === current) await saveCurrent();
+		else updateSave();
+	}
+}
+
+save.addEventListener("click", saveCurrent);
 editor.addEventListener("input", draw);
 editor.addEventListener("keydown", (event) => {
 	if ((event.metaKey || event.ctrlKey) && event.key === "s") {

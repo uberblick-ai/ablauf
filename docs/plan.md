@@ -129,7 +129,7 @@ The default box tone remains `agent`.
 
 The `system` tone draws a blue title and border on a tinted background in both
 light and dark. It distinguishes automated system steps from teal agent boxes,
-red person panels, dotted pills used as labels, and neutral muted panels used
+red person panels, label pills with a coloured dot, and neutral muted panels used
 as notes. Colours use `--ab-system` and `--ab-system-bg` host overrides. Like the
 other tones, `system` also works on edges and legend entries. A matching sample
 is `box tone=system "automated system step"` inside a `legend`.
@@ -142,10 +142,20 @@ in one small diagram for light/dark review in the playground's document column.
 - SVG as a string, with no browser and no DOM, and the same bytes for the same input.
 - Labels in monospace, so text widths are predictable. Sans text is limited
   to box subtitles and panel lines, measured with a fixed estimate.
+- The canvas includes every drawn section caption, measuring its uppercase
+  text with letter spacing. A section without nodes gets a line-numbered
+  diagnostic and draws no band or caption.
 - Colours are CSS variables inside the SVG with `--ab-*` overrides for a host,
   switching on `prefers-color-scheme`. This works in Uberblick, in artifacts
   and on GitHub, where SVGs are shown as images.
-- Marker and element ids carry a prefix, so several diagrams can share a page.
+- Marker ids carry a prefix, so several diagrams can share a page. Hosts must
+  supply distinct `idPrefix` values for diagrams on the same page; the default
+  is `ab`. Prefixes containing only `[A-Za-z0-9_-]`, including the empty prefix,
+  stay unchanged. Each other UTF-16 code unit becomes `.` followed by four
+  lowercase hexadecimal digits, including literal dots, so the encoding is
+  reversible and distinct prefixes never collide. For example, `doc.1`,
+  `doc:1` and `doc-1` become `doc.002e1`, `doc.003a1` and `doc-1`. Routes and
+  legend samples reference the same encoded marker ids.
 
 ## The spike (now)
 

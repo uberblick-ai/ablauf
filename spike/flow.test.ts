@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
+import { setImmediate } from "node:timers/promises";
+import { CHAR } from "./flow/grid.ts";
 import { DARK, LIGHT, render } from "./flow/index.ts";
 
 const example = (name: string) =>
@@ -171,10 +173,97 @@ test("row= chains reach the row's first node, and loops are reported", () => {
 	assert.ok(!loop.svg.includes("NaN"));
 });
 
-test("marker ids keep only safe characters", () => {
-	const { svg } = render(example("loop"), { idPrefix: '"><script>' });
-	assert.ok(!svg.includes("<script>"));
-	assert.ok(svg.includes('id="---script--ink"'));
+test("safe and default prefixes retain the complete SVG bytes", () => {
+	const source = example("loop");
+	const figure = readFileSync(join(import.meta.dirname, "out", "loop.svg"), "utf8");
+	const expected = (prefix: string) =>
+		figure
+			.replaceAll('<marker id="loop-', `<marker id="${prefix}-`)
+			.replaceAll('marker-end="url(#loop-', `marker-end="url(#${prefix}-`);
+	for (const idPrefix of [
+		"",
+		"ab",
+		"doc-1",
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-",
+	]) {
+		assert.equal(render(source, { idPrefix }).svg, expected(idPrefix));
+	}
+	assert.equal(render(source).svg, expected("ab"));
+	assert.equal(render(source, { idPrefix: undefined }).svg, expected("ab"));
+});
+
+test("marker prefix encoding is reversible, including Unicode and escape syntax", () => {
+	const source = "flow v0\nbox a\nbox b\na --> b\n";
+	const cases = [
+		["doc.1", "doc.002e1"],
+		["doc:1", "doc.003a1"],
+		["doc-1", "doc-1"],
+		["doc.002e1", "doc.002e002e1"],
+		["doc-002e1", "doc-002e1"],
+		[".003a", ".002e003a"],
+		["é", ".00e9"],
+		["e\u0301", "e.0301"],
+		["图😀", ".56fe.d83d.de00"],
+		["\ud800", ".d800"],
+		["\udc00", ".dc00"],
+		["\ufffd", ".fffd"],
+		["\u0000\t\n", ".0000.0009.000a"],
+	];
+	const ids = new Set<string>();
+	for (const [idPrefix, encoded] of cases) {
+		const { svg } = render(source, { idPrefix });
+		const id = /<marker id="([^"]+)"/.exec(svg)?.[1];
+		assert.equal(id, `${encoded}-ink`);
+		assert.ok(!ids.has(id));
+		ids.add(id);
+		assert.equal(
+			encoded.replace(/\.([0-9a-f]{4})/g, (_, hex) =>
+				String.fromCharCode(Number.parseInt(hex, 16)),
+			),
+			idPrefix,
+		);
+		assert.equal(svg, render(source, { idPrefix }).svg);
+	}
+});
+
+test("route and legend references resolve within their own diagram on a page", () => {
+	const source = [
+		"flow v0",
+		"box a",
+		"box b",
+		"a --> b",
+		"legend",
+		'  edge tone=ink "route"',
+		'  edge tone=agent "legend only"',
+		'  dashed tone=stop "dashed legend only"',
+		"",
+	].join("\n");
+	const diagrams = [
+		"doc.1",
+		"doc:1",
+		"doc-1",
+		"doc.002e1",
+		"图😀",
+		"",
+		'"><script> & url(#other)\\',
+	].map((idPrefix) => {
+		const { svg, diagnostics } = render(source, { idPrefix });
+		assert.deepEqual(diagnostics, []);
+		assert.ok(!svg.includes("<script>"));
+		return svg;
+	});
+	const page = diagrams.join("\n");
+	const ids = [...page.matchAll(/<marker id="([^"]+)"/g)].map((m) => m[1]);
+	assert.equal(ids.length, diagrams.length * 3);
+	assert.equal(new Set(ids).size, ids.length);
+	for (const svg of diagrams) {
+		const ownIds = [...svg.matchAll(/<marker id="([^"]+)"/g)].map((m) => m[1]);
+		for (const id of ownIds) assert.match(id, /^[A-Za-z0-9_.-]+$/);
+		const references = [...svg.matchAll(/marker-end="url\(#([^)]*)\)"/g)];
+		assert.equal(references.length, 4);
+		for (const [, id] of references) assert.ok(ownIds.includes(id));
+		assert.deepEqual(new Set(references.map((m) => m[1])), new Set(ownIds));
+	}
 });
 
 test("loops and labels stay inside the canvas", () => {
@@ -228,6 +317,51 @@ test("an empty section is reported and takes no band", () => {
 	assert.ok(!svg.includes("NaN"));
 });
 
+test("a section-only flow reports its empty section and draws no caption or band", () => {
+	const { diagnostics, layout, svg } = render('flow v0\nsection "Empty"\n');
+	assert.deepEqual(diagnostics, [
+		{
+			line: 2,
+			severity: "warning",
+			message: 'section "Empty" has no nodes and is not drawn',
+		},
+	]);
+	assert.deepEqual(layout.bands, []);
+	assert.doesNotMatch(svg, /class="(?:cap|band)"/);
+});
+
+test("a trailing empty section is reported and draws no caption or band", () => {
+	const populated = 'flow v0\nsection "Actual"\nbox one\n';
+	const { diagnostics, layout, svg } = render(`${populated}section "Empty"\n`);
+	assert.ok(
+		diagnostics.some(
+			(d) =>
+				d.line === 4 &&
+				d.message === 'section "Empty" has no nodes and is not drawn',
+		),
+	);
+	assert.deepEqual(layout.bands, render(populated).layout.bands);
+	assert.equal([...svg.matchAll(/class="cap"/g)].length, 1);
+	assert.doesNotMatch(svg, /class="cap">EMPTY<|class="band"/);
+});
+
+test("section captions fit the canvas after uppercase expansion and letter spacing", () => {
+	const caption = "ß".repeat(30);
+	const { layout, svg } = render(
+		`flow v0\nsection "Start"\ntext one\nsection "${caption}"\ntext two\n`,
+	);
+	const captions = [
+		...svg.matchAll(/<text x="(\d+)" y="(\d+)" class="cap">([^<]*)<\/text>/g),
+	];
+	assert.deepEqual(captions.map((c) => c[3]), ["START", "SS".repeat(30)]);
+	assert.ok(layout.width > Math.max(...layout.nodes.map((p) => p.x + p.w)) + 16);
+	for (const [, x, y, text] of captions) {
+		const width = [...text].length * (CHAR.mono11 + 0.08 * 11);
+		assert.ok(Number(x) >= 0 && Number(x) + width <= layout.width, text);
+		assert.ok(Number(y) - 9 >= 0 && Number(y) + 3 <= layout.height, text);
+	}
+});
+
 test("title= names text and end nodes too", () => {
 	const { layout, diagnostics } = render(
 		'flow v0\ncolumns a\nend done col=a title="All done"\ntext note title=Hello "and more"\n',
@@ -240,4 +374,161 @@ test("title= names text and end nodes too", () => {
 test("a span past the last row is reported once", () => {
 	const { diagnostics } = render("flow v0\ncolumns a b\nbox one col=a\nbox two col=b row=one span=3\n");
 	assert.equal(diagnostics.filter((d) => /span=3/.test(d.message)).length, 1);
+});
+
+test("playground saves serialize requests and track only confirmed text", async (t) => {
+	// The page only needs these DOM operations with a valid flow and no grid.
+	class Element extends EventTarget {
+		value = "";
+		checked = false;
+		disabled = false;
+		textContent = "";
+		className = "";
+		innerHTML = "";
+		hidden = false;
+		style = { setProperty() {} };
+		querySelector() { return null; }
+		replaceChildren() {}
+		click() { if (!this.disabled) this.dispatchEvent(new Event("click")); }
+	}
+	const elements = new Map<string, Element>();
+	const element = (id: string) => {
+		let el = elements.get(id);
+		if (!el) {
+			el = new Element();
+			elements.set(id, el);
+		}
+		return el;
+	};
+	const page = new EventTarget();
+	const location = { hash: "#examples/loop" };
+	const globals = {
+		document: {
+			getElementById: element,
+			querySelectorAll: () => [],
+			documentElement: { dataset: {} },
+		},
+		window: page,
+		location,
+		confirm: () => true,
+	};
+	for (const [key, value] of Object.entries(globals)) {
+		const original = Object.getOwnPropertyDescriptor(globalThis, key);
+		Object.defineProperty(globalThis, key, { configurable: true, value });
+		t.after(() => {
+			if (original) Object.defineProperty(globalThis, key, original);
+			else Reflect.deleteProperty(globalThis, key);
+		});
+	}
+	const source = (label: string) => `flow v0\nbox a "${label}"\n`;
+	const requests: { url: string; body: string; resolve: (response: Response) => void; reject: (error: Error) => void }[] = [];
+	let inFlight = 0;
+	let maxInFlight = 0;
+	t.mock.method(globalThis, "fetch", async (url: string, options?: RequestInit) => {
+		if (url === "/api/catalog") return Response.json([]);
+		if (options?.method !== "PUT") return new Response(source("initial"));
+		maxInFlight = Math.max(maxInFlight, ++inFlight);
+		try {
+			return await new Promise<Response>((resolve, reject) => {
+				requests.push({ url, body: String(options.body), resolve, reject });
+			});
+		} finally {
+			inFlight--;
+		}
+	});
+	await import("./playground/app.ts");
+	const editor = element("pg-editor");
+	const save = element("pg-save");
+	const edit = (label: string) => {
+		editor.value = source(label);
+		editor.dispatchEvent(new Event("input"));
+	};
+	const shortcut = (modifier: "ctrlKey" | "metaKey") => {
+		const event = Object.assign(new Event("keydown", { cancelable: true }), { key: "s", [modifier]: true });
+		editor.dispatchEvent(event);
+		assert.equal(event.defaultPrevented, true);
+	};
+	const unsaved = () => {
+		const event = new Event("beforeunload", { cancelable: true });
+		page.dispatchEvent(event);
+		return event.defaultPrevented;
+	};
+	const respond = async (index: number, status = 200) => {
+		requests[index].resolve(new Response(status === 200 ? "saved" : "write failed", { status }));
+		await setImmediate();
+	};
+	assert.equal(save.disabled, true);
+	edit("first");
+	save.click();
+	assert.equal(requests[0].url, "/api/flow/examples/loop");
+	assert.equal(requests[0].body, source("first"));
+	assert.equal(save.disabled, false);
+	edit("queued");
+	shortcut("ctrlKey");
+	save.click();
+	shortcut("metaKey");
+	assert.equal(requests.length, 1);
+	// Save stays available even when edits temporarily match the old baseline.
+	edit("initial");
+	assert.equal(save.disabled, false);
+	save.click();
+	edit("latest before follow-up");
+	await respond(0);
+	assert.equal(requests.length, 2);
+	assert.equal(requests[1].body, source("latest before follow-up"));
+	assert.equal(save.disabled, false);
+	assert.equal(unsaved(), true);
+	edit("first");
+	assert.equal(save.disabled, false);
+	assert.equal(unsaved(), false);
+	edit("later edit");
+	await respond(1);
+	assert.equal(requests.length, 2);
+	assert.equal(save.disabled, false);
+	assert.equal(unsaved(), true);
+	edit("latest before follow-up");
+	assert.equal(save.disabled, true);
+	assert.equal(unsaved(), false);
+
+	// Neither a failed request nor its failed follow-up advances the baseline.
+	edit("failed first");
+	save.click();
+	edit("failed follow-up");
+	save.click();
+	await respond(2, 500);
+	assert.equal(requests[3].body, source("failed follow-up"));
+	assert.equal(unsaved(), true);
+	edit("latest before follow-up");
+	assert.equal(save.disabled, false);
+	assert.equal(unsaved(), false);
+	await respond(3, 500);
+	assert.equal(save.disabled, true);
+	assert.equal(element("pg-status").textContent, "Not saved: write failed");
+
+	edit("network failure");
+	save.click();
+	requests[4].reject(new Error("offline"));
+	await setImmediate();
+	assert.equal(save.disabled, false);
+	assert.equal(unsaved(), true);
+	assert.equal(element("pg-status").textContent, "Not saved: offline");
+	save.click();
+	await respond(5);
+	assert.equal(save.disabled, true);
+	assert.equal(unsaved(), false);
+
+	// Discarding a flow also discards its queued save and ignores its response.
+	edit("discarded");
+	save.click();
+	save.click();
+	location.hash = "#examples/deploy";
+	page.dispatchEvent(new Event("hashchange"));
+	await setImmediate();
+	await respond(6);
+	assert.equal(requests.length, 7);
+	assert.equal(editor.value, source("initial"));
+	assert.equal(save.disabled, true);
+	assert.equal(unsaved(), false);
+	assert.equal(maxInFlight, 1);
+	assert.equal(inFlight, 0);
 });
