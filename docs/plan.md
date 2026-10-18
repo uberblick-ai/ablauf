@@ -118,9 +118,16 @@ there from the text and the diagnostics alone, without seeing the image.
 - SVG as a string, with no browser and no DOM, and the same bytes for the same input.
 - Labels in monospace, so text widths are predictable. Sans text is limited
   to box subtitles and panel lines, measured with a fixed estimate.
-- Colours are CSS variables inside the SVG with `--ab-*` overrides for a host,
-  switching on `prefers-color-scheme`. This works in Uberblick, in artifacts
-  and on GitHub, where SVGs are shown as images.
+- Colours use the base `--ab-ink`, `--ab-muted`, `--ab-line`, `--ab-band` and
+  `--ab-surface` overrides, plus `--ab-agent`, `--ab-done`, `--ab-rework` and
+  `--ab-stop` foregrounds and each tone's `--ab-<tone>-bg` background.
+  [Host page themes](theming.md) documents every property and complete CSS
+  for root `data-theme="light"` / `data-theme="dark"`. Host overrides update
+  inline SVG without rerendering and take precedence over the system theme
+  and a pinned `scheme`. Page CSS cannot reach SVGs embedded as images.
+  Without overrides, defaults follow `prefers-color-scheme`, or stay fixed
+  when the render option `scheme` is explicitly `"light"` or `"dark"`.
+  The internal defaults also work when SVGs are shown as images.
 - Marker and element ids carry a prefix, so several diagrams can share a page.
 
 ## The spike (now)
