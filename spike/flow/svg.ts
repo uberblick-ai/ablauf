@@ -21,6 +21,8 @@ export const LIGHT = {
 	surface: "#ffffff",
 	agent: "#0b6b67",
 	"agent-bg": "#dff1ee",
+	system: "#3459a3",
+	"system-bg": "#e7edfb",
 	rework: "#a65f0c",
 	"rework-bg": "#fbefdc",
 	stop: "#b2382f",
@@ -36,6 +38,8 @@ export const DARK: typeof LIGHT = {
 	surface: "#1d232d",
 	agent: "#5cc5bb",
 	"agent-bg": "#12302d",
+	system: "#91b4fa",
+	"system-bg": "#1c2945",
 	rework: "#e3a250",
 	"rework-bg": "#33250f",
 	stop: "#ef7f73",
@@ -62,7 +66,7 @@ const STYLE = `
 .ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
 .ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
 .ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
-${(["ink", "muted", "agent", "done", "rework", "stop"] as Tone[])
+${(["ink", "muted", "agent", "system", "done", "rework", "stop"] as Tone[])
 	.map((t) => {
 		const c = t === "ink" ? "muted" : t;
 		const bg = t === "ink" || t === "muted" ? "surface" : `${t}-bg`;
