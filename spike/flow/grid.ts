@@ -471,7 +471,7 @@ export function grid(
 		...nodes.map((p) => p.x + p.w),
 		...routes.flatMap((r) => r.points.map((p) => p[0])),
 		...labelRects.map((l) => l.x + l.w + dx),
-		...model.sections.map((t) => 20 + Math.round(len(t) * CAPTION_CHAR)),
+		...model.sections.map((t) => 20 + Math.round(len(t.toUpperCase()) * CAPTION_CHAR)),
 	);
 	const keyW = (k: LegendItem) =>
 		SAMPLE_W + 6 + Math.round(len(k.text) * CHAR.sans11);
