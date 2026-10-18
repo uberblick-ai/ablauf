@@ -214,7 +214,12 @@ function node(p: Placed): string {
 				`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="8" class="k-${n.tone}"/>`,
 				`<text x="${cx}" y="${y + 19}" text-anchor="middle" class="m s13 b t-${n.tone === "muted" ? "ink" : n.tone}">${esc(n.label)}</text>`,
 				n.sub
-					? `<text x="${cx}" y="${y + 36}" text-anchor="middle" class="s11 muted">${esc(n.sub)}</text>`
+					? wrap(n.sub)
+							.map(
+								(line, i) =>
+									`<text x="${cx}" y="${y + 36 + i * 15}" text-anchor="middle" class="s11 muted">${esc(line)}</text>`,
+							)
+							.join("\n")
 					: "",
 				"</g>",
 			].join("\n");

@@ -347,6 +347,102 @@ test("a span past the last row is reported once", () => {
 	assert.equal(diagnostics.filter((d) => /span=3/.test(d.message)).length, 1);
 });
 
+test("box subtitles wrap and grow their row while edges follow the box", () => {
+	const { layout, svg, diagnostics } = render(
+		[
+			"flow v0",
+			"columns main side",
+			'box issue-preparer col=main "grounds it in the code, challenges assumptions, aims for an MVP"',
+			"box next",
+			"pill peer col=side row=issue-preparer",
+			"issue-preparer --> next",
+			"issue-preparer --> peer",
+		].join("\n"),
+	);
+	assert.deepEqual(diagnostics, []);
+	const [box, next, peer] = layout.nodes;
+	assert.equal(box.w, 235); // 34 subtitle characters at 6.1px, plus 28px padding.
+	assert.equal(next.w, box.w);
+	assert.equal(box.h, 61);
+	assert.equal(next.y, box.y + box.h + 30);
+	assert.equal(peer.y, Math.round(box.y + (box.h - peer.h) / 2));
+	const cx = Math.round(box.x + box.w / 2);
+	assert.deepEqual(layout.routes[0].points, [
+		[cx, box.y + box.h],
+		[cx, next.y],
+	]);
+	assert.deepEqual(layout.routes[1].points, [
+		[box.x + box.w, Math.round(box.y + box.h / 2)],
+		[peer.x, Math.round(peer.y + peer.h / 2)],
+	]);
+	assert.deepEqual(
+		[
+			...svg.matchAll(
+				/<text x="(\d+)" y="(\d+)" text-anchor="middle" class="s11 muted">(.*?)<\/text>/g,
+			),
+		].map((m) => [Number(m[1]), Number(m[2]), m[3]]),
+		[
+			[cx, box.y + 36, "grounds it in the code, challenges"],
+			[cx, box.y + 51, "assumptions, aims for an MVP"],
+		],
+	);
+});
+
+test("box wrapping keeps long words intact and matches panel text", () => {
+	const word = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN";
+	const { layout, svg, diagnostics } = render(
+		[
+			"flow v0",
+			"columns main side",
+			`box worker col=main "before ${word} after <&>"`,
+			"panel note col=side row=worker span=2",
+			`  muted "before ${word} after <&>"`,
+			"box next col=main",
+		].join("\n"),
+	);
+	assert.deepEqual(diagnostics, []);
+	const [box, panel, next] = layout.nodes;
+	assert.equal(box.w, 272); // The intact 40-character word sets the width.
+	assert.equal(box.h, 76);
+	assert.equal(panel.h, box.h + 30 + next.h);
+	assert.deepEqual(
+		[...svg.matchAll(/class="s11 muted">(.*?)<\/text>/g)].map((m) => m[1]),
+		["before", word, "after &lt;&amp;&gt;", "before", word, "after &lt;&amp;&gt;"],
+	);
+	for (let i = 0; i < 3; i++) {
+		assert.ok(svg.includes(
+			`y="${box.y + 36 + i * 15}" text-anchor="middle" class="s11 muted">`,
+		));
+	}
+});
+
+test("short and absent subtitles keep box geometry and titles stay unwrapped", () => {
+	for (const subtitle of ["", ' "short subtitle"']) {
+		const { layout, svg, diagnostics } = render(
+			`flow v0\nbox worker col=main${subtitle}\n`,
+		);
+		assert.deepEqual(diagnostics, []);
+		assert.deepEqual(
+			layout.nodes.map(({ x, y, w, h }) => [x, y, w, h]),
+			[[16, 16, 180, 46]],
+		);
+		assert.ok(svg.includes(
+			'<text x="106" y="35" text-anchor="middle" class="m s13 b t-agent">worker</text>',
+		));
+		assert.equal(
+			svg.includes('<text x="106" y="52" text-anchor="middle" class="s11 muted">short subtitle</text>'),
+			Boolean(subtitle),
+		);
+	}
+	const title = "a long title that continues on a single line";
+	const { layout, svg } = render(
+		`flow v0\nbox worker col=main title="${title}" "short subtitle"\n`,
+	);
+	assert.equal(layout.nodes[0].w, Math.round(title.length * 7.8 + 32));
+	assert.equal(layout.nodes[0].h, 46);
+	assert.ok(svg.includes(`>${title}</text>`));
+});
+
 test("playground saves serialize requests and track only confirmed text", async (t) => {
 	// The page only needs these DOM operations with a valid flow and no grid.
 	class Element extends EventTarget {
