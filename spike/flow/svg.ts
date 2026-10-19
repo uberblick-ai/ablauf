@@ -1,7 +1,7 @@
 // SVG as a string, in the house style. Colours are CSS variables a host can
 // override with --ab-*; light and dark follow prefers-color-scheme.
 
-import type { Typography } from "./fonts.ts";
+import { Typography } from "./fonts.ts";
 import {
 	type Band,
 	type Key,
@@ -78,7 +78,7 @@ ${(["ink", "muted", "agent", "system", "done", "rework", "stop"] as Tone[])
 .ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}
 `.trim();
 
-const esc = (s: string) =>
+export const esc = (s: string) =>
 	s
 		.replace(/&/g, "&amp;")
 		.replace(/</g, "&lt;")
@@ -91,6 +91,9 @@ export interface SvgOptions {
 	/** Pin one palette instead of following prefers-color-scheme. */
 	scheme?: "light" | "dark";
 }
+
+export const svgStyle = (mode: "light" | "dark" | "auto" = "auto", fonts: Typography = new Typography()) =>
+	`<style>${palette(mode)}\n${style(fonts)}</style>`;
 
 export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 	const mode =
@@ -116,7 +119,7 @@ export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 	out.push(
 		`<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-${mode}" viewBox="0 0 ${layout.width} ${layout.height}" width="${layout.width}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? describe(layout))}">`,
 	);
-	out.push(`<style>${palette(mode)}\n${style(layout.typography)}</style>`);
+	out.push(svgStyle(mode, layout.typography));
 	out.push("<defs>");
 	for (const t of tones) {
 		out.push(

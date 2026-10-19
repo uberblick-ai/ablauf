@@ -1,9 +1,12 @@
-# Writing a flow
+# Writing a diagram
 
 A flow is text that records how a diagram is laid out. You decide where
 everything goes and the renderer draws it. Run `node check.ts <file>`. It
 writes the SVG and lists problems with line numbers. A flow is done when it
 has no problems.
+
+For an edge-free list of outcomes, use the standalone fan-out kind below.
+For routed nodes and edges, use `flow v0`:
 
 ```
 flow v0
@@ -125,3 +128,35 @@ optional `tone=` and the meaning in quotes.
 - A stop or note that several rows point at: put it in a side column with
   `span=` over those rows, and leave the edges' sides out.
 - Fix every problem the check reports. Never leave a crossing.
+
+## Fan-outs
+
+Use a fan-out when one step has several outcomes and each needs its own
+reason and destination. Save it as a `.flow` file and run `mise run check FILE`;
+it also appears in the playground and example renderer.
+
+```
+fan-out v0
+step "Record how the run ended"
+
+outcome "Success" reason="The work and required checks finished" destination="Hand off for review"
+outcome "Blocked" reason="A person must resolve a decision or missing access" destination="Ask a maintainer"
+outcome "Crash" reason="The process ended before it could report" destination="Retry the run"
+outcome "Retries exhausted" reason="The run used every permitted retry" destination="Ask a maintainer"
+```
+
+The header is `fan-out v0`. Name exactly one `step "text"` before one or more
+`outcome "text" reason="text" destination="text"` entries. All values are
+required, non-empty double-quoted JSON strings; escape quotes as `\"` and
+backslashes as `\\`. Each declaration occupies one source line. The two
+named fields can appear in either order, once each. Blank lines and whole-line
+`#` comments are allowed. There are no edges, ids, tones or placement keys;
+destinations are plain text.
+
+Entries stay in source order, including separate reasons for the same
+destination. The step appears once above three aligned columns. Text wraps
+and rows grow, including for long words, within a 678 px canvas. Malformed
+entries produce line-numbered diagnostics and still draw, with placeholders
+for missing fields and the original invalid source visible. Missing step or
+entries are reported at the header. Keep the wording concise and review at
+710 px in both themes.
