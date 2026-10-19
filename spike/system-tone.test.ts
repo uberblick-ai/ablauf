@@ -22,7 +22,8 @@ test("system steps show their title, subtitle and matching legend in both scheme
 		assert.match(svg, /class="m s13 b t-system">The loop<\/text>/);
 		assert.match(svg, />claims eligible items in order<\/text>/);
 		assert.equal((svg.match(/class="k-system"/g) ?? []).length, 2);
-		assert.match(svg, /class="e e-system" marker-end="url\(#ab-system\)"/);
+		assert.match(svg, /class="e e-system"/);
+		assert.match(svg, /class="arrow" marker-end="url\(#ab-system\)"/);
 		assert.match(svg, /id="ab-system"/);
 		assert.equal(layout.legend?.keys[0].item.tone, "system");
 		const palette = scheme === "light" ? LIGHT : DARK;
