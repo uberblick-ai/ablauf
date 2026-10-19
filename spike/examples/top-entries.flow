@@ -1,0 +1,12 @@
+flow v0
+# The main arrow keeps its centreline when branches share the target's top.
+columns left main right
+
+box before col=main
+pill left col=left
+pill right col=right
+pill target col=main
+
+before --> target
+left --> target from=right to=top.1
+right --> target from=left to=top.2

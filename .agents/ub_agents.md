@@ -1,10 +1,26 @@
 # Project loop policy
 
+## Issue preparation
+
+The issue-preparer reports `review`, not `prepared`, when an issue:
+
+- adds or changes format syntax or a rule in `docs/plan.md`;
+- leaves a design choice open;
+- chooses between alternatives the request offered.
+
+These review triggers take precedence over the role file's shortcut for small,
+bounded and clear work.
+
 ## Checks
 
 `mise run ci` runs lint, typecheck and tests; `AGENTS.md` lists the project's
 commands. Run it before handoff and record the result. A check that passes only
 after changing its environment or skipping tests has not passed.
+
+Write acceptance criteria in terms of checks agents can run here, as applicable:
+`mise run ci`, `mise run check FILE`, `mise run render`, and reading the generated
+SVG source. A criterion that needs a browser or a person's eye must explicitly
+say so; reading SVG source does not satisfy a visual review criterion.
 
 A change that affects rendering also runs `mise run render` and commits what it
 rewrites in `spike/out/` and `docs/images/`. A test covers only
@@ -27,6 +43,8 @@ it:
 
 - changes a figure in `spike/out/` or `docs/images/`: no agent sees the render,
   so a maintainer checks it in light and dark with `mise run playground`;
+- implements an issue with an acceptance criterion that needs a browser or a
+  person's eye, even if the PR changes no figure;
 - changes the workflow, policy or checks: `.github/`, `.agents/`,
   `ub-agents.yaml`, `AGENTS.md`, `mise.toml`, `biome.jsonc` or `tsconfig.json`;
 - changes `package.json` or `pnpm-lock.yaml`, or works on packaging, publishing
@@ -42,6 +60,10 @@ repository settings, create tags or releases, or publish to npm.
 may answer only if they have write access. Use the responsible role's correction
 or handoff route when that role must act next.
 
+A new dependency, toolchain step or CI change that the issue does not name is a
+scope decision. The issue-preparer asks a maintainer before requiring one; the
+implementer reports blocked rather than adding one.
+
 ## Review focus
 
 Breaking a constraint in `AGENTS.md` is P1:
@@ -55,6 +77,9 @@ Breaking a constraint in `AGENTS.md` is P1:
   problem is a diagnostic with its line number, the diagram still draws, and
   nothing in the source is silently dropped;
 - any change to `examples/approvals.json`.
+
+Existing files in `spike/examples/` are reference figures. Changing one without
+the issue asking is also P1; a new feature gets its own example.
 
 Also check:
 

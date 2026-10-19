@@ -4,87 +4,143 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { setImmediate } from "node:timers/promises";
 import { CHAR } from "./flow/grid.ts";
-import { DARK, LIGHT, render } from "./flow/index.ts";
-import { toSvg } from "./flow/svg.ts";
+import { DARK, type FontsOptions, LIGHT, render, type TextStyle } from "./flow/index.ts";
 
 const example = (name: string) =>
 	readFileSync(join(import.meta.dirname, "examples", `${name}.flow`), "utf8");
 
-// An intentionally diagnostic-bearing loop, kept out of the example set.
-const crossingLoop = () => example("loop")
-	.replace(/^ready-to-merge -\.-> needs-changes.*\n/m, "")
-	.replace(/^integrator --> needs-changes.*\n/m, "")
-	.replace("reviewer --> needs-changes tone=rework : changes-requested", "reviewer -.-> needs-changes tone=agent")
-	.replace(/^needs-changes --> implementer.*$/m, "integrator --> implementer tone=rework from=left to=left label=end : revise the same PR");
+// Deliberately wider than the defaults, with different widths at each style.
+const wideFonts: FontsOptions = {
+	mono: {
+		family: "Host Mono",
+		measureText: (text, { fontSize, fontWeight }) =>
+			[...text].length * (fontSize + fontWeight / 100),
+	},
+	text: {
+		family: "Host Text",
+		measureText: (text, { fontSize, fontWeight }) =>
+			[...text].length * (2 * fontSize + fontWeight / 100),
+	},
+};
 
-test("a local knockout puts the later edge above an interior crossing", () => {
-	const branch = "reviewer -.-> needs-changes tone=agent";
-	const back = "integrator --> implementer tone=rework from=left to=left label=end : revise the same PR";
-	const source = crossingLoop();
-	const swapped = source.replace(`${branch}\n${back}`, `${back}\n${branch}`);
-	assert.notEqual(swapped, source);
-	for (const [text, upper, lower] of [[source, "rework", "agent"], [swapped, "agent", "rework"]]) {
-		for (const scheme of ["light", "dark"] as const) {
-			const { svg, layout, diagnostics } = render(text, { scheme });
-			const line = text.split("\n").findIndex((l) => l.startsWith(upper === "rework" ? back : branch)) + 1;
-			assert.deepEqual(diagnostics, [{
-				line, severity: "warning",
-				message: upper === "rework"
-					? "edge integrator → implementer crosses reviewer → needs-changes"
-					: "edge reviewer → needs-changes crosses integrator → implementer",
-			}]);
-			const gaps = [...svg.matchAll(/<path d="([^"]+)" class="knockout knockout-band"\/>/g)];
-			assert.equal(gaps.length, 1);
-			assert.ok(svg.indexOf(`class="e e-${lower}`) < gaps[0].index);
-			assert.ok(gaps[0].index < svg.indexOf(`class="e e-${upper}`));
-			assert.match(svg, /class="e e-agent dash"/);
-			assert.match(svg, /stroke-width:5\.6/);
-			assert.match(svg, /--bg:var\(--ab-bg,/);
-			assert.match(svg, /--band:var\(--ab-band,/);
-			// Markers and all text/nodes follow the last gap; no additional IDs.
-			assert.ok(gaps[0].index < svg.indexOf('class="arrow"'));
-			assert.ok(gaps[0].index < svg.indexOf("<text"));
-			assert.ok(gaps[0].index < svg.indexOf('class="k-'));
-			assert.equal([...svg.matchAll(/\bid="/g)].length, [...svg.matchAll(/<marker /g)].length);
-			assert.equal(svg, render(text, { scheme }).svg);
-			assert.deepEqual(layout.nodes, render(source).layout.nodes);
-			for (const route of layout.routes) {
-				assert.deepEqual(route.points, render(source).layout.routes.find((r) => r.edge.from === route.edge.from && r.edge.to === route.edge.to)?.points);
-			}
+test("host metrics size every node and panel text at its rendered size and weight", () => {
+	const label = "W".repeat(20);
+	const cases: [string, number][] = [
+		[`text n title="${label}"`, 560], // 12px / 400 text
+		[`pill n title="${label}"`, 356], // 12px / 400 mono, plus 36
+		[`end n title="${label}"`, 640], // 12px / 600 text, plus 40
+		[`box n title="${label}"`, 412], // 13px / 600 mono, plus 32
+		[`box n "${label}"`, 548], // 11px / 400 text, plus 28
+		[`panel n\n  strong "${label}"`, 628], // 12px / 600 text, plus 28
+		[`panel n\n  text "${label}"`, 548],
+		[`panel n\n  muted "${label}"`, 548],
+		[`panel n\n  pill ${label}`, 384],
+	];
+	for (const [source, width] of cases) {
+		const { layout, svg, diagnostics } = render(`flow v0\n${source}\n`, { fonts: wideFonts });
+		const node = layout.nodes[0];
+		assert.deepEqual(diagnostics, [], source);
+		assert.equal(node.w, width, source);
+		assert.equal(layout.width, width + 32, source);
+		assert.ok(svg.includes('.ab text{font-family:"Host Text";'));
+		assert.ok(svg.includes('.ab .m{font-family:"Host Mono"}'));
+		assert.ok(svg.includes('.ab .cap{font-family:"Host Mono";'));
+		if (!source.startsWith("text"))
+			assert.ok(svg.includes(`width="${width}" height="${node.h}"`), source);
+		if (source.includes("pill"))
+			assert.match(svg, /width="356" height="(?:30|34)" rx="(?:15|17)" class="pill"/);
+		assert.equal(svg, render(`flow v0\n${source}\n`, { fonts: wideFonts }).svg);
+	}
+});
+
+test("host widths govern edge gaps, label bounds and overlap diagnostics", () => {
+	const label = "W".repeat(30);
+	const facing = `flow v0\ncolumns a b\npill one col=a\npill two col=b row=one\none --> two : ${label}\n`;
+	const { layout, diagnostics } = render(facing, { fonts: wideFonts });
+	assert.deepEqual(diagnostics, []);
+	assert.equal(layout.routes[0].label?.w, 450);
+	assert.equal(layout.nodes[1].x - layout.nodes[0].x - layout.nodes[0].w, 470);
+	const loop = `flow v0\nbox one\nbox two\none --> two from=left to=left : ${label}\ntwo --> one from=right to=right label=end : ${label}\n`;
+	const bounds = render(loop, { fonts: wideFonts }).layout;
+	for (const { label: l } of bounds.routes) {
+		assert.ok(l);
+		const left = l.anchor === "start" ? l.x : l.x - l.w;
+		assert.equal(l.w, 450);
+		assert.ok(left >= 16 && left + l.w <= bounds.width - 16);
+	}
+	// An edge to a non-adjacent column leaves a fixed gap. Wider text must
+	// report the resulting collision rather than silently changing the route.
+	const collision = `flow v0\ncolumns a b c\nbox one col=a\nbox middle col=b row=one\nbox two col=c row=one\none --> two : ${"W".repeat(7)}\n`;
+	assert.ok(!render(collision).diagnostics.some((d) => /label .* overlaps middle/.test(d.message)));
+	assert.ok(render(collision, { fonts: wideFonts }).diagnostics.some(
+		(d) => d.line === 6 && /label .* overlaps middle/.test(d.message),
+	));
+});
+
+test("host caption metrics use uppercase text and spacing for canvas and collisions", () => {
+	const caption = "ß".repeat(30);
+	const { layout } = render(`flow v0\nsection "${caption}"\ntext n\n`, { fonts: wideFonts });
+	const captionWidth = Math.ceil(60 * 15 + 60 * 0.88);
+	assert.equal(layout.width, 20 + captionWidth + 16);
+	const collision = 'flow v0\ncolumns a b\nsection "ßßßßßßßßß"\ntext one col=a\ntext two col=b row=one\n';
+	assert.ok(!render(collision).diagnostics.some((d) => /overlaps two/.test(d.message)));
+	assert.ok(render(collision, { fonts: wideFonts }).diagnostics.some(
+		(d) => d.line === 5 && /section label .* overlaps two/.test(d.message),
+	));
+});
+
+test("host legend widths govern canvas bounds and row wrapping", () => {
+	const source = `flow v0\nbox n\nlegend\n  box "${"W".repeat(20)}"\n  pill "${"W".repeat(10)}"\n  edge "${"W".repeat(10)}"\n`;
+	const { layout, diagnostics } = render(source, { fonts: wideFonts });
+	assert.deepEqual(diagnostics, []);
+	assert.ok(layout.legend);
+	assert.equal(layout.width, 16 + 24 + 6 + 20 * 26 + 16);
+	const [first, second, third] = layout.legend.keys;
+	assert.equal(second.y, first.y + 20);
+	assert.equal(third.y, second.y + 20);
+	for (const k of layout.legend.keys)
+		assert.ok(k.x + 30 + k.item.text.length * 26 <= layout.width - 16);
+});
+
+test("one or both roles can use Plex Mono, measuring actual strings without a DOM", () => {
+	const seen: [string, TextStyle][] = [];
+	const mono = {
+		family: "IBM Plex Mono",
+		measureText: (text: string, style: TextStyle) => {
+			seen.push([text, style]);
+			return [...text].reduce((w, c) => w + (c === "W" ? 30.2 : 10.1), 0);
+		},
+	};
+	const source = 'flow v0\ntext n title="Wi😀"\n';
+	const { svg, layout } = render(source, { fonts: { mono, text: mono } });
+	assert.equal(layout.nodes[0].w, 51); // fractional widths round up
+	assert.deepEqual(seen, [["Wi😀", { fontSize: 12, fontWeight: 400 }]]);
+	assert.ok(svg.includes('.ab text{font-family:"IBM Plex Mono";'));
+	assert.ok(svg.includes('.ab .m{font-family:"IBM Plex Mono"}'));
+	assert.equal(render(source, { fonts: { mono } }).layout.nodes[0].w, render(source).layout.nodes[0].w);
+	assert.ok(render(source, { fonts: { text: mono } }).svg.includes('.ab .m{font-family:"IBM Plex Mono",ui-monospace,'));
+	assert.equal(render(example("loop"), { fonts: {} }).svg, render(example("loop")).svg);
+});
+
+test("unsafe font names and invalid metrics fail before producing an SVG", () => {
+	const source = 'flow v0\npill n\ntext t\n';
+	for (const role of ["mono", "text"] as const) {
+		for (const family of ["", "  ", 'Bad";fill:red', "Bad\\22", "<style>", "A&B", "a,b", "a\nb", "a\n", "url(https://example.org/font)", "a/*x*/", "'Bad'"]) {
+			assert.throws(() => render(source, { fonts: {
+				[role]: { family, measureText: () => 10 },
+			} }), TypeError, family);
+		}
+		for (const width of [NaN, Infinity, -Infinity, -1, 1_000_001, Number.MAX_VALUE, "12", undefined, Promise.resolve(12)]) {
+			assert.throws(() => render(source, { fonts: {
+				[role]: { family: "Host Font", measureText: () => width as number },
+			} }), RangeError, String(width));
+		}
+		for (const width of [0, 1_000_000]) {
+			assert.doesNotMatch(render(source, { fonts: {
+				[role]: { family: "Host Font", measureText: () => width },
+			} }).svg, /NaN|Infinity/);
 		}
 	}
-});
-
-test("knockouts cover every crossing, stop at bends and match band boundaries", () => {
-	const layout = render("flow v0\nbox a\nbox b\na --> b\nb --> a\n").layout;
-	layout.routes[0].points = [[50, 10], [50, 90]];
-	layout.routes[1].points = [[10, 30], [90, 30], [90, 70], [10, 70]];
-	let svg = toSvg(layout);
-	assert.deepEqual([...svg.matchAll(/<path d="([^"]+)" class="knockout"/g)].map((m) => m[1]), ["M44,30 L56,30", "M44,70 L56,70"]);
-	// A crossing close to a bend must not extend the knockout past the bend.
-	layout.routes[1].points = [[49, 30], [52, 30]];
-	svg = toSvg(layout);
-	assert.match(svg, /d="M49,30 L52,30" class="knockout"/);
-	// Vertical under-strokes split where the band fill ends.
-	layout.routes.reverse();
-	layout.bands = [{ label: "Band", y: 10, h: 30, shaded: true }];
-	svg = toSvg(layout);
-	assert.match(svg, /d="M50,24 L50,32" class="knockout knockout-band"/);
-	assert.match(svg, /d="M50,32 L50,36" class="knockout"/);
-});
-
-test("shared endpoints, segment endpoints and collinear overlaps gain no knockouts", () => {
-	const layout = render("flow v0\nbox a\nbox b\na --> b\nb --> a\n").layout;
-	layout.routes[0].points = [[10, 30], [90, 30]];
-	for (const points of [
-		[[90, 30], [90, 90]],
-		[[50, 30], [50, 90]],
-		[[50, 30], [100, 30]],
-	] as [number, number][][]) {
-		layout.routes[1].points = points;
-		assert.doesNotMatch(toSvg(layout), /class="knockout/);
-	}
-	assert.doesNotMatch(render(example("loop")).svg, /class="knockout/);
 });
 
 test("the loop renders with no diagnostics", () => {
@@ -93,6 +149,28 @@ test("the loop renders with no diagnostics", () => {
 
 test("the same source gives the same bytes", () => {
 	assert.equal(render(example("loop")).svg, render(example("loop")).svg);
+});
+
+test("wide and narrow approvals preserve content and fit their host widths", () => {
+	const wide = render(example("approval-wide"));
+	const narrow = render(example("approval-narrow"));
+	const content = ({ layout }: ReturnType<typeof render>) => ({
+		nodes: layout.nodes.map(({ node: n }) => ({
+			id: n.id, kind: n.kind, label: n.label, sub: n.sub,
+			tone: n.tone, children: n.children,
+		})).sort((a, b) => a.id.localeCompare(b.id)),
+		edges: layout.routes.map(({ edge: e }) => ({
+			from: e.from, to: e.to, label: e.label, tone: e.tone, dashed: e.dashed,
+		})),
+		legend: layout.legend?.keys.map(({ item }) => ({
+			kind: item.kind, tone: item.tone, text: item.text,
+		})),
+	});
+	assert.deepEqual(wide.diagnostics, []);
+	assert.deepEqual(narrow.diagnostics, []);
+	assert.deepEqual(content(narrow), content(wide));
+	assert.ok(narrow.layout.width <= 400, "complete narrow SVG must fit 400 CSS px");
+	assert.ok(wide.layout.width <= 568, "wide SVG must fit at the host breakpoint");
 });
 
 test("the rendered loop matches the checked-in figure", () => {
@@ -170,6 +248,163 @@ test("every row a spanning panel covers meets it with a straight edge", () => {
 	assert.deepEqual(diagnostics, []);
 	for (const r of layout.routes.filter((r) => r.edge.to === "p")) {
 		assert.equal(r.points.length, 2, `${r.edge.from} → p should be straight`);
+	}
+});
+
+test("top entries keep an unnumbered main arrow on its column centre", () => {
+	for (const kind of ["box", "pill"]) {
+		for (const mirrored of [false, true]) {
+			const source = [
+				"flow v0",
+				mirrored ? "columns side main" : "columns main side",
+				`${kind} before col=main`,
+				"pill branch col=side",
+				"pill target col=main",
+				"before --> target",
+			].join("\n");
+			const baseline = render(source);
+			const added = render(
+				`${source}\nbranch --> target from=${mirrored ? "right" : "left"} to=top.${mirrored ? 1 : 2}\n`,
+			);
+			assert.deepEqual(baseline.diagnostics, []);
+			assert.deepEqual(added.diagnostics, []);
+			assert.deepEqual(added.layout.nodes, baseline.layout.nodes);
+			assert.deepEqual(added.layout.routes[0].points, baseline.layout.routes[0].points);
+			const [main, branch] = added.layout.routes;
+			assert.equal(main.points.length, 2);
+			for (const [i, id] of ["before", "target"].entries()) {
+				const node = added.layout.nodes.find((p) => p.node.id === id);
+				assert.ok(node);
+				assert.ok(Math.abs(main.points[i][0] - (node.x + node.w / 2)) <= 1);
+			}
+			const entry = branch.points.at(-1);
+			assert.ok(entry);
+			assert.ok(mirrored ? entry[0] < main.points[0][0] : entry[0] > main.points[0][0]);
+		}
+	}
+});
+
+test("unnumbered entries use the half facing their other node", () => {
+	for (const mirrored of [false, true]) {
+		for (const outgoing of [false, true]) {
+			const source = [
+				"flow v0",
+				mirrored ? "columns side main" : "columns main side",
+				"box before col=main",
+				"pill branch col=side",
+				"pill target col=main",
+				"before --> target",
+			].join("\n");
+			const baseline = render(source);
+			const { layout, diagnostics } = render(
+				`${source}\n${outgoing ? "before --> branch" : "branch --> target"}\n`,
+			);
+			assert.deepEqual(diagnostics, []);
+			assert.deepEqual(layout.nodes, baseline.layout.nodes);
+			assert.deepEqual(layout.routes[0].points, baseline.layout.routes[0].points);
+			const [main, branch] = layout.routes;
+			const port = outgoing ? branch.points[0] : branch.points.at(-1);
+			assert.ok(port);
+			assert.ok(mirrored ? port[0] < main.points[0][0] : port[0] > main.points[0][0]);
+		}
+	}
+});
+
+test("unnumbered entries expand their half and leave numbered slots occupied", () => {
+	for (const mirrored of [false, true]) {
+		const { layout } = render([
+			"flow v0",
+			mirrored ? "columns side main" : "columns main side",
+			"box before col=main",
+			"pill target col=main",
+			"pill one col=side",
+			"pill two col=side",
+			"pill three col=side",
+			"before --> target",
+			"one --> target from=top to=top",
+			`two --> target from=top to=top.${mirrored ? 1 : 4}`,
+			"three --> target from=top to=top",
+		].join("\n"));
+		const [main, ...entries] = layout.routes;
+		const center = main.points[0][0];
+		const target = layout.nodes.find((p) => p.node.id === "target");
+		assert.ok(target);
+		const ports = entries.map((r) => r.points[3][0]);
+		assert.equal(new Set(ports).size, 3);
+		assert.ok(ports.every((x) => mirrored ? x < center : x > center));
+		assert.equal(ports[1], Math.round(target.x + target.w * (mirrored ? 1 / 8 : 5 / 8)));
+		for (const route of entries) {
+			assert.equal(route.points.length, 4);
+			assert.equal(route.points[1][1], target.y - 24);
+			assert.equal(route.points[2][1], target.y - 24);
+		}
+	}
+});
+
+test("numbered and unnumbered return entries use ordered ports beside the centre", () => {
+	const source = [
+		"flow v0",
+		"columns left main right outer",
+		"box before col=main",
+		"pill target col=main",
+		"pill right col=right",
+		"pill outer col=outer",
+		"pill left col=left",
+		"before --> target",
+		"right --> target from=top to=top.3",
+		"outer --> target from=top to=top.4",
+		"left --> target from=top to=top.1",
+	].join("\n");
+	for (const extra of ["", "\nleft -.-> target from=right to=top"]) {
+		const { layout } = render(source + extra);
+		const main = layout.routes[0];
+		const target = layout.nodes.find((p) => p.node.id === "target");
+		assert.ok(target);
+		assert.equal(main.points.length, 2);
+		assert.ok(Math.abs(main.points[0][0] - (target.x + target.w / 2)) <= 1);
+		const entries = layout.routes.slice(1).map((r) => {
+			const end = r.points.at(-1);
+			assert.ok(end);
+			assert.equal(end[1], target.y);
+			assert.notEqual(end[0], main.points[0][0]);
+			return end[0];
+		});
+		const [right, outer, left, unnumbered] = entries;
+		assert.ok(left < main.points[0][0] && main.points[0][0] < right && right < outer);
+		if (extra) assert.ok(left < unnumbered && unnumbered < main.points[0][0]);
+		assert.equal(new Set(entries).size, entries.length);
+		// Equal top sides keep the authored loop shape above both nodes.
+		for (const route of layout.routes.slice(1, 4)) {
+			assert.equal(route.points.length, 4);
+			assert.equal(route.points[1][1], target.y - 24);
+			assert.equal(route.points[2][1], target.y - 24);
+		}
+	}
+});
+
+test("a return into the top leaves the main arrow centred without diagnostics", () => {
+	for (const mirrored of [false, true]) {
+		for (const slot of ["", `.${mirrored ? 1 : 2}`]) {
+			const { layout, diagnostics } = render([
+				"flow v0",
+				mirrored ? "columns side main" : "columns main side",
+				"box before col=main",
+				"pill target col=main",
+				"pill retry col=side",
+				`retry --> target from=top to=top${slot}`,
+				"before --> target",
+			].join("\n"));
+			assert.deepEqual(diagnostics, []);
+			const [loop, main] = layout.routes;
+			assert.equal(main.points.length, 2);
+			const before = layout.nodes[0];
+			assert.ok(Math.abs(main.points[0][0] - (before.x + before.w / 2)) <= 1);
+			assert.equal(loop.points.length, 4);
+			const entry = loop.points[3];
+			assert.ok(mirrored ? entry[0] < main.points[0][0] : entry[0] > main.points[0][0]);
+			assert.equal(loop.points[1][1], entry[1] - 24);
+			assert.equal(loop.points[2][1], entry[1] - 24);
+		}
 	}
 });
 
