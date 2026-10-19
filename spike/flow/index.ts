@@ -1,3 +1,4 @@
+import { renderFanout } from "./fanout.ts";
 import type { FontsOptions } from "./fonts.ts";
 import { grid } from "./grid.ts";
 import { parse } from "./parse.ts";
@@ -12,6 +13,8 @@ export interface RenderOptions extends SvgOptions {
 }
 
 export function render(source: string, options: RenderOptions = {}) {
+	const first = source.split("\n").find((line) => line.trim() && !line.trim().startsWith("#"));
+	if (/^fan-out(?:\s|$)/.test(first?.trim() ?? "")) return renderFanout(source, options);
 	const { model, diagnostics } = parse(source);
 	const layout = grid(model, diagnostics, options.fonts);
 	return {

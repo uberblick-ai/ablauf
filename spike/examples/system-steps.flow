@@ -1,0 +1,25 @@
+flow v0
+# Compare system steps with the existing roles, people, labels and notes.
+columns main notes
+
+pill ready col=main tone=done
+box loop title="The loop" tone=system "claims eligible items in order"
+box implementer "codes, checks, opens the PR"
+panel person tone=stop
+  strong "A person decides"
+  text "approves the result"
+
+panel note col=notes row=loop tone=muted
+  strong "A note"
+  muted "context for the reader"
+
+ready --> loop
+loop --> implementer tone=system : launches
+implementer --> person : handed off
+
+legend
+  box tone=system "automated system step"
+  box "agent role"
+  panel tone=stop "a person decides"
+  pill tone=done "GitHub label"
+  panel tone=muted "context or note"

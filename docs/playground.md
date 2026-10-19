@@ -16,6 +16,11 @@ Open `#examples/neutral` for filled grey boxes and panels beside the
 surface-filled `ink` and `muted` variants, with matching neutral legend samples,
 pill dots and edges. Use the scheme toggle to review light and dark.
 
+For the system-step comparison, open `#examples/system-steps` and select the
+710 px document column. Check both light and dark: “The loop” is a blue system
+box with explanatory text, beside a neutral note and connected to a label,
+an agent role and a person panel. The legend includes matching samples.
+
 ## What it is for
 
 It is a local page for people to review flows. You write or paste a flow, see

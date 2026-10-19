@@ -20,6 +20,8 @@ These are the complete palette and the built-in defaults:
 | `--ab-neutral-bg` | Neutral tone background | `#e1e3e6` | `#303640` |
 | `--ab-agent` | Agent tone foreground | `#0b6b67` | `#5cc5bb` |
 | `--ab-agent-bg` | Agent tone background | `#dff1ee` | `#12302d` |
+| `--ab-system` | System tone foreground | `#3459a3` | `#91b4fa` |
+| `--ab-system-bg` | System tone background | `#e7edfb` | `#1c2945` |
 | `--ab-done` | Done tone foreground | `#2a7845` | `#72cf91` |
 | `--ab-done-bg` | Done tone background | `#e0f1e5` | `#142e1d` |
 | `--ab-rework` | Rework tone foreground | `#a65f0c` | `#e3a250` |
@@ -51,6 +53,8 @@ keep the whole palette consistent when the system and page themes disagree.
   --ab-neutral-bg: #e1e3e6;
   --ab-agent: #0b6b67;
   --ab-agent-bg: #dff1ee;
+  --ab-system: #3459a3;
+  --ab-system-bg: #e7edfb;
   --ab-done: #2a7845;
   --ab-done-bg: #e0f1e5;
   --ab-rework: #a65f0c;
@@ -69,6 +73,8 @@ keep the whole palette consistent when the system and page themes disagree.
   --ab-neutral-bg: #303640;
   --ab-agent: #5cc5bb;
   --ab-agent-bg: #12302d;
+  --ab-system: #91b4fa;
+  --ab-system-bg: #1c2945;
   --ab-done: #72cf91;
   --ab-done-bg: #142e1d;
   --ab-rework: #e3a250;
@@ -99,7 +105,7 @@ fallback, so partial overrides can mix palettes.
 
 ## Verify a page integration
 
-With the CSS above and an inline diagram containing all five filled tones, emulate
+With the CSS above and an inline diagram containing all tones, emulate
 each system colour scheme in browser developer tools. Under **each** system
 scheme, switch the root attribute light → dark → light without replacing the
 SVG. Check node text, outlines and fills, edges, arrowheads, edge labels and
