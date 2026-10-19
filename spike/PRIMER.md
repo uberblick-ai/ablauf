@@ -120,6 +120,13 @@ share a width measured from their titles and wrapped subtitles.
   the endpoint separation. Horizontal labels, same-side loops, overlapping
   rows and segments crossing multiple boundaries keep their usual placement
   and diagnostics. Use a node's `gap=` for additional space when needed.
+- At an interior crossing, the edge declared later passes above the earlier
+  edge with a short canvas-colour knockout gap. Swapping the declarations
+  swaps which edge has the break, without changing routes or styling. The
+  gap uses the host's `--ab-bg` background (`--ab-band` on shaded sections),
+  with light and dark defaults; labels, nodes and arrowheads stay visible.
+  Shared endpoints and collinear overlaps get no gap. The crossing diagnostic
+  stays: this is a reading aid, and you must still avoid crossings.
 
 ## Legend
 

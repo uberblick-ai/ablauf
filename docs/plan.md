@@ -206,6 +206,19 @@ in one small diagram for light/dark review in the playground's document column.
 - By default, labels use IBM Plex Mono and other text uses IBM Plex Sans,
   with fixed width estimates. Hosts can supply fonts and matching metrics
   through render options, as described below; the flow syntax stays the same.
+- At each interior edge crossing, the edge declared later in the source passes
+  above the earlier edge. A solid canvas-colour under-stroke, 5.6 px wide
+  (4 px wider than the edge), covers up to 6 px along that later edge on each
+  side of the crossing, stopping at segment ends. This leaves a short knockout
+  break in the earlier edge, with no bridge arc or fade. Swapping declarations
+  swaps which edge has the break; routes, tones and dashed styling stay as authored.
+- Knockouts use `--ab-bg` (white in light, `#171c24` in dark); over shaded
+  section bands they use `--ab-band`. Hosts can override both to match their
+  canvas. Arrowheads, section captions, nodes and edge labels draw above the
+  knockouts. Knockouts introduce no markers or element ids.
+- Crossing diagnostics and their source lines stay unchanged. Shared endpoints
+  and collinear overlaps get no knockout. A visible break does not make a
+  crossing acceptable: fix every diagnostic before calling the diagram done.
 - Panel widths are sized automatically from their contents, with a bounded
   preferred text width so long notes grow downwards. Text-derived widths round
   up to whole pixels so the line that sets the width still fits. Panel `text`,
@@ -224,7 +237,7 @@ in one small diagram for light/dark review in the playground's document column.
 - The canvas includes every drawn section caption, measuring its uppercase
   text with letter spacing. A section without nodes gets a line-numbered
   diagnostic and draws no band or caption.
-- Colours use the base `--ab-ink`, `--ab-muted`, `--ab-line`, `--ab-band` and
+- Colours use the base `--ab-bg`, `--ab-ink`, `--ab-muted`, `--ab-line`, `--ab-band` and
   `--ab-surface` overrides, plus `--ab-neutral`, `--ab-agent`, `--ab-system`,
   `--ab-done`, `--ab-rework` and `--ab-stop` foregrounds and each tone's `--ab-<tone>-bg` background.
   [Host page themes](theming.md) documents every property and complete CSS
