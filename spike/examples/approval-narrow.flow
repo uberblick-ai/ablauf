@@ -1,0 +1,25 @@
+flow v0
+# Same content as approval-wide.flow; only placement and edge sides differ.
+columns main
+
+pill ready col=main tone=muted "ready"
+box check "runs the checks"
+
+panel person col=main tone=stop
+  pill needs-human
+  strong "A person decides"
+  text "Resolves the blocked check"
+  muted "Then the work can continue."
+
+end done tone=done "Finished"
+
+ready --> check : trigger
+check --> done from=right to=right : passed
+check --> person tone=stop : blocked
+person --> done tone=stop : cleared
+
+legend
+  pill "state"
+  box "automated step"
+  panel tone=stop "human decision"
+  edge tone=stop "manual path"

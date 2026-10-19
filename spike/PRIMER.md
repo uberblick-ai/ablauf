@@ -61,6 +61,11 @@ box loop col=main tone=system title="The loop" "claims eligible items in order"
 
 It uses the same `col=`, `row=`, `span=` and edges as any box.
 
+Box subtitles and panel text wrap at word boundaries around 34 characters,
+keeping longer words intact. Long subtitles add centered lines and grow the
+box and its row vertically. Box titles stay on one line; boxes in a column
+share a width measured from their titles and wrapped subtitles.
+
 ## Edges
 
 `a --> b key=value : label`. Use `-.->` for dashed. The keys go before the colon.
@@ -72,6 +77,15 @@ It uses the same `col=`, `row=`, `span=` and edges as any box.
 - If you leave the sides out: in the same column, an edge goes from bottom to
   top. In overlapping rows, it goes between the facing sides. Otherwise it
   leaves the side facing the target and enters the target's top or bottom.
+- Leave both ends unnumbered on a same-column bottom-to-top main edge to
+  reserve the centreline. Other entries, including returns, use off-centre
+  slots in left-to-right order. With two slots, `top.1` sits left of the main
+  arrow and `top.2` right. More entries round the slot count up to an even
+  number, half on each side, without moving the main arrow. Unnumbered side
+  entries fill unused slots on the half facing their other node's column,
+  in source order within each half; the slot count grows until both halves
+  have room. Same-column entries then fill remaining gaps in source order.
+  Numbering either main end opts out of the centre reservation.
 - The shape follows from the sides. An edge between facing sides is straight
   whenever the target's side reaches the source's row, so a node that spans
   several rows takes a straight edge from each of them. A side to a top or
@@ -101,7 +115,9 @@ optional `tone=` and the meaning in quotes.
 - Keep the main path in one column going down, and put branches in side columns.
 - Put a branch node in the row of the node it belongs to (`row=`).
 - When several edges enter a top or bottom, give the nearest edge the slot
-  nearest the main column. Nested edges then never cross.
+  nearest the main column. Keep a same-column main edge unnumbered, and use
+  numbered slots for the branches. The same rule applies to return entries;
+  choose their sides to keep the loop clear. Nested edges then never cross.
 - A stop or note that several rows point at: put it in a side column with
   `span=` over those rows, and leave the edges' sides out.
 - Fix every problem the check reports. Never leave a crossing.
