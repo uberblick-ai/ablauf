@@ -116,8 +116,9 @@ there from the text and the diagnostics alone, without seeing the image.
 ## Rendering rules
 
 - SVG as a string, with no browser and no DOM, and the same bytes for the same input.
-- Labels in monospace, so text widths are predictable. Sans text is limited
-  to box subtitles and panel lines, measured with a fixed estimate.
+- By default, labels use IBM Plex Mono and other text uses IBM Plex Sans,
+  with fixed width estimates. Hosts can supply fonts and matching metrics
+  through render options, as described below; the flow syntax stays the same.
 - Box subtitles and panel text wrap at word boundaries around 34 characters;
   longer individual words stay intact. Subtitle lines are centered, with 15px
   between baselines. A box keeps its 46px minimum height and grows by 15px for
@@ -146,6 +147,71 @@ there from the text and the diagnostics alone, without seeing the image.
   reversible and distinct prefixes never collide. For example, `doc.1`,
   `doc:1` and `doc-1` become `doc.002e1`, `doc.003a1` and `doc-1`. Routes and
   legend samples reference the same encoded marker ids.
+
+### Host fonts and width metrics
+
+`render(source, { fonts })` accepts two independent roles: `fonts.mono` for
+box titles, pills, edge labels and section captions, and `fonts.text` for
+standalone text, end labels, box subtitles, panel text and legend descriptions.
+Each configured role requires both `family` and `measureText`; an omitted role
+keeps its existing font stack and estimates. Omitting `fonts` (or passing `{}`)
+preserves the existing geometry and SVG bytes, including the historical panel
+and caption diagnostic estimates.
+
+`family` is one literal font family name, always quoted in the SVG. It may
+contain Unicode letters and numbers, ASCII spaces, underscores and hyphens,
+and must contain a non-space character. It is not a CSS declaration or a list
+of fallback families: quotes, commas, escapes, punctuation, markup and URLs
+are rejected with `TypeError`. A configured role replaces its default stack.
+Font loading and any glyph fallback remain the host's responsibility.
+
+`measureText(text, { fontSize, fontWeight })` synchronously returns the full
+string's horizontal advance in SVG pixels. Sizes are 11, 12 or 13px; weights
+are 400 (regular) or 600 (bold). It must be a pure, deterministic function of
+these arguments: no installed-font lookup, browser, DOM or asynchronous work
+is performed by the renderer. A host can precompute font advances or use its
+own synchronous font metrics implementation. Measure the actual string,
+including spaces, Unicode glyphs, kerning and any fallback glyphs. Return
+the width without letter spacing; the renderer uppercases section captions
+before measurement and adds their `.08em` spacing (0.88px per character).
+Fractional custom widths round up to whole pixels to keep containers large
+enough. Widths must be finite numbers from 0 through 1,000,000 pixels per
+string; invalid results throw `RangeError` before an SVG is returned. Exceptions
+from the callback propagate. These are caller configuration errors rather
+than diagnostics attached to source lines.
+
+Custom metrics govern node sizing, all wrapped panel and subtitle lines,
+panel pills, edge gaps and label bounds, captions, legend rows and canvas
+bounds. The overlap checks use those same widths; in particular, custom
+captions use the same uppercase, letter-spaced width for bounds and diagnostics.
+Wrapping stays at 34 characters and vertical spacing stays fixed. Choose fonts
+whose vertical extents fit the existing line heights, and match metrics to the
+font the host actually loads at each rendered size and weight. Box titles use
+13px/600; end labels and strong panel lines use 12px/600; pills and standalone
+text use 12px/400; everything else uses 11px/400. Changing CSS fonts after
+rendering requires rerendering with matching metrics.
+
+For example, to use IBM Plex Mono throughout, after making its regular and
+semibold faces available to the SVG (its glyph advance is 0.6em):
+
+```ts
+import { render } from "./spike/flow/index.ts";
+
+const plexMono = {
+  family: "IBM Plex Mono",
+  measureText: (text: string, { fontSize }: { fontSize: number }) =>
+    [...text].length * fontSize * 0.6,
+};
+const { svg, diagnostics } = render(source, {
+  fonts: { mono: plexMono, text: plexMono },
+});
+```
+
+This metric assumes each character uses that face's fixed advance at both
+weights. If a diagram uses combining marks, emoji or glyphs absent from the
+loaded font, supply metrics for their actual advances and fallback faces.
+For proportional fonts, sum or shape the glyph advances for the complete
+string at the requested size and weight instead of counting characters.
 
 ## The spike (now)
 
@@ -183,8 +249,6 @@ and pixel coordinates in the source.
 
 - Are sides and slots enough for agents to avoid crossings using diagnostics
   alone, or do they also need a coarse text preview of the grid?
-- Sans text widths are estimated. Is a monospace subtitle acceptable, or do we
-  ship font metrics?
 - Panels with content are the first compound node. Where do compound nodes
   stop growing?
 - How much of the hand-drawn polish, such as a label below its line, should
