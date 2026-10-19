@@ -4,6 +4,7 @@
 
 import { CHAR, type FontsOptions, Typography } from "./fonts.ts";
 import type {
+	Child,
 	Diagnostic,
 	FlowEdge,
 	FlowNode,
@@ -78,25 +79,48 @@ const len = (s: string) => [...s].length;
 export const SAMPLE_W = 24;
 const KEY_GAP = 20;
 const KEY_ROW = 20;
+const PANEL_PAD = 14;
+// Keep automatic sizing bounded: notes grow downwards unless another child
+// needs more width. This bound only sizes the panel, not its drawn lines.
 const WRAP_CHARS = 34;
 
-export function panelContentHeight(n: FlowNode): number {
+export function legendSampleSize(item: LegendItem, fonts: Typography): { w: number; h: number } {
+	if (!item.sample) return { w: SAMPLE_W, h: 12 };
+	return {
+		w: Math.max(
+			SAMPLE_W,
+			Math.ceil(fonts.width(item.sample, "mono", 11) + (item.kind === "pill" ? 24 : 16)),
+		),
+		h: 20,
+	};
+}
+
+export function panelLines(c: Child, width: number, fonts = new Typography()): string[] {
+	return wrap(
+		c.text,
+		width - 2 * PANEL_PAD,
+		(text) => fonts.width(text, "text", c.kind === "strong" ? 12 : 11,
+			c.kind === "strong" ? 600 : 400),
+	);
+}
+
+export function panelContentHeight(n: FlowNode, width: number, fonts = new Typography()): number {
 	let h = 12;
 	for (const c of n.children) {
 		if (c.kind === "pill") h += 36;
 		else if (c.kind === "rule") h += 14;
-		else h += 18 + (wrap(c.text).length - 1) * 15;
+		else h += 18 + (panelLines(c, width, fonts).length - 1) * 15;
 	}
 	return h + 8;
 }
 
-// Panel text and box subtitles wrap at a fixed number of characters, so long
-// text grows the node downwards instead of sideways.
-export function wrap(text: string): string[] {
+// Automatic panel sizing and box subtitles retain their 34-character bound.
+// Panel drawing supplies its actual inner width and font measurement instead.
+export function wrap(text: string, width = WRAP_CHARS, measure = len): string[] {
 	const lines: string[] = [];
 	let line = "";
 	for (const word of text.split(/\s+/).filter(Boolean)) {
-		if (line && len(line) + 1 + len(word) > WRAP_CHARS) {
+		if (line && measure(`${line} ${word}`) > width) {
 			lines.push(line);
 			line = word;
 		} else line = line ? `${line} ${word}` : word;
@@ -138,13 +162,16 @@ function size(n: FlowNode, fonts: Typography): { w: number; h: number } {
 						? fonts.pillWidth(c.text)
 						: c.kind === "rule"
 							? 0
-							: Math.max(...wrap(c.text).map((t) => fonts.width(
-								t, "text", c.kind === "strong" ? 12 : 11,
-								c.kind === "strong" ? 600 : 400, CHAR.sans12,
-							)));
-				w = Math.max(w, Math.round(width + 28));
+							// Round text widths up so the widest line still fits when drawn.
+							: Math.ceil(
+									Math.max(...wrap(c.text).map((t) => fonts.width(
+										t, "text", c.kind === "strong" ? 12 : 11,
+										c.kind === "strong" ? 600 : 400, CHAR.sans12,
+									))),
+								);
+				w = Math.max(w, Math.round(width + 2 * PANEL_PAD));
 			}
-			return { w, h: panelContentHeight(n) };
+			return { w, h: panelContentHeight(n, w, fonts) };
 		}
 	}
 }
@@ -556,7 +583,7 @@ export function grid(
 		...model.sections.map((t) => 20 + typography.captionWidth(t)),
 	);
 	const keyW = (k: LegendItem) =>
-		SAMPLE_W + 6 + Math.round(typography.width(k.text, "text", 11));
+		legendSampleSize(k, typography).w + 6 + Math.round(typography.width(k.text, "text", 11));
 	const width = Math.round(
 		Math.max(right, MARGIN + Math.max(0, ...model.legend.map(keyW))) + MARGIN,
 	);
@@ -580,17 +607,29 @@ export function grid(
 	if (model.legend.length) {
 		const keys: Key[] = [];
 		let x = MARGIN;
-		let y = content + 10 + KEY_ROW / 2;
+		let top = content + 10;
+		let rowHeight = KEY_ROW;
+		let row: Key[] = [];
+		const finishRow = () => {
+			for (const k of row) k.y = top + rowHeight / 2;
+			top += rowHeight;
+			row = [];
+			rowHeight = KEY_ROW;
+		};
 		for (const item of model.legend) {
 			if (x > MARGIN && x + keyW(item) > width - MARGIN) {
 				x = MARGIN;
-				y += KEY_ROW;
+				finishRow();
 			}
-			keys.push({ item, x, y });
+			const k = { item, x, y: 0 };
+			keys.push(k);
+			row.push(k);
+			rowHeight = Math.max(rowHeight, legendSampleSize(item, typography).h + 8);
 			x += keyW(item) + KEY_GAP;
 		}
+		finishRow();
 		legend = { y: content, keys };
-		height = y + KEY_ROW / 2 + 8;
+		height = top + 8;
 	}
 
 	check(nodes, routes, bands, warn, typography);

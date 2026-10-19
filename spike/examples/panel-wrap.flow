@@ -1,0 +1,17 @@
+flow v0
+# A wide child pill gives text more room than the preferred text width.
+# The panel's wrapped content also determines the height of the rows it spans.
+columns main note
+
+box newest col=main "Choose the newest item"
+box oldest "Then the oldest item"
+box next "Continue after the note"
+
+panel note col=note row=newest span=2
+  pill waiting-for-maintainer-approval
+  text "Pick the newest item then oldest item"
+  text "Pick the newest item then oldest item again"
+  muted "Pick the newest item then oldest item now"
+  strong "Pick the newest item then oldest item now"
+  rule
+  pill done

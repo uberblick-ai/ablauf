@@ -1,6 +1,6 @@
 // Line grammar for the narrow flow. Never throws: problems become diagnostics.
 
-export type Tone = "ink" | "muted" | "agent" | "done" | "rework" | "stop";
+export type Tone = "ink" | "muted" | "neutral" | "agent" | "system" | "done" | "rework" | "stop";
 export type Kind = "text" | "pill" | "box" | "end" | "panel";
 export type SideName = "top" | "right" | "bottom" | "left";
 export type LabelAt = "start" | "end";
@@ -23,6 +23,7 @@ export interface LegendItem {
 	kind: LegendKind;
 	tone: Tone;
 	text: string;
+	sample: string;
 	line: number;
 }
 
@@ -64,7 +65,7 @@ export interface Model {
 }
 
 const KINDS: Kind[] = ["text", "pill", "box", "end", "panel"];
-const TONES: Tone[] = ["ink", "muted", "agent", "done", "rework", "stop"];
+const TONES: Tone[] = ["ink", "muted", "neutral", "agent", "system", "done", "rework", "stop"];
 const CHILD_KINDS: ChildKind[] = ["pill", "text", "muted", "strong", "rule"];
 const LEGEND_KINDS: LegendKind[] = [
 	"pill",
@@ -156,13 +157,21 @@ export function parse(source: string): {
 						? "ink"
 						: DEFAULT_TONE[kind as Kind],
 				text: "",
+				sample: "",
 				line,
 			};
 			const words: string[] = [];
 			for (const t of rest) {
-				const kv = /^([a-z]+)=(.+)$/.exec(t);
-				if (!kv) words.push(unquote(t));
-				else if (kv[1] !== "tone") warn(line, `unknown key \`${kv[1]}\``);
+				const kv = /^([a-z]+)=(.*)$/.exec(t);
+				if (!kv || (kv[1] !== "sample" && kv[2] === "")) words.push(unquote(t));
+				else if (kv[1] === "sample") {
+					if (kind === "edge" || kind === "dashed")
+						warn(line, "sample= is only supported on shape legend entries");
+					else {
+						item.sample = unquote(kv[2]);
+						if (!item.sample) warn(line, "sample= needs non-empty text");
+					}
+				} else if (kv[1] !== "tone") warn(line, `unknown key \`${kv[1]}\``);
 				else if (TONES.includes(kv[2] as Tone)) item.tone = kv[2] as Tone;
 				else warn(line, `unknown tone \`${kv[2]}\`; using ${item.tone}`);
 			}

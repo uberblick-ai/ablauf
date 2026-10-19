@@ -1,0 +1,102 @@
+name: Release
+run-name: ${{ inputs.request }}
+
+# One-time npm trusted-publisher and environment setup: docs/releases.md.
+# The checked commit is an explicit input; github.sha may be a newer main.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Prepared stable X.Y.Z
+        required: true
+        type: string
+      commit:
+        description: Full checked commit SHA on main
+        required: true
+        type: string
+      request:
+        description: Unique request identity printed by the maintainer command
+        required: true
+        type: string
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: check and pack the requested commit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.commit }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Refuse commits outside main or a mismatched version
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_COMMIT: ${{ inputs.commit }}
+          RELEASE_REF: ${{ github.ref }}
+        run: |
+          node --input-type=module <<'JS'
+          import { execFileSync } from 'node:child_process';
+          import { readFileSync } from 'node:fs';
+          const { RELEASE_VERSION: version, RELEASE_COMMIT: sha, RELEASE_REF: ref } = process.env;
+          if (ref !== 'refs/heads/main' || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version ?? '') || version.trim() !== version || !/^[0-9a-f]{40}$/.test(sha ?? '') || sha.trim() !== sha) {
+            throw new Error('Dispatch from main with a stable X.Y.Z and full checked commit SHA');
+          }
+          const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
+          if (git('rev-parse', 'HEAD') !== sha) throw new Error('HEAD differs from requested commit');
+          git('fetch', '--no-tags', 'origin', '+refs/heads/main:refs/remotes/origin/main');
+          git('merge-base', '--is-ancestor', sha, 'refs/remotes/origin/main');
+          const manifest = JSON.parse(readFileSync('package.json', 'utf8'));
+          if (manifest.name !== '@uberblick/ablauf' || manifest.version !== version) throw new Error('Package name/version differs from release input');
+          JS
+      - uses: jdx/mise-action@3c2e0cf82a5b2e5249f0d3635a4d83d0ae861518 # v4
+      - run: mise run ci
+      - name: Pack once without publishing credentials
+        env:
+          RELEASE_COMMIT: ${{ inputs.commit }}
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const manifest = JSON.parse(readFileSync('package.json', 'utf8'));
+          // npm pack does not reliably persist gitHead (notably from tarballs).
+          // Carry the guarded commit in the artifact's registry metadata.
+          manifest.gitHead = process.env.RELEASE_COMMIT;
+          writeFileSync('package.json', JSON.stringify(manifest, null, 2) + '\n');
+          JS
+          mkdir -p "$RUNNER_TEMP/package"
+          npm pack --pack-destination "$RUNNER_TEMP/package"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: package
+          path: ${{ runner.temp }}/package/*.tgz
+          if-no-files-found: error
+
+  publish:
+    name: publish the checked tarball to npm
+    needs: package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      # Use the checked toolchain, but never run package scripts with OIDC rights.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.commit }}
+          persist-credentials: false
+      - uses: jdx/mise-action@3c2e0cf82a5b2e5249f0d3635a4d83d0ae861518 # v4
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: package
+          path: ${{ runner.temp }}/package
+      - run: npm publish "$RUNNER_TEMP"/package/*.tgz --ignore-scripts --provenance --access public
