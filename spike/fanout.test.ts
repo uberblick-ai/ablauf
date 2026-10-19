@@ -75,10 +75,17 @@ test("fan-out SVG is deterministic, escaped and uses the shared theme options", 
 	assert.ok(automatic.svg.includes("&lt;script&gt; &amp; &quot;quoted&quot;"));
 	assert.ok(!/<script|<img|href=|onload=/.test(automatic.svg));
 	assert.match(automatic.svg, /@media \(prefers-color-scheme:dark\)/);
+	assert.match(automatic.svg.split("\n")[0], /class="ab ab-auto"/);
+	assert.equal(automatic.svg.match(/\.ab\.ab-auto\{--/g)?.length, 2);
+	assert.doesNotMatch(automatic.svg, /\.ab\s*\{\s*--/);
 	for (const scheme of ["light", "dark"] as const) {
 		const svg = render(source, { scheme, title: 'A "fan-out" <title>' }).svg;
 		assert.match(svg, /aria-label="A &quot;fan-out&quot; &lt;title&gt;"/);
 		assert.ok(!svg.includes("prefers-color-scheme"));
+		assert.ok(svg.split("\n")[0].includes(`class="ab ab-${scheme}"`));
+		assert.equal(svg.match(/\.ab\.ab-(?:auto|light|dark)\{--/g)?.length, 1);
+		assert.ok(svg.includes(`.ab.ab-${scheme}{--`));
+		assert.doesNotMatch(svg, /\.ab\s*\{\s*--/);
 		for (const [name, value] of Object.entries(scheme === "dark" ? DARK : LIGHT))
 			assert.ok(svg.includes(`--${name}:var(--ab-${name},${value});`));
 	}

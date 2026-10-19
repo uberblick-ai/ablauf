@@ -39,6 +39,10 @@ function wrap(text: string, width: number, charWidth = CHAR.mono12): string[] {
 }
 
 export function renderFanout(source: string, options: SvgOptions = {}) {
+	const mode =
+		options.scheme === "light" || options.scheme === "dark"
+			? options.scheme
+			: "auto";
 	const diagnostics: Diagnostic[] = [];
 	const entries: Entry[] = [];
 	const invalid: { line: number; text: string }[] = [];
@@ -159,6 +163,6 @@ export function renderFanout(source: string, options: SvgOptions = {}) {
 	// No routed-flow nodes or edges: the playground's grid overlay is empty.
 	const layout: Layout = { width: WIDTH, height: y + 16, nodes: [], routes: [], bands: [], legend: null, diagnostics, typography: new Typography() };
 	const description = `Fan-out: ${step}. ${entries.map((e) => `${e.outcome}: ${e.reason}; destination: ${e.destination}`).join(". ")}`;
-	const svg = `<svg xmlns="http://www.w3.org/2000/svg" class="ab" viewBox="0 0 ${WIDTH} ${layout.height}" width="${WIDTH}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? description)}">\n${svgStyle(options.scheme)}\n${body.join("\n")}\n</svg>\n`;
+	const svg = `<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-${mode}" viewBox="0 0 ${WIDTH} ${layout.height}" width="${WIDTH}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? description)}">\n${svgStyle(mode)}\n${body.join("\n")}\n</svg>\n`;
 	return { svg, diagnostics, layout };
 }

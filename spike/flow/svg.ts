@@ -9,6 +9,7 @@ import {
 	type Placed,
 	type Route,
 	panelContentHeight,
+	panelLines,
 	SAMPLE_W,
 	wrap,
 } from "./grid.ts";
@@ -49,10 +50,10 @@ const vars = (t: typeof LIGHT) =>
 		.map(([k, v]) => `--${k}:var(--ab-${k},${v});`)
 		.join("");
 
-const palette = (scheme?: "light" | "dark") =>
-	scheme
-		? `.ab{${vars(scheme === "dark" ? DARK : LIGHT)}}`
-		: `.ab{${vars(LIGHT)}}@media (prefers-color-scheme:dark){.ab{${vars(DARK)}}}`;
+const palette = (mode: "light" | "dark" | "auto") =>
+	mode === "auto"
+		? `.ab.ab-auto{${vars(LIGHT)}}@media (prefers-color-scheme:dark){.ab.ab-auto{${vars(DARK)}}}`
+		: `.ab.ab-${mode}{${vars(mode === "dark" ? DARK : LIGHT)}}`;
 
 const style = (fonts: Typography) => `
 .ab text{font-family:${fonts.text ? `"${fonts.text.family}"` : '"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif'};${fonts.text || fonts.mono ? "font-weight:400;" : ""}fill:var(--ink)}
@@ -87,10 +88,14 @@ export interface SvgOptions {
 	scheme?: "light" | "dark";
 }
 
-export const svgStyle = (scheme?: "light" | "dark", fonts: Typography = new Typography()) =>
-	`<style>${palette(scheme)}\n${style(fonts)}</style>`;
+export const svgStyle = (mode: "light" | "dark" | "auto" = "auto", fonts: Typography = new Typography()) =>
+	`<style>${palette(mode)}\n${style(fonts)}</style>`;
 
 export function toSvg(layout: Layout, options: SvgOptions = {}): string {
+	const mode =
+		options.scheme === "light" || options.scheme === "dark"
+			? options.scheme
+			: "auto";
 	// A dot plus four hex digits encodes each unsafe UTF-16 code unit. Dots
 	// are escaped too, so this is reversible and cannot collide with safe input.
 	// The resulting alphabet is safe in both attributes and local url(#...) refs.
@@ -108,9 +113,9 @@ export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 	].sort();
 	const out: string[] = [];
 	out.push(
-		`<svg xmlns="http://www.w3.org/2000/svg" class="ab" viewBox="0 0 ${layout.width} ${layout.height}" width="${layout.width}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? describe(layout))}">`,
+		`<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-${mode}" viewBox="0 0 ${layout.width} ${layout.height}" width="${layout.width}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? describe(layout))}">`,
 	);
-	out.push(svgStyle(options.scheme, layout.typography));
+	out.push(svgStyle(mode, layout.typography));
 	out.push("<defs>");
 	for (const t of tones) {
 		out.push(
@@ -231,7 +236,7 @@ function node(p: Placed, fonts: Typography): string {
 			const parts = [
 				`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" class="k-${n.tone} panel"/>`,
 			];
-			let cy = Math.round(y + 12 + (h - panelContentHeight(n)) / 2);
+			let cy = Math.round(y + 12 + (h - panelContentHeight(n, w, fonts)) / 2);
 			for (const c of n.children) {
 				if (c.kind === "pill") {
 					const pw = fonts.pillWidth(c.text);
@@ -249,7 +254,7 @@ function node(p: Placed, fonts: Typography): string {
 							: c.kind === "muted"
 								? "s11 muted"
 								: "s11";
-					const lines = wrap(c.text);
+					const lines = panelLines(c, w, fonts);
 					lines.forEach((t, i) => {
 						parts.push(
 							`<text x="${cx}" y="${cy + 13 + i * 15}" text-anchor="middle" class="${cls}">${esc(t)}</text>`,

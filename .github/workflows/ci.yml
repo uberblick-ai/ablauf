@@ -48,3 +48,9 @@ jobs:
         run: mise run typecheck
       - if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: mise run test
+      - if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        name: Packed consumer on minimum Node 22.18
+        run: mise exec node@22.18.0 -- pnpm -s test:package
+      - if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        name: Packed consumer on Node 24
+        run: mise exec node@24 -- pnpm -s test:package

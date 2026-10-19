@@ -136,7 +136,15 @@ there from the text and the diagnostics alone, without seeing the image.
 - By default, labels use IBM Plex Mono and other text uses IBM Plex Sans,
   with fixed width estimates. Hosts can supply fonts and matching metrics
   through render options, as described below; the flow syntax stays the same.
-- Box subtitles and panel text wrap at word boundaries around 34 characters;
+- Panel widths are sized automatically from their contents, with a bounded
+  preferred text width so long notes grow downwards. Text-derived widths round
+  up to whole pixels so the line that sets the width still fits. Panel `text`,
+  `muted` and `strong` lines then wrap at word boundaries within the actual
+  panel width, minus 14px padding on each side, using their font metrics or
+  default width estimates. A wider child pill gives the text more room.
+  Panel height and vertical centring use those same line breaks, including
+  when a panel spans rows.
+- Box subtitles wrap at word boundaries around 34 characters;
   longer individual words stay intact. Subtitle lines are centered, with 15px
   between baselines. A box keeps its 46px minimum height and grows by 15px for
   each extra subtitle line. Its width is the maximum of 180px, the title width
@@ -156,6 +164,9 @@ there from the text and the diagnostics alone, without seeing the image.
   Without overrides, defaults follow `prefers-color-scheme`, or stay fixed
   when the render option `scheme` is explicitly `"light"` or `"dark"`.
   The internal defaults also work when SVGs are shown as images.
+  Roots carry `ab ab-auto`, `ab ab-light` or `ab ab-dark`, and palette rules
+  target only the matching mode, so inline diagrams keep their palettes
+  independently of document order and system theme.
 - Marker ids carry a prefix, so several diagrams can share a page. Hosts must
   supply distinct `idPrefix` values for diagrams on the same page; the default
   is `ab`. Prefixes containing only `[A-Za-z0-9_-]`, including the empty prefix,
@@ -201,8 +212,10 @@ Custom metrics govern node sizing, all wrapped panel and subtitle lines,
 panel pills, edge gaps and label bounds, captions, legend rows and canvas
 bounds. The overlap checks use those same widths; in particular, custom
 captions use the same uppercase, letter-spaced width for bounds and diagnostics.
-Wrapping stays at 34 characters and vertical spacing stays fixed. Choose fonts
-whose vertical extents fit the existing line heights, and match metrics to the
+Box subtitles still wrap at 34 characters, and automatic panel widths keep
+their 34-character preferred text width. Panel lines wrap at the panel's
+measured inner width. Vertical spacing stays fixed. Choose fonts whose
+vertical extents fit the existing line heights, and match metrics to the
 font the host actually loads at each rendered size and weight. Box titles use
 13px/600; end labels and strong panel lines use 12px/600; pills and standalone
 text use 12px/400; everything else uses 11px/400. Changing CSS fonts after

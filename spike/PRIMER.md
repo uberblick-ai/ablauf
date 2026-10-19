@@ -52,7 +52,11 @@ worker --> person tone=stop : stuck
 
 Tones: `ink`, `muted`, `agent`, `done`, `rework`, `stop`.
 
-Box subtitles and panel text wrap at word boundaries around 34 characters,
+Panel sizes are automatic. Their `text`, `muted` and `strong` lines wrap at
+word boundaries to fit the panel's inner width; a long child pill widens the
+panel and gives its text more room. Wrapped lines also grow its height.
+
+Box subtitles wrap at word boundaries around 34 characters,
 keeping longer words intact. Long subtitles add centered lines and grow the
 box and its row vertically. Box titles stay on one line; boxes in a column
 share a width measured from their titles and wrapped subtitles.
