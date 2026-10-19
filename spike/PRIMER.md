@@ -28,6 +28,10 @@ retry --> needs-work tone=rework from=top to=left label=end : again
 worker --> person tone=stop : stuck
 ```
 
+Use each key once per node, edge or legend-entry line. Repeating a key warns,
+even with identical values; the last valid value still wins. Reusing keys on
+separate lines is allowed.
+
 ## Grid
 
 - `columns a b c` names the columns from left to right, once, before any node.
@@ -125,8 +129,9 @@ Shape entries (`pill`, `box`, `end`, `panel`) can add `sample=ready` or
 `sample="two words"` to put text inside the sample. The meaning is still
 required alongside it. Samples grow to fit the text and entries wrap to new
 rows. Without `sample=`, the small sample stays the same. `edge` and `dashed`
-are line samples; `sample=` on either reports a diagnostic. Empty sample text
-also reports a diagnostic and leaves the small sample.
+are line samples; `sample=` on either reports a diagnostic. Empty or
+whitespace-only sample text reports `sample= needs non-empty text` and leaves
+the small sample with its shape, tone and meaning.
 
 ## Making it look good
 

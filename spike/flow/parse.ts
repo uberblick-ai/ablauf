@@ -119,6 +119,15 @@ export function parse(source: string): {
 		diagnostics.push({ line, severity: "warning", message });
 	const error = (line: number, message: string) =>
 		diagnostics.push({ line, severity: "error", message });
+	const checkKeys = (parts: string[], line: number) => {
+		const seen = new Set<string>();
+		for (const t of parts) {
+			const key = /^([a-z]+)=/.exec(t)?.[1];
+			if (!key) continue;
+			if (seen.has(key)) warn(line, `repeated key \`${key}\``);
+			seen.add(key);
+		}
+	};
 
 	for (const [i, raw] of source.split("\n").entries()) {
 		const line = i + 1;
@@ -160,6 +169,7 @@ export function parse(source: string): {
 				line,
 			};
 			const words: string[] = [];
+			checkKeys(rest, line);
 			for (const t of rest) {
 				const kv = /^([a-z]+)=(.*)$/.exec(t);
 				if (!kv || (kv[1] !== "sample" && kv[2] === "")) words.push(unquote(t));
@@ -168,7 +178,10 @@ export function parse(source: string): {
 						warn(line, "sample= is only supported on shape legend entries");
 					else {
 						item.sample = unquote(kv[2]);
-						if (!item.sample) warn(line, "sample= needs non-empty text");
+						if (!item.sample.trim()) {
+							item.sample = "";
+							warn(line, "sample= needs non-empty text");
+						}
 					}
 				} else if (kv[1] !== "tone") warn(line, `unknown key \`${kv[1]}\``);
 				else if (TONES.includes(kv[2] as Tone)) item.tone = kv[2] as Tone;
@@ -220,7 +233,9 @@ export function parse(source: string): {
 				label_at: "start",
 				line,
 			};
-			for (const t of tokens(edge[4] ?? "")) {
+			const rest = tokens(edge[4] ?? "");
+			checkKeys(rest, line);
+			for (const t of rest) {
 				const [key, value] = t.split("=");
 				if (key === "tone") {
 					if (TONES.includes(value as Tone)) e.tone = value as Tone;
@@ -295,6 +310,7 @@ export function parse(source: string): {
 		};
 		const words: string[] = [];
 		let titled = false;
+		checkKeys(rest, line);
 		for (const t of rest) {
 			const kv = /^([a-z]+)=(.+)$/.exec(t);
 			if (!kv) {
