@@ -1,18 +1,34 @@
 {
   "name": "@uberblick/ablauf",
-  "version": "0.2.0-spike",
-  "private": true,
+  "version": "0.2.0",
   "description": "Diagrams that agents lay out as text and a renderer draws as themed SVG.",
   "license": "MIT",
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/uberblick-ai/ablauf.git"
+  },
   "packageManager": "pnpm@10.34.5",
   "engines": {
     "node": ">=22.18"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "npm run build",
     "lint": "biome lint --error-on-warnings .",
     "typecheck": "tsc --noEmit",
-    "test": "node --test spike/flow.test.ts",
+    "test": "node --test spike/flow.test.ts spike/package.test.ts",
+    "test:package": "node --test spike/package.test.ts",
     "render": "node spike/render.ts",
     "check": "node spike/check.ts",
     "measure": "node spike/measure.ts",
