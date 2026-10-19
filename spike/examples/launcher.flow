@@ -1,0 +1,32 @@
+flow v0
+# Which issue gate's issue-preparer launcher starts next, chosen again on every pass.
+
+columns side main skip
+
+pill pass col=main tone=muted "issue-preparer pass"
+box rank title="Rank open milestones" "creation time, then number"
+box startable title="Can it start an issue here?" "earliest remaining milestone"
+box next title="Take its next issue" "priority, creation time, number"
+box override title="Unmilestoned ranks higher?" "strictly higher priority only"
+end start "Start the milestone issue"
+
+panel skipped col=skip row=startable span=2 tone=rework
+  strong "Skipped, holds nothing"
+  muted "no needs-preparation label"
+  muted "stop label, e.g. needs-human"
+  muted "an open blocker"
+  muted "claimed by another launcher"
+  muted "retry limit exhausted"
+  muted "approval pending"
+box fallback col=side row=startable title="Unmilestoned issues" "by effective priority"
+box first col=side row=override tone=done title="Start it first" "beats the milestone pick"
+
+pass --> rank
+rank --> startable
+startable --> next : yes
+startable --> skipped tone=rework : no
+skipped --> startable tone=rework from=top to=top label=end : next milestone
+startable --> fallback : none left
+next --> override
+override --> first tone=done : yes
+override --> start : no
