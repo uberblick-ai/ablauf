@@ -19,7 +19,7 @@
 <rect x="8" y="238" width="694" height="220" class="band"/>
 <line x1="8" y1="238" x2="702" y2="238" class="rule"/>
 <text x="20" y="260" class="cap">FULFILMENT</text>
-<path d="M310,50 L310,80" class="e e-ink" marker-end="url(#checkout-ink)"/>
+<path d="M309,50 L309,80" class="e e-ink" marker-end="url(#checkout-ink)"/>
 <path d="M309,126 L309,161" class="e e-ink" marker-end="url(#checkout-ink)"/>
 <path d="M309,207 L309,264" class="e e-ink" marker-end="url(#checkout-ink)"/>
 <path d="M309,310 L309,340" class="e e-ink" marker-end="url(#checkout-ink)"/>
@@ -59,7 +59,7 @@
 <g><rect x="465" y="156" width="229" height="56" rx="10" class="k-stop panel"/>
 <text x="580" y="181" text-anchor="middle" class="s12 b">Fraud review</text>
 <text x="580" y="199" text-anchor="middle" class="s11 muted">an analyst checks risky orders</text></g>
-<text x="320" y="69" class="m s11">check out</text>
+<text x="319" y="69" class="m s11">check out</text>
 <text x="319" y="240" class="m s11">authorised</text>
 <text x="319" y="405" class="m s11">tracked</text>
 <text x="209" y="177" text-anchor="end" class="m s11 t-rework">declined</text>

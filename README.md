@@ -68,6 +68,9 @@ legend
 [spike/PRIMER.md](spike/PRIMER.md) is the full format on one page, and the
 page an agent reads before writing a flow.
 
+For phone widths, [author separate wide and narrow layouts](docs/narrow-layouts.md).
+The worked pair keeps the same content and lets the host select a readable SVG.
+
 ### An online order
 
 From [spike/examples/checkout.flow](spike/examples/checkout.flow), with two
@@ -89,6 +92,13 @@ Uberblick's repositories, from
   <img alt="The ub-agents delivery loop: issue preparation, implementation, review and integration, with a rework column on the left and a person's decision on the right." src="docs/images/loop-light.svg">
 </picture>
 
+## Host page themes
+
+Inline SVGs can follow a page's `data-theme="light"` / `data-theme="dark"`
+switch through the existing `--ab-*` CSS properties, without rerendering.
+See [host page themes](docs/theming.md) for the complete base and tone palette,
+copyable host CSS and the difference between inline SVG and image embedding.
+
 ## Start here
 
 You need [mise](https://mise.jdx.dev). In a fresh checkout or worktree:
@@ -99,7 +109,7 @@ mise trust && mise run setup
 
 | Command | What it does |
 | --- | --- |
-| `mise run setup` | Installs the pinned Node and pnpm, locked dependencies and headless Chromium for the browser regression test. |
+| `mise run setup` | Installs the pinned Node and pnpm and the locked dependencies. |
 | `mise run playground` | Serves the review page at http://localhost:4620 (another port if that one is busy). Open `#examples/loop` to see the loop beside its hand-drawn reference. |
 | `mise run check FILE` | Renders one `.flow` file to an `.svg` beside it and lists its problems with line numbers. |
 | `mise run render` | Renders every example to `spike/out/` and refreshes the figures in this README. |

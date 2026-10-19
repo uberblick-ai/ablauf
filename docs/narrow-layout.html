@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A flow at phone widths</title>
+<style>
+  :root { color-scheme: light dark; background: #fff; color: #17202c; }
+  @media (prefers-color-scheme: dark) {
+    :root { background: #1d232d; color: #e5e9ef; }
+  }
+  body { margin: 0; font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 710px; margin: auto; padding: 16px; }
+  .approval-flow { margin: 0; }
+  .approval-flow img { display: block; max-width: 100%; height: auto; }
+</style>
+<main>
+  <h1>Checks and human decisions</h1>
+  <figure class="approval-flow">
+    <picture>
+      <source media="(min-width: 600px)" srcset="../spike/out/approval-wide.svg">
+      <img src="../spike/out/approval-narrow.svg"
+        alt="Ready triggers automated checks. Passed checks finish; blocked checks go to a person who resolves the blocked check so work can continue, then clears it to finish.">
+    </picture>
+    <figcaption>Automated checks with a path for a human decision.</figcaption>
+  </figure>
+</main>
+</html>
