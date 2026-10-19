@@ -645,7 +645,7 @@ const labelRect = (l: Label): Rect => ({
 const overlaps = (a: Rect, b: Rect) =>
 	a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 
-function segments(r: Route): [Point, Point][] {
+export function segments(r: Route): [Point, Point][] {
 	const out: [Point, Point][] = [];
 	for (let i = 1; i < r.points.length; i++)
 		out.push([r.points[i - 1], r.points[i]]);
@@ -665,7 +665,7 @@ function segRect([a, b]: [Point, Point], r: Rect): boolean {
 	);
 }
 
-function segSeg(
+export function segSeg(
 	[a, b]: [Point, Point],
 	[c, d]: [Point, Point],
 ): "cross" | "overlap" | null {
