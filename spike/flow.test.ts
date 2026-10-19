@@ -3,24 +3,145 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { setImmediate } from "node:timers/promises";
-import { CHAR, panelLines } from "./flow/grid.ts";
-import { render } from "./flow/index.ts";
+import { CHAR } from "./flow/grid.ts";
+import { DARK, type FontsOptions, LIGHT, render, type TextStyle } from "./flow/index.ts";
 
 const example = (name: string) =>
 	readFileSync(join(import.meta.dirname, "examples", `${name}.flow`), "utf8");
 
-const panelText = (svg: string) => {
-	const pattern = new RegExp(
-		'<text x="[\\d.]+" y="([\\d.]+)" text-anchor="middle"' +
-			' class="(s11|s11 muted|s12 b)">([^<]*)</text>',
-		"g",
-	);
-	return [...svg.matchAll(pattern)].map((m) => ({
-		y: Number(m[1]),
-		style: m[2],
-		text: m[3],
-	}));
+// Deliberately wider than the defaults, with different widths at each style.
+const wideFonts: FontsOptions = {
+	mono: {
+		family: "Host Mono",
+		measureText: (text, { fontSize, fontWeight }) =>
+			[...text].length * (fontSize + fontWeight / 100),
+	},
+	text: {
+		family: "Host Text",
+		measureText: (text, { fontSize, fontWeight }) =>
+			[...text].length * (2 * fontSize + fontWeight / 100),
+	},
 };
+
+test("host metrics size every node and panel text at its rendered size and weight", () => {
+	const label = "W".repeat(20);
+	const cases: [string, number][] = [
+		[`text n title="${label}"`, 560], // 12px / 400 text
+		[`pill n title="${label}"`, 356], // 12px / 400 mono, plus 36
+		[`end n title="${label}"`, 640], // 12px / 600 text, plus 40
+		[`box n title="${label}"`, 412], // 13px / 600 mono, plus 32
+		[`box n "${label}"`, 548], // 11px / 400 text, plus 28
+		[`panel n\n  strong "${label}"`, 628], // 12px / 600 text, plus 28
+		[`panel n\n  text "${label}"`, 548],
+		[`panel n\n  muted "${label}"`, 548],
+		[`panel n\n  pill ${label}`, 384],
+	];
+	for (const [source, width] of cases) {
+		const { layout, svg, diagnostics } = render(`flow v0\n${source}\n`, { fonts: wideFonts });
+		const node = layout.nodes[0];
+		assert.deepEqual(diagnostics, [], source);
+		assert.equal(node.w, width, source);
+		assert.equal(layout.width, width + 32, source);
+		assert.ok(svg.includes('.ab text{font-family:"Host Text";'));
+		assert.ok(svg.includes('.ab .m{font-family:"Host Mono"}'));
+		assert.ok(svg.includes('.ab .cap{font-family:"Host Mono";'));
+		if (!source.startsWith("text"))
+			assert.ok(svg.includes(`width="${width}" height="${node.h}"`), source);
+		if (source.includes("pill"))
+			assert.match(svg, /width="356" height="(?:30|34)" rx="(?:15|17)" class="pill"/);
+		assert.equal(svg, render(`flow v0\n${source}\n`, { fonts: wideFonts }).svg);
+	}
+});
+
+test("host widths govern edge gaps, label bounds and overlap diagnostics", () => {
+	const label = "W".repeat(30);
+	const facing = `flow v0\ncolumns a b\npill one col=a\npill two col=b row=one\none --> two : ${label}\n`;
+	const { layout, diagnostics } = render(facing, { fonts: wideFonts });
+	assert.deepEqual(diagnostics, []);
+	assert.equal(layout.routes[0].label?.w, 450);
+	assert.equal(layout.nodes[1].x - layout.nodes[0].x - layout.nodes[0].w, 470);
+	const loop = `flow v0\nbox one\nbox two\none --> two from=left to=left : ${label}\ntwo --> one from=right to=right label=end : ${label}\n`;
+	const bounds = render(loop, { fonts: wideFonts }).layout;
+	for (const { label: l } of bounds.routes) {
+		assert.ok(l);
+		const left = l.anchor === "start" ? l.x : l.x - l.w;
+		assert.equal(l.w, 450);
+		assert.ok(left >= 16 && left + l.w <= bounds.width - 16);
+	}
+	// An edge to a non-adjacent column leaves a fixed gap. Wider text must
+	// report the resulting collision rather than silently changing the route.
+	const collision = `flow v0\ncolumns a b c\nbox one col=a\nbox middle col=b row=one\nbox two col=c row=one\none --> two : ${"W".repeat(7)}\n`;
+	assert.ok(!render(collision).diagnostics.some((d) => /label .* overlaps middle/.test(d.message)));
+	assert.ok(render(collision, { fonts: wideFonts }).diagnostics.some(
+		(d) => d.line === 6 && /label .* overlaps middle/.test(d.message),
+	));
+});
+
+test("host caption metrics use uppercase text and spacing for canvas and collisions", () => {
+	const caption = "ß".repeat(30);
+	const { layout } = render(`flow v0\nsection "${caption}"\ntext n\n`, { fonts: wideFonts });
+	const captionWidth = Math.ceil(60 * 15 + 60 * 0.88);
+	assert.equal(layout.width, 20 + captionWidth + 16);
+	const collision = 'flow v0\ncolumns a b\nsection "ßßßßßßßßß"\ntext one col=a\ntext two col=b row=one\n';
+	assert.ok(!render(collision).diagnostics.some((d) => /overlaps two/.test(d.message)));
+	assert.ok(render(collision, { fonts: wideFonts }).diagnostics.some(
+		(d) => d.line === 5 && /section label .* overlaps two/.test(d.message),
+	));
+});
+
+test("host legend widths govern canvas bounds and row wrapping", () => {
+	const source = `flow v0\nbox n\nlegend\n  box "${"W".repeat(20)}"\n  pill "${"W".repeat(10)}"\n  edge "${"W".repeat(10)}"\n`;
+	const { layout, diagnostics } = render(source, { fonts: wideFonts });
+	assert.deepEqual(diagnostics, []);
+	assert.ok(layout.legend);
+	assert.equal(layout.width, 16 + 24 + 6 + 20 * 26 + 16);
+	const [first, second, third] = layout.legend.keys;
+	assert.equal(second.y, first.y + 20);
+	assert.equal(third.y, second.y + 20);
+	for (const k of layout.legend.keys)
+		assert.ok(k.x + 30 + k.item.text.length * 26 <= layout.width - 16);
+});
+
+test("one or both roles can use Plex Mono, measuring actual strings without a DOM", () => {
+	const seen: [string, TextStyle][] = [];
+	const mono = {
+		family: "IBM Plex Mono",
+		measureText: (text: string, style: TextStyle) => {
+			seen.push([text, style]);
+			return [...text].reduce((w, c) => w + (c === "W" ? 30.2 : 10.1), 0);
+		},
+	};
+	const source = 'flow v0\ntext n title="Wi😀"\n';
+	const { svg, layout } = render(source, { fonts: { mono, text: mono } });
+	assert.equal(layout.nodes[0].w, 51); // fractional widths round up
+	assert.deepEqual(seen, [["Wi😀", { fontSize: 12, fontWeight: 400 }]]);
+	assert.ok(svg.includes('.ab text{font-family:"IBM Plex Mono";'));
+	assert.ok(svg.includes('.ab .m{font-family:"IBM Plex Mono"}'));
+	assert.equal(render(source, { fonts: { mono } }).layout.nodes[0].w, render(source).layout.nodes[0].w);
+	assert.ok(render(source, { fonts: { text: mono } }).svg.includes('.ab .m{font-family:"IBM Plex Mono",ui-monospace,'));
+	assert.equal(render(example("loop"), { fonts: {} }).svg, render(example("loop")).svg);
+});
+
+test("unsafe font names and invalid metrics fail before producing an SVG", () => {
+	const source = 'flow v0\npill n\ntext t\n';
+	for (const role of ["mono", "text"] as const) {
+		for (const family of ["", "  ", 'Bad";fill:red', "Bad\\22", "<style>", "A&B", "a,b", "a\nb", "a\n", "url(https://example.org/font)", "a/*x*/", "'Bad'"]) {
+			assert.throws(() => render(source, { fonts: {
+				[role]: { family, measureText: () => 10 },
+			} }), TypeError, family);
+		}
+		for (const width of [NaN, Infinity, -Infinity, -1, 1_000_001, Number.MAX_VALUE, "12", undefined, Promise.resolve(12)]) {
+			assert.throws(() => render(source, { fonts: {
+				[role]: { family: "Host Font", measureText: () => width as number },
+			} }), RangeError, String(width));
+		}
+		for (const width of [0, 1_000_000]) {
+			assert.doesNotMatch(render(source, { fonts: {
+				[role]: { family: "Host Font", measureText: () => width },
+			} }).svg, /NaN|Infinity/);
+		}
+	}
+});
 
 test("the loop renders with no diagnostics", () => {
 	assert.deepEqual(render(example("loop")).diagnostics, []);
@@ -28,6 +149,28 @@ test("the loop renders with no diagnostics", () => {
 
 test("the same source gives the same bytes", () => {
 	assert.equal(render(example("loop")).svg, render(example("loop")).svg);
+});
+
+test("wide and narrow approvals preserve content and fit their host widths", () => {
+	const wide = render(example("approval-wide"));
+	const narrow = render(example("approval-narrow"));
+	const content = ({ layout }: ReturnType<typeof render>) => ({
+		nodes: layout.nodes.map(({ node: n }) => ({
+			id: n.id, kind: n.kind, label: n.label, sub: n.sub,
+			tone: n.tone, children: n.children,
+		})).sort((a, b) => a.id.localeCompare(b.id)),
+		edges: layout.routes.map(({ edge: e }) => ({
+			from: e.from, to: e.to, label: e.label, tone: e.tone, dashed: e.dashed,
+		})),
+		legend: layout.legend?.keys.map(({ item }) => ({
+			kind: item.kind, tone: item.tone, text: item.text,
+		})),
+	});
+	assert.deepEqual(wide.diagnostics, []);
+	assert.deepEqual(narrow.diagnostics, []);
+	assert.deepEqual(content(narrow), content(wide));
+	assert.ok(narrow.layout.width <= 400, "complete narrow SVG must fit 400 CSS px");
+	assert.ok(wide.layout.width <= 568, "wide SVG must fit at the host breakpoint");
 });
 
 test("the rendered loop matches the checked-in figure", () => {
@@ -108,129 +251,196 @@ test("every row a spanning panel covers meets it with a straight edge", () => {
 	}
 });
 
-test("panel text uses a wide child pill's width for every text style", () => {
-	const fitting = "Pick the newest item then oldest item";
-	assert.ok(fitting.length > 34);
-	for (const kind of ["text", "muted", "strong"] as const) {
-		const source = [
-			"flow v0",
-			"panel note col=main",
-			"  pill waiting-for-maintainer-approval",
-			`  ${kind} "${fitting}"`,
-			`  ${kind} "${fitting} again"`,
-			"  rule",
-			"  pill done",
-			"box after",
-		].join("\n");
-		const { svg, layout, diagnostics } = render(source);
-		assert.deepEqual(diagnostics, []);
-		const [panel, after] = layout.nodes;
-		assert.equal(panel.w, 287, "automatic width still comes from the pill");
-		const cls =
-			kind === "strong" ? "s12 b" : kind === "muted" ? "s11 muted" : "s11";
-		const lines = panelText(svg).filter((line) => line.style === cls);
-		assert.deepEqual(lines.map((line) => line.text), [fitting, fitting, "again"], kind);
-		assert.deepEqual(lines.map((line) => line.y - panel.y), [61, 79, 94]);
-		assert.equal(panel.h, 157, "height includes exactly one extra text line");
-		assert.ok(svg.includes(`y1="${panel.y + 106}"`), "rule follows wrapped text");
-		assert.ok(after.y >= panel.y + panel.h + 30);
-		const narrow = render(
-			source.replace("  pill waiting-for-maintainer-approval\n", ""),
-		);
-		assert.equal(
-			narrow.layout.nodes[0].w,
-			243,
-			"notes still have bounded automatic widths",
-		);
-		assert.deepEqual(
-			panelText(narrow.svg).map((line) => line.text),
-			[
-				"Pick the newest item then oldest",
-				"item",
-				"Pick the newest item then oldest",
-				"item again",
-			],
-			kind,
-		);
-	}
-});
-
-test("automatically sized strong panels keep their widest line whole", () => {
-	const prefix = "Wait for a maintainer ";
-	for (let length = 25; length <= 34; length++) {
-		const text = prefix + "a".repeat(length - prefix.length);
-		const { svg, layout, diagnostics } = render(
-			`flow v0\npanel note\n  strong "${text}"\n`,
-		);
-		assert.deepEqual(diagnostics, []);
-		assert.deepEqual(panelText(svg).map((line) => line.text), [text], `${length} characters`);
-		assert.equal(layout.nodes[0].h, 38, `${length} characters stay one line high`);
-	}
-});
-
-test("panel wrapping accounts for padding, font estimates and exact fits", () => {
-	for (const kind of ["text", "muted", "strong"] as const) {
-		const charWidth = kind === "strong" ? CHAR.sans12 : CHAR.sans11;
-		const child = { kind, text: "one two go" };
-		const exactWidth = 28 + 10 * charWidth;
-		assert.deepEqual(panelLines(child, exactWidth), ["one two go"]);
-		assert.deepEqual(panelLines(child, exactWidth - 0.01), ["one two", "go"]);
-		assert.deepEqual(
-			panelLines({ kind, text: "  one   two\tgo more  " }, exactWidth),
-			["one two go", "more"],
-		);
-		assert.deepEqual(panelLines({ kind, text: "" }, exactWidth), [""]);
-		assert.deepEqual(
-			panelLines({ kind, text: "🟢🟢 🟢🟢" }, 28 + 5 * charWidth),
-			["🟢🟢 🟢🟢"],
-		);
-		assert.deepEqual(
-			panelLines({ kind, text: "unbreakable" }, 28 + 3 * charWidth),
-			["unbreakable"],
-		);
-	}
-});
-
-test("spanning panels size and centre content using the rendered line breaks", () => {
-	for (const extraRows of ["", "box extra col=main\nbox extra2\nbox extra3\n"]) {
-		const source = example("panel-wrap")
-			.replace("panel note", `${extraRows}panel note`)
-			.replace("span=2", extraRows ? "span=6" : "span=2");
-		const { svg, layout, diagnostics } = render(source);
-		assert.deepEqual(diagnostics, []);
-		const panel = layout.nodes.find((p) => p.node.id === "note");
-		assert.ok(panel);
-		assert.equal(panel.w, 287);
-		const contentHeight = 208;
-		if (extraRows) assert.ok(panel.h > contentHeight);
-		else assert.equal(panel.h, contentHeight, "wrapped text grows the spanned rows");
-		const offset = Math.round(panel.y + 12 + (panel.h - contentHeight) / 2);
-		const lines = panelText(svg).filter(
-			(line) => line.text.startsWith("Pick") || line.text === "again" || line.text === "now",
-		);
-		assert.deepEqual(lines.map((line) => line.text), [
-			"Pick the newest item then oldest item",
-			"Pick the newest item then oldest item",
-			"again",
-			"Pick the newest item then oldest item now",
-			"Pick the newest item then oldest item",
-			"now",
-		]);
-		assert.deepEqual(lines.map((line) => line.y - offset), [49, 67, 82, 100, 118, 133]);
-		assert.ok(lines[0].y - 12 >= panel.y + 12);
-		assert.ok(svg.includes(`y1="${offset + 145}"`), "rule is below all six text lines");
-		assert.ok(offset + 152 + 30 <= panel.y + panel.h - 8, "final pill stays inside the panel");
-		if (!extraRows) {
-			const next = layout.nodes.find((p) => p.node.id === "next");
-			assert.ok(next && next.y >= panel.y + panel.h + 30);
+test("top entries keep an unnumbered main arrow on its column centre", () => {
+	for (const kind of ["box", "pill"]) {
+		for (const mirrored of [false, true]) {
+			const source = [
+				"flow v0",
+				mirrored ? "columns side main" : "columns main side",
+				`${kind} before col=main`,
+				"pill branch col=side",
+				"pill target col=main",
+				"before --> target",
+			].join("\n");
+			const baseline = render(source);
+			const added = render(
+				`${source}\nbranch --> target from=${mirrored ? "right" : "left"} to=top.${mirrored ? 1 : 2}\n`,
+			);
+			assert.deepEqual(baseline.diagnostics, []);
+			assert.deepEqual(added.diagnostics, []);
+			assert.deepEqual(added.layout.nodes, baseline.layout.nodes);
+			assert.deepEqual(added.layout.routes[0].points, baseline.layout.routes[0].points);
+			const [main, branch] = added.layout.routes;
+			assert.equal(main.points.length, 2);
+			for (const [i, id] of ["before", "target"].entries()) {
+				const node = added.layout.nodes.find((p) => p.node.id === id);
+				assert.ok(node);
+				assert.ok(Math.abs(main.points[i][0] - (node.x + node.w / 2)) <= 1);
+			}
+			const entry = branch.points.at(-1);
+			assert.ok(entry);
+			assert.ok(mirrored ? entry[0] < main.points[0][0] : entry[0] > main.points[0][0]);
 		}
 	}
 });
 
-test("a pinned scheme carries one palette and no media query", () => {
-	const { svg } = render(example("loop"), { scheme: "dark" });
-	assert.ok(!svg.includes("prefers-color-scheme"));
-	assert.ok(svg.includes("var(--ab-ink,#e5e9ef)"));
+test("unnumbered entries use the half facing their other node", () => {
+	for (const mirrored of [false, true]) {
+		for (const outgoing of [false, true]) {
+			const source = [
+				"flow v0",
+				mirrored ? "columns side main" : "columns main side",
+				"box before col=main",
+				"pill branch col=side",
+				"pill target col=main",
+				"before --> target",
+			].join("\n");
+			const baseline = render(source);
+			const { layout, diagnostics } = render(
+				`${source}\n${outgoing ? "before --> branch" : "branch --> target"}\n`,
+			);
+			assert.deepEqual(diagnostics, []);
+			assert.deepEqual(layout.nodes, baseline.layout.nodes);
+			assert.deepEqual(layout.routes[0].points, baseline.layout.routes[0].points);
+			const [main, branch] = layout.routes;
+			const port = outgoing ? branch.points[0] : branch.points.at(-1);
+			assert.ok(port);
+			assert.ok(mirrored ? port[0] < main.points[0][0] : port[0] > main.points[0][0]);
+		}
+	}
+});
+
+test("unnumbered entries expand their half and leave numbered slots occupied", () => {
+	for (const mirrored of [false, true]) {
+		const { layout } = render([
+			"flow v0",
+			mirrored ? "columns side main" : "columns main side",
+			"box before col=main",
+			"pill target col=main",
+			"pill one col=side",
+			"pill two col=side",
+			"pill three col=side",
+			"before --> target",
+			"one --> target from=top to=top",
+			`two --> target from=top to=top.${mirrored ? 1 : 4}`,
+			"three --> target from=top to=top",
+		].join("\n"));
+		const [main, ...entries] = layout.routes;
+		const center = main.points[0][0];
+		const target = layout.nodes.find((p) => p.node.id === "target");
+		assert.ok(target);
+		const ports = entries.map((r) => r.points[3][0]);
+		assert.equal(new Set(ports).size, 3);
+		assert.ok(ports.every((x) => mirrored ? x < center : x > center));
+		assert.equal(ports[1], Math.round(target.x + target.w * (mirrored ? 1 / 8 : 5 / 8)));
+		for (const route of entries) {
+			assert.equal(route.points.length, 4);
+			assert.equal(route.points[1][1], target.y - 24);
+			assert.equal(route.points[2][1], target.y - 24);
+		}
+	}
+});
+
+test("numbered and unnumbered return entries use ordered ports beside the centre", () => {
+	const source = [
+		"flow v0",
+		"columns left main right outer",
+		"box before col=main",
+		"pill target col=main",
+		"pill right col=right",
+		"pill outer col=outer",
+		"pill left col=left",
+		"before --> target",
+		"right --> target from=top to=top.3",
+		"outer --> target from=top to=top.4",
+		"left --> target from=top to=top.1",
+	].join("\n");
+	for (const extra of ["", "\nleft -.-> target from=right to=top"]) {
+		const { layout } = render(source + extra);
+		const main = layout.routes[0];
+		const target = layout.nodes.find((p) => p.node.id === "target");
+		assert.ok(target);
+		assert.equal(main.points.length, 2);
+		assert.ok(Math.abs(main.points[0][0] - (target.x + target.w / 2)) <= 1);
+		const entries = layout.routes.slice(1).map((r) => {
+			const end = r.points.at(-1);
+			assert.ok(end);
+			assert.equal(end[1], target.y);
+			assert.notEqual(end[0], main.points[0][0]);
+			return end[0];
+		});
+		const [right, outer, left, unnumbered] = entries;
+		assert.ok(left < main.points[0][0] && main.points[0][0] < right && right < outer);
+		if (extra) assert.ok(left < unnumbered && unnumbered < main.points[0][0]);
+		assert.equal(new Set(entries).size, entries.length);
+		// Equal top sides keep the authored loop shape above both nodes.
+		for (const route of layout.routes.slice(1, 4)) {
+			assert.equal(route.points.length, 4);
+			assert.equal(route.points[1][1], target.y - 24);
+			assert.equal(route.points[2][1], target.y - 24);
+		}
+	}
+});
+
+test("a return into the top leaves the main arrow centred without diagnostics", () => {
+	for (const mirrored of [false, true]) {
+		for (const slot of ["", `.${mirrored ? 1 : 2}`]) {
+			const { layout, diagnostics } = render([
+				"flow v0",
+				mirrored ? "columns side main" : "columns main side",
+				"box before col=main",
+				"pill target col=main",
+				"pill retry col=side",
+				`retry --> target from=top to=top${slot}`,
+				"before --> target",
+			].join("\n"));
+			assert.deepEqual(diagnostics, []);
+			const [loop, main] = layout.routes;
+			assert.equal(main.points.length, 2);
+			const before = layout.nodes[0];
+			assert.ok(Math.abs(main.points[0][0] - (before.x + before.w / 2)) <= 1);
+			assert.equal(loop.points.length, 4);
+			const entry = loop.points[3];
+			assert.ok(mirrored ? entry[0] < main.points[0][0] : entry[0] > main.points[0][0]);
+			assert.equal(loop.points[1][1], entry[1] - 24);
+			assert.equal(loop.points[2][1], entry[1] - 24);
+		}
+	}
+});
+
+test("automatic and pinned palettes keep every host override", () => {
+	const automatic = render(example("loop")).svg;
+	assert.match(automatic, /@media \(prefers-color-scheme:dark\)/);
+	for (const scheme of ["light", "dark"] as const) {
+		const colors = scheme === "light" ? LIGHT : DARK;
+		const pinned = render(example("loop"), { scheme }).svg;
+		assert.ok(!pinned.includes("prefers-color-scheme"));
+		for (const [name, value] of Object.entries(colors)) {
+			const declaration = `--${name}:var(--ab-${name},${value});`;
+			assert.ok(automatic.includes(declaration), declaration);
+			assert.ok(pinned.includes(declaration), declaration);
+		}
+	}
+});
+
+test("the documented host CSS supplies both complete palettes", () => {
+	const doc = readFileSync(
+		join(import.meta.dirname, "../docs/theming.md"),
+		"utf8",
+	);
+	const css = doc.match(/```css\n([\s\S]*?)\n```/)?.[1];
+	assert.ok(css, "a copyable host CSS example");
+	const palettes = Object.fromEntries(
+		[...css.matchAll(/:root\[data-theme="(light|dark)"\]\s*\{([^}]+)\}/g)]
+			.map(([, scheme, body]) => [
+				scheme,
+				Object.fromEntries(
+					[...body.matchAll(/--ab-([\w-]+):\s*(#[\da-f]+);/g)]
+						.map(([, name, value]) => [name, value]),
+				),
+			]),
+	);
+	assert.deepEqual(palettes, { light: LIGHT, dark: DARK });
 });
 
 test("row= chains reach the row's first node, and loops are reported", () => {
@@ -448,6 +658,102 @@ test("title= names text and end nodes too", () => {
 test("a span past the last row is reported once", () => {
 	const { diagnostics } = render("flow v0\ncolumns a b\nbox one col=a\nbox two col=b row=one span=3\n");
 	assert.equal(diagnostics.filter((d) => /span=3/.test(d.message)).length, 1);
+});
+
+test("box subtitles wrap and grow their row while edges follow the box", () => {
+	const { layout, svg, diagnostics } = render(
+		[
+			"flow v0",
+			"columns main side",
+			'box issue-preparer col=main "grounds it in the code, challenges assumptions, aims for an MVP"',
+			"box next",
+			"pill peer col=side row=issue-preparer",
+			"issue-preparer --> next",
+			"issue-preparer --> peer",
+		].join("\n"),
+	);
+	assert.deepEqual(diagnostics, []);
+	const [box, next, peer] = layout.nodes;
+	assert.equal(box.w, 235); // 34 subtitle characters at 6.1px, plus 28px padding.
+	assert.equal(next.w, box.w);
+	assert.equal(box.h, 61);
+	assert.equal(next.y, box.y + box.h + 30);
+	assert.equal(peer.y, Math.round(box.y + (box.h - peer.h) / 2));
+	const cx = Math.round(box.x + box.w / 2);
+	assert.deepEqual(layout.routes[0].points, [
+		[cx, box.y + box.h],
+		[cx, next.y],
+	]);
+	assert.deepEqual(layout.routes[1].points, [
+		[box.x + box.w, Math.round(box.y + box.h / 2)],
+		[peer.x, Math.round(peer.y + peer.h / 2)],
+	]);
+	assert.deepEqual(
+		[
+			...svg.matchAll(
+				/<text x="(\d+)" y="(\d+)" text-anchor="middle" class="s11 muted">(.*?)<\/text>/g,
+			),
+		].map((m) => [Number(m[1]), Number(m[2]), m[3]]),
+		[
+			[cx, box.y + 36, "grounds it in the code, challenges"],
+			[cx, box.y + 51, "assumptions, aims for an MVP"],
+		],
+	);
+});
+
+test("box wrapping keeps long words intact and matches panel text", () => {
+	const word = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN";
+	const { layout, svg, diagnostics } = render(
+		[
+			"flow v0",
+			"columns main side",
+			`box worker col=main "before ${word} after <&>"`,
+			"panel note col=side row=worker span=2",
+			`  muted "before ${word} after <&>"`,
+			"box next col=main",
+		].join("\n"),
+	);
+	assert.deepEqual(diagnostics, []);
+	const [box, panel, next] = layout.nodes;
+	assert.equal(box.w, 272); // The intact 40-character word sets the width.
+	assert.equal(box.h, 76);
+	assert.equal(panel.h, box.h + 30 + next.h);
+	assert.deepEqual(
+		[...svg.matchAll(/class="s11 muted">(.*?)<\/text>/g)].map((m) => m[1]),
+		["before", word, "after &lt;&amp;&gt;", "before", word, "after &lt;&amp;&gt;"],
+	);
+	for (let i = 0; i < 3; i++) {
+		assert.ok(svg.includes(
+			`y="${box.y + 36 + i * 15}" text-anchor="middle" class="s11 muted">`,
+		));
+	}
+});
+
+test("short and absent subtitles keep box geometry and titles stay unwrapped", () => {
+	for (const subtitle of ["", ' "short subtitle"']) {
+		const { layout, svg, diagnostics } = render(
+			`flow v0\nbox worker col=main${subtitle}\n`,
+		);
+		assert.deepEqual(diagnostics, []);
+		assert.deepEqual(
+			layout.nodes.map(({ x, y, w, h }) => [x, y, w, h]),
+			[[16, 16, 180, 46]],
+		);
+		assert.ok(svg.includes(
+			'<text x="106" y="35" text-anchor="middle" class="m s13 b t-agent">worker</text>',
+		));
+		assert.equal(
+			svg.includes('<text x="106" y="52" text-anchor="middle" class="s11 muted">short subtitle</text>'),
+			Boolean(subtitle),
+		);
+	}
+	const title = "a long title that continues on a single line";
+	const { layout, svg } = render(
+		`flow v0\nbox worker col=main title="${title}" "short subtitle"\n`,
+	);
+	assert.equal(layout.nodes[0].w, Math.round(title.length * 7.8 + 32));
+	assert.equal(layout.nodes[0].h, 46);
+	assert.ok(svg.includes(`>${title}</text>`));
 });
 
 test("playground saves serialize requests and track only confirmed text", async (t) => {

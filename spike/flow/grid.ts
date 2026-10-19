@@ -2,6 +2,7 @@
 // contents and draws the elbow each pair of sides implies. It never moves a
 // node or picks a route; problems become diagnostics for the author.
 
+import { CHAR, type FontsOptions, Typography } from "./fonts.ts";
 import type {
 	Child,
 	Diagnostic,
@@ -53,6 +54,7 @@ export interface Key {
 }
 
 export interface Layout {
+	typography: Typography;
 	width: number;
 	height: number;
 	nodes: Placed[];
@@ -62,15 +64,7 @@ export interface Layout {
 	diagnostics: Diagnostic[];
 }
 
-// Character widths for the fonts the SVG asks for. Mono is reliable; sans is
-// an estimate.
-export const CHAR = {
-	mono11: 6.6,
-	mono12: 7.2,
-	mono13: 7.8,
-	sans11: 6.1,
-	sans12: 6.7,
-};
+export { CHAR } from "./fonts.ts";
 const MARGIN = 16;
 const ROW_GAP = 30;
 const SECTION_GAP = 52;
@@ -85,32 +79,35 @@ const KEY_GAP = 20;
 const KEY_ROW = 20;
 const PANEL_PAD = 14;
 // Keep automatic sizing bounded: notes grow downwards unless another child
-// needs more width. This preferred width only sizes the panel, not its lines.
-const PANEL_TEXT_WIDTH = 34 * CHAR.sans12;
+// needs more width. This bound only sizes the panel, not its drawn lines.
+const WRAP_CHARS = 34;
 
-export function panelLines(c: Child, width: number): string[] {
+export function panelLines(c: Child, width: number, fonts = new Typography()): string[] {
 	return wrap(
 		c.text,
 		width - 2 * PANEL_PAD,
-		c.kind === "strong" ? CHAR.sans12 : CHAR.sans11,
+		(text) => fonts.width(text, "text", c.kind === "strong" ? 12 : 11,
+			c.kind === "strong" ? 600 : 400),
 	);
 }
 
-export function panelContentHeight(n: FlowNode, width: number): number {
+export function panelContentHeight(n: FlowNode, width: number, fonts = new Typography()): number {
 	let h = 12;
 	for (const c of n.children) {
 		if (c.kind === "pill") h += 36;
 		else if (c.kind === "rule") h += 14;
-		else h += 18 + (panelLines(c, width).length - 1) * 15;
+		else h += 18 + (panelLines(c, width, fonts).length - 1) * 15;
 	}
 	return h + 8;
 }
 
-function wrap(text: string, width: number, charWidth: number): string[] {
+// Automatic panel sizing and box subtitles retain their 34-character bound.
+// Panel drawing supplies its actual inner width and font measurement instead.
+export function wrap(text: string, width = WRAP_CHARS, measure = len): string[] {
 	const lines: string[] = [];
 	let line = "";
 	for (const word of text.split(/\s+/).filter(Boolean)) {
-		if (line && (len(line) + 1 + len(word)) * charWidth > width) {
+		if (line && measure(`${line} ${word}`) > width) {
 			lines.push(line);
 			line = word;
 		} else line = line ? `${line} ${word}` : word;
@@ -118,48 +115,50 @@ function wrap(text: string, width: number, charWidth: number): string[] {
 	lines.push(line);
 	return lines;
 }
-const labelWidth = (text: string) => Math.round(len(text) * CHAR.mono11);
 const horizontal = (s: SideName) => s === "left" || s === "right";
 
-function size(n: FlowNode): { w: number; h: number } {
+function size(n: FlowNode, fonts: Typography): { w: number; h: number } {
 	switch (n.kind) {
 		case "text":
-			return { w: Math.round(len(n.label) * CHAR.sans12), h: 16 };
+			return { w: Math.round(fonts.width(n.label, "text", 12)), h: 16 };
 		case "pill":
-			return { w: Math.round(36 + len(n.label) * CHAR.mono12), h: 34 };
+			return { w: fonts.pillWidth(n.label), h: 34 };
 		case "end":
 			return {
-				w: Math.round(Math.max(170, len(n.label) * CHAR.sans12 + 40)),
+				w: Math.round(Math.max(170, fonts.width(n.label, "text", 12, 600) + 40)),
 				h: 34,
 			};
-		case "box":
+		case "box": {
+			const lines = wrap(n.sub);
 			return {
 				w: Math.round(
 					Math.max(
 						180,
-						len(n.label) * CHAR.mono13 + 32,
-						len(n.sub) * CHAR.sans11 + 28,
+						fonts.width(n.label, "mono", 13, 600) + 32,
+						Math.max(...lines.map((t) => fonts.width(t, "text", 11))) + 28,
 					),
 				),
-				h: 46,
+				h: 46 + (lines.length - 1) * 15,
 			};
+		}
 		case "panel": {
 			let w = 190;
 			for (const c of n.children) {
 				const width =
 					c.kind === "pill"
-						? 36 + len(c.text) * CHAR.mono12
+						? fonts.pillWidth(c.text)
 						: c.kind === "rule"
 							? 0
 							// Round text widths up so the widest line still fits when drawn.
 							: Math.ceil(
-									Math.max(
-										...wrap(c.text, PANEL_TEXT_WIDTH, CHAR.sans12).map(len),
-									) * CHAR.sans12,
+									Math.max(...wrap(c.text).map((t) => fonts.width(
+										t, "text", c.kind === "strong" ? 12 : 11,
+										c.kind === "strong" ? 600 : 400, CHAR.sans12,
+									))),
 								);
 				w = Math.max(w, Math.round(width + 2 * PANEL_PAD));
 			}
-			return { w, h: panelContentHeight(n, w) };
+			return { w, h: panelContentHeight(n, w, fonts) };
 		}
 	}
 }
@@ -169,21 +168,25 @@ interface End {
 	node: Placed;
 	side: SideName;
 	slot: number; // 1-based, left to right or top to bottom
-	count: number;
+	centered: boolean;
+	fraction: number;
 	point: Point;
 }
 
 export function grid(
 	model: Model,
 	parseDiagnostics: Diagnostic[] = [],
+	fontOptions: FontsOptions = {},
 ): Layout {
+	const typography = new Typography(fontOptions);
+	const labelWidth = (text: string) => Math.round(typography.width(text, "mono", 11));
 	const diagnostics = [...parseDiagnostics];
 	const warn = (line: number, message: string) =>
 		diagnostics.push({ line, severity: "warning", message });
 
 	const placed = new Map<string, Placed>();
 	for (const n of model.nodes)
-		placed.set(n.id, { node: n, x: 0, y: 0, ...size(n) });
+		placed.set(n.id, { node: n, x: 0, y: 0, ...size(n, typography) });
 	const P = (id: string) => placed.get(id) as Placed;
 	const nodes = [...placed.values()];
 
@@ -272,16 +275,21 @@ export function grid(
 		return [e.from_side ?? from, e.to_side ?? to];
 	};
 
-	// Slots: explicit ones first, the rest fill the gaps in source order.
+	// Slots: explicit ones first; unnumbered ends beside a reserved centre use
+	// the half facing their other node. Within each half, fill in source order.
 	const ends: End[] = [];
 	for (const e of model.edges) {
 		const [fs, ts] = sides(e);
+		const centered =
+			P(e.from).node.col === P(e.to).node.col &&
+			fs === "bottom" && ts === "top" && !e.from_slot && !e.to_slot;
 		ends.push({
 			edge: e,
 			node: P(e.from),
 			side: fs,
 			slot: e.from_slot,
-			count: 0,
+			centered,
+			fraction: 0.5,
 			point: [0, 0],
 		});
 		ends.push({
@@ -289,7 +297,8 @@ export function grid(
 			node: P(e.to),
 			side: ts,
 			slot: e.to_slot,
-			count: 0,
+			centered,
+			fraction: 0.5,
 			point: [0, 0],
 		});
 	}
@@ -300,9 +309,14 @@ export function grid(
 		bySide.get(k)?.push(end);
 	}
 	for (const group of bySide.values()) {
-		const count = Math.max(group.length, ...group.map((g) => g.slot));
+		const reserve = group.some((g) => g.centered);
+		const slotted = group.filter((g) => !g.centered);
+		let count = Math.max(slotted.length, ...slotted.map((g) => g.slot));
+		// A main edge owns the centre. Other ports use an even number of slots,
+		// half on either side, so top.1 is left and top.2 right for two entries.
+		if (reserve) count = Math.max(2, count + count % 2);
 		const taken = new Set<number>();
-		for (const g of group) {
+		for (const g of slotted) {
 			if (!g.slot) continue;
 			if (taken.has(g.slot))
 				warn(
@@ -311,14 +325,39 @@ export function grid(
 				);
 			taken.add(g.slot);
 		}
-		let next = 1;
-		for (const g of group) {
-			if (g.slot) continue;
-			while (taken.has(next)) next++;
-			g.slot = next;
-			taken.add(next);
+		const unnumbered = slotted.filter((g) => !g.slot);
+		const direction = (g: End) => {
+			const other = P(g.edge.from === g.node.node.id ? g.edge.to : g.edge.from);
+			return reserve ? Math.sign(colIndex(other) - colIndex(g.node)) : 0;
+		};
+		const left = unnumbered.filter((g) => direction(g) < 0);
+		const right = unnumbered.filter((g) => direction(g) > 0);
+		const neutral = unnumbered.filter((g) => direction(g) === 0);
+		// Grow both halves until each can hold its explicit and unnumbered ends.
+		if (reserve) {
+			while (
+				left.length + [...taken].filter((s) => s <= count / 2).length >
+					count / 2 ||
+				right.length + [...taken].filter((s) => s > count / 2).length >
+					count / 2
+			)
+				count += 2;
 		}
-		for (const g of group) g.count = count;
+		for (const [pending, start] of [
+			[left, 1],
+			[right, count / 2 + 1],
+			[neutral, 1],
+		] as const) {
+			let next = start;
+			for (const g of pending) {
+				while (taken.has(next)) next++;
+				g.slot = next;
+				taken.add(next);
+			}
+		}
+		for (const g of slotted)
+			g.fraction = (g.slot + (reserve && g.slot > count / 2 ? 1 : 0)) /
+				(count + (reserve ? 2 : 1));
 	}
 
 	// Columns: widths from contents, gaps wide enough for the labels in them.
@@ -326,7 +365,7 @@ export function grid(
 		Math.max(0, ...nodes.filter((p) => p.node.col === c).map((p) => p.w)),
 	);
 	const gaps = model.columns.map(() => MIN_COL_GAP);
-	const frac = (end: End) => end.slot / (end.count + 1);
+	const frac = (end: End) => end.fraction;
 	for (const e of model.edges) {
 		if (!e.label) continue;
 		const [a, b] = ends.filter((x) => x.edge === e);
@@ -377,6 +416,8 @@ export function grid(
 					: end.side === "left"
 						? [p.x, Math.round(p.y + p.h * f)]
 						: [p.x + p.w, Math.round(p.y + p.h * f)];
+		if (end.centered)
+			end.point[0] = Math.round(colX[colIndex(p)] + colW[colIndex(p)] / 2);
 	}
 	// An edge between two parallel sides runs straight when the longer side
 	// can meet the other end head on without crowding its other ports.
@@ -387,6 +428,9 @@ export function grid(
 		const k = horizontal(a.side) ? 1 : 0;
 		const extent = (end: End) => (k ? end.node.h : end.node.w);
 		const [mover, fixed] = extent(b) >= extent(a) ? [b, a] : [a, b];
+		// Sliding a port on a side with a reserved centre would undo its order.
+		if (bySide.get(`${mover.node.node.id}:${mover.side}`)?.some((g) => g.centered))
+			continue;
 		const lo = (k ? mover.node.y : mover.node.x) + 6;
 		const hi =
 			(k ? mover.node.y + mover.node.h : mover.node.x + mover.node.w) - 6;
@@ -446,7 +490,7 @@ export function grid(
 			edge: e,
 			points,
 			tone: e.tone,
-			label: placeLabel(e, points, a, b),
+			label: placeLabel(e, points, a, b, labelWidth(e.label)),
 		});
 	}
 
@@ -478,16 +522,15 @@ export function grid(
 		}
 		for (const [s, top] of sectionTop) if (top) sectionTop.set(s, top + dy);
 	}
-	const CAPTION_CHAR = CHAR.mono11 + 0.88; // .08em letter-spacing at 11px
 	const right = Math.max(
 		0,
 		...nodes.map((p) => p.x + p.w),
 		...routes.flatMap((r) => r.points.map((p) => p[0])),
 		...labelRects.map((l) => l.x + l.w + dx),
-		...model.sections.map((t) => 20 + Math.round(len(t.toUpperCase()) * CAPTION_CHAR)),
+		...model.sections.map((t) => 20 + typography.captionWidth(t)),
 	);
 	const keyW = (k: LegendItem) =>
-		SAMPLE_W + 6 + Math.round(len(k.text) * CHAR.sans11);
+		SAMPLE_W + 6 + Math.round(typography.width(k.text, "text", 11));
 	const width = Math.round(
 		Math.max(right, MARGIN + Math.max(0, ...model.legend.map(keyW))) + MARGIN,
 	);
@@ -524,8 +567,8 @@ export function grid(
 		height = y + KEY_ROW / 2 + 8;
 	}
 
-	check(nodes, routes, bands, warn);
-	return { width, height, nodes, routes, bands, legend, diagnostics };
+	check(nodes, routes, bands, warn, typography);
+	return { width, height, nodes, routes, bands, legend, diagnostics, typography };
 }
 
 // A label sits next to the end it belongs to: above a horizontal segment,
@@ -535,9 +578,9 @@ function placeLabel(
 	points: Point[],
 	a: End,
 	b: End,
+	w: number,
 ): Label | null {
 	if (!e.label) return null;
-	const w = labelWidth(e.label);
 	const atEnd = e.label_at === "end";
 	const end = atEnd ? b : a;
 	const p = atEnd ? points[points.length - 1] : points[0];
@@ -628,6 +671,7 @@ function check(
 	routes: Route[],
 	bands: Band[],
 	warn: (line: number, m: string) => void,
+	fonts: Typography,
 ) {
 	for (const r of routes) {
 		for (const s of segments(r)) {
@@ -701,7 +745,7 @@ function check(
 		const box: Rect = {
 			x: 20,
 			y: b.y + 12,
-			w: Math.round([...b.label].length * CHAR.mono11 * 1.15) + 2,
+			w: fonts.captionWidth(b.label, true),
 			h: 12,
 		};
 		for (const n of nodes)
