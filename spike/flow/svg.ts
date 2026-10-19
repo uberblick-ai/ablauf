@@ -9,6 +9,7 @@ import {
 	type Placed,
 	type Route,
 	panelContentHeight,
+	panelLines,
 	SAMPLE_W,
 	wrap,
 } from "./grid.ts";
@@ -228,7 +229,7 @@ function node(p: Placed, fonts: Typography): string {
 			const parts = [
 				`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" class="k-${n.tone} panel"/>`,
 			];
-			let cy = Math.round(y + 12 + (h - panelContentHeight(n)) / 2);
+			let cy = Math.round(y + 12 + (h - panelContentHeight(n, w, fonts)) / 2);
 			for (const c of n.children) {
 				if (c.kind === "pill") {
 					const pw = fonts.pillWidth(c.text);
@@ -246,7 +247,7 @@ function node(p: Placed, fonts: Typography): string {
 							: c.kind === "muted"
 								? "s11 muted"
 								: "s11";
-					const lines = wrap(c.text);
+					const lines = panelLines(c, w, fonts);
 					lines.forEach((t, i) => {
 						parts.push(
 							`<text x="${cx}" y="${cy + 13 + i * 15}" text-anchor="middle" class="${cls}">${esc(t)}</text>`,
