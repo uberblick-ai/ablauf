@@ -13,12 +13,16 @@ These are the complete palette and the built-in defaults:
 | --- | --- | --- | --- |
 | `--ab-bg` | Canvas colour for edge-crossing knockouts | `#ffffff` | `#171c24` |
 | `--ab-ink` | Main text, including pill labels and panel text | `#17202c` | `#e5e9ef` |
-| `--ab-muted` | Secondary text, neutral tone foregrounds and neutral edges | `#5a6575` | `#98a2b0` |
-| `--ab-line` | Neutral outlines and separator rules | `#d3d9e2` | `#2c3440` |
+| `--ab-muted` | Secondary text, ink/muted tone foregrounds and edges | `#5a6575` | `#98a2b0` |
+| `--ab-line` | Ink/muted outlines, pill outlines and separator rules | `#d3d9e2` | `#2c3440` |
 | `--ab-band` | Shaded section backgrounds | `#e9eef5` | `#151b23` |
-| `--ab-surface` | Pill and neutral node backgrounds | `#ffffff` | `#1d232d` |
+| `--ab-surface` | Pill and ink/muted node backgrounds | `#ffffff` | `#1d232d` |
+| `--ab-neutral` | Neutral tone foreground | `#59616c` | `#b6bbc3` |
+| `--ab-neutral-bg` | Neutral tone background | `#e1e3e6` | `#303640` |
 | `--ab-agent` | Agent tone foreground | `#0b6b67` | `#5cc5bb` |
 | `--ab-agent-bg` | Agent tone background | `#dff1ee` | `#12302d` |
+| `--ab-system` | System tone foreground | `#3459a3` | `#91b4fa` |
+| `--ab-system-bg` | System tone background | `#e7edfb` | `#1c2945` |
 | `--ab-done` | Done tone foreground | `#2a7845` | `#72cf91` |
 | `--ab-done-bg` | Done tone background | `#e0f1e5` | `#142e1d` |
 | `--ab-rework` | Rework tone foreground | `#a65f0c` | `#e3a250` |
@@ -49,8 +53,12 @@ keep the whole palette consistent when the system and page themes disagree.
   --ab-line: #d3d9e2;
   --ab-band: #e9eef5;
   --ab-surface: #ffffff;
+  --ab-neutral: #59616c;
+  --ab-neutral-bg: #e1e3e6;
   --ab-agent: #0b6b67;
   --ab-agent-bg: #dff1ee;
+  --ab-system: #3459a3;
+  --ab-system-bg: #e7edfb;
   --ab-done: #2a7845;
   --ab-done-bg: #e0f1e5;
   --ab-rework: #a65f0c;
@@ -66,8 +74,12 @@ keep the whole palette consistent when the system and page themes disagree.
   --ab-line: #2c3440;
   --ab-band: #151b23;
   --ab-surface: #1d232d;
+  --ab-neutral: #b6bbc3;
+  --ab-neutral-bg: #303640;
   --ab-agent: #5cc5bb;
   --ab-agent-bg: #12302d;
+  --ab-system: #91b4fa;
+  --ab-system-bg: #1c2945;
   --ab-done: #72cf91;
   --ab-done-bg: #142e1d;
   --ab-rework: #e3a250;
@@ -98,7 +110,7 @@ fallback, so partial overrides can mix palettes.
 
 ## Verify a page integration
 
-With the CSS above and an inline diagram containing all four tones, emulate
+With the CSS above and an inline diagram containing all tones, emulate
 each system colour scheme in browser developer tools. Under **each** system
 scheme, switch the root attribute light → dark → light without replacing the
 SVG. Check node text, outlines and fills, edges, arrowheads, edge labels and

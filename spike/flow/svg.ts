@@ -1,7 +1,7 @@
 // SVG as a string, in the house style. Colours are CSS variables a host can
 // override with --ab-*; light and dark follow prefers-color-scheme.
 
-import type { Typography } from "./fonts.ts";
+import { Typography } from "./fonts.ts";
 import {
 	type Band,
 	type Key,
@@ -9,8 +9,9 @@ import {
 	type Placed,
 	type Point,
 	type Route,
+	legendSampleSize,
 	panelContentHeight,
-	SAMPLE_W,
+	panelLines,
 	segments,
 	segSeg,
 	wrap,
@@ -24,8 +25,12 @@ export const LIGHT = {
 	line: "#d3d9e2",
 	band: "#e9eef5",
 	surface: "#ffffff",
+	neutral: "#59616c",
+	"neutral-bg": "#e1e3e6",
 	agent: "#0b6b67",
 	"agent-bg": "#dff1ee",
+	system: "#3459a3",
+	"system-bg": "#e7edfb",
 	rework: "#a65f0c",
 	"rework-bg": "#fbefdc",
 	stop: "#b2382f",
@@ -40,8 +45,12 @@ export const DARK: typeof LIGHT = {
 	line: "#2c3440",
 	band: "#151b23",
 	surface: "#1d232d",
+	neutral: "#b6bbc3",
+	"neutral-bg": "#303640",
 	agent: "#5cc5bb",
 	"agent-bg": "#12302d",
+	system: "#91b4fa",
+	"system-bg": "#1c2945",
 	rework: "#e3a250",
 	"rework-bg": "#33250f",
 	stop: "#ef7f73",
@@ -54,10 +63,10 @@ const vars = (t: typeof LIGHT) =>
 		.map(([k, v]) => `--${k}:var(--ab-${k},${v});`)
 		.join("");
 
-const palette = (scheme?: "light" | "dark") =>
-	scheme
-		? `.ab{${vars(scheme === "dark" ? DARK : LIGHT)}}`
-		: `.ab{${vars(LIGHT)}}@media (prefers-color-scheme:dark){.ab{${vars(DARK)}}}`;
+const palette = (mode: "light" | "dark" | "auto") =>
+	mode === "auto"
+		? `.ab.ab-auto{${vars(LIGHT)}}@media (prefers-color-scheme:dark){.ab.ab-auto{${vars(DARK)}}}`
+		: `.ab.ab-${mode}{${vars(mode === "dark" ? DARK : LIGHT)}}`;
 
 const style = (fonts: Typography) => `
 .ab text{font-family:${fonts.text ? `"${fonts.text.family}"` : '"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif'};${fonts.text || fonts.mono ? "font-weight:400;" : ""}fill:var(--ink)}
@@ -70,7 +79,7 @@ const style = (fonts: Typography) => `
 .ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
 .ab .knockout{fill:none;stroke:var(--bg);stroke-width:5.6}.ab .knockout-band{stroke:var(--band)}
 .ab .arrow{fill:none;stroke:none}
-${(["ink", "muted", "agent", "done", "rework", "stop"] as Tone[])
+${(["ink", "muted", "neutral", "agent", "system", "done", "rework", "stop"] as Tone[])
 	.map((t) => {
 		const c = t === "ink" ? "muted" : t;
 		const bg = t === "ink" || t === "muted" ? "surface" : `${t}-bg`;
@@ -80,7 +89,7 @@ ${(["ink", "muted", "agent", "done", "rework", "stop"] as Tone[])
 .ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}
 `.trim();
 
-const esc = (s: string) =>
+export const esc = (s: string) =>
 	s
 		.replace(/&/g, "&amp;")
 		.replace(/</g, "&lt;")
@@ -94,7 +103,14 @@ export interface SvgOptions {
 	scheme?: "light" | "dark";
 }
 
+export const svgStyle = (mode: "light" | "dark" | "auto" = "auto", fonts: Typography = new Typography()) =>
+	`<style>${palette(mode)}\n${style(fonts)}</style>`;
+
 export function toSvg(layout: Layout, options: SvgOptions = {}): string {
+	const mode =
+		options.scheme === "light" || options.scheme === "dark"
+			? options.scheme
+			: "auto";
 	// A dot plus four hex digits encodes each unsafe UTF-16 code unit. Dots
 	// are escaped too, so this is reversible and cannot collide with safe input.
 	// The resulting alphabet is safe in both attributes and local url(#...) refs.
@@ -112,9 +128,9 @@ export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 	].sort();
 	const out: string[] = [];
 	out.push(
-		`<svg xmlns="http://www.w3.org/2000/svg" class="ab" viewBox="0 0 ${layout.width} ${layout.height}" width="${layout.width}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? describe(layout))}">`,
+		`<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-${mode}" viewBox="0 0 ${layout.width} ${layout.height}" width="${layout.width}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? describe(layout))}">`,
 	);
-	out.push(`<style>${palette(options.scheme)}\n${style(layout.typography)}</style>`);
+	out.push(svgStyle(mode, layout.typography));
 	out.push("<defs>");
 	for (const t of tones) {
 		out.push(
@@ -138,7 +154,7 @@ export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 		out.push(
 			`<line x1="8" y1="${layout.legend.y}" x2="${layout.width - 8}" y2="${layout.legend.y}" class="rule"/>`,
 		);
-		for (const k of layout.legend.keys) out.push(key(k, id));
+		for (const k of layout.legend.keys) out.push(key(k, id, layout.typography));
 	}
 	out.push("</svg>");
 	return `${out.join("\n")}\n`;
@@ -149,7 +165,9 @@ function describe(layout: Layout): string {
 	const names = [...layout.nodes]
 		.sort((a, b) => a.y - b.y || a.x - b.x)
 		.map((p) => p.node.label);
-	const keys = (layout.legend?.keys ?? []).map((k) => k.item.text);
+	const keys = (layout.legend?.keys ?? []).map((k) =>
+		k.item.sample ? `${k.item.sample}: ${k.item.text}` : k.item.text,
+	);
 	return `Flow: ${names.join(", ")}${keys.length ? `. Legend: ${keys.join(", ")}` : ""}`;
 }
 
@@ -167,17 +185,20 @@ function band(b: Band, width: number): string {
 }
 
 // A small sample of the shape, then its meaning in fine print.
-function key(k: Key, id: string): string {
+function key(k: Key, id: string, fonts: Typography): string {
 	const { item, x, y } = k;
-	const w = SAMPLE_W;
+	const { w, h } = legendSampleSize(item, fonts);
 	const t = item.tone;
 	const sample =
 		item.kind === "edge" || item.kind === "dashed"
 			? `<path d="M${x},${y} L${x + w},${y}" class="e e-${t}${item.kind === "dashed" ? " dash" : ""}" marker-end="url(#${id}-${t})"/>`
 			: item.kind === "pill"
-				? `<rect x="${x}" y="${y - 6}" width="${w}" height="12" rx="6" class="pill"/><circle cx="${x + 7}" cy="${y}" r="3" class="t-${t}"/>`
-				: `<rect x="${x}" y="${y - 6}" width="${w}" height="12" rx="${item.kind === "end" ? 6 : 3}" class="k-${t}${item.kind === "panel" ? " panel" : ""}"/>`;
-	return `<g>${sample}<text x="${x + w + 6}" y="${y + 4}" class="s11 muted">${esc(item.text)}</text></g>`;
+				? `<rect x="${x}" y="${y - h / 2}" width="${w}" height="${h}" rx="${h / 2}" class="pill"/><circle cx="${x + 7}" cy="${y}" r="3" class="t-${t}"/>`
+				: `<rect x="${x}" y="${y - h / 2}" width="${w}" height="${h}" rx="${item.kind === "end" ? h / 2 : 3}" class="k-${t}${item.kind === "panel" ? " panel" : ""}"/>`;
+	const label = item.sample
+		? `<text x="${item.kind === "pill" ? x + 15 : x + w / 2}" y="${y + 4}"${item.kind === "pill" ? "" : ' text-anchor="middle"'} class="m s11${item.kind === "pill" ? "" : ` t-${t}`}">${esc(item.sample)}</text>`
+		: "";
+	return `<g>${sample}${label}<text x="${x + w + 6}" y="${y + 4}" class="s11 muted">${esc(item.text)}</text></g>`;
 }
 
 // Use the diagnostic's exact interior-crossing test, in source order. Keep
@@ -276,7 +297,7 @@ function node(p: Placed, fonts: Typography): string {
 			const parts = [
 				`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" class="k-${n.tone} panel"/>`,
 			];
-			let cy = Math.round(y + 12 + (h - panelContentHeight(n)) / 2);
+			let cy = Math.round(y + 12 + (h - panelContentHeight(n, w, fonts)) / 2);
 			for (const c of n.children) {
 				if (c.kind === "pill") {
 					const pw = fonts.pillWidth(c.text);
@@ -294,7 +315,7 @@ function node(p: Placed, fonts: Typography): string {
 							: c.kind === "muted"
 								? "s11 muted"
 								: "s11";
-					const lines = wrap(c.text);
+					const lines = panelLines(c, w, fonts);
 					lines.forEach((t, i) => {
 						parts.push(
 							`<text x="${cx}" y="${cy + 13 + i * 15}" text-anchor="middle" class="${cls}">${esc(t)}</text>`,
