@@ -298,7 +298,8 @@ export function parse(source: string): {
 		const words: string[] = [];
 		let titled = false;
 		for (const t of rest) {
-			const kv = /^([a-z]+)=(.*)$/.exec(t);
+			// A bare `key=` stays text, except `row=` and `gap=`, whose empty value is diagnosed.
+			const kv = /^([a-z]+)=(.+)$/.exec(t) ?? /^(row|gap)=()$/.exec(t);
 			if (!kv) {
 				words.push(unquote(t));
 				continue;
