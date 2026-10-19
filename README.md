@@ -123,6 +123,9 @@ legend
 [spike/PRIMER.md](spike/PRIMER.md) is the full format on one page, and the
 page an agent reads before writing a flow.
 
+For phone widths, [author separate wide and narrow layouts](docs/narrow-layouts.md).
+The worked pair keeps the same content and lets the host select a readable SVG.
+
 ### An online order
 
 From [spike/examples/checkout.flow](spike/examples/checkout.flow), with two
