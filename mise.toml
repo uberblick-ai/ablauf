@@ -60,7 +60,7 @@ run = "node site/build.ts"
 [tasks.site-serve]
 description = "Build the site and serve it on localhost:8000"
 depends = ["site"]
-run = "python3 -m http.server 8000 --directory site/out"
+run = "node site/serve.ts 8000"
 
 [tasks.release]
 description = "Maintainer only: release an already-prepared X.Y.Z (--check is read-only)"

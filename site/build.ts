@@ -5,7 +5,7 @@
 // Every site/pages/<path>.html is one page: a <head> block (title,
 // description) and then the page's main content. The build wraps it in the
 // shell the uberblick.ai sites share (site/shell.ts) and writes it to
-// site/out/<path>/index.html, so it is served at /<path> with no extension.
+// site/out/<path>.html, which Pages serves at /<path> with no extension.
 // pages/index.html is /, pages/404.html the not-found page. site/static is
 // copied as it is.
 //
@@ -127,7 +127,9 @@ ${items.join("\n")}
 		}
 		const rel = file.replace(/\.html$/, "");
 		const path = rel === "index" ? "/" : `/${rel.replace(/\/index$/, "")}`;
-		const target = rel === "404" ? join(out, "404.html") : join(out, rel === "index" ? "" : rel.replace(/\/index$/, ""), "index.html");
+		// Pages serves /<path> from <path>.html and redirects /<path>.html there;
+		// <path>/index.html would add a redirect to /<path>/ instead.
+		const target = rel === "index" ? join(out, "index.html") : join(out, `${rel.replace(/\/index$/, "")}.html`);
 		const body = expand(m[2].replace(/\n+$/, ""), name);
 		const canonical = rel === "404" ? "" : `<link rel="canonical" href="${site}${path}">\n`;
 		const html = shell({ head: m[1], canonical, noindex: options.noindex ?? false, path, body });

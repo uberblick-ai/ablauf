@@ -17,7 +17,7 @@ test("the site builds every page with clean examples and a section per kind", (t
 	const { pages, problems } = build({ out });
 	assert.deepEqual(problems, []);
 	assert.deepEqual(pages, ["/", "/404", "/showcase"]);
-	const showcase = readFileSync(join(out, "showcase", "index.html"), "utf8");
+	const showcase = readFileSync(join(out, "showcase.html"), "utf8");
 	for (const kind of kinds) {
 		assert.match(showcase, new RegExp(`<section class="blk kind" id="${kind.id}">`));
 		for (const example of kind.examples) assert.match(showcase, new RegExp(`id="${kind.id}-${example.name}"`));
@@ -32,7 +32,7 @@ test("the site builds every page with clean examples and a section per kind", (t
 test("an edit marks only the lines it changed or added", (t) => {
 	const out = scratch(t);
 	build({ out });
-	const showcase = readFileSync(join(out, "showcase", "index.html"), "utf8");
+	const showcase = readFileSync(join(out, "showcase.html"), "utf8");
 	const item = showcase.slice(showcase.indexOf('id="flow-loop-insert"'));
 	const marked = [...item.slice(0, item.indexOf("</article>")).matchAll(/<mark>(.*?)<\/mark>/g)].map((m) => m[1]);
 	assert.ok(marked.includes("pill needs-security tone=agent"));
@@ -50,7 +50,7 @@ test("a kind whose example has another header fails the build", (t) => {
 test("SITE_URL and SITE_NOINDEX shape a preview host", (t) => {
 	const out = scratch(t);
 	build({ out, site: "https://preview.example/", noindex: true });
-	const html = readFileSync(join(out, "showcase", "index.html"), "utf8");
+	const html = readFileSync(join(out, "showcase.html"), "utf8");
 	assert.match(html, /href="https:\/\/preview\.example\/showcase"/);
 	assert.match(html, /<meta name="robots" content="noindex">/);
 });

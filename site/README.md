@@ -38,9 +38,11 @@ ub-agents and skills sites; no token lives in this repository.
 
 The project runs `node site/build.ts` on Node 26 from the repository root and
 publishes `site/out`. The build needs no `pnpm install`: Node strips the
-renderer's types itself. Pages serves `404.html` for unknown paths and
-redirects `/<path>.html` to `/<path>`, which is why the build writes
-extensionless pages.
+renderer's types itself. The build writes each page as `<path>.html`: Pages
+serves it at `/<path>` and redirects `/<path>.html` there, while
+`<path>/index.html` would redirect `/<path>` to `/<path>/`. Unknown paths get
+`404.html`. `mise run site-serve` (`site/serve.ts`) serves `site/out` the same
+way locally.
 
 `SITE_URL` sets the origin that canonical links and the sitemap name (default
 `https://ablauf.uberblick.ai`), and `SITE_NOINDEX=1` keeps a preview host out of
