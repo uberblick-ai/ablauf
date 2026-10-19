@@ -1,8 +1,9 @@
-// An edge-free list: the author supplies one step and ordered outcome rows.
+// One step branching to its ordered outcomes. The author writes no edges:
+// every entry gets its own branch from the step to its destination.
 import { Typography } from "./fonts.ts";
 import { CHAR, type Layout } from "./grid.ts";
 import type { Diagnostic } from "./parse.ts";
-import { esc, type SvgOptions, svgStyle } from "./svg.ts";
+import { esc, markerPrefix, type SvgOptions, svgStyle } from "./svg.ts";
 
 interface Entry {
 	outcome: string;
@@ -14,9 +15,12 @@ interface Entry {
 
 const QUOTED = /^"(?:[^"\\]|\\.)*"/;
 const WIDTH = 678;
-const XS = [32, 190, 464];
-const WIDTHS = [142, 258, 182];
 const LEADING = 18;
+// Step box, spine, branch labels and destination boxes, left to right.
+const STEP = { x: 16, w: 176, text: 144 };
+const SPINE = 216;
+const LABEL = { x: 232, w: 228 };
+const DEST = { x: 478, w: 184, text: 152 };
 
 // Unlike flow labels, these cells have a fixed width. Break long words too.
 function wrap(text: string, width: number, charWidth = CHAR.mono12): string[] {
@@ -128,41 +132,66 @@ export function renderFanout(source: string, options: SvgOptions = {}) {
 	if (!entries.length) error(headerLine, "a fan-out needs at least one outcome entry");
 
 	const body: string[] = [];
-	const textLines = (lines: string[], x: number, y: number, classes: string) => {
-		for (const [i, text] of lines.entries())
-			body.push(`<text x="${x}" y="${y + i * LEADING}" class="m ${classes}">${esc(text)}</text>`);
-	};
-	const stepLines = wrap(step.trim() ? step : "[missing step]", 614, CHAR.mono13);
-	const stepHeight = 44 + stepLines.length * LEADING;
-	body.push(`<rect x="16" y="16" width="646" height="${stepHeight}" rx="8" class="k-agent"/>`);
-	body.push('<text x="32" y="38" class="cap">STEP</text>');
-	textLines(stepLines, 32, 60, "s13 b t-agent");
-	let y = 16 + stepHeight + 30;
-	for (const [i, title] of ["OUTCOME", "REASON", "DESTINATION"].entries())
-		body.push(`<text x="${XS[i]}" y="${y}" class="cap">${title}</text>`);
-	y += 14;
-	for (const entry of entries) {
-		const cells = (["outcome", "reason", "destination"] as const).map((field, i) =>
-			wrap(entry[field].trim() ? entry[field] : `[missing ${field}]`, WIDTHS[i]),
+	const textLines = (lines: string[], x: number, y: number, classes: string) =>
+		lines.map((text, i) => `<text x="${x}" y="${y + i * LEADING}" class="m ${classes}">${esc(text)}</text>`);
+	const id = `${markerPrefix(options)}-ink`;
+
+	// Each branch: the outcome above its line, the reason below, then the
+	// destination box the arrow enters. Rows grow to fit their tallest part.
+	const rows = entries.map((entry) => {
+		const [outcome, reason, destination] = (["outcome", "reason", "destination"] as const).map((field, i) =>
+			wrap(entry[field].trim() ? entry[field] : `[missing ${field}]`, i === 2 ? DEST.text : LABEL.w),
 		);
-		const lines = Math.max(...cells.map((cell) => cell.length));
-		const rawLines = entry.raw ? wrap(`Line ${entry.line}: ${entry.raw}`, 614) : [];
-		const h = 24 + lines * LEADING + (rawLines.length ? 12 + rawLines.length * LEADING : 0);
-		body.push(`<g data-line="${entry.line}">`);
-		body.push(`<rect x="16" y="${y}" width="646" height="${h}" rx="8" class="pill"/>`);
-		for (const [i, cell] of cells.entries()) textLines(cell, XS[i], y + 26, i === 1 ? "s12 muted" : "s12 b");
-		textLines(rawLines, 32, y + 38 + lines * LEADING, "s12 t-stop");
-		body.push("</g>");
-		y += h + 8;
+		const raw = entry.raw ? wrap(`Line ${entry.line}: ${entry.raw}`, LABEL.w) : [];
+		const branch = 24 + (outcome.length - 1) * LEADING; // offset of the line from the row top
+		const below = reason.length + raw.length;
+		const height = Math.max(branch + 6 + below * LEADING + (raw.length ? 8 : 0), branch - 17 + 16 + destination.length * LEADING);
+		return { entry, outcome, reason, destination, raw, branch, height };
+	});
+	const GAP = 22;
+	const span = rows.reduce((sum, row) => sum + row.height, 0) + GAP * Math.max(rows.length - 1, 0);
+	const first = rows.length ? rows[0].branch : 0;
+	const last = rows.length ? span - rows[rows.length - 1].height + rows[rows.length - 1].branch : 0;
+	const stepLines = wrap(step.trim() ? step : "[missing step]", STEP.text, CHAR.mono13);
+	const stepHeight = 44 + stepLines.length * LEADING;
+	// Centre the step on the spine; push the rows down if the step is taller.
+	const stepOffset = (first + last) / 2 - stepHeight / 2;
+	const top = 16 + Math.max(0, -stepOffset);
+	const stepTop = top + stepOffset;
+	const stepMid = stepTop + stepHeight / 2;
+
+	body.push(`<rect x="${STEP.x}" y="${stepTop}" width="${STEP.w}" height="${stepHeight}" rx="8" class="k-agent"/>`);
+	body.push(`<text x="${STEP.x + 16}" y="${stepTop + 22}" class="cap">STEP</text>`);
+	body.push(...textLines(stepLines, STEP.x + 16, stepTop + 44, "s13 b t-agent"));
+	if (rows.length) {
+		body.push(`<path d="M${STEP.x + STEP.w},${stepMid} L${SPINE},${stepMid}" class="e e-ink"/>`);
+		if (rows.length > 1) body.push(`<path d="M${SPINE},${top + first} L${SPINE},${top + last}" class="e e-ink"/>`);
 	}
+	let y = top;
+	for (const row of rows) {
+		const line = y + row.branch;
+		body.push(`<g data-line="${row.entry.line}">`);
+		body.push(`<path d="M${SPINE},${line} L${DEST.x - 2},${line}" class="e e-ink" marker-end="url(#${id})"/>`);
+		body.push(...textLines(row.outcome, LABEL.x, line - 10 - (row.outcome.length - 1) * LEADING, "s12 b"));
+		body.push(...textLines(row.reason, LABEL.x, line + 20, "s12 muted"));
+		body.push(...textLines(row.raw, LABEL.x, line + 28 + row.reason.length * LEADING, "s12 t-stop"));
+		body.push(`<rect x="${DEST.x}" y="${line - 17}" width="${DEST.w}" height="${16 + row.destination.length * LEADING}" rx="8" class="pill"/>`);
+		body.push(...textLines(row.destination, DEST.x + 16, line + 4, "s12 b"));
+		body.push("</g>");
+		y += row.height + GAP;
+	}
+	y = Math.max(top + span, stepTop + stepHeight);
 	for (const item of invalid) {
 		const lines = wrap(`Line ${item.line}: ${item.text}`, 614);
-		textLines(lines, 32, y + 20, "s12 t-stop");
+		body.push(...textLines(lines, 32, y + 20, "s12 t-stop"));
 		y += 32 + lines.length * LEADING;
 	}
+	const defs = rows.length
+		? `<defs><marker id="${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker></defs>\n`
+		: "";
 	// No routed-flow nodes or edges: the playground's grid overlay is empty.
 	const layout: Layout = { width: WIDTH, height: y + 16, nodes: [], routes: [], bands: [], legend: null, diagnostics, typography: new Typography() };
 	const description = `Fan-out: ${step}. ${entries.map((e) => `${e.outcome}: ${e.reason}; destination: ${e.destination}`).join(". ")}`;
-	const svg = `<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-${mode}" viewBox="0 0 ${WIDTH} ${layout.height}" width="${WIDTH}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? description)}">\n${svgStyle(mode)}\n${body.join("\n")}\n</svg>\n`;
+	const svg = `<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-${mode}" viewBox="0 0 ${WIDTH} ${layout.height}" width="${WIDTH}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? description)}">\n${svgStyle(mode)}\n${defs}${body.join("\n")}\n</svg>\n`;
 	return { svg, diagnostics, layout };
 }

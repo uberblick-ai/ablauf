@@ -286,7 +286,8 @@ string at the requested size and weight instead of counting characters.
 
 ## Standalone fan-out v0
 
-A fan-out records one step and its ordered possible outcomes without edges.
+A fan-out records one step and its ordered possible outcomes without authored
+edges: the renderer draws one branch per outcome.
 Use it when the reason for each outcome matters as much as its destination.
 It is a separate diagram kind, not a node embedded in a routed flow.
 
@@ -309,14 +310,18 @@ outcome "Edited since" reason="The input changed after the maintainer started it
 - Every value is a double-quoted JSON string on one source line. Use `\"`
   for a quote and `\\` for a backslash. Destinations are display text, never
   links or node references.
-- The renderer shows the step once, then aligned Outcome, Reason and
-  Destination columns. Entries keep their source order; matching destinations
-  never combine entries or reasons. Each row grows to fit its tallest cell.
+- The renderer draws the step once, on the left, and a branch for every entry:
+  a line from the step's spine to that entry's destination box, with the
+  outcome above the line and the reason below it. Entries keep their source
+  order, top to bottom; matching destinations get their own boxes and never
+  combine entries or reasons. Each branch grows to fit its tallest part, and
+  the step is centred on the spine.
 - The canvas is 678 px wide, within the playground's 710 px document column.
-  Cells use 12 px monospace text with 18 px leading and widths of 142, 258
-  and 182 px. Text wraps at word boundaries, splitting individual long words
-  when necessary. The step wraps at 13 px in a 614 px text area. There is no
-  route search, node placement or overlap correction.
+  The step box is 176 px wide with 13 px text in a 144 px area. Branch labels
+  use 12 px monospace text with 18 px leading in a 228 px area, and
+  destination boxes are 184 px wide with a 152 px text area. Text wraps at
+  word boundaries, splitting individual long words when necessary. There is
+  no route search, node placement or overlap correction.
 - Malformed, incomplete, duplicate and unknown declarations produce
   diagnostics on their own source lines and still render. Missing step or
   entries are diagnosed at the header. Partial entries show missing-field

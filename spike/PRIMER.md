@@ -165,9 +165,10 @@ named fields can appear in either order, once each. Blank lines and whole-line
 destinations are plain text.
 
 Entries stay in source order, including separate reasons for the same
-destination. The step appears once above three aligned columns. Text wraps
-and rows grow, including for long words, within a 678 px canvas. Malformed
-entries produce line-numbered diagnostics and still draw, with placeholders
-for missing fields and the original invalid source visible. Missing step or
+destination. The step appears once, on the left, with one branch per entry
+leading to its destination; the outcome sits above the branch and the reason
+below. Text wraps and branches grow, including for long words, within a 678 px
+canvas. Malformed entries produce line-numbered diagnostics and still draw,
+with placeholders for missing fields and the original invalid source visible. Missing step or
 entries are reported at the header. Keep the wording concise and review at
 710 px in both themes.

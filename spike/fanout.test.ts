@@ -91,29 +91,38 @@ test("fan-out SVG is deterministic, escaped and uses the shared theme options", 
 	}
 });
 
-// Check cell bounds in SVG coordinates, including long tokens and tall rows.
+// Check text bounds in SVG coordinates, including long tokens and tall rows.
 // A maintainer still reviews the actual fonts in both playground themes.
-test("fan-out text stays inside cells and rows at document width", () => {
+test("fan-out text stays inside its step, branch and destination at document width", () => {
 	const sources = [example("approvals"), example("run-endings"),
-		`fan-out v0\nstep "${"Long step ".repeat(35)}"\noutcome "${"a".repeat(100)}" reason="${"a long explanation ".repeat(50)}" destination="${"Destination".repeat(20)}"\noutcome "Next" reason="No overlap" destination="End"`];
+		`fan-out v0\nstep "${"Long step ".repeat(35)}"\noutcome "${"a".repeat(100)}" reason="${"a long explanation ".repeat(50)}" destination="${"Destination".repeat(20)}"\noutcome "Next" reason="No overlap" destination="End"`,
+		'fan-out v0\nstep "Only one outcome"\noutcome "Done" reason="Why" destination="There"'];
+	const right: Record<string, number> = { 32: 176, 232: 460, 494: 646 };
 	for (const source of sources) for (const scheme of ["light", "dark"] as const) {
 		const { svg, diagnostics, layout } = render(source, { scheme });
 		assert.deepEqual(diagnostics, []);
 		assert.ok(layout.width <= 710);
-		for (const [, x, y, classes, content] of svg.matchAll(/<text x="(\d+)" y="(\d+)" class="([^"]+)">([^<]*)<\/text>/g)) {
+		for (const [, x, y, classes, content] of svg.matchAll(/<text x="(\d+)" y="([\d.]+)" class="([^"]+)">([^<]*)<\/text>/g)) {
 			const charWidth = classes.includes("s13") ? CHAR.mono13 : classes.includes("cap") ? CHAR.mono11 + 0.88 : CHAR.mono12;
-			const right = x === "32" && !classes.includes("s13") && !classes.includes("cap") ? 174 : x === "190" ? 448 : 646;
-			assert.ok(Number(x) + [...content].length * charWidth <= right, content);
-			assert.ok(Number(y) < layout.height);
+			assert.ok(x in right, `unexpected text column ${x}`);
+			assert.ok(Number(x) + [...content].length * charWidth <= right[x], content);
+			assert.ok(Number(y) - 12 >= 0 && Number(y) + 4 < layout.height, content);
 		}
-		const rows = [...svg.matchAll(/<g data-line="\d+">\n<rect x="16" y="(\d+)" width="646" height="(\d+)"[^>]*\/>([\s\S]*?)<\/g>/g)];
-		for (const [i, row] of rows.entries()) {
-			const top = Number(row[1]);
-			const bottom = top + Number(row[2]);
-			for (const [, y] of row[3].matchAll(/<text x="\d+" y="(\d+)"/g)) {
-				assert.ok(Number(y) - 12 >= top && Number(y) + 4 <= bottom);
-			}
-			if (rows[i + 1]) assert.ok(bottom < Number(rows[i + 1][1]));
+		// Each branch, its labels and its destination box end before the next branch starts.
+		const extents = [...svg.matchAll(/<g data-line="\d+">([\s\S]*?)<\/g>/g)].map(([, row]) => {
+			const ys = [...row.matchAll(/<text x="\d+" y="([\d.]+)"/g)].map(([, y]) => Number(y));
+			const [, top, height] = /<rect x="478" y="([\d.]+)" width="184" height="(\d+)"/.exec(row) ?? [];
+			const line = Number(/<path d="M216,([\d.]+)/.exec(row)?.[1]);
+			return { top: Math.min(Number(top), ...ys.map((y) => y - 12)), bottom: Math.max(Number(top) + Number(height), ...ys.map((y) => y + 4)), line };
+		});
+		for (const [i, row] of extents.entries()) {
+			assert.ok(row.top >= 0 && row.bottom <= layout.height);
+			if (extents[i + 1]) assert.ok(row.bottom < extents[i + 1].top);
 		}
+		// The step's stub meets the spine, which spans the first to the last branch.
+		const stub = /<path d="M192,([\d.]+) L216,([\d.]+)" class="e e-ink"\/>/.exec(svg);
+		assert.ok(stub);
+		const mid = Number(stub[1]);
+		assert.ok(mid >= extents[0].line && mid <= extents[extents.length - 1].line);
 	}
 });
