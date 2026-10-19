@@ -322,8 +322,8 @@ outcome "Edited since" reason="The input changed after the maintainer started it
   `outcome "text" reason="text" destination="text"` lines. All three entry
   fields and the step text are required and non-empty. An optional
   `tone="…"` takes any flow tone (`done`, `rework`, `stop`, `agent`,
-  `system`, `neutral`, `muted`, `ink`) and colours the outcome box; without
-  it the box is plain. `reason=`, `destination=` and `tone=` may appear in
+  `system`, `neutral`, `muted`, `ink`) and colours the outcome box, with a
+  dashed border for `stop` as on flow panels; without it the box is plain. `reason=`, `destination=` and `tone=` may appear in
   any order, at most once each. Indentation is optional; there are no ids,
   separately authored edges or layout keys.
 - Every value is a double-quoted JSON string on one source line. Use `\"`

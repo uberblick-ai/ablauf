@@ -168,10 +168,10 @@ The header is `fan-out v0`. Name exactly one `step "text"` before one or more
 required, non-empty double-quoted JSON strings; escape quotes as `\"` and
 backslashes as `\\`. Each declaration occupies one source line. An optional
 `tone="…"` colours an outcome with a flow tone: `done` for the good ending,
-`rework` for a retry, `stop` where a person steps in. The named fields can
-appear in any order, once each. Blank lines and whole-line `#` comments are
-allowed. There are no edges, ids or placement keys; destinations are plain
-text.
+`rework` for a retry, `stop` (with a dashed border) where a person steps in.
+The named fields can appear in any order, once each. Blank lines and
+whole-line `#` comments are allowed. There are no edges, ids or placement
+keys; destinations are plain text.
 
 The default style, `branches`, draws the step on the left with a curved branch
 into each outcome box, then an arrow to the destination in bold with the reason
