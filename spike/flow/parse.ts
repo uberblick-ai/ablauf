@@ -35,6 +35,7 @@ export interface FlowNode {
 	col: string;
 	row: string; // id of the node whose row this one joins; empty starts a new row
 	span: number;
+	gap: number | null; // minimum pixels after the last covered row
 	section: number;
 	children: Child[];
 	line: number;
@@ -280,6 +281,7 @@ export function parse(source: string): {
 			col: previous?.col ?? "",
 			row: "",
 			span: 1,
+			gap: null,
 			section: Math.max(section, 0),
 			children: [],
 			line,
@@ -287,7 +289,7 @@ export function parse(source: string): {
 		const words: string[] = [];
 		let titled = false;
 		for (const t of rest) {
-			const kv = /^([a-z]+)=(.+)$/.exec(t);
+			const kv = /^([a-z]+)=(.*)$/.exec(t);
 			if (!kv) {
 				words.push(unquote(t));
 				continue;
@@ -309,6 +311,10 @@ export function parse(source: string): {
 				const n = Number(value);
 				if (Number.isInteger(n) && n >= 1) node.span = n;
 				else warn(line, "span= takes a whole number of rows");
+			} else if (key === "gap") {
+				if (/^\d+$/.test(value) && Number.isSafeInteger(Number(value)))
+					node.gap = Number(value);
+				else warn(line, "gap= takes a non-negative whole number of pixels");
 			} else if (key === "title") {
 				node.label = value;
 				titled = true;

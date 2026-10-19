@@ -73,6 +73,8 @@ export const CHAR = {
 const MARGIN = 16;
 const ROW_GAP = 30;
 const SECTION_GAP = 52;
+// Midpoint + 4 baseline, box -9..+3: 38px leaves 14px above, 12px below.
+const VERTICAL_LABEL_SEGMENT = 38;
 const MIN_COL_GAP = 56;
 const LABEL_PAD = 10;
 const LOOP_OUT = 24;
@@ -205,37 +207,49 @@ export function grid(
 	const rowH: number[] = new Array(rows).fill(16);
 	for (const p of nodes)
 		if (p.node.span === 1) rowH[first(p)] = Math.max(rowH[first(p)], p.h);
-	const gapAbove = (r: number) =>
-		r > 0 && rowSection[r] !== rowSection[r - 1] ? SECTION_GAP : ROW_GAP;
+	const rowGaps: number[] = rowSection.map((s, r) =>
+		r > 0 && s !== rowSection[r - 1] ? SECTION_GAP : ROW_GAP,
+	);
+	for (const p of nodes) {
+		if (p.node.gap === null) continue;
+		const boundary = last(p) + 1;
+		if (boundary === rows)
+			warn(p.node.line, "gap= needs a row after this node's last covered row");
+		else rowGaps[boundary] = Math.max(rowGaps[boundary], p.node.gap);
+	}
 	for (const p of nodes) {
 		if (p.node.span === 1) continue;
 		let covered = 0;
 		for (let r = first(p); r <= last(p); r++)
-			covered += rowH[r] + (r > first(p) ? gapAbove(r) : 0);
+			covered += rowH[r] + (r > first(p) ? rowGaps[r] : 0);
 		if (covered < p.h) rowH[last(p)] += p.h - covered;
 	}
-	const rowY: number[] = [];
 	// Where each section's band starts, keyed by the section, so a section
 	// without rows takes no band.
 	const sectionTop = new Map<number, number>();
-	if (rows) sectionTop.set(rowSection[0], 0);
-	let y = MARGIN;
-	for (let r = 0; r < rows; r++) {
-		if (r > 0) {
-			if (gapAbove(r) === SECTION_GAP)
-				sectionTop.set(rowSection[r], y + SECTION_GAP / 2);
-			y += gapAbove(r);
+	const placeRows = () => {
+		const rowY: number[] = [];
+		sectionTop.clear();
+		if (rows) sectionTop.set(rowSection[0], 0);
+		let y = MARGIN;
+		for (let r = 0; r < rows; r++) {
+			if (r > 0) {
+				if (rowSection[r] !== rowSection[r - 1])
+					sectionTop.set(rowSection[r], y + rowGaps[r] / 2);
+				y += rowGaps[r];
+			}
+			rowY.push(y);
+			y += rowH[r];
 		}
-		rowY.push(y);
-		y += rowH[r];
-	}
-	for (const p of nodes) {
-		const top = rowY[first(p)];
-		const bottom = rowY[last(p)] + rowH[last(p)];
-		// A spanning node fills its rows, so every row meets it head on.
-		if (p.node.span > 1) p.h = bottom - top;
-		p.y = Math.round(top + (bottom - top - p.h) / 2);
-	}
+		for (const p of nodes) {
+			const top = rowY[first(p)];
+			const bottom = rowY[last(p)] + rowH[last(p)];
+			// A spanning node fills its rows, so every row meets it head on.
+			if (p.node.span > 1) p.h = bottom - top;
+			p.y = Math.round(top + (bottom - top - p.h) / 2);
+		}
+	};
+	placeRows();
 
 	// Sides: the author's, or one of three defaults.
 	const colIndex = (p: Placed) => model.columns.indexOf(p.node.col);
@@ -353,40 +367,68 @@ export function grid(
 		p.x = Math.round(colX[colIndex(p)] + (colW[colIndex(p)] - p.w) / 2);
 
 	// Ports.
-	for (const end of ends) {
-		const p = end.node;
-		const f = frac(end);
-		end.point =
-			end.side === "top"
-				? [Math.round(p.x + p.w * f), p.y]
-				: end.side === "bottom"
-					? [Math.round(p.x + p.w * f), p.y + p.h]
-					: end.side === "left"
-						? [p.x, Math.round(p.y + p.h * f)]
-						: [p.x + p.w, Math.round(p.y + p.h * f)];
-	}
-	// An edge between two parallel sides runs straight when the longer side
-	// can meet the other end head on without crowding its other ports.
+	const placePorts = () => {
+		for (const end of ends) {
+			const p = end.node;
+			const f = frac(end);
+			end.point =
+				end.side === "top"
+					? [Math.round(p.x + p.w * f), p.y]
+					: end.side === "bottom"
+						? [Math.round(p.x + p.w * f), p.y + p.h]
+						: end.side === "left"
+							? [p.x, Math.round(p.y + p.h * f)]
+							: [p.x + p.w, Math.round(p.y + p.h * f)];
+		}
+		// An edge between two parallel sides runs straight when the longer side
+		// can meet the other end head on without crowding its other ports.
+		for (const e of model.edges) {
+			const [a, b] = ends.filter((x) => x.edge === e);
+			if (horizontal(a.side) !== horizontal(b.side) || a.side === b.side)
+				continue;
+			const k = horizontal(a.side) ? 1 : 0;
+			const extent = (end: End) => (k ? end.node.h : end.node.w);
+			const [mover, fixed] = extent(b) >= extent(a) ? [b, a] : [a, b];
+			const lo = (k ? mover.node.y : mover.node.x) + 6;
+			const hi =
+				(k ? mover.node.y + mover.node.h : mover.node.x + mover.node.w) - 6;
+			const target = fixed.point[k];
+			if (target < lo || target > hi) continue;
+			const crowded = ends.some(
+				(o) =>
+					o !== mover &&
+					o.node === mover.node &&
+					o.side === mover.side &&
+					Math.abs(o.point[k] - target) < 10,
+			);
+			if (!crowded) mover.point[k] = target;
+		}
+	};
+	placePorts();
+
+	// Only adjacent, disjoint row ranges have one boundary to grow. Inspect
+	// the selected label end using the authored sides and actual port x's.
+	// Every requirement is measured against the same initial row positions.
+	const labelGaps = [...rowGaps];
 	for (const e of model.edges) {
-		const [a, b] = ends.filter((x) => x.edge === e);
-		if (horizontal(a.side) !== horizontal(b.side) || a.side === b.side)
-			continue;
-		const k = horizontal(a.side) ? 1 : 0;
-		const extent = (end: End) => (k ? end.node.h : end.node.w);
-		const [mover, fixed] = extent(b) >= extent(a) ? [b, a] : [a, b];
-		const lo = (k ? mover.node.y : mover.node.x) + 6;
-		const hi =
-			(k ? mover.node.y + mover.node.h : mover.node.x + mover.node.w) - 6;
-		const target = fixed.point[k];
-		if (target < lo || target > hi) continue;
-		const crowded = ends.some(
-			(o) =>
-				o !== mover &&
-				o.node === mover.node &&
-				o.side === mover.side &&
-				Math.abs(o.point[k] - target) < 10,
+		if (!e.label) continue;
+		const [a, b] = ends.filter((end) => end.edge === e);
+		const near = e.label_at === "start" ? a : b;
+		if (horizontal(near.side) || a.side === b.side) continue;
+		const [upper, lower] = first(a.node) < first(b.node) ? [a, b] : [b, a];
+		const boundary = first(lower.node);
+		if (last(upper.node) + 1 !== boundary) continue;
+		const z = !horizontal(a.side) && !horizontal(b.side) && a.point[0] !== b.point[0];
+		const required = VERTICAL_LABEL_SEGMENT * (z ? 2 : 1);
+		const separation = Math.abs(a.point[1] - b.point[1]);
+		labelGaps[boundary] = Math.max(
+			labelGaps[boundary], rowGaps[boundary] + required - separation,
 		);
-		if (!crowded) mover.point[k] = target;
+	}
+	if (labelGaps.some((gap, r) => gap > rowGaps[r])) {
+		rowGaps.splice(0, rows, ...labelGaps);
+		placeRows();
+		placePorts();
 	}
 
 	// Elbows: one fixed shape per pair of sides.

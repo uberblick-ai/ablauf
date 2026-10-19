@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" class="ab" viewBox="0 0 710 504" width="710" height="504" role="img" aria-label="Flow: cart, address, fraud, payment, card declined, pick, ship, Delivered. Legend: state, automated step, manual review, customer retries">
+<svg xmlns="http://www.w3.org/2000/svg" class="ab" viewBox="0 0 710 520" width="710" height="520" role="img" aria-label="Flow: cart, address, fraud, payment, card declined, pick, ship, Delivered. Legend: state, automated step, manual review, customer retries">
 <style>.ab{--ink:var(--ab-ink,#17202c);--muted:var(--ab-muted,#5a6575);--line:var(--ab-line,#d3d9e2);--band:var(--ab-band,#e9eef5);--surface:var(--ab-surface,#ffffff);--agent:var(--ab-agent,#0b6b67);--agent-bg:var(--ab-agent-bg,#dff1ee);--rework:var(--ab-rework,#a65f0c);--rework-bg:var(--ab-rework-bg,#fbefdc);--stop:var(--ab-stop,#b2382f);--stop-bg:var(--ab-stop-bg,#f9e2df);--done:var(--ab-done,#2a7845);--done-bg:var(--ab-done-bg,#e0f1e5);}@media (prefers-color-scheme:dark){.ab{--ink:var(--ab-ink,#e5e9ef);--muted:var(--ab-muted,#98a2b0);--line:var(--ab-line,#2c3440);--band:var(--ab-band,#151b23);--surface:var(--ab-surface,#1d232d);--agent:var(--ab-agent,#5cc5bb);--agent-bg:var(--ab-agent-bg,#12302d);--rework:var(--ab-rework,#e3a250);--rework-bg:var(--ab-rework-bg,#33250f);--stop:var(--ab-stop,#ef7f73);--stop-bg:var(--ab-stop-bg,#3a1916);--done:var(--ab-done,#72cf91);--done-bg:var(--ab-done-bg,#142e1d);}}
 .ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
 .ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
@@ -16,59 +16,59 @@
 <marker id="checkout-stop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-stop"/></marker>
 </defs>
 <text x="20" y="22" class="cap">CHECKOUT</text>
-<rect x="8" y="238" width="694" height="220" class="band"/>
-<line x1="8" y1="238" x2="702" y2="238" class="rule"/>
-<text x="20" y="260" class="cap">FULFILMENT</text>
-<path d="M310,50 L310,80" class="e e-ink" marker-end="url(#checkout-ink)"/>
-<path d="M309,126 L309,161" class="e e-ink" marker-end="url(#checkout-ink)"/>
-<path d="M309,207 L309,264" class="e e-ink" marker-end="url(#checkout-ink)"/>
-<path d="M309,310 L309,340" class="e e-ink" marker-end="url(#checkout-ink)"/>
-<path d="M309,386 L309,416" class="e e-ink" marker-end="url(#checkout-ink)"/>
-<path d="M219,184 L146,184" class="e e-rework" marker-end="url(#checkout-rework)"/>
-<path d="M81,167 L81,103 L219,103" class="e e-rework" marker-end="url(#checkout-rework)"/>
-<path d="M399,184 L465,184" class="e e-stop" marker-end="url(#checkout-stop)"/>
-<path d="M580,212 L580,287 L399,287" class="e e-stop" marker-end="url(#checkout-stop)"/>
+<rect x="8" y="246" width="694" height="228" class="band"/>
+<line x1="8" y1="246" x2="702" y2="246" class="rule"/>
+<text x="20" y="268" class="cap">FULFILMENT</text>
+<path d="M310,50 L310,88" class="e e-ink" marker-end="url(#checkout-ink)"/>
+<path d="M309,134 L309,169" class="e e-ink" marker-end="url(#checkout-ink)"/>
+<path d="M309,215 L309,272" class="e e-ink" marker-end="url(#checkout-ink)"/>
+<path d="M309,318 L309,348" class="e e-ink" marker-end="url(#checkout-ink)"/>
+<path d="M309,394 L309,432" class="e e-ink" marker-end="url(#checkout-ink)"/>
+<path d="M219,192 L146,192" class="e e-rework" marker-end="url(#checkout-rework)"/>
+<path d="M81,175 L81,111 L219,111" class="e e-rework" marker-end="url(#checkout-rework)"/>
+<path d="M399,192 L465,192" class="e e-stop" marker-end="url(#checkout-stop)"/>
+<path d="M580,220 L580,295 L399,295" class="e e-stop" marker-end="url(#checkout-stop)"/>
 <g><rect x="277" y="16" width="65" height="34" rx="17" class="pill"/>
 <circle cx="291" cy="33" r="5" class="t-muted"/>
 <text x="303" y="37" class="m s12">cart</text></g>
 <g>
-<rect x="219" y="80" width="180" height="46" rx="8" class="k-agent"/>
-<text x="309" y="99" text-anchor="middle" class="m s13 b t-agent">address</text>
-<text x="309" y="116" text-anchor="middle" class="s11 muted">shipping address</text>
+<rect x="219" y="88" width="180" height="46" rx="8" class="k-agent"/>
+<text x="309" y="107" text-anchor="middle" class="m s13 b t-agent">address</text>
+<text x="309" y="124" text-anchor="middle" class="s11 muted">shipping address</text>
 </g>
 <g>
-<rect x="219" y="161" width="180" height="46" rx="8" class="k-agent"/>
-<text x="309" y="180" text-anchor="middle" class="m s13 b t-agent">payment</text>
-<text x="309" y="197" text-anchor="middle" class="s11 muted">authorise the card</text>
+<rect x="219" y="169" width="180" height="46" rx="8" class="k-agent"/>
+<text x="309" y="188" text-anchor="middle" class="m s13 b t-agent">payment</text>
+<text x="309" y="205" text-anchor="middle" class="s11 muted">authorise the card</text>
 </g>
 <g>
-<rect x="219" y="264" width="180" height="46" rx="8" class="k-agent"/>
-<text x="309" y="283" text-anchor="middle" class="m s13 b t-agent">pick</text>
-<text x="309" y="300" text-anchor="middle" class="s11 muted">pick and pack</text>
+<rect x="219" y="272" width="180" height="46" rx="8" class="k-agent"/>
+<text x="309" y="291" text-anchor="middle" class="m s13 b t-agent">pick</text>
+<text x="309" y="308" text-anchor="middle" class="s11 muted">pick and pack</text>
 </g>
 <g>
-<rect x="219" y="340" width="180" height="46" rx="8" class="k-agent"/>
-<text x="309" y="359" text-anchor="middle" class="m s13 b t-agent">ship</text>
-<text x="309" y="376" text-anchor="middle" class="s11 muted">hand to the carrier</text>
+<rect x="219" y="348" width="180" height="46" rx="8" class="k-agent"/>
+<text x="309" y="367" text-anchor="middle" class="m s13 b t-agent">ship</text>
+<text x="309" y="384" text-anchor="middle" class="s11 muted">hand to the carrier</text>
 </g>
-<rect x="224" y="416" width="170" height="34" rx="17" class="k-done"/>
-<text x="309" y="437" text-anchor="middle" class="s12 b t-done">Delivered</text>
-<g><rect x="16" y="167" width="130" height="34" rx="17" class="pill"/>
-<circle cx="30" cy="184" r="5" class="t-rework"/>
-<text x="42" y="188" class="m s12">card declined</text></g>
-<g><rect x="465" y="156" width="229" height="56" rx="10" class="k-stop panel"/>
-<text x="580" y="181" text-anchor="middle" class="s12 b">Fraud review</text>
-<text x="580" y="199" text-anchor="middle" class="s11 muted">an analyst checks risky orders</text></g>
-<text x="320" y="69" class="m s11">check out</text>
-<text x="319" y="240" class="m s11">authorised</text>
-<text x="319" y="405" class="m s11">tracked</text>
-<text x="209" y="177" text-anchor="end" class="m s11 t-rework">declined</text>
-<text x="209" y="96" text-anchor="end" class="m s11 t-rework">try another card</text>
-<text x="409" y="177" class="m s11 t-stop">flagged</text>
-<text x="409" y="280" class="m s11 t-stop">cleared</text>
-<line x1="8" y1="466" x2="702" y2="466" class="rule"/>
-<g><rect x="16" y="480" width="24" height="12" rx="6" class="pill"/><circle cx="23" cy="486" r="3" class="t-muted"/><text x="46" y="490" class="s11 muted">state</text></g>
-<g><rect x="97" y="480" width="24" height="12" rx="3" class="k-agent"/><text x="127" y="490" class="s11 muted">automated step</text></g>
-<g><rect x="232" y="480" width="24" height="12" rx="3" class="k-stop panel"/><text x="262" y="490" class="s11 muted">manual review</text></g>
-<g><path d="M361,486 L385,486" class="e e-rework" marker-end="url(#checkout-rework)"/><text x="391" y="490" class="s11 muted">customer retries</text></g>
+<rect x="224" y="432" width="170" height="34" rx="17" class="k-done"/>
+<text x="309" y="453" text-anchor="middle" class="s12 b t-done">Delivered</text>
+<g><rect x="16" y="175" width="130" height="34" rx="17" class="pill"/>
+<circle cx="30" cy="192" r="5" class="t-rework"/>
+<text x="42" y="196" class="m s12">card declined</text></g>
+<g><rect x="465" y="164" width="229" height="56" rx="10" class="k-stop panel"/>
+<text x="580" y="189" text-anchor="middle" class="s12 b">Fraud review</text>
+<text x="580" y="207" text-anchor="middle" class="s11 muted">an analyst checks risky orders</text></g>
+<text x="320" y="73" class="m s11">check out</text>
+<text x="319" y="248" class="m s11">authorised</text>
+<text x="319" y="417" class="m s11">tracked</text>
+<text x="209" y="185" text-anchor="end" class="m s11 t-rework">declined</text>
+<text x="209" y="104" text-anchor="end" class="m s11 t-rework">try another card</text>
+<text x="409" y="185" class="m s11 t-stop">flagged</text>
+<text x="409" y="288" class="m s11 t-stop">cleared</text>
+<line x1="8" y1="482" x2="702" y2="482" class="rule"/>
+<g><rect x="16" y="496" width="24" height="12" rx="6" class="pill"/><circle cx="23" cy="502" r="3" class="t-muted"/><text x="46" y="506" class="s11 muted">state</text></g>
+<g><rect x="97" y="496" width="24" height="12" rx="3" class="k-agent"/><text x="127" y="506" class="s11 muted">automated step</text></g>
+<g><rect x="232" y="496" width="24" height="12" rx="3" class="k-stop panel"/><text x="262" y="506" class="s11 muted">manual review</text></g>
+<g><path d="M361,502 L385,502" class="e e-rework" marker-end="url(#checkout-rework)"/><text x="391" y="506" class="s11 muted">customer retries</text></g>
 </svg>
