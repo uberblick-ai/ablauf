@@ -109,6 +109,12 @@ there from the text and the diagnostics alone, without seeing the image.
   already know that spelling. Nothing else is Mermaid.
 - Ids are the labels people read (`reviewer`, `needs-changes`) unless `title=`
   says otherwise, so the source reads like the picture.
+- Wherever `tone=` is supported (nodes, edges and legend entries), it accepts
+  `ink`, `muted`, `neutral`, `agent`, `system`, `done`, `rework` or `stop`. `neutral` gives
+  boxes, panels and end states a grey fill distinct from the surface and
+  section bands, with a neutral foreground for titles, outlines, edges,
+  arrowheads and pill dots. Legend samples use the same styles as the diagram.
+  `ink` and `muted` keep surface-filled boxes and panels; defaults are unchanged.
 - Slots count left to right on a top or bottom, top to bottom on a left or
   right. Explicit slots are assigned first. Without a reserved centre,
   unnumbered ends fill gaps in source order, and ports are evenly spaced along
@@ -179,8 +185,8 @@ in one small diagram for light/dark review in the playground's document column.
   text with letter spacing. A section without nodes gets a line-numbered
   diagnostic and draws no band or caption.
 - Colours use the base `--ab-ink`, `--ab-muted`, `--ab-line`, `--ab-band` and
-  `--ab-surface` overrides, plus `--ab-agent`, `--ab-done`, `--ab-rework` and
-  `--ab-stop` foregrounds and each tone's `--ab-<tone>-bg` background.
+  `--ab-surface` overrides, plus `--ab-neutral`, `--ab-agent`, `--ab-system`,
+  `--ab-done`, `--ab-rework` and `--ab-stop` foregrounds and each tone's `--ab-<tone>-bg` background.
   [Host page themes](theming.md) documents every property and complete CSS
   for root `data-theme="light"` / `data-theme="dark"`. Host overrides update
   inline SVG without rerendering and take precedence over the system theme

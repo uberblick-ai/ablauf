@@ -1,0 +1,33 @@
+flow v0
+columns steps notes
+
+section "Surface-filled"
+text compare col=notes tone=neutral "Compare light and dark"
+box ink col=steps tone=ink "surface interior"
+panel ink-panel col=notes row=ink tone=ink
+  strong "Ink panel"
+  muted "surface interior"
+box muted col=steps tone=muted "surface interior"
+panel muted-panel col=notes row=muted tone=muted
+  strong "Muted panel"
+  muted "surface interior"
+
+section "Filled grey"
+box neutral col=steps tone=neutral "filled grey step"
+panel neutral-panel col=notes row=neutral tone=neutral
+  pill neutral label
+  strong "Filled grey panel"
+  muted "readable supporting text"
+pill waiting col=steps tone=neutral
+end complete tone=neutral "Complete"
+
+neutral --> waiting tone=neutral : next
+waiting -.-> complete tone=neutral : finish
+
+legend
+  box tone=neutral "grey step"
+  panel tone=neutral "grey panel"
+  pill tone=neutral "neutral label"
+  end tone=neutral "neutral end"
+  edge tone=neutral "neutral path"
+  dashed tone=neutral "dashed path"

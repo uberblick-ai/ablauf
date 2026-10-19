@@ -12,10 +12,12 @@ These are the complete palette and the built-in defaults:
 | Property | Use | Light | Dark |
 | --- | --- | --- | --- |
 | `--ab-ink` | Main text, including pill labels and panel text | `#17202c` | `#e5e9ef` |
-| `--ab-muted` | Secondary text, neutral tone foregrounds and neutral edges | `#5a6575` | `#98a2b0` |
-| `--ab-line` | Neutral outlines and separator rules | `#d3d9e2` | `#2c3440` |
+| `--ab-muted` | Secondary text, ink/muted tone foregrounds and edges | `#5a6575` | `#98a2b0` |
+| `--ab-line` | Ink/muted outlines, pill outlines and separator rules | `#d3d9e2` | `#2c3440` |
 | `--ab-band` | Shaded section backgrounds | `#e9eef5` | `#151b23` |
-| `--ab-surface` | Pill and neutral node backgrounds | `#ffffff` | `#1d232d` |
+| `--ab-surface` | Pill and ink/muted node backgrounds | `#ffffff` | `#1d232d` |
+| `--ab-neutral` | Neutral tone foreground | `#59616c` | `#b6bbc3` |
+| `--ab-neutral-bg` | Neutral tone background | `#e1e3e6` | `#303640` |
 | `--ab-agent` | Agent tone foreground | `#0b6b67` | `#5cc5bb` |
 | `--ab-agent-bg` | Agent tone background | `#dff1ee` | `#12302d` |
 | `--ab-system` | System tone foreground | `#3459a3` | `#91b4fa` |
@@ -47,6 +49,8 @@ keep the whole palette consistent when the system and page themes disagree.
   --ab-line: #d3d9e2;
   --ab-band: #e9eef5;
   --ab-surface: #ffffff;
+  --ab-neutral: #59616c;
+  --ab-neutral-bg: #e1e3e6;
   --ab-agent: #0b6b67;
   --ab-agent-bg: #dff1ee;
   --ab-system: #3459a3;
@@ -65,6 +69,8 @@ keep the whole palette consistent when the system and page themes disagree.
   --ab-line: #2c3440;
   --ab-band: #151b23;
   --ab-surface: #1d232d;
+  --ab-neutral: #b6bbc3;
+  --ab-neutral-bg: #303640;
   --ab-agent: #5cc5bb;
   --ab-agent-bg: #12302d;
   --ab-system: #91b4fa;

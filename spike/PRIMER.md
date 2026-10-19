@@ -50,7 +50,12 @@ worker --> person tone=stop : stuck
 | `end` | a final state | the caption |
 | `panel` | a box with indented content: `pill`, `text`, `muted`, `strong`, `rule` | |
 
-Tones: `ink`, `muted`, `agent`, `system`, `done`, `rework`, `stop`.
+Tones: `ink`, `muted`, `neutral`, `agent`, `system`, `done`, `rework`, `stop`. Use
+`tone=neutral` for a filled grey box, panel or end state; `ink` and `muted`
+keep their interiors surface-filled. Neutral also colours edge strokes,
+arrowheads and pill dots, with matching legend samples in light and dark.
+Hosts can override its foreground and fill with `--ab-neutral` and
+`--ab-neutral-bg`.
 
 Use `box ... tone=system` for an automated system step, such as a launcher.
 It has a blue title, border and tinted background, distinct from the teal
