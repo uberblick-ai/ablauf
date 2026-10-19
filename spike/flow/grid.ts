@@ -2,6 +2,7 @@
 // contents and draws the elbow each pair of sides implies. It never moves a
 // node or picks a route; problems become diagnostics for the author.
 
+import { CHAR, type FontsOptions, Typography } from "./fonts.ts";
 import type {
 	Diagnostic,
 	FlowEdge,
@@ -52,6 +53,7 @@ export interface Key {
 }
 
 export interface Layout {
+	typography: Typography;
 	width: number;
 	height: number;
 	nodes: Placed[];
@@ -61,15 +63,7 @@ export interface Layout {
 	diagnostics: Diagnostic[];
 }
 
-// Character widths for the fonts the SVG asks for. Mono is reliable; sans is
-// an estimate.
-export const CHAR = {
-	mono11: 6.6,
-	mono12: 7.2,
-	mono13: 7.8,
-	sans11: 6.1,
-	sans12: 6.7,
-};
+export { CHAR } from "./fonts.ts";
 const MARGIN = 16;
 const ROW_GAP = 30;
 const SECTION_GAP = 52;
@@ -108,18 +102,17 @@ export function wrap(text: string): string[] {
 	lines.push(line);
 	return lines;
 }
-const labelWidth = (text: string) => Math.round(len(text) * CHAR.mono11);
 const horizontal = (s: SideName) => s === "left" || s === "right";
 
-function size(n: FlowNode): { w: number; h: number } {
+function size(n: FlowNode, fonts: Typography): { w: number; h: number } {
 	switch (n.kind) {
 		case "text":
-			return { w: Math.round(len(n.label) * CHAR.sans12), h: 16 };
+			return { w: Math.round(fonts.width(n.label, "text", 12)), h: 16 };
 		case "pill":
-			return { w: Math.round(36 + len(n.label) * CHAR.mono12), h: 34 };
+			return { w: fonts.pillWidth(n.label), h: 34 };
 		case "end":
 			return {
-				w: Math.round(Math.max(170, len(n.label) * CHAR.sans12 + 40)),
+				w: Math.round(Math.max(170, fonts.width(n.label, "text", 12, 600) + 40)),
 				h: 34,
 			};
 		case "box": {
@@ -128,8 +121,8 @@ function size(n: FlowNode): { w: number; h: number } {
 				w: Math.round(
 					Math.max(
 						180,
-						len(n.label) * CHAR.mono13 + 32,
-						Math.max(...lines.map(len)) * CHAR.sans11 + 28,
+						fonts.width(n.label, "mono", 13, 600) + 32,
+						Math.max(...lines.map((t) => fonts.width(t, "text", 11))) + 28,
 					),
 				),
 				h: 46 + (lines.length - 1) * 15,
@@ -140,10 +133,13 @@ function size(n: FlowNode): { w: number; h: number } {
 			for (const c of n.children) {
 				const width =
 					c.kind === "pill"
-						? 36 + len(c.text) * CHAR.mono12
+						? fonts.pillWidth(c.text)
 						: c.kind === "rule"
 							? 0
-							: Math.max(...wrap(c.text).map(len)) * CHAR.sans12;
+							: Math.max(...wrap(c.text).map((t) => fonts.width(
+								t, "text", c.kind === "strong" ? 12 : 11,
+								c.kind === "strong" ? 600 : 400, CHAR.sans12,
+							)));
 				w = Math.max(w, Math.round(width + 28));
 			}
 			return { w, h: panelContentHeight(n) };
@@ -163,14 +159,17 @@ interface End {
 export function grid(
 	model: Model,
 	parseDiagnostics: Diagnostic[] = [],
+	fontOptions: FontsOptions = {},
 ): Layout {
+	const typography = new Typography(fontOptions);
+	const labelWidth = (text: string) => Math.round(typography.width(text, "mono", 11));
 	const diagnostics = [...parseDiagnostics];
 	const warn = (line: number, message: string) =>
 		diagnostics.push({ line, severity: "warning", message });
 
 	const placed = new Map<string, Placed>();
 	for (const n of model.nodes)
-		placed.set(n.id, { node: n, x: 0, y: 0, ...size(n) });
+		placed.set(n.id, { node: n, x: 0, y: 0, ...size(n, typography) });
 	const P = (id: string) => placed.get(id) as Placed;
 	const nodes = [...placed.values()];
 
@@ -433,7 +432,7 @@ export function grid(
 			edge: e,
 			points,
 			tone: e.tone,
-			label: placeLabel(e, points, a, b),
+			label: placeLabel(e, points, a, b, labelWidth(e.label)),
 		});
 	}
 
@@ -465,16 +464,15 @@ export function grid(
 		}
 		for (const [s, top] of sectionTop) if (top) sectionTop.set(s, top + dy);
 	}
-	const CAPTION_CHAR = CHAR.mono11 + 0.88; // .08em letter-spacing at 11px
 	const right = Math.max(
 		0,
 		...nodes.map((p) => p.x + p.w),
 		...routes.flatMap((r) => r.points.map((p) => p[0])),
 		...labelRects.map((l) => l.x + l.w + dx),
-		...model.sections.map((t) => 20 + Math.round(len(t.toUpperCase()) * CAPTION_CHAR)),
+		...model.sections.map((t) => 20 + typography.captionWidth(t)),
 	);
 	const keyW = (k: LegendItem) =>
-		SAMPLE_W + 6 + Math.round(len(k.text) * CHAR.sans11);
+		SAMPLE_W + 6 + Math.round(typography.width(k.text, "text", 11));
 	const width = Math.round(
 		Math.max(right, MARGIN + Math.max(0, ...model.legend.map(keyW))) + MARGIN,
 	);
@@ -511,8 +509,8 @@ export function grid(
 		height = y + KEY_ROW / 2 + 8;
 	}
 
-	check(nodes, routes, bands, warn);
-	return { width, height, nodes, routes, bands, legend, diagnostics };
+	check(nodes, routes, bands, warn, typography);
+	return { width, height, nodes, routes, bands, legend, diagnostics, typography };
 }
 
 // A label sits next to the end it belongs to: above a horizontal segment,
@@ -522,9 +520,9 @@ function placeLabel(
 	points: Point[],
 	a: End,
 	b: End,
+	w: number,
 ): Label | null {
 	if (!e.label) return null;
-	const w = labelWidth(e.label);
 	const atEnd = e.label_at === "end";
 	const end = atEnd ? b : a;
 	const p = atEnd ? points[points.length - 1] : points[0];
@@ -615,6 +613,7 @@ function check(
 	routes: Route[],
 	bands: Band[],
 	warn: (line: number, m: string) => void,
+	fonts: Typography,
 ) {
 	for (const r of routes) {
 		for (const s of segments(r)) {
@@ -688,7 +687,7 @@ function check(
 		const box: Rect = {
 			x: 20,
 			y: b.y + 12,
-			w: Math.round([...b.label].length * CHAR.mono11 * 1.15) + 2,
+			w: fonts.captionWidth(b.label, true),
 			h: 12,
 		};
 		for (const n of nodes)
