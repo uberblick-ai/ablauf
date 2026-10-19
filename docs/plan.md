@@ -106,8 +106,9 @@ there from the text and the diagnostics alone, without seeing the image.
 - Line grammar in wireframe-md's style: `kind id "text" key=value`, two-space
   indent for panel contents, `#` comments.
 - Repeating a key on one node, edge or legend-entry line warns with the key
-  name, even when its values are identical. Values still apply in source order:
-  the last valid value wins. Reusing a key on separate lines is allowed.
+  name, even when its values are identical. Valid repeated values still use the
+  last value; existing invalid-value fallbacks are unchanged. Reusing a key on
+  separate lines is allowed.
 - Edges are spelled like Mermaid (`-->`, `-.->`, `: label`), because agents
   already know that spelling. Nothing else is Mermaid.
 - Ids are the labels people read (`reviewer`, `needs-changes`) unless `title=`

@@ -29,8 +29,8 @@ worker --> person tone=stop : stuck
 ```
 
 Use each key once per node, edge or legend-entry line. Repeating a key warns,
-even with identical values; the last valid value still wins. Reusing keys on
-separate lines is allowed.
+even with identical values; valid repeated values still use the last value.
+Reusing keys on separate lines is allowed.
 
 ## Grid
 
