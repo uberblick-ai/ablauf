@@ -50,7 +50,19 @@ worker --> person tone=stop : stuck
 | `end` | a final state | the caption |
 | `panel` | a box with indented content: `pill`, `text`, `muted`, `strong`, `rule` | |
 
-Tones: `ink`, `muted`, `agent`, `done`, `rework`, `stop`.
+Tones: `ink`, `muted`, `agent`, `system`, `done`, `rework`, `stop`.
+
+Use `box ... tone=system` for an automated system step, such as a launcher.
+It has a blue title, border and tinted background, distinct from the teal
+agent role (`box`), red person panel (`panel tone=stop`), label with a coloured
+dot (`pill`) and neutral note (`panel tone=muted`). `title=` overrides the id
+as the visible title; the quoted text remains the subtitle:
+
+```
+box loop col=main tone=system title="The loop" "claims eligible items in order"
+```
+
+It uses the same `col=`, `row=`, `span=` and edges as any box.
 
 Panel sizes are automatic. Their `text`, `muted` and `strong` lines wrap at
 word boundaries to fit the panel's inner width; a long child pill widens the
@@ -97,6 +109,7 @@ could ask what a shape or colour stands for.
 legend
   pill "GitHub label"
   box "agent role"
+  box tone=system "automated system step"
   panel tone=stop "a person decides"
   dashed tone=rework "set by the launcher"
 ```

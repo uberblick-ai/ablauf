@@ -130,6 +130,30 @@ there from the text and the diagnostics alone, without seeing the image.
   In pixels, everything below the insert moves down by one row. Nothing moves
   sideways unless a wider node widens its column.
 
+### System steps
+
+Use `box id tone=system title="Title" "explanatory text"` for an automated
+system step, such as a launcher. For example:
+
+```
+box loop col=main tone=system title="The loop" "claims eligible items in order"
+```
+
+Like any box, its id supplies the title unless `title=` overrides it, and the
+quoted text supplies the subtitle. It supports the existing `col=`, `row=`,
+`span=`, incoming/outgoing edges, sides and slots without changing layout rules.
+The default box tone remains `agent`.
+
+The `system` tone draws a blue title and border on a tinted background in both
+light and dark. It distinguishes automated system steps from teal agent boxes,
+red person panels, label pills with a coloured dot, and neutral muted panels used
+as notes. Colours use `--ab-system` and `--ab-system-bg` host overrides. Like the
+other tones, `system` also works on edges and legend entries. A matching sample
+is `box tone=system "automated system step"` inside a `legend`.
+
+[system-steps.flow](../spike/examples/system-steps.flow) compares these styles
+in one small diagram for light/dark review in the playground's document column.
+
 ## Rendering rules
 
 - SVG as a string, with no browser and no DOM, and the same bytes for the same input.
