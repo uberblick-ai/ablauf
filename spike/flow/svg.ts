@@ -1,6 +1,7 @@
 // SVG as a string, in the house style. Colours are CSS variables a host can
 // override with --ab-*; light and dark follow prefers-color-scheme.
 
+import { Typography } from "./fonts.ts";
 import {
 	type Band,
 	type Key,
@@ -53,12 +54,12 @@ const palette = (scheme?: "light" | "dark") =>
 		? `.ab{${vars(scheme === "dark" ? DARK : LIGHT)}}`
 		: `.ab{${vars(LIGHT)}}@media (prefers-color-scheme:dark){.ab{${vars(DARK)}}}`;
 
-const STYLE = `
-.ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
-.ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+const style = (fonts: Typography) => `
+.ab text{font-family:${fonts.text ? `"${fonts.text.family}"` : '"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif'};${fonts.text || fonts.mono ? "font-weight:400;" : ""}fill:var(--ink)}
+.ab .m{font-family:${fonts.mono ? `"${fonts.mono.family}"` : '"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace'}}
 .ab .s11{font-size:11px}.ab .s12{font-size:12px}.ab .s13{font-size:13px}
 .ab .muted{fill:var(--muted)}.ab .b{font-weight:600}
-.ab .cap{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.08em;fill:var(--muted)}
+.ab .cap{font-family:${fonts.mono ? `"${fonts.mono.family}"` : '"IBM Plex Mono",ui-monospace,Menlo,monospace'};font-size:11px;letter-spacing:.08em;fill:var(--muted)}
 .ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
 .ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
 .ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
@@ -86,8 +87,8 @@ export interface SvgOptions {
 	scheme?: "light" | "dark";
 }
 
-export const svgStyle = (scheme?: "light" | "dark") =>
-	`<style>${palette(scheme)}\n${STYLE}</style>`;
+export const svgStyle = (scheme?: "light" | "dark", fonts: Typography = new Typography()) =>
+	`<style>${palette(scheme)}\n${style(fonts)}</style>`;
 
 export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 	// A dot plus four hex digits encodes each unsafe UTF-16 code unit. Dots
@@ -109,7 +110,7 @@ export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 	out.push(
 		`<svg xmlns="http://www.w3.org/2000/svg" class="ab" viewBox="0 0 ${layout.width} ${layout.height}" width="${layout.width}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? describe(layout))}">`,
 	);
-	out.push(svgStyle(options.scheme));
+	out.push(svgStyle(options.scheme, layout.typography));
 	out.push("<defs>");
 	for (const t of tones) {
 		out.push(
@@ -119,7 +120,7 @@ export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 	out.push("</defs>");
 	for (const b of layout.bands) out.push(band(b, layout.width));
 	for (const r of layout.routes) out.push(route(r, id));
-	for (const p of layout.nodes) out.push(node(p));
+	for (const p of layout.nodes) out.push(node(p, layout.typography));
 	for (const r of layout.routes) if (r.label) out.push(edgeLabel(r));
 	if (layout.legend) {
 		out.push(
@@ -188,8 +189,8 @@ function pill(
 	h: number,
 	label: string,
 	tone: Tone,
+	w: number,
 ): string {
-	const w = Math.round(36 + [...label].length * 7.2);
 	const cy = y + h / 2;
 	return [
 		`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${h / 2}" class="pill"/>`,
@@ -198,14 +199,14 @@ function pill(
 	].join("\n");
 }
 
-function node(p: Placed): string {
+function node(p: Placed, fonts: Typography): string {
 	const { node: n, x, y, w, h } = p;
 	const cx = Math.round(x + w / 2);
 	switch (n.kind) {
 		case "text":
 			return `<text x="${cx}" y="${y + 12}" text-anchor="middle" class="s12 muted">${esc(n.label)}</text>`;
 		case "pill":
-			return `<g>${pill(x, y, h, n.label, n.tone)}</g>`;
+			return `<g>${pill(x, y, h, n.label, n.tone, w)}</g>`;
 		case "end":
 			return [
 				`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${h / 2}" class="k-${n.tone}"/>`,
@@ -233,8 +234,8 @@ function node(p: Placed): string {
 			let cy = Math.round(y + 12 + (h - panelContentHeight(n)) / 2);
 			for (const c of n.children) {
 				if (c.kind === "pill") {
-					const pw = Math.round(36 + [...c.text].length * 7.2);
-					parts.push(pill(Math.round(cx - pw / 2), cy, 30, c.text, n.tone));
+					const pw = fonts.pillWidth(c.text);
+					parts.push(pill(Math.round(cx - pw / 2), cy, 30, c.text, n.tone, pw));
 					cy += 36;
 				} else if (c.kind === "rule") {
 					parts.push(

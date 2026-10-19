@@ -1,4 +1,5 @@
 // An edge-free list: the author supplies one step and ordered outcome rows.
+import { Typography } from "./fonts.ts";
 import { CHAR, type Layout } from "./grid.ts";
 import type { Diagnostic } from "./parse.ts";
 import { esc, type SvgOptions, svgStyle } from "./svg.ts";
@@ -156,7 +157,7 @@ export function renderFanout(source: string, options: SvgOptions = {}) {
 		y += 32 + lines.length * LEADING;
 	}
 	// No routed-flow nodes or edges: the playground's grid overlay is empty.
-	const layout: Layout = { width: WIDTH, height: y + 16, nodes: [], routes: [], bands: [], legend: null, diagnostics };
+	const layout: Layout = { width: WIDTH, height: y + 16, nodes: [], routes: [], bands: [], legend: null, diagnostics, typography: new Typography() };
 	const description = `Fan-out: ${step}. ${entries.map((e) => `${e.outcome}: ${e.reason}; destination: ${e.destination}`).join(". ")}`;
 	const svg = `<svg xmlns="http://www.w3.org/2000/svg" class="ab" viewBox="0 0 ${WIDTH} ${layout.height}" width="${WIDTH}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? description)}">\n${svgStyle(options.scheme)}\n${body.join("\n")}\n</svg>\n`;
 	return { svg, diagnostics, layout };
