@@ -27,7 +27,7 @@
     "prepack": "npm run build",
     "lint": "biome lint --error-on-warnings .",
     "typecheck": "tsc --noEmit",
-    "test": "node --test spike/flow.test.ts spike/package.test.ts",
+    "test": "node --test 'spike/**/*.test.ts'",
     "test:package": "node --test spike/package.test.ts",
     "render": "node spike/render.ts",
     "check": "node spike/check.ts",
