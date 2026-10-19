@@ -26,7 +26,10 @@ test("neutral works on every node kind, edges and matching legend samples", () =
 	assert.equal([...svg.matchAll(/<rect [^>]*class="k-neutral"/g)].length, 4);
 	assert.equal([...svg.matchAll(/<rect [^>]*class="k-neutral panel"/g)].length, 2);
 	assert.equal([...svg.matchAll(/<circle [^>]*class="t-neutral"/g)].length, 3);
-	assert.equal([...svg.matchAll(/class="e e-neutral(?: dash)?" marker-end="url\(#neutral-neutral\)"/g)].length, 4);
+	assert.equal([...svg.matchAll(/class="e e-neutral(?: dash)?"/g)].length, 4);
+	// Route arrowheads draw separately above knockouts; legend lines keep theirs.
+	assert.equal([...svg.matchAll(/class="arrow" marker-end="url\(#neutral-neutral\)"/g)].length, 2);
+	assert.equal([...svg.matchAll(/class="e e-neutral(?: dash)?" marker-end="url\(#neutral-neutral\)"/g)].length, 2);
 	assert.match(svg, /<marker id="neutral-neutral"[^>]*><path [^>]*class="t-neutral"\/><\/marker>/);
 	assert.ok(svg.includes('class="m s13 b t-neutral">neutral</text>'));
 });

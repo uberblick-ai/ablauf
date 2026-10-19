@@ -103,6 +103,13 @@ share a width measured from their titles and wrapped subtitles.
   several rows takes a straight edge from each of them. A side to a top or
   bottom gives one bend; otherwise there are two.
 - `label=end` puts the label at the target end instead of the source end.
+- At an interior crossing, the edge declared later passes above the earlier
+  edge with a short canvas-colour knockout gap. Swapping the declarations
+  swaps which edge has the break, without changing routes or styling. The
+  gap uses the host's `--ab-bg` background (`--ab-band` on shaded sections),
+  with light and dark defaults; labels, nodes and arrowheads stay visible.
+  Shared endpoints and collinear overlaps get no gap. The crossing diagnostic
+  stays: this is a reading aid, and you must still avoid crossings.
 
 ## Legend
 

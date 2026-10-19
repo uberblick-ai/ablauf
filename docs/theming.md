@@ -11,6 +11,7 @@ These are the complete palette and the built-in defaults:
 
 | Property | Use | Light | Dark |
 | --- | --- | --- | --- |
+| `--ab-bg` | Canvas colour for edge-crossing knockouts | `#ffffff` | `#171c24` |
 | `--ab-ink` | Main text, including pill labels and panel text | `#17202c` | `#e5e9ef` |
 | `--ab-muted` | Secondary text, ink/muted tone foregrounds and edges | `#5a6575` | `#98a2b0` |
 | `--ab-line` | Ink/muted outlines, pill outlines and separator rules | `#d3d9e2` | `#2c3440` |
@@ -33,7 +34,9 @@ A tone foreground colours box/end text and outlines, pill dots, edges,
 arrowheads, edge labels and legend samples. Its background colours box, end
 and panel shapes and their legend samples. Pill labels, panel contents and
 legend descriptions use the base text colours; pill shapes use the base
-surface and outline colours. The SVG canvas itself is transparent.
+surface and outline colours. The SVG canvas itself is transparent. Set
+`--ab-bg` to the host canvas colour so crossing knockouts blend into it;
+knockouts over shaded sections use `--ab-band` instead.
 
 ## Complete host CSS
 
@@ -44,6 +47,7 @@ keep the whole palette consistent when the system and page themes disagree.
 
 ```css
 :root[data-theme="light"] {
+  --ab-bg: #ffffff;
   --ab-ink: #17202c;
   --ab-muted: #5a6575;
   --ab-line: #d3d9e2;
@@ -64,6 +68,7 @@ keep the whole palette consistent when the system and page themes disagree.
 }
 
 :root[data-theme="dark"] {
+  --ab-bg: #171c24;
   --ab-ink: #e5e9ef;
   --ab-muted: #98a2b0;
   --ab-line: #2c3440;
