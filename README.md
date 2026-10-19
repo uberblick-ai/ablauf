@@ -169,6 +169,7 @@ mise trust && mise run setup
 | `mise run playground` | Serves the review page at http://localhost:4620 (another port if that one is busy). Open `#examples/loop` to see the loop beside its hand-drawn reference. |
 | `mise run check FILE` | Renders one `.flow` file to an `.svg` beside it and lists its problems with line numbers. |
 | `mise run render` | Renders every example to `spike/out/` and refreshes the figures in this README. |
+| `mise run site` | Builds [ablauf.uberblick.ai](site/README.md) into `site/out/`; `mise run site-serve` serves it. |
 | `mise run measure` | Shows what moved between the loop and the loop with a role inserted. |
 | `mise run ci` | Lint, typecheck and tests, before you push. |
 

@@ -107,5 +107,5 @@ Each step is one small PR:
 
 - Port 4620, beside wireframe-md's 4610.
 - One fingerprint covers light and dark, unless that causes a problem.
-- The showcase site waits until there are at least three kinds and more common
-  examples.
+- The showcase site (`site/`, ablauf.uberblick.ai) shows each kind in its own
+  section, so it started with two kinds and grows a section per new kind.
