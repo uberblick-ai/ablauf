@@ -386,8 +386,9 @@ as the hand-drawn figure, and when most trial agents reach zero diagnostics.
    MCP help topic pointing at the primer, and Markdown export as the fenced
    source. Nothing goes into uberblick-2 before the spike passes.
 3. Turn the ub-agents loop explainer into the first corpus doc that uses it.
-4. Add further kinds on the same grid: architecture (boxes in groups), class,
-   and data model. Standalone fan-out v0 is implemented above; other kinds
+4. Add further kinds on the same grid, sequence (UML) first: lifelines are
+   columns and messages are rows. Then architecture (boxes in groups), and
+   data model with class as one kind until they need to differ. Standalone fan-out v0 is implemented above; other kinds
    without edges remain: decision ladder, steps, timeline, tree and grid.
 
 ## Non-goals
