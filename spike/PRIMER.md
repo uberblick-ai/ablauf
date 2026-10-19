@@ -112,7 +112,7 @@ could ask what a shape or colour stands for.
 
 ```
 legend
-  pill "GitHub label"
+  pill tone=done "GitHub label" sample=ready
   box "agent role"
   box tone=system "automated system step"
   panel tone=stop "a person decides"
@@ -121,6 +121,12 @@ legend
 
 Entries are `pill`, `box`, `end`, `panel`, `edge` or `dashed`, with an
 optional `tone=` and the meaning in quotes.
+Shape entries (`pill`, `box`, `end`, `panel`) can add `sample=ready` or
+`sample="two words"` to put text inside the sample. The meaning is still
+required alongside it. Samples grow to fit the text and entries wrap to new
+rows. Without `sample=`, the small sample stays the same. `edge` and `dashed`
+are line samples; `sample=` on either reports a diagnostic. Empty sample text
+also reports a diagnostic and leaves the small sample.
 
 ## Making it look good
 

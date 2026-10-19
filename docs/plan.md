@@ -78,7 +78,7 @@ integrator --> human tone=stop : maintainer-merge, blocked
 | Node kind (`text`, `pill`, `box`, `end`, `panel`) and tone | Shapes, colours, fonts, light and dark |
 | Which side an edge leaves and enters (`from=`, `to=`) and its slot on that side (`bottom.2`) | The elbow those sides imply: straight, one bend (L) or two bends (Z), one fixed rule each |
 | Edge tone, dashed or solid, and whether the label sits at the start or end | Label position next to that end, port spacing along a side. Where two facing sides overlap, the port on the longer side slides to meet the other end head on, so the edge runs straight; a slot there sets the order, not the exact point. Sides with a reserved main centre keep their ports fixed |
-| A legend: which shapes and tones to explain, and what each means | Fine print under the diagram, wrapping onto further rows |
+| A legend: which shapes and tones to explain, optional sample text, and what each means | Fine print under the diagram, sizing samples to fit their text and wrapping entries onto further rows |
 
 When the author leaves out `from=` or `to=`, three small rules apply: same
 column goes bottom to top, same row goes between facing sides, otherwise the
@@ -109,6 +109,13 @@ there from the text and the diagnostics alone, without seeing the image.
   already know that spelling. Nothing else is Mermaid.
 - Ids are the labels people read (`reviewer`, `needs-changes`) unless `title=`
   says otherwise, so the source reads like the picture.
+- A `legend` has indented entries: `kind tone=done "meaning"`. Shape entries
+  (`pill`, `box`, `end`, `panel`) also accept `sample=ready` or
+  `sample="two words"`, drawn inside the sample with its shape and tone.
+  The meaning in quotes is still required alongside it. Samples without text
+  keep their small size. `edge` and `dashed` stay line samples and diagnose
+  `sample=` on their source line. An empty `sample=` or `sample=""` on a shape
+  entry reports a diagnostic and draws the small sample.
 - Wherever `tone=` is supported (nodes, edges and legend entries), it accepts
   `ink`, `muted`, `neutral`, `agent`, `system`, `done`, `rework` or `stop`. `neutral` gives
   boxes, panels and end states a grey fill distinct from the surface and
@@ -205,12 +212,16 @@ in one small diagram for light/dark review in the playground's document column.
   reversible and distinct prefixes never collide. For example, `doc.1`,
   `doc:1` and `doc-1` become `doc.002e1`, `doc.003a1` and `doc-1`. Routes and
   legend samples reference the same encoded marker ids.
+- Legend sample text uses monospace and the existing themed text colours.
+  Sample widths and row heights grow to fit it; entry wrapping includes both
+  the sample and its meaning, and the canvas fits the widest entry.
 
 ### Host fonts and width metrics
 
 `render(source, { fonts })` accepts two independent roles: `fonts.mono` for
-box titles, pills, edge labels and section captions, and `fonts.text` for
-standalone text, end labels, box subtitles, panel text and legend descriptions.
+box titles, pills, edge labels, section captions and legend sample text, and
+`fonts.text` for standalone text, end labels, box subtitles, panel text and
+legend descriptions.
 Each configured role requires both `family` and `measureText`; an omitted role
 keeps its existing font stack and estimates. Omitting `fonts` (or passing `{}`)
 preserves the existing geometry and SVG bytes, including the historical panel
