@@ -152,7 +152,8 @@ interface End {
 	node: Placed;
 	side: SideName;
 	slot: number; // 1-based, left to right or top to bottom
-	count: number;
+	centered: boolean;
+	fraction: number;
 	point: Point;
 }
 
@@ -258,16 +259,21 @@ export function grid(
 		return [e.from_side ?? from, e.to_side ?? to];
 	};
 
-	// Slots: explicit ones first, the rest fill the gaps in source order.
+	// Slots: explicit ones first; unnumbered ends beside a reserved centre use
+	// the half facing their other node. Within each half, fill in source order.
 	const ends: End[] = [];
 	for (const e of model.edges) {
 		const [fs, ts] = sides(e);
+		const centered =
+			P(e.from).node.col === P(e.to).node.col &&
+			fs === "bottom" && ts === "top" && !e.from_slot && !e.to_slot;
 		ends.push({
 			edge: e,
 			node: P(e.from),
 			side: fs,
 			slot: e.from_slot,
-			count: 0,
+			centered,
+			fraction: 0.5,
 			point: [0, 0],
 		});
 		ends.push({
@@ -275,7 +281,8 @@ export function grid(
 			node: P(e.to),
 			side: ts,
 			slot: e.to_slot,
-			count: 0,
+			centered,
+			fraction: 0.5,
 			point: [0, 0],
 		});
 	}
@@ -286,9 +293,14 @@ export function grid(
 		bySide.get(k)?.push(end);
 	}
 	for (const group of bySide.values()) {
-		const count = Math.max(group.length, ...group.map((g) => g.slot));
+		const reserve = group.some((g) => g.centered);
+		const slotted = group.filter((g) => !g.centered);
+		let count = Math.max(slotted.length, ...slotted.map((g) => g.slot));
+		// A main edge owns the centre. Other ports use an even number of slots,
+		// half on either side, so top.1 is left and top.2 right for two entries.
+		if (reserve) count = Math.max(2, count + count % 2);
 		const taken = new Set<number>();
-		for (const g of group) {
+		for (const g of slotted) {
 			if (!g.slot) continue;
 			if (taken.has(g.slot))
 				warn(
@@ -297,14 +309,39 @@ export function grid(
 				);
 			taken.add(g.slot);
 		}
-		let next = 1;
-		for (const g of group) {
-			if (g.slot) continue;
-			while (taken.has(next)) next++;
-			g.slot = next;
-			taken.add(next);
+		const unnumbered = slotted.filter((g) => !g.slot);
+		const direction = (g: End) => {
+			const other = P(g.edge.from === g.node.node.id ? g.edge.to : g.edge.from);
+			return reserve ? Math.sign(colIndex(other) - colIndex(g.node)) : 0;
+		};
+		const left = unnumbered.filter((g) => direction(g) < 0);
+		const right = unnumbered.filter((g) => direction(g) > 0);
+		const neutral = unnumbered.filter((g) => direction(g) === 0);
+		// Grow both halves until each can hold its explicit and unnumbered ends.
+		if (reserve) {
+			while (
+				left.length + [...taken].filter((s) => s <= count / 2).length >
+					count / 2 ||
+				right.length + [...taken].filter((s) => s > count / 2).length >
+					count / 2
+			)
+				count += 2;
 		}
-		for (const g of group) g.count = count;
+		for (const [pending, start] of [
+			[left, 1],
+			[right, count / 2 + 1],
+			[neutral, 1],
+		] as const) {
+			let next = start;
+			for (const g of pending) {
+				while (taken.has(next)) next++;
+				g.slot = next;
+				taken.add(next);
+			}
+		}
+		for (const g of slotted)
+			g.fraction = (g.slot + (reserve && g.slot > count / 2 ? 1 : 0)) /
+				(count + (reserve ? 2 : 1));
 	}
 
 	// Columns: widths from contents, gaps wide enough for the labels in them.
@@ -312,7 +349,7 @@ export function grid(
 		Math.max(0, ...nodes.filter((p) => p.node.col === c).map((p) => p.w)),
 	);
 	const gaps = model.columns.map(() => MIN_COL_GAP);
-	const frac = (end: End) => end.slot / (end.count + 1);
+	const frac = (end: End) => end.fraction;
 	for (const e of model.edges) {
 		if (!e.label) continue;
 		const [a, b] = ends.filter((x) => x.edge === e);
@@ -363,6 +400,8 @@ export function grid(
 					: end.side === "left"
 						? [p.x, Math.round(p.y + p.h * f)]
 						: [p.x + p.w, Math.round(p.y + p.h * f)];
+		if (end.centered)
+			end.point[0] = Math.round(colX[colIndex(p)] + colW[colIndex(p)] / 2);
 	}
 	// An edge between two parallel sides runs straight when the longer side
 	// can meet the other end head on without crowding its other ports.
@@ -373,6 +412,9 @@ export function grid(
 		const k = horizontal(a.side) ? 1 : 0;
 		const extent = (end: End) => (k ? end.node.h : end.node.w);
 		const [mover, fixed] = extent(b) >= extent(a) ? [b, a] : [a, b];
+		// Sliding a port on a side with a reserved centre would undo its order.
+		if (bySide.get(`${mover.node.node.id}:${mover.side}`)?.some((g) => g.centered))
+			continue;
 		const lo = (k ? mover.node.y : mover.node.x) + 6;
 		const hi =
 			(k ? mover.node.y + mover.node.h : mover.node.x + mover.node.w) - 6;

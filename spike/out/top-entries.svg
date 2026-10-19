@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="ab" viewBox="0 0 461 270" width="461" height="270" role="img" aria-label="Flow: before, left, right, target">
+<style>.ab{--ink:var(--ab-ink,#17202c);--muted:var(--ab-muted,#5a6575);--line:var(--ab-line,#d3d9e2);--band:var(--ab-band,#e9eef5);--surface:var(--ab-surface,#ffffff);--agent:var(--ab-agent,#0b6b67);--agent-bg:var(--ab-agent-bg,#dff1ee);--rework:var(--ab-rework,#a65f0c);--rework-bg:var(--ab-rework-bg,#fbefdc);--stop:var(--ab-stop,#b2382f);--stop-bg:var(--ab-stop-bg,#f9e2df);--done:var(--ab-done,#2a7845);--done-bg:var(--ab-done-bg,#e0f1e5);}@media (prefers-color-scheme:dark){.ab{--ink:var(--ab-ink,#e5e9ef);--muted:var(--ab-muted,#98a2b0);--line:var(--ab-line,#2c3440);--band:var(--ab-band,#151b23);--surface:var(--ab-surface,#1d232d);--agent:var(--ab-agent,#5cc5bb);--agent-bg:var(--ab-agent-bg,#12302d);--rework:var(--ab-rework,#e3a250);--rework-bg:var(--ab-rework-bg,#33250f);--stop:var(--ab-stop,#ef7f73);--stop-bg:var(--ab-stop-bg,#3a1916);--done:var(--ab-done,#72cf91);--done-bg:var(--ab-done-bg,#142e1d);}}
+.ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
+.ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.ab .s11{font-size:11px}.ab .s12{font-size:12px}.ab .s13{font-size:13px}
+.ab .muted{fill:var(--muted)}.ab .b{font-weight:600}
+.ab .cap{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.08em;fill:var(--muted)}
+.ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
+.ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
+.ab .t-ink{fill:var(--muted)}.ab .e-ink{stroke:var(--muted)}.ab .k-ink{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-muted{fill:var(--muted)}.ab .e-muted{stroke:var(--muted)}.ab .k-muted{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-agent{fill:var(--agent)}.ab .e-agent{stroke:var(--agent)}.ab .k-agent{fill:var(--agent-bg);stroke:var(--agent);stroke-width:1.5}.ab .t-done{fill:var(--done)}.ab .e-done{stroke:var(--done)}.ab .k-done{fill:var(--done-bg);stroke:var(--done);stroke-width:1.5}.ab .t-rework{fill:var(--rework)}.ab .e-rework{stroke:var(--rework)}.ab .k-rework{fill:var(--rework-bg);stroke:var(--rework);stroke-width:1.5}.ab .t-stop{fill:var(--stop)}.ab .e-stop{stroke:var(--stop)}.ab .k-stop{fill:var(--stop-bg);stroke:var(--stop);stroke-width:1.5}
+.ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}</style>
+<defs>
+<marker id="top-entries-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker>
+</defs>
+<path d="M227,62 L227,220" class="e e-ink" marker-end="url(#top-entries-ink)"/>
+<path d="M81,109 L208,109 L208,220" class="e e-ink" marker-end="url(#top-entries-ink)"/>
+<path d="M373,173 L247,173 L247,220" class="e e-ink" marker-end="url(#top-entries-ink)"/>
+<g>
+<rect x="137" y="16" width="180" height="46" rx="8" class="k-agent"/>
+<text x="227" y="35" text-anchor="middle" class="m s13 b t-agent">before</text>
+
+</g>
+<g><rect x="16" y="92" width="65" height="34" rx="17" class="pill"/>
+<circle cx="30" cy="109" r="5" class="t-muted"/>
+<text x="42" y="113" class="m s12">left</text></g>
+<g><rect x="373" y="156" width="72" height="34" rx="17" class="pill"/>
+<circle cx="387" cy="173" r="5" class="t-muted"/>
+<text x="399" y="177" class="m s12">right</text></g>
+<g><rect x="188" y="220" width="79" height="34" rx="17" class="pill"/>
+<circle cx="202" cy="237" r="5" class="t-muted"/>
+<text x="214" y="241" class="m s12">target</text></g>
+</svg>

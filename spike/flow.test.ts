@@ -251,6 +251,163 @@ test("every row a spanning panel covers meets it with a straight edge", () => {
 	}
 });
 
+test("top entries keep an unnumbered main arrow on its column centre", () => {
+	for (const kind of ["box", "pill"]) {
+		for (const mirrored of [false, true]) {
+			const source = [
+				"flow v0",
+				mirrored ? "columns side main" : "columns main side",
+				`${kind} before col=main`,
+				"pill branch col=side",
+				"pill target col=main",
+				"before --> target",
+			].join("\n");
+			const baseline = render(source);
+			const added = render(
+				`${source}\nbranch --> target from=${mirrored ? "right" : "left"} to=top.${mirrored ? 1 : 2}\n`,
+			);
+			assert.deepEqual(baseline.diagnostics, []);
+			assert.deepEqual(added.diagnostics, []);
+			assert.deepEqual(added.layout.nodes, baseline.layout.nodes);
+			assert.deepEqual(added.layout.routes[0].points, baseline.layout.routes[0].points);
+			const [main, branch] = added.layout.routes;
+			assert.equal(main.points.length, 2);
+			for (const [i, id] of ["before", "target"].entries()) {
+				const node = added.layout.nodes.find((p) => p.node.id === id);
+				assert.ok(node);
+				assert.ok(Math.abs(main.points[i][0] - (node.x + node.w / 2)) <= 1);
+			}
+			const entry = branch.points.at(-1);
+			assert.ok(entry);
+			assert.ok(mirrored ? entry[0] < main.points[0][0] : entry[0] > main.points[0][0]);
+		}
+	}
+});
+
+test("unnumbered entries use the half facing their other node", () => {
+	for (const mirrored of [false, true]) {
+		for (const outgoing of [false, true]) {
+			const source = [
+				"flow v0",
+				mirrored ? "columns side main" : "columns main side",
+				"box before col=main",
+				"pill branch col=side",
+				"pill target col=main",
+				"before --> target",
+			].join("\n");
+			const baseline = render(source);
+			const { layout, diagnostics } = render(
+				`${source}\n${outgoing ? "before --> branch" : "branch --> target"}\n`,
+			);
+			assert.deepEqual(diagnostics, []);
+			assert.deepEqual(layout.nodes, baseline.layout.nodes);
+			assert.deepEqual(layout.routes[0].points, baseline.layout.routes[0].points);
+			const [main, branch] = layout.routes;
+			const port = outgoing ? branch.points[0] : branch.points.at(-1);
+			assert.ok(port);
+			assert.ok(mirrored ? port[0] < main.points[0][0] : port[0] > main.points[0][0]);
+		}
+	}
+});
+
+test("unnumbered entries expand their half and leave numbered slots occupied", () => {
+	for (const mirrored of [false, true]) {
+		const { layout } = render([
+			"flow v0",
+			mirrored ? "columns side main" : "columns main side",
+			"box before col=main",
+			"pill target col=main",
+			"pill one col=side",
+			"pill two col=side",
+			"pill three col=side",
+			"before --> target",
+			"one --> target from=top to=top",
+			`two --> target from=top to=top.${mirrored ? 1 : 4}`,
+			"three --> target from=top to=top",
+		].join("\n"));
+		const [main, ...entries] = layout.routes;
+		const center = main.points[0][0];
+		const target = layout.nodes.find((p) => p.node.id === "target");
+		assert.ok(target);
+		const ports = entries.map((r) => r.points[3][0]);
+		assert.equal(new Set(ports).size, 3);
+		assert.ok(ports.every((x) => mirrored ? x < center : x > center));
+		assert.equal(ports[1], Math.round(target.x + target.w * (mirrored ? 1 / 8 : 5 / 8)));
+		for (const route of entries) {
+			assert.equal(route.points.length, 4);
+			assert.equal(route.points[1][1], target.y - 24);
+			assert.equal(route.points[2][1], target.y - 24);
+		}
+	}
+});
+
+test("numbered and unnumbered return entries use ordered ports beside the centre", () => {
+	const source = [
+		"flow v0",
+		"columns left main right outer",
+		"box before col=main",
+		"pill target col=main",
+		"pill right col=right",
+		"pill outer col=outer",
+		"pill left col=left",
+		"before --> target",
+		"right --> target from=top to=top.3",
+		"outer --> target from=top to=top.4",
+		"left --> target from=top to=top.1",
+	].join("\n");
+	for (const extra of ["", "\nleft -.-> target from=right to=top"]) {
+		const { layout } = render(source + extra);
+		const main = layout.routes[0];
+		const target = layout.nodes.find((p) => p.node.id === "target");
+		assert.ok(target);
+		assert.equal(main.points.length, 2);
+		assert.ok(Math.abs(main.points[0][0] - (target.x + target.w / 2)) <= 1);
+		const entries = layout.routes.slice(1).map((r) => {
+			const end = r.points.at(-1);
+			assert.ok(end);
+			assert.equal(end[1], target.y);
+			assert.notEqual(end[0], main.points[0][0]);
+			return end[0];
+		});
+		const [right, outer, left, unnumbered] = entries;
+		assert.ok(left < main.points[0][0] && main.points[0][0] < right && right < outer);
+		if (extra) assert.ok(left < unnumbered && unnumbered < main.points[0][0]);
+		assert.equal(new Set(entries).size, entries.length);
+		// Equal top sides keep the authored loop shape above both nodes.
+		for (const route of layout.routes.slice(1, 4)) {
+			assert.equal(route.points.length, 4);
+			assert.equal(route.points[1][1], target.y - 24);
+			assert.equal(route.points[2][1], target.y - 24);
+		}
+	}
+});
+
+test("a return into the top leaves the main arrow centred without diagnostics", () => {
+	for (const mirrored of [false, true]) {
+		for (const slot of ["", `.${mirrored ? 1 : 2}`]) {
+			const { layout, diagnostics } = render([
+				"flow v0",
+				mirrored ? "columns side main" : "columns main side",
+				"box before col=main",
+				"pill target col=main",
+				"pill retry col=side",
+				`retry --> target from=top to=top${slot}`,
+				"before --> target",
+			].join("\n"));
+			assert.deepEqual(diagnostics, []);
+			const [loop, main] = layout.routes;
+			assert.equal(main.points.length, 2);
+			const before = layout.nodes[0];
+			assert.ok(Math.abs(main.points[0][0] - (before.x + before.w / 2)) <= 1);
+			assert.equal(loop.points.length, 4);
+			const entry = loop.points[3];
+			assert.ok(mirrored ? entry[0] < main.points[0][0] : entry[0] > main.points[0][0]);
+			assert.equal(loop.points[1][1], entry[1] - 24);
+			assert.equal(loop.points[2][1], entry[1] - 24);
+		}
+	}
+});
+
 test("automatic and pinned palettes keep every host override", () => {
 	const automatic = render(example("loop")).svg;
 	assert.match(automatic, /@media \(prefers-color-scheme:dark\)/);
