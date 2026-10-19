@@ -5,3 +5,4 @@ dist/
 # Local ub-agents configuration and execution artifacts
 .ub-agents/
 ub-agents.local.yaml
+site/out/

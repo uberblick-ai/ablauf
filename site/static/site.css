@@ -1,0 +1,19 @@
+/* What ablauf adds to the shared look (shared.css, a copy of uberblick.ai's):
+   rendered diagrams and their sources. */
+
+/* A diagram at its own size on the panel ground, themed by the site's tokens.
+   The --ab-* properties sit on the wrapper, not the SVG, so they never refer
+   to the SVG's own variables. Wide diagrams scroll inside their frame. */
+.ex { margin: 0 0 8px }
+.ex-pic { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 16px; margin: 0 0 12px; overflow-x: auto;
+  --ab-bg: var(--panel); --ab-ink: var(--fg); --ab-muted: var(--muted); --ab-line: var(--line); --ab-surface: var(--bg); --ab-band: var(--code) }
+.ex-pic svg { display: block; max-width: none; height: auto; margin-inline: auto }
+.ex .block pre { max-height: 480px }
+/* A marked line spans the frame: the newline after it still ends the line. */
+.ex mark { display: inline-block; width: calc(100% + 32px); margin-left: -16px; padding-left: 14px; background: var(--tint); color: inherit; border-left: 2px solid var(--accent) }
+
+/* Showcase: a section per kind, its header line beside the heading. */
+.kind .blk-h code { font-size: 13px; color: var(--muted) }
+.ex-item { margin-top: 36px }
+.ex-item h3 { font-size: 17px; font-weight: 600; margin: 0 0 6px }
+.ex-item > p { color: var(--muted); font-size: 14.5px }
