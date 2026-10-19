@@ -209,8 +209,10 @@ Custom metrics govern node sizing, all wrapped panel and subtitle lines,
 panel pills, edge gaps and label bounds, captions, legend rows and canvas
 bounds. The overlap checks use those same widths; in particular, custom
 captions use the same uppercase, letter-spaced width for bounds and diagnostics.
-Wrapping stays at 34 characters and vertical spacing stays fixed. Choose fonts
-whose vertical extents fit the existing line heights, and match metrics to the
+Box subtitles still wrap at 34 characters, and automatic panel widths keep
+their 34-character preferred text width. Panel lines wrap at the panel's
+measured inner width. Vertical spacing stays fixed. Choose fonts whose
+vertical extents fit the existing line heights, and match metrics to the
 font the host actually loads at each rendered size and weight. Box titles use
 13px/600; end labels and strong panel lines use 12px/600; pills and standalone
 text use 12px/400; everything else uses 11px/400. Changing CSS fonts after
