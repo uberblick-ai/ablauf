@@ -9,8 +9,64 @@ the diagram without looking at the picture. The renderer sizes the grid and
 draws; it never moves anything, and it reports every problem with its line
 number.
 
-The first kind is a flow. Early work: the format is v0 and nothing is published
-from this repository yet.
+The kinds are routed flows and standalone outcome fan-outs. The formats
+are v0; this repository prepares
+`@uberblick/ablauf` 0.2.0 for maintainer publication.
+
+## Use in a build script
+
+Requires Node.js 22.18 or newer. The package ships compiled JavaScript and
+TypeScript declarations, with no runtime dependencies or TypeScript loader
+required. Its public entry point is an ES module.
+
+After 0.2.0 is published, install it in your project:
+
+```sh
+npm install @uberblick/ablauf@0.2.0
+```
+
+Save this as `render-flow.mjs`:
+
+```js
+import { readFile, writeFile } from "node:fs/promises";
+import { render } from "@uberblick/ablauf";
+
+const [input, output] = process.argv.slice(2);
+if (!input || !output) {
+  console.error("Usage: node render-flow.mjs input.flow output.svg");
+  process.exit(2);
+}
+
+const source = await readFile(input, "utf8");
+const { svg, diagnostics } = render(source, {
+  idPrefix: "build-flow",
+  scheme: "light",
+});
+await writeFile(output, svg);
+
+for (const { line, severity, message } of diagnostics) {
+  console.error(`${input}:${line} ${severity}: ${message}`);
+}
+// Keep the SVG for inspection, but fail the build on any source problem.
+process.exitCode = diagnostics.length ? 1 : 0;
+```
+
+Run it with a flow file and the desired output path:
+
+```sh
+node render-flow.mjs diagram.flow diagram.svg
+```
+
+`render(source, options?)` returns `{ svg, diagnostics, layout }`. Source
+problems return diagnostics with one-based `line`, `severity` and `message`
+fields while still producing SVG. Invalid caller options can throw.
+`idPrefix` defaults to `"ab"`; supply distinct prefixes for diagrams sharing
+a page. Omit `scheme` to follow the system theme, or pin it to `"light"` or
+`"dark"`. The existing `fonts` option accepts host font families and synchronous
+width metrics; see [host fonts and width metrics](docs/plan.md#host-fonts-and-width-metrics).
+TypeScript consumers can import `RenderOptions`, `Diagnostic`, `FontOptions`,
+`FontsOptions` and `TextStyle` from the same entry point. `LIGHT` and `DARK`
+export the default palettes.
 
 ## Examples
 
@@ -68,6 +124,9 @@ legend
 [spike/PRIMER.md](spike/PRIMER.md) is the full format on one page, and the
 page an agent reads before writing a flow.
 
+For phone widths, [author separate wide and narrow layouts](docs/narrow-layouts.md).
+The worked pair keeps the same content and lets the host select a readable SVG.
+
 ### An online order
 
 From [spike/examples/checkout.flow](spike/examples/checkout.flow), with two
@@ -89,6 +148,13 @@ Uberblick's repositories, from
   <img alt="The ub-agents delivery loop: issue preparation, implementation, review and integration, with a rework column on the left and a person's decision on the right." src="docs/images/loop-light.svg">
 </picture>
 
+## Host page themes
+
+Inline SVGs can follow a page's `data-theme="light"` / `data-theme="dark"`
+switch through the existing `--ab-*` CSS properties, without rerendering.
+See [host page themes](docs/theming.md) for the complete base and tone palette,
+copyable host CSS and the difference between inline SVG and image embedding.
+
 ## Start here
 
 You need [mise](https://mise.jdx.dev). In a fresh checkout or worktree:
@@ -106,8 +172,16 @@ mise trust && mise run setup
 | `mise run measure` | Shows what moved between the loop and the loop with a role inserted. |
 | `mise run ci` | Lint, typecheck and tests, before you push. |
 
+`pnpm build` emits the package into `dist/`. `npm pack` builds it automatically.
+The tests in `mise run ci` install the actual tarball with production dependencies
+only in an isolated directory and exercise the public import and this build script.
+
 `mise tasks` lists everything. The plan is in [docs/plan.md](docs/plan.md), and
 the spike's results in [spike/FINDINGS.md](spike/FINDINGS.md).
+
+Maintainers release an already-prepared version with `mise run release X.Y.Z`.
+Start with `mise run release X.Y.Z --check`; see [releases](docs/releases.md)
+for trusted-publishing setup, confirmation and partial-release recovery.
 
 The earlier Mermaid-subset version lives in
 [uberblick-ai/old-ablauf](https://github.com/uberblick-ai/old-ablauf).

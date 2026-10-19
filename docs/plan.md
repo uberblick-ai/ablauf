@@ -77,8 +77,8 @@ integrator --> human tone=stop : maintainer-merge, blocked
 | Sections (the horizontal bands) | Band shading and labels |
 | Node kind (`text`, `pill`, `box`, `end`, `panel`) and tone | Shapes, colours, fonts, light and dark |
 | Which side an edge leaves and enters (`from=`, `to=`) and its slot on that side (`bottom.2`) | The elbow those sides imply: straight, one bend (L) or two bends (Z), one fixed rule each |
-| Edge tone, dashed or solid, and whether the label sits at the start or end | Label position next to that end, port spacing along a side. Where two facing sides overlap, the port on the longer side slides to meet the other end head on, so the edge runs straight; a slot there sets the order, not the exact point |
-| A legend: which shapes and tones to explain, and what each means | Fine print under the diagram, wrapping onto further rows |
+| Edge tone, dashed or solid, and whether the label sits at the start or end | Label position next to that end, port spacing along a side. Where two facing sides overlap, the port on the longer side slides to meet the other end head on, so the edge runs straight; a slot there sets the order, not the exact point. Sides with a reserved main centre keep their ports fixed |
+| A legend: which shapes and tones to explain, optional sample text, and what each means | Fine print under the diagram, sizing samples to fit their text and wrapping entries onto further rows |
 
 When the author leaves out `from=` or `to=`, three small rules apply: same
 column goes bottom to top, same row goes between facing sides, otherwise the
@@ -109,19 +109,228 @@ there from the text and the diagnostics alone, without seeing the image.
   already know that spelling. Nothing else is Mermaid.
 - Ids are the labels people read (`reviewer`, `needs-changes`) unless `title=`
   says otherwise, so the source reads like the picture.
+- A `legend` has indented entries: `kind tone=done "meaning"`. Shape entries
+  (`pill`, `box`, `end`, `panel`) also accept `sample=ready` or
+  `sample="two words"`, drawn inside the sample with its shape and tone.
+  The meaning in quotes is still required alongside it. Samples without text
+  keep their small size. `edge` and `dashed` stay line samples and diagnose
+  `sample=` on their source line. An empty `sample=` or `sample=""` on a shape
+  entry reports a diagnostic and draws the small sample.
+- Wherever `tone=` is supported (nodes, edges and legend entries), it accepts
+  `ink`, `muted`, `neutral`, `agent`, `system`, `done`, `rework` or `stop`. `neutral` gives
+  boxes, panels and end states a grey fill distinct from the surface and
+  section bands, with a neutral foreground for titles, outlines, edges,
+  arrowheads and pill dots. Legend samples use the same styles as the diagram.
+  `ink` and `muted` keep surface-filled boxes and panels; defaults are unchanged.
+- Slots count left to right on a top or bottom, top to bottom on a left or
+  right. Explicit slots are assigned first. Without a reserved centre,
+  unnumbered ends fill gaps in source order, and ports are evenly spaced along
+  the side using the larger of the number of ends and the highest explicit slot.
+- A same-column edge leaving the bottom and entering the top, with neither
+  end numbered, reserves the shared column centreline at both ends. It stays
+  straight there, within pixel rounding, even when other edges share a side.
+  On each such side, the other ends use separate slots: round their slot
+  count up to an even number, at least two, and space them evenly with a gap
+  for the centre. Half the slots sit on each side of the centre; with two
+  slots, `top.1` is left and `top.2` is right. Unnumbered ends use free slots
+  on the half facing their other node's column, in source order within each
+  half. Increase the even slot count until both halves have room. Ends whose
+  other node is in the same column then fill remaining gaps in source order.
+  Numbering either end of the main edge opts out of the centre reservation.
+  Return edges use the same ports; their sides and loop paths remain the
+  author's choice.
 - Inserting a step is two new lines in the source and nothing else changes.
   In pixels, everything below the insert moves down by one row. Nothing moves
   sideways unless a wider node widens its column.
 
+### System steps
+
+Use `box id tone=system title="Title" "explanatory text"` for an automated
+system step, such as a launcher. For example:
+
+```
+box loop col=main tone=system title="The loop" "claims eligible items in order"
+```
+
+Like any box, its id supplies the title unless `title=` overrides it, and the
+quoted text supplies the subtitle. It supports the existing `col=`, `row=`,
+`span=`, incoming/outgoing edges, sides and slots without changing layout rules.
+The default box tone remains `agent`.
+
+The `system` tone draws a blue title and border on a tinted background in both
+light and dark. It distinguishes automated system steps from teal agent boxes,
+red person panels, label pills with a coloured dot, and neutral muted panels used
+as notes. Colours use `--ab-system` and `--ab-system-bg` host overrides. Like the
+other tones, `system` also works on edges and legend entries. A matching sample
+is `box tone=system "automated system step"` inside a `legend`.
+
+[system-steps.flow](../spike/examples/system-steps.flow) compares these styles
+in one small diagram for light/dark review in the playground's document column.
+
 ## Rendering rules
 
 - SVG as a string, with no browser and no DOM, and the same bytes for the same input.
-- Labels in monospace, so text widths are predictable. Sans text is limited
-  to box subtitles and panel lines, measured with a fixed estimate.
-- Colours are CSS variables inside the SVG with `--ab-*` overrides for a host,
-  switching on `prefers-color-scheme`. This works in Uberblick, in artifacts
-  and on GitHub, where SVGs are shown as images.
-- Marker and element ids carry a prefix, so several diagrams can share a page.
+- By default, labels use IBM Plex Mono and other text uses IBM Plex Sans,
+  with fixed width estimates. Hosts can supply fonts and matching metrics
+  through render options, as described below; the flow syntax stays the same.
+- Panel widths are sized automatically from their contents, with a bounded
+  preferred text width so long notes grow downwards. Text-derived widths round
+  up to whole pixels so the line that sets the width still fits. Panel `text`,
+  `muted` and `strong` lines then wrap at word boundaries within the actual
+  panel width, minus 14px padding on each side, using their font metrics or
+  default width estimates. A wider child pill gives the text more room.
+  Panel height and vertical centring use those same line breaks, including
+  when a panel spans rows.
+- Box subtitles wrap at word boundaries around 34 characters;
+  longer individual words stay intact. Subtitle lines are centered, with 15px
+  between baselines. A box keeps its 46px minimum height and grows by 15px for
+  each extra subtitle line. Its width is the maximum of 180px, the title width
+  plus 32px, and the longest wrapped subtitle line width plus 28px. Boxes in
+  one column share the widest box's width. Row sizing and edge ports use the
+  resulting box dimensions; box titles do not wrap.
+- The canvas includes every drawn section caption, measuring its uppercase
+  text with letter spacing. A section without nodes gets a line-numbered
+  diagnostic and draws no band or caption.
+- Colours use the base `--ab-ink`, `--ab-muted`, `--ab-line`, `--ab-band` and
+  `--ab-surface` overrides, plus `--ab-neutral`, `--ab-agent`, `--ab-system`,
+  `--ab-done`, `--ab-rework` and `--ab-stop` foregrounds and each tone's `--ab-<tone>-bg` background.
+  [Host page themes](theming.md) documents every property and complete CSS
+  for root `data-theme="light"` / `data-theme="dark"`. Host overrides update
+  inline SVG without rerendering and take precedence over the system theme
+  and a pinned `scheme`. Page CSS cannot reach SVGs embedded as images.
+  Without overrides, defaults follow `prefers-color-scheme`, or stay fixed
+  when the render option `scheme` is explicitly `"light"` or `"dark"`.
+  The internal defaults also work when SVGs are shown as images.
+  Roots carry `ab ab-auto`, `ab ab-light` or `ab ab-dark`, and palette rules
+  target only the matching mode, so inline diagrams keep their palettes
+  independently of document order and system theme.
+- Marker ids carry a prefix, so several diagrams can share a page. Hosts must
+  supply distinct `idPrefix` values for diagrams on the same page; the default
+  is `ab`. Prefixes containing only `[A-Za-z0-9_-]`, including the empty prefix,
+  stay unchanged. Each other UTF-16 code unit becomes `.` followed by four
+  lowercase hexadecimal digits, including literal dots, so the encoding is
+  reversible and distinct prefixes never collide. For example, `doc.1`,
+  `doc:1` and `doc-1` become `doc.002e1`, `doc.003a1` and `doc-1`. Routes and
+  legend samples reference the same encoded marker ids.
+- Legend sample text uses monospace and the existing themed text colours.
+  Sample widths and row heights grow to fit it; entry wrapping includes both
+  the sample and its meaning, and the canvas fits the widest entry.
+
+### Host fonts and width metrics
+
+`render(source, { fonts })` accepts two independent roles: `fonts.mono` for
+box titles, pills, edge labels, section captions and legend sample text, and
+`fonts.text` for standalone text, end labels, box subtitles, panel text and
+legend descriptions.
+Each configured role requires both `family` and `measureText`; an omitted role
+keeps its existing font stack and estimates. Omitting `fonts` (or passing `{}`)
+preserves the existing geometry and SVG bytes, including the historical panel
+and caption diagnostic estimates.
+
+`family` is one literal font family name, always quoted in the SVG. It may
+contain Unicode letters and numbers, ASCII spaces, underscores and hyphens,
+and must contain a non-space character. It is not a CSS declaration or a list
+of fallback families: quotes, commas, escapes, punctuation, markup and URLs
+are rejected with `TypeError`. A configured role replaces its default stack.
+Font loading and any glyph fallback remain the host's responsibility.
+
+`measureText(text, { fontSize, fontWeight })` synchronously returns the full
+string's horizontal advance in SVG pixels. Sizes are 11, 12 or 13px; weights
+are 400 (regular) or 600 (bold). It must be a pure, deterministic function of
+these arguments: no installed-font lookup, browser, DOM or asynchronous work
+is performed by the renderer. A host can precompute font advances or use its
+own synchronous font metrics implementation. Measure the actual string,
+including spaces, Unicode glyphs, kerning and any fallback glyphs. Return
+the width without letter spacing; the renderer uppercases section captions
+before measurement and adds their `.08em` spacing (0.88px per character).
+Fractional custom widths round up to whole pixels to keep containers large
+enough. Widths must be finite numbers from 0 through 1,000,000 pixels per
+string; invalid results throw `RangeError` before an SVG is returned. Exceptions
+from the callback propagate. These are caller configuration errors rather
+than diagnostics attached to source lines.
+
+Custom metrics govern node sizing, all wrapped panel and subtitle lines,
+panel pills, edge gaps and label bounds, captions, legend rows and canvas
+bounds. The overlap checks use those same widths; in particular, custom
+captions use the same uppercase, letter-spaced width for bounds and diagnostics.
+Box subtitles still wrap at 34 characters, and automatic panel widths keep
+their 34-character preferred text width. Panel lines wrap at the panel's
+measured inner width. Vertical spacing stays fixed. Choose fonts whose
+vertical extents fit the existing line heights, and match metrics to the
+font the host actually loads at each rendered size and weight. Box titles use
+13px/600; end labels and strong panel lines use 12px/600; pills and standalone
+text use 12px/400; everything else uses 11px/400. Changing CSS fonts after
+rendering requires rerendering with matching metrics.
+
+For example, to use IBM Plex Mono throughout, after making its regular and
+semibold faces available to the SVG (its glyph advance is 0.6em):
+
+```ts
+import { render } from "./spike/flow/index.ts";
+
+const plexMono = {
+  family: "IBM Plex Mono",
+  measureText: (text: string, { fontSize }: { fontSize: number }) =>
+    [...text].length * fontSize * 0.6,
+};
+const { svg, diagnostics } = render(source, {
+  fonts: { mono: plexMono, text: plexMono },
+});
+```
+
+This metric assumes each character uses that face's fixed advance at both
+weights. If a diagram uses combining marks, emoji or glyphs absent from the
+loaded font, supply metrics for their actual advances and fallback faces.
+For proportional fonts, sum or shape the glyph advances for the complete
+string at the requested size and weight instead of counting characters.
+
+## Standalone fan-out v0
+
+A fan-out records one step and its ordered possible outcomes without edges.
+Use it when the reason for each outcome matters as much as its destination.
+It is a separate diagram kind, not a node embedded in a routed flow.
+
+```
+fan-out v0
+step "Check whether approval permits the run"
+
+outcome "Approved" reason="A maintainer started it and the input is unchanged" destination="Start the run"
+outcome "Outside input" reason="The input has not been cleared by a maintainer" destination="Ask a maintainer"
+outcome "Edited since" reason="The input changed after the maintainer started it" destination="Ask a maintainer"
+```
+
+- The first non-blank, non-comment line is `fan-out v0`. A newer version
+  warns and renders as v0. Blank lines and whole-line `#` comments are ignored.
+- Declare exactly one `step "text"` before the entries, then one or more
+  `outcome "text" reason="text" destination="text"` lines. All three entry
+  fields and the step text are required and non-empty. `reason=` and
+  `destination=` may appear in either order, exactly once each. Indentation
+  is optional; there are no ids, separately authored edges or layout keys.
+- Every value is a double-quoted JSON string on one source line. Use `\"`
+  for a quote and `\\` for a backslash. Destinations are display text, never
+  links or node references.
+- The renderer shows the step once, then aligned Outcome, Reason and
+  Destination columns. Entries keep their source order; matching destinations
+  never combine entries or reasons. Each row grows to fit its tallest cell.
+- The canvas is 678 px wide, within the playground's 710 px document column.
+  Cells use 12 px monospace text with 18 px leading and widths of 142, 258
+  and 182 px. Text wraps at word boundaries, splitting individual long words
+  when necessary. The step wraps at 13 px in a 614 px text area. There is no
+  route search, node placement or overlap correction.
+- Malformed, incomplete, duplicate and unknown declarations produce
+  diagnostics on their own source lines and still render. Missing step or
+  entries are diagnosed at the header. Partial entries show missing-field
+  placeholders and their original source; other invalid lines are printed
+  below the entries. The first step and first value of a duplicate field win,
+  with the rejected source still visible. All text is escaped.
+- Fan-outs share the flow SVG's scoped styles, `--ab-*` palettes and render
+  options (`title`, `scheme`, `idPrefix`; no marker ids are needed here).
+  Their returned layout has canvas dimensions and diagnostics, with empty
+  routed-flow nodes, routes and bands, so the grid overlay has nothing to draw.
+  Save them as `.flow` files for the existing check, render and playground tools.
+
+See [approvals](../spike/examples/approvals.flow) and
+[run endings](../spike/examples/run-endings.flow) for the review examples.
 
 ## The spike (now)
 
@@ -147,8 +356,8 @@ as the hand-drawn figure, and when most trial agents reach zero diagnostics.
    source. Nothing goes into uberblick-2 before the spike passes.
 3. Turn the ub-agents loop explainer into the first corpus doc that uses it.
 4. Add further kinds on the same grid: architecture (boxes in groups), class,
-   and data model. After those come the kinds without edges: fan-out,
-   decision ladder, steps, timeline, tree and grid.
+   and data model. Standalone fan-out v0 is implemented above; other kinds
+   without edges remain: decision ladder, steps, timeline, tree and grid.
 
 ## Non-goals
 
@@ -159,8 +368,6 @@ and pixel coordinates in the source.
 
 - Are sides and slots enough for agents to avoid crossings using diagnostics
   alone, or do they also need a coarse text preview of the grid?
-- Sans text widths are estimated. Is a monospace subtitle acceptable, or do we
-  ship font metrics?
 - Panels with content are the first compound node. Where do compound nodes
   stop growing?
 - How much of the hand-drawn polish, such as a label below its line, should
