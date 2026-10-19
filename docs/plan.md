@@ -110,6 +110,8 @@ there from the text and the diagnostics alone, without seeing the image.
   already know that spelling. Nothing else is Mermaid.
 - Ids are the labels people read (`reviewer`, `needs-changes`) unless `title=`
   says otherwise, so the source reads like the picture.
+- `row=<id>` must name another node. An empty value is diagnosed on the
+  node's line, and the node starts a new row.
 - Inserting a step is two new lines in the source and nothing else changes.
   In pixels, everything below the insert moves down by one row. Nothing moves
   sideways unless a wider node widens its column.

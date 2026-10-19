@@ -29,7 +29,8 @@ worker --> person tone=stop : stuck
 
 - `columns a b c` names the columns from left to right, once, before any node.
 - Each node starts a new row below the previous one. `row=<id>` puts it in the
-  same row as that node instead. `span=N` makes it cover N rows from there,
+  same row as that node instead. An empty `row=` is diagnosed and starts a
+  new row. `span=N` makes it cover N rows from there,
   top to bottom.
 - `col=<name>` picks the column. Without it, a node uses the column of the
   node declared before it, so the first node always needs `col=`.

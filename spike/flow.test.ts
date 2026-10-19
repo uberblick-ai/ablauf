@@ -276,6 +276,19 @@ test("the documented host CSS supplies both complete palettes", () => {
 	assert.deepEqual(palettes, { light: LIGHT, dark: DARK });
 });
 
+test("empty row= values are diagnosed while nodes still render on new rows", () => {
+	for (const row of ["row=", 'row=""']) {
+		const { diagnostics, layout, svg } = render(`flow v0\nbox a\nbox b ${row}`);
+		assert.deepEqual(
+			diagnostics.map((d) => [d.line, d.message]),
+			[[3, "row= must name another node; starting a new row"]],
+		);
+		assert.equal(layout.nodes.length, 2);
+		assert.ok(layout.nodes[1].y > layout.nodes[0].y);
+		assert.match(svg, /^<svg /);
+	}
+});
+
 test("row= chains reach the row's first node, and loops are reported", () => {
 	const chain = render(
 		"flow v0\ncolumns a b c d\nbox one col=a\nbox two col=b row=one\nbox three col=c row=two\nbox four col=d row=three\n",

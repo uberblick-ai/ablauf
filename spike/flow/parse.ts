@@ -306,8 +306,10 @@ export function parse(source: string): {
 						line,
 						`unknown column \`${value}\`; columns are ${model.columns.join(", ")}`,
 					);
-			} else if (key === "row") node.row = value;
-			else if (key === "span") {
+			} else if (key === "row") {
+				node.row = value;
+				if (!value) error(line, "row= must name another node; starting a new row");
+			} else if (key === "span") {
 				const n = Number(value);
 				if (Number.isInteger(n) && n >= 1) node.span = n;
 				else warn(line, "span= takes a whole number of rows");
