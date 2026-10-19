@@ -1,7 +1,7 @@
 fan-out v0
 step "Record how the run ended"
 
-outcome "Success" reason="The work and required checks finished" destination="Hand off for review"
-outcome "Blocked" reason="A person must resolve a decision or missing access" destination="Ask a maintainer"
-outcome "Crash" reason="The process ended before it could report" destination="Retry the run"
-outcome "Retries exhausted" reason="The run used every permitted retry" destination="Ask a maintainer"
+outcome "Success" reason="The work and required checks finished" destination="Hand off for review" tone="done"
+outcome "Blocked" reason="A person must resolve a decision or missing access" destination="Ask a maintainer" tone="stop"
+outcome "Crash" reason="The process ended before it could report" destination="Retry the run" tone="rework"
+outcome "Retries exhausted" reason="The run used every permitted retry" destination="Ask a maintainer" tone="stop"

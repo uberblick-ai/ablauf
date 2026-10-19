@@ -157,24 +157,29 @@ it also appears in the playground and example renderer.
 fan-out v0
 step "Record how the run ended"
 
-outcome "Success" reason="The work and required checks finished" destination="Hand off for review"
-outcome "Blocked" reason="A person must resolve a decision or missing access" destination="Ask a maintainer"
-outcome "Crash" reason="The process ended before it could report" destination="Retry the run"
-outcome "Retries exhausted" reason="The run used every permitted retry" destination="Ask a maintainer"
+outcome "Success" reason="The work and required checks finished" destination="Hand off for review" tone="done"
+outcome "Blocked" reason="A person must resolve a decision or missing access" destination="Ask a maintainer" tone="stop"
+outcome "Crash" reason="The process ended before it could report" destination="Retry the run" tone="rework"
+outcome "Retries exhausted" reason="The run used every permitted retry" destination="Ask a maintainer" tone="stop"
 ```
 
 The header is `fan-out v0`. Name exactly one `step "text"` before one or more
 `outcome "text" reason="text" destination="text"` entries. All values are
 required, non-empty double-quoted JSON strings; escape quotes as `\"` and
-backslashes as `\\`. Each declaration occupies one source line. The two
-named fields can appear in either order, once each. Blank lines and whole-line
-`#` comments are allowed. There are no edges, ids, tones or placement keys;
-destinations are plain text.
+backslashes as `\\`. Each declaration occupies one source line. An optional
+`tone="…"` colours an outcome with a flow tone: `done` for the good ending,
+`rework` for a retry, `stop` (with a dashed border) where a person steps in.
+The named fields can appear in any order, once each. Blank lines and
+whole-line `#` comments are allowed. There are no edges, ids or placement
+keys; destinations are plain text.
 
-Entries stay in source order, including separate reasons for the same
-destination. The step appears once above three aligned columns. Text wraps
-and rows grow, including for long words, within a 678 px canvas. Malformed
-entries produce line-numbered diagnostics and still draw, with placeholders
-for missing fields and the original invalid source visible. Missing step or
-entries are reported at the header. Keep the wording concise and review at
-710 px in both themes.
+The default style, `branches`, draws the step on the left with a curved branch
+into each outcome box, then an arrow to the destination in bold with the reason
+below. For a compact list, add `style ladder` before the step: the step sits on
+top, with a rail of tone dots below it, one per outcome, the reason under each
+outcome and the destination right-aligned. Entries stay in source order,
+including separate reasons for the same destination. Text wraps and rows grow,
+including for long words, within a 678 px canvas. Malformed entries produce
+line-numbered diagnostics and still draw, with placeholders for missing fields
+and the original invalid source visible. Missing step or entries are reported
+at the header. Keep the wording concise and review at 710 px in both themes.
