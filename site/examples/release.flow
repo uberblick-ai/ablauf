@@ -1,0 +1,10 @@
+flow v0
+
+pill pushed tone=muted "pushed to main"
+box build "compile and bundle"
+box test "run the tests"
+end live tone=done "Live"
+
+pushed --> build
+build --> test
+test --> live

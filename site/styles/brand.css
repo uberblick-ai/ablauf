@@ -1,0 +1,20 @@
+/* Brand colours for three tones; the neutrals follow the page. */
+.brand {
+  --ab-agent: #6a4bd6;
+  --ab-agent-bg: #ebe6fa;
+  --ab-done: #0f766e;
+  --ab-done-bg: #dcf3ef;
+  --ab-rework: #be185d;
+  --ab-rework-bg: #fce7f3;
+}
+
+@media (prefers-color-scheme: dark) {
+  .brand {
+    --ab-agent: #ab93ff;
+    --ab-agent-bg: #1f1a33;
+    --ab-done: #5eead4;
+    --ab-done-bg: #10302c;
+    --ab-rework: #f472b6;
+    --ab-rework-bg: #3a1328;
+  }
+}

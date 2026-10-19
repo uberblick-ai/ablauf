@@ -10,8 +10,9 @@ const PRIMER = `${REPO}/blob/main/spike/PRIMER.md`;
 
 // [group title or null for an ungrouped list, [href, label][]]
 const SIDE: [string | null, [string, string][]][] = [
-	[null, [["/", "Overview"], ["/showcase", "Showcase"]]],
-	["Kinds", kinds.map((k) => [`/showcase#${k.id}`, k.name])],
+	[null, [["/", "Overview"], ["/motivation", "Motivation"]]],
+	["Kinds", kinds.map((k) => [`/${k.id}`, k.name])],
+	["Guides", [["/guides/colours", "Customise colours"], ["/guides/tiptap", "Tiptap editor"]]],
 	[
 		"Reference",
 		[
@@ -49,13 +50,13 @@ export function shell(page: { head: string; canonical: string; noindex: boolean;
 ${page.head}${page.canonical}${page.noindex ? '<meta name="robots" content="noindex">\n' : ""}</head>
 <body>
 <header class="top">
-  <a class="mark" href="/">ablauf</a>
+  <span class="mark"><a class="ub" href="https://next.uberblick.ai">uberblick</a><span>/</span><a href="/">ablauf</a></span>
   <nav aria-label="Site">
-    <a href="/showcase">Showcase</a>
+    <a href="/#kinds">Kinds</a>
+    <a href="/guides/colours">Colours</a>
+    <a href="/guides/tiptap">Tiptap</a>
     <a href="${PRIMER}">Primer</a>
-    <a href="${NPM}">npm</a>
     <a href="${REPO}">GitHub</a>
-    <a href="https://uberblick.ai">Uberblick</a>
   </nav>
 </header>
 <div class="layout">
@@ -70,8 +71,8 @@ ${page.body}
       <h2>Who builds this.</h2>
       <p>Uberblick, ub-agents and the small libraries beside them, such as wireframe and ablauf, are made by a team in Berlin that likes to find out how far AI engineering can go. What holds up in our own work becomes a framework and a few products that run on GitHub alone, so a team no longer needs Notion, Linear or Jira beside it. Take them as a starting point for your own variant.</p>
       <div class="cols">
-        <div><h3>ablauf</h3><ul><li><a href="/showcase">Showcase</a></li><li><a href="${PRIMER}">Format primer</a></li><li><a href="${REPO}/blob/main/docs/theming.md">Host themes</a></li><li><a href="${NPM}">npm package</a></li></ul></div>
-        <div><h3>Uberblick</h3><ul><li><a href="https://uberblick.ai">Uberblick</a></li><li><a href="https://agents.uberblick.ai">ub-agents</a></li><li><a href="https://skills.uberblick.ai">Skills</a></li><li><a href="https://github.com/uberblick-ai/wireframe-md">wireframe.md</a></li></ul></div>
+        <div><h3>ablauf</h3><ul>${kinds.map((k) => `<li><a href="/${k.id}">${k.name}</a></li>`).join("")}<li><a href="/guides/colours">Customise colours</a></li><li><a href="/guides/tiptap">Tiptap editor</a></li><li><a href="/motivation">Motivation</a></li><li><a href="${PRIMER}">Format primer</a></li><li><a href="${NPM}">npm package</a></li></ul></div>
+        <div><h3>Uberblick</h3><ul><li><a href="https://next.uberblick.ai">Uberblick</a></li><li><a href="https://agents.uberblick.ai">ub-agents</a></li><li><a href="https://skills.uberblick.ai">Skills</a></li><li><a href="https://github.com/uberblick-ai/wireframe-md">wireframe.md</a></li></ul></div>
         <div><h3>Project</h3><ul><li><a href="${REPO}">GitHub</a></li><li><a href="${REPO}/blob/main/docs/plan.md">The plan</a></li><li><a href="${REPO}/blob/main/LICENSE">License</a></li></ul></div>
       </div>
     </section>
@@ -81,7 +82,7 @@ ${page.body}
   <span>MIT license</span>
   <a href="${REPO}">Source</a>
   <a href="${NPM}">npm</a>
-  <a href="https://uberblick.ai">Uberblick</a>
+  <a href="https://next.uberblick.ai">Uberblick</a>
   <a href="https://agents.uberblick.ai">ub-agents</a>
   <a href="https://skills.uberblick.ai">Skills</a>
 </footer>
@@ -93,8 +94,17 @@ const copied = async (text, fallback) => {
   catch { const r = document.createRange(); r.selectNodeContents(fallback); getSelection().removeAllRanges(); getSelection().addRange(r); toast.textContent = 'Select and copy'; }
   toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 1400);
 };
-for (const b of document.querySelectorAll('.copy')) b.addEventListener('click', () => { const code = b.parentNode.querySelector('code'); copied(code.textContent, code); });
-for (const b of document.querySelectorAll('.copy-src')) b.addEventListener('click', () => { const code = b.closest('.block').querySelector('code'); copied(code.textContent, code); });
+// Copy takes the open tab's code, or the source when the picture is open.
+for (const b of document.querySelectorAll('.copy')) b.addEventListener('click', () => {
+  const box = b.closest('.tabs') ?? b.parentNode, open = box.querySelector('.panel:not([hidden]) code') ?? box.querySelector('code');
+  copied(open.textContent, open);
+});
+for (const box of document.querySelectorAll('.tabs')) {
+  const tabs = box.querySelectorAll('[role="tab"]');
+  for (const tab of tabs) tab.addEventListener('click', () => {
+    for (const t of tabs) { const on = t === tab; t.setAttribute('aria-selected', on); document.getElementById(t.getAttribute('aria-controls')).hidden = !on; }
+  });
+}
 (() => {
   const side = document.querySelector('details.side'), wide = matchMedia('(min-width: 900px)');
   const sync = () => { if (wide.matches) side.open = true; };

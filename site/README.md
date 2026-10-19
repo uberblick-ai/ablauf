@@ -1,7 +1,8 @@
 # ablauf.uberblick.ai
 
-The site for ablauf: a landing page at `/` and a showcase at `/showcase`, in
-the shell the uberblick.ai sites share (top bar, sidebar, "Who builds this").
+The site for ablauf: a landing page at `/`, a page per diagram kind (`/flow`,
+`/fan-out`), guides under `/guides/` and `/motivation`, in the shell the
+uberblick.ai sites share (top bar, sidebar, "Who builds this").
 
 ```sh
 mise run site        # or: node site/build.ts
@@ -10,16 +11,21 @@ mise run site-serve  # then open http://127.0.0.1:8000/
 
 - `pages/<path>.html` is the page served at `/<path>`: a `<head>` block with
   the title and description, then the page's content. `shell.ts` wraps it.
-- `kinds.ts` lists the diagram kinds in showcase order, each with its header
-  line, one sentence and its examples from `spike/examples`. A new kind is one
-  entry there: it gets its showcase section, a sidebar link and a line on the
-  landing page. An example with `editOf` marks the lines it changed or added
-  against the example it edits.
-- Placeholders in a page: `<!-- example NAME -->`, `<!-- kinds -->` and
-  `<!-- showcase -->`.
+- `kinds.ts` lists the diagram kinds in display order, each with its header
+  line, one sentence and its examples. A new kind is one entry there: it gets
+  its own page at `/<id>`, a sidebar link and a line on the landing page. An
+  example with `editOf` marks the lines it changed or added against the
+  example it edits.
+- Examples come from `examples/` (site only) or `spike/examples`. Each one is
+  shown as tabs, Displayed and Source, like the block examples on uberblick.ai.
+- Placeholders in a page: `<!-- example NAME -->`, `<!-- example NAME STYLE -->`
+  (drawn with `styles/STYLE.css` on a `.STYLE` wrapper, with a CSS tab),
+  `<!-- markdown NAME -->` (the source as a fenced Markdown block) and
+  `<!-- kinds -->`.
 - Diagrams are rendered by the current renderer at build time, inline and
   themed by the site's tokens. Any diagnostic, a kind whose example has another
-  header, or a link to a page that is not built fails the build.
+  header, an unknown placeholder or a link to a page that is not built fails
+  the build.
 - `static/` is copied as it is. `shared.css` is a copy of uberblick-2's
   `site/static/shared.css`; switch to linking `https://uberblick.ai/shared.css`
   once the new uberblick.ai serves there. `site.css` is what ablauf adds.

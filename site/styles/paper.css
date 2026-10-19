@@ -1,0 +1,22 @@
+/* Warm paper neutrals on their own ground; the tones keep their defaults. */
+.paper {
+  --ab-bg: #fbf7ef;
+  --ab-surface: #fffdf8;
+  --ab-band: #f3ecdf;
+  --ab-ink: #3b2f22;
+  --ab-muted: #7a6a58;
+  --ab-line: #e2d6c3;
+  background: var(--ab-bg);
+  padding: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .paper {
+    --ab-bg: #1f1a14;
+    --ab-surface: #2a231b;
+    --ab-band: #251f18;
+    --ab-ink: #efe5d6;
+    --ab-muted: #b3a48f;
+    --ab-line: #43392d;
+  }
+}
