@@ -179,6 +179,10 @@ only in an isolated directory and exercise the public import and this build scri
 `mise tasks` lists everything. The plan is in [docs/plan.md](docs/plan.md), and
 the spike's results in [spike/FINDINGS.md](spike/FINDINGS.md).
 
+Maintainers release an already-prepared version with `mise run release X.Y.Z`.
+Start with `mise run release X.Y.Z --check`; see [releases](docs/releases.md)
+for trusted-publishing setup, confirmation and partial-release recovery.
+
 The earlier Mermaid-subset version lives in
 [uberblick-ai/old-ablauf](https://github.com/uberblick-ai/old-ablauf).
 
