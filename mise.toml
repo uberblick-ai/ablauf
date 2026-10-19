@@ -52,3 +52,7 @@ run = "pnpm -s render"
 [tasks.measure]
 description = "Show what moved between the loop and the loop with a role inserted"
 run = "pnpm -s measure"
+
+[tasks.release]
+description = "Maintainer only: release an already-prepared X.Y.Z (--check is read-only)"
+run = "node spike/release/command.ts"

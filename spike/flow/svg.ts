@@ -1,7 +1,7 @@
 // SVG as a string, in the house style. Colours are CSS variables a host can
 // override with --ab-*; light and dark follow prefers-color-scheme.
 
-import type { Typography } from "./fonts.ts";
+import { Typography } from "./fonts.ts";
 import {
 	type Band,
 	type Key,
@@ -10,6 +10,7 @@ import {
 	type Route,
 	legendSampleSize,
 	panelContentHeight,
+	panelLines,
 	wrap,
 } from "./grid.ts";
 import type { Tone } from "./parse.ts";
@@ -20,8 +21,12 @@ export const LIGHT = {
 	line: "#d3d9e2",
 	band: "#e9eef5",
 	surface: "#ffffff",
+	neutral: "#59616c",
+	"neutral-bg": "#e1e3e6",
 	agent: "#0b6b67",
 	"agent-bg": "#dff1ee",
+	system: "#3459a3",
+	"system-bg": "#e7edfb",
 	rework: "#a65f0c",
 	"rework-bg": "#fbefdc",
 	stop: "#b2382f",
@@ -35,8 +40,12 @@ export const DARK: typeof LIGHT = {
 	line: "#2c3440",
 	band: "#151b23",
 	surface: "#1d232d",
+	neutral: "#b6bbc3",
+	"neutral-bg": "#303640",
 	agent: "#5cc5bb",
 	"agent-bg": "#12302d",
+	system: "#91b4fa",
+	"system-bg": "#1c2945",
 	rework: "#e3a250",
 	"rework-bg": "#33250f",
 	stop: "#ef7f73",
@@ -49,10 +58,10 @@ const vars = (t: typeof LIGHT) =>
 		.map(([k, v]) => `--${k}:var(--ab-${k},${v});`)
 		.join("");
 
-const palette = (scheme?: "light" | "dark") =>
-	scheme
-		? `.ab{${vars(scheme === "dark" ? DARK : LIGHT)}}`
-		: `.ab{${vars(LIGHT)}}@media (prefers-color-scheme:dark){.ab{${vars(DARK)}}}`;
+const palette = (mode: "light" | "dark" | "auto") =>
+	mode === "auto"
+		? `.ab.ab-auto{${vars(LIGHT)}}@media (prefers-color-scheme:dark){.ab.ab-auto{${vars(DARK)}}}`
+		: `.ab.ab-${mode}{${vars(mode === "dark" ? DARK : LIGHT)}}`;
 
 const style = (fonts: Typography) => `
 .ab text{font-family:${fonts.text ? `"${fonts.text.family}"` : '"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif'};${fonts.text || fonts.mono ? "font-weight:400;" : ""}fill:var(--ink)}
@@ -63,7 +72,7 @@ const style = (fonts: Typography) => `
 .ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
 .ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
 .ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
-${(["ink", "muted", "agent", "done", "rework", "stop"] as Tone[])
+${(["ink", "muted", "neutral", "agent", "system", "done", "rework", "stop"] as Tone[])
 	.map((t) => {
 		const c = t === "ink" ? "muted" : t;
 		const bg = t === "ink" || t === "muted" ? "surface" : `${t}-bg`;
@@ -73,7 +82,7 @@ ${(["ink", "muted", "agent", "done", "rework", "stop"] as Tone[])
 .ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}
 `.trim();
 
-const esc = (s: string) =>
+export const esc = (s: string) =>
 	s
 		.replace(/&/g, "&amp;")
 		.replace(/</g, "&lt;")
@@ -87,7 +96,14 @@ export interface SvgOptions {
 	scheme?: "light" | "dark";
 }
 
+export const svgStyle = (mode: "light" | "dark" | "auto" = "auto", fonts: Typography = new Typography()) =>
+	`<style>${palette(mode)}\n${style(fonts)}</style>`;
+
 export function toSvg(layout: Layout, options: SvgOptions = {}): string {
+	const mode =
+		options.scheme === "light" || options.scheme === "dark"
+			? options.scheme
+			: "auto";
 	// A dot plus four hex digits encodes each unsafe UTF-16 code unit. Dots
 	// are escaped too, so this is reversible and cannot collide with safe input.
 	// The resulting alphabet is safe in both attributes and local url(#...) refs.
@@ -105,9 +121,9 @@ export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 	].sort();
 	const out: string[] = [];
 	out.push(
-		`<svg xmlns="http://www.w3.org/2000/svg" class="ab" viewBox="0 0 ${layout.width} ${layout.height}" width="${layout.width}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? describe(layout))}">`,
+		`<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-${mode}" viewBox="0 0 ${layout.width} ${layout.height}" width="${layout.width}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? describe(layout))}">`,
 	);
-	out.push(`<style>${palette(options.scheme)}\n${style(layout.typography)}</style>`);
+	out.push(svgStyle(mode, layout.typography));
 	out.push("<defs>");
 	for (const t of tones) {
 		out.push(
@@ -233,7 +249,7 @@ function node(p: Placed, fonts: Typography): string {
 			const parts = [
 				`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" class="k-${n.tone} panel"/>`,
 			];
-			let cy = Math.round(y + 12 + (h - panelContentHeight(n)) / 2);
+			let cy = Math.round(y + 12 + (h - panelContentHeight(n, w, fonts)) / 2);
 			for (const c of n.children) {
 				if (c.kind === "pill") {
 					const pw = fonts.pillWidth(c.text);
@@ -251,7 +267,7 @@ function node(p: Placed, fonts: Typography): string {
 							: c.kind === "muted"
 								? "s11 muted"
 								: "s11";
-					const lines = wrap(c.text);
+					const lines = panelLines(c, w, fonts);
 					lines.forEach((t, i) => {
 						parts.push(
 							`<text x="${cx}" y="${cy + 13 + i * 15}" text-anchor="middle" class="${cls}">${esc(t)}</text>`,

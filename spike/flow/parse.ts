@@ -1,6 +1,6 @@
 // Line grammar for the narrow flow. Never throws: problems become diagnostics.
 
-export type Tone = "ink" | "muted" | "agent" | "done" | "rework" | "stop";
+export type Tone = "ink" | "muted" | "neutral" | "agent" | "system" | "done" | "rework" | "stop";
 export type Kind = "text" | "pill" | "box" | "end" | "panel";
 export type SideName = "top" | "right" | "bottom" | "left";
 export type LabelAt = "start" | "end";
@@ -64,7 +64,7 @@ export interface Model {
 }
 
 const KINDS: Kind[] = ["text", "pill", "box", "end", "panel"];
-const TONES: Tone[] = ["ink", "muted", "agent", "done", "rework", "stop"];
+const TONES: Tone[] = ["ink", "muted", "neutral", "agent", "system", "done", "rework", "stop"];
 const CHILD_KINDS: ChildKind[] = ["pill", "text", "muted", "strong", "rule"];
 const LEGEND_KINDS: LegendKind[] = [
 	"pill",
