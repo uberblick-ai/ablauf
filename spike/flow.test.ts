@@ -4,153 +4,141 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { setImmediate } from "node:timers/promises";
 import { CHAR } from "./flow/grid.ts";
-import { DARK, LIGHT, render } from "./flow/index.ts";
+import { DARK, type FontsOptions, LIGHT, render, type TextStyle } from "./flow/index.ts";
 
 const example = (name: string) =>
 	readFileSync(join(import.meta.dirname, "examples", `${name}.flow`), "utf8");
 
-test("adjacent vertical labels clear straight, L and Z segment ends in either direction", () => {
-	for (const shape of ["straight", "L", "Z"]) {
-		for (const reverse of [false, true]) {
-			for (const atEnd of [false, true]) {
-				for (const tall of [false, true]) {
-					const fromSide = reverse ? "top" : "bottom";
-					const toSide = reverse ? "bottom" : "top";
-					const sides = shape === "straight" ? "" : shape === "Z"
-						? `from=${fromSide} to=${toSide}`
-						: atEnd ? `from=${reverse ? "left" : "right"} to=${toSide}`
-							: `from=${fromSide} to=${reverse ? "right" : "left"}`;
-					const source = [
-						"flow v0", "columns main side peer",
-						"box a col=main", `box b col=${shape === "straight" ? "main" : "side"}`,
-						...(tall ? ['box peer col=peer row=a "this subtitle wraps across several lines and makes an odd height"'] : []),
-						`${reverse ? "b --> a" : "a --> b"} ${sides} ${atEnd ? "label=end" : ""}`,
-					].join("\n");
-					const bare = render(source).layout;
-					const { layout, diagnostics } = render(`${source} : label`);
-					assert.deepEqual(diagnostics, [], source);
-					const route = layout.routes[0];
-					assert.equal(route.points.length, shape === "straight" ? 2 : shape === "L" ? 3 : 4);
-					const p = route.points[atEnd ? route.points.length - 1 : 0];
-					const q = route.points[atEnd ? route.points.length - 2 : 1];
-					assert.ok(route.label);
-					assert.equal(p[0], q[0]);
-					assert.ok(route.label.y - 9 - Math.min(p[1], q[1]) >= 12, source);
-					assert.ok(Math.max(p[1], q[1]) - (route.label.y + 3) >= 12, source);
-					assert.deepEqual(layout.nodes.map(p => p.x), bare.nodes.map(p => p.x));
-				}
-			}
-		}
+// Deliberately wider than the defaults, with different widths at each style.
+const wideFonts: FontsOptions = {
+	mono: {
+		family: "Host Mono",
+		measureText: (text, { fontSize, fontWeight }) =>
+			[...text].length * (fontSize + fontWeight / 100),
+	},
+	text: {
+		family: "Host Text",
+		measureText: (text, { fontSize, fontWeight }) =>
+			[...text].length * (2 * fontSize + fontWeight / 100),
+	},
+};
+
+test("host metrics size every node and panel text at its rendered size and weight", () => {
+	const label = "W".repeat(20);
+	const cases: [string, number][] = [
+		[`text n title="${label}"`, 560], // 12px / 400 text
+		[`pill n title="${label}"`, 356], // 12px / 400 mono, plus 36
+		[`end n title="${label}"`, 640], // 12px / 600 text, plus 40
+		[`box n title="${label}"`, 412], // 13px / 600 mono, plus 32
+		[`box n "${label}"`, 548], // 11px / 400 text, plus 28
+		[`panel n\n  strong "${label}"`, 628], // 12px / 600 text, plus 28
+		[`panel n\n  text "${label}"`, 548],
+		[`panel n\n  muted "${label}"`, 548],
+		[`panel n\n  pill ${label}`, 384],
+	];
+	for (const [source, width] of cases) {
+		const { layout, svg, diagnostics } = render(`flow v0\n${source}\n`, { fonts: wideFonts });
+		const node = layout.nodes[0];
+		assert.deepEqual(diagnostics, [], source);
+		assert.equal(node.w, width, source);
+		assert.equal(layout.width, width + 32, source);
+		assert.ok(svg.includes('.ab text{font-family:"Host Text";'));
+		assert.ok(svg.includes('.ab .m{font-family:"Host Mono"}'));
+		assert.ok(svg.includes('.ab .cap{font-family:"Host Mono";'));
+		if (!source.startsWith("text"))
+			assert.ok(svg.includes(`width="${width}" height="${node.h}"`), source);
+		if (source.includes("pill"))
+			assert.match(svg, /width="356" height="(?:30|34)" rx="(?:15|17)" class="pill"/);
+		assert.equal(svg, render(`flow v0\n${source}\n`, { fonts: wideFonts }).svg);
 	}
 });
 
-test("the issue example has a longer arrow with a label", () => {
-	const source = 'flow v0\ncolumns main person\npanel open col=main tone=muted\n  strong "A team member writes an issue"\npill needs-preparation tone=muted\nopen --> needs-preparation';
-	const bare = render(source);
-	const labeled = render(`${source} : someone sets it`);
-	assert.deepEqual(labeled.diagnostics, []);
-	assert.equal(bare.layout.nodes[1].y - (bare.layout.nodes[0].y + bare.layout.nodes[0].h), 30);
-	assert.equal(labeled.layout.nodes[1].y - (labeled.layout.nodes[0].y + labeled.layout.nodes[0].h), 38);
-});
-
-test("short L segments grow with explicit slots and either selected label end", () => {
-	for (const edge of [
-		"a --> b from=bottom to=left.1",
-		"b --> a from=top to=right.8",
-		"a --> b from=right.8 to=top label=end",
-		"b --> a from=left.1 to=bottom label=end",
-	]) {
-		const source = `flow v0\ncolumns main side\ntext a col=main\ntext b col=side\n${edge}`;
-		const { layout, diagnostics } = render(`${source} : label`);
-		assert.deepEqual(diagnostics, [], edge);
-		const [a, b] = layout.nodes;
-		assert.ok(b.y - a.y - a.h >= 30, edge);
-		if (edge.includes(".8")) assert.ok(b.y - a.y - a.h > 30, edge);
-		const r = layout.routes[0];
-		const atEnd = edge.includes("label=end");
-		const p = r.points[atEnd ? r.points.length - 1 : 0];
-		const q = r.points[atEnd ? r.points.length - 2 : 1];
-		assert.ok(r.label);
-		assert.ok(r.label.y - 9 - Math.min(p[1], q[1]) >= 12, edge);
-		assert.ok(Math.max(p[1], q[1]) - r.label.y - 3 >= 12, edge);
-	}
-});
-
-test("automatic growth uses the exterior boundary of adjacent spanning ranges", () => {
-	for (const edge of ["a --> b", "b --> a label=end"]) {
-		const { layout, diagnostics } = render([
-			"flow v0", "columns main side", "panel a col=main span=2",
-			'  strong "Spanning rows"', "box middle col=side", "box b col=main",
-			`${edge} : next`,
-		].join("\n"));
-		assert.deepEqual(diagnostics, []);
-		const [a, middle, b] = layout.nodes;
-		assert.equal(middle.y - a.y, 16 + 30);
-		assert.equal(a.y + a.h, middle.y + middle.h);
-		assert.equal(b.y - a.y - a.h, 38);
-	}
-});
-
-test("node gap requests combine by maximum with automatic and section minimums", () => {
-	for (const [requests, section, expected] of [
-		["", false, 38], ["gap=0", false, 38], ["gap=60", false, 60],
-		["gap=40", true, 52], ["gap=70", true, 70],
-	] as const) {
-		const { layout, diagnostics } = render([
-			"flow v0", "columns gutter main side", 'section "One"',
-			`box a col=main ${requests}`, "box peer col=side row=a gap=35",
-			...(section ? ['section "Two"'] : []), "box b col=main", "box other col=side row=b", "box c col=main",
-			"a --> b : one", "peer --> other label=end : two",
-		].join("\n"));
-		assert.deepEqual(diagnostics, []);
-		const [a, peer, b, , c] = layout.nodes;
-		assert.equal(peer.y, a.y);
-		assert.equal(b.y - a.y - a.h, expected);
-		assert.equal(c.y - b.y - b.h, 30);
-		if (section) assert.equal(layout.bands[1].y, a.y + a.h + expected / 2);
-	}
-});
-
-test("gap applies after a span and interior growth preserves its coverage and row alignment", () => {
-	const { layout, diagnostics } = render([
-		"flow v0", "columns main side", "box a col=main gap=65", "box b", "box c", "box d",
-		"panel p col=side row=a span=2 gap=80", '  strong "Note"',
-		"box peer col=side row=c", "c --> d : next",
-	].join("\n"));
+test("host widths govern edge gaps, label bounds and overlap diagnostics", () => {
+	const label = "W".repeat(30);
+	const facing = `flow v0\ncolumns a b\npill one col=a\npill two col=b row=one\none --> two : ${label}\n`;
+	const { layout, diagnostics } = render(facing, { fonts: wideFonts });
 	assert.deepEqual(diagnostics, []);
-	const [a, b, c, d, panel, peer] = layout.nodes;
-	assert.equal(b.y - a.y - a.h, 65);
-	assert.equal(panel.y, a.y);
-	assert.equal(panel.y + panel.h, b.y + b.h);
-	assert.equal(c.y - panel.y - panel.h, 80);
-	assert.equal(peer.y, c.y);
-	assert.equal(d.y - c.y - c.h, 38);
-});
-
-test("gap works without labels and invalid or inapplicable values name their source lines", () => {
-	for (const value of ["-1", "1.5", "60px", "wide", "Infinity", "9007199254740992", ""]) {
-		const { diagnostics, layout } = render(`flow v0\nbox a gap=${value}\nbox b`);
-		assert.ok(diagnostics.some(d => d.line === 2 && /gap=/.test(d.message)), value);
-		assert.equal(layout.nodes[1].y - layout.nodes[0].y - layout.nodes[0].h, 30);
+	assert.equal(layout.routes[0].label?.w, 450);
+	assert.equal(layout.nodes[1].x - layout.nodes[0].x - layout.nodes[0].w, 470);
+	const loop = `flow v0\nbox one\nbox two\none --> two from=left to=left : ${label}\ntwo --> one from=right to=right label=end : ${label}\n`;
+	const bounds = render(loop, { fonts: wideFonts }).layout;
+	for (const { label: l } of bounds.routes) {
+		assert.ok(l);
+		const left = l.anchor === "start" ? l.x : l.x - l.w;
+		assert.equal(l.w, 450);
+		assert.ok(left >= 16 && left + l.w <= bounds.width - 16);
 	}
-	const { layout, diagnostics } = render("flow v0\nbox a gap=90\nbox b gap=60\na --> b gap=70");
-	assert.equal(layout.nodes[1].y - layout.nodes[0].y - layout.nodes[0].h, 90);
-	assert.deepEqual(diagnostics.map(d => d.line), [4, 3]);
-	assert.ok(!render("flow v0\nbox a gap=\nbox b").svg.includes("NaN"));
+	// An edge to a non-adjacent column leaves a fixed gap. Wider text must
+	// report the resulting collision rather than silently changing the route.
+	const collision = `flow v0\ncolumns a b c\nbox one col=a\nbox middle col=b row=one\nbox two col=c row=one\none --> two : ${"W".repeat(7)}\n`;
+	assert.ok(!render(collision).diagnostics.some((d) => /label .* overlaps middle/.test(d.message)));
+	assert.ok(render(collision, { fonts: wideFonts }).diagnostics.some(
+		(d) => d.line === 6 && /label .* overlaps middle/.test(d.message),
+	));
 });
 
-test("excluded routes keep their spacing and remaining overlap diagnostics", () => {
-	for (const source of [
-		"flow v0\ncolumns main side\nbox a col=main\nbox b col=side\na --> b : horizontal label",
-		"flow v0\ncolumns main side\nbox a col=main\nbox b col=side\na --> b from=top to=top : loop label",
-		"flow v0\nbox a\nbox middle\nbox b\na --> b : skipped row",
-		"flow v0\ncolumns main side\nbox a col=main\nbox b col=side row=a\na --> b from=bottom to=top : overlapping rows",
-	]) {
-		const labeled = render(source);
-		const bare = render(source.split(" : ")[0]);
-		assert.deepEqual(labeled.layout.nodes.map(p => [p.y, p.h]), bare.layout.nodes.map(p => [p.y, p.h]));
-		if (source.includes("skipped row")) {
-			assert.ok(labeled.diagnostics.some(d => d.line === 5 && /label .* overlaps middle/.test(d.message)));
+test("host caption metrics use uppercase text and spacing for canvas and collisions", () => {
+	const caption = "ß".repeat(30);
+	const { layout } = render(`flow v0\nsection "${caption}"\ntext n\n`, { fonts: wideFonts });
+	const captionWidth = Math.ceil(60 * 15 + 60 * 0.88);
+	assert.equal(layout.width, 20 + captionWidth + 16);
+	const collision = 'flow v0\ncolumns a b\nsection "ßßßßßßßßß"\ntext one col=a\ntext two col=b row=one\n';
+	assert.ok(!render(collision).diagnostics.some((d) => /overlaps two/.test(d.message)));
+	assert.ok(render(collision, { fonts: wideFonts }).diagnostics.some(
+		(d) => d.line === 5 && /section label .* overlaps two/.test(d.message),
+	));
+});
+
+test("host legend widths govern canvas bounds and row wrapping", () => {
+	const source = `flow v0\nbox n\nlegend\n  box "${"W".repeat(20)}"\n  pill "${"W".repeat(10)}"\n  edge "${"W".repeat(10)}"\n`;
+	const { layout, diagnostics } = render(source, { fonts: wideFonts });
+	assert.deepEqual(diagnostics, []);
+	assert.ok(layout.legend);
+	assert.equal(layout.width, 16 + 24 + 6 + 20 * 26 + 16);
+	const [first, second, third] = layout.legend.keys;
+	assert.equal(second.y, first.y + 20);
+	assert.equal(third.y, second.y + 20);
+	for (const k of layout.legend.keys)
+		assert.ok(k.x + 30 + k.item.text.length * 26 <= layout.width - 16);
+});
+
+test("one or both roles can use Plex Mono, measuring actual strings without a DOM", () => {
+	const seen: [string, TextStyle][] = [];
+	const mono = {
+		family: "IBM Plex Mono",
+		measureText: (text: string, style: TextStyle) => {
+			seen.push([text, style]);
+			return [...text].reduce((w, c) => w + (c === "W" ? 30.2 : 10.1), 0);
+		},
+	};
+	const source = 'flow v0\ntext n title="Wi😀"\n';
+	const { svg, layout } = render(source, { fonts: { mono, text: mono } });
+	assert.equal(layout.nodes[0].w, 51); // fractional widths round up
+	assert.deepEqual(seen, [["Wi😀", { fontSize: 12, fontWeight: 400 }]]);
+	assert.ok(svg.includes('.ab text{font-family:"IBM Plex Mono";'));
+	assert.ok(svg.includes('.ab .m{font-family:"IBM Plex Mono"}'));
+	assert.equal(render(source, { fonts: { mono } }).layout.nodes[0].w, render(source).layout.nodes[0].w);
+	assert.ok(render(source, { fonts: { text: mono } }).svg.includes('.ab .m{font-family:"IBM Plex Mono",ui-monospace,'));
+	assert.equal(render(example("loop"), { fonts: {} }).svg, render(example("loop")).svg);
+});
+
+test("unsafe font names and invalid metrics fail before producing an SVG", () => {
+	const source = 'flow v0\npill n\ntext t\n';
+	for (const role of ["mono", "text"] as const) {
+		for (const family of ["", "  ", 'Bad";fill:red', "Bad\\22", "<style>", "A&B", "a,b", "a\nb", "a\n", "url(https://example.org/font)", "a/*x*/", "'Bad'"]) {
+			assert.throws(() => render(source, { fonts: {
+				[role]: { family, measureText: () => 10 },
+			} }), TypeError, family);
+		}
+		for (const width of [NaN, Infinity, -Infinity, -1, 1_000_001, Number.MAX_VALUE, "12", undefined, Promise.resolve(12)]) {
+			assert.throws(() => render(source, { fonts: {
+				[role]: { family: "Host Font", measureText: () => width as number },
+			} }), RangeError, String(width));
+		}
+		for (const width of [0, 1_000_000]) {
+			assert.doesNotMatch(render(source, { fonts: {
+				[role]: { family: "Host Font", measureText: () => width },
+			} }).svg, /NaN|Infinity/);
 		}
 	}
 });
@@ -161,6 +149,28 @@ test("the loop renders with no diagnostics", () => {
 
 test("the same source gives the same bytes", () => {
 	assert.equal(render(example("loop")).svg, render(example("loop")).svg);
+});
+
+test("wide and narrow approvals preserve content and fit their host widths", () => {
+	const wide = render(example("approval-wide"));
+	const narrow = render(example("approval-narrow"));
+	const content = ({ layout }: ReturnType<typeof render>) => ({
+		nodes: layout.nodes.map(({ node: n }) => ({
+			id: n.id, kind: n.kind, label: n.label, sub: n.sub,
+			tone: n.tone, children: n.children,
+		})).sort((a, b) => a.id.localeCompare(b.id)),
+		edges: layout.routes.map(({ edge: e }) => ({
+			from: e.from, to: e.to, label: e.label, tone: e.tone, dashed: e.dashed,
+		})),
+		legend: layout.legend?.keys.map(({ item }) => ({
+			kind: item.kind, tone: item.tone, text: item.text,
+		})),
+	});
+	assert.deepEqual(wide.diagnostics, []);
+	assert.deepEqual(narrow.diagnostics, []);
+	assert.deepEqual(content(narrow), content(wide));
+	assert.ok(narrow.layout.width <= 400, "complete narrow SVG must fit 400 CSS px");
+	assert.ok(wide.layout.width <= 568, "wide SVG must fit at the host breakpoint");
 });
 
 test("the rendered loop matches the checked-in figure", () => {
@@ -241,6 +251,163 @@ test("every row a spanning panel covers meets it with a straight edge", () => {
 	}
 });
 
+test("top entries keep an unnumbered main arrow on its column centre", () => {
+	for (const kind of ["box", "pill"]) {
+		for (const mirrored of [false, true]) {
+			const source = [
+				"flow v0",
+				mirrored ? "columns side main" : "columns main side",
+				`${kind} before col=main`,
+				"pill branch col=side",
+				"pill target col=main",
+				"before --> target",
+			].join("\n");
+			const baseline = render(source);
+			const added = render(
+				`${source}\nbranch --> target from=${mirrored ? "right" : "left"} to=top.${mirrored ? 1 : 2}\n`,
+			);
+			assert.deepEqual(baseline.diagnostics, []);
+			assert.deepEqual(added.diagnostics, []);
+			assert.deepEqual(added.layout.nodes, baseline.layout.nodes);
+			assert.deepEqual(added.layout.routes[0].points, baseline.layout.routes[0].points);
+			const [main, branch] = added.layout.routes;
+			assert.equal(main.points.length, 2);
+			for (const [i, id] of ["before", "target"].entries()) {
+				const node = added.layout.nodes.find((p) => p.node.id === id);
+				assert.ok(node);
+				assert.ok(Math.abs(main.points[i][0] - (node.x + node.w / 2)) <= 1);
+			}
+			const entry = branch.points.at(-1);
+			assert.ok(entry);
+			assert.ok(mirrored ? entry[0] < main.points[0][0] : entry[0] > main.points[0][0]);
+		}
+	}
+});
+
+test("unnumbered entries use the half facing their other node", () => {
+	for (const mirrored of [false, true]) {
+		for (const outgoing of [false, true]) {
+			const source = [
+				"flow v0",
+				mirrored ? "columns side main" : "columns main side",
+				"box before col=main",
+				"pill branch col=side",
+				"pill target col=main",
+				"before --> target",
+			].join("\n");
+			const baseline = render(source);
+			const { layout, diagnostics } = render(
+				`${source}\n${outgoing ? "before --> branch" : "branch --> target"}\n`,
+			);
+			assert.deepEqual(diagnostics, []);
+			assert.deepEqual(layout.nodes, baseline.layout.nodes);
+			assert.deepEqual(layout.routes[0].points, baseline.layout.routes[0].points);
+			const [main, branch] = layout.routes;
+			const port = outgoing ? branch.points[0] : branch.points.at(-1);
+			assert.ok(port);
+			assert.ok(mirrored ? port[0] < main.points[0][0] : port[0] > main.points[0][0]);
+		}
+	}
+});
+
+test("unnumbered entries expand their half and leave numbered slots occupied", () => {
+	for (const mirrored of [false, true]) {
+		const { layout } = render([
+			"flow v0",
+			mirrored ? "columns side main" : "columns main side",
+			"box before col=main",
+			"pill target col=main",
+			"pill one col=side",
+			"pill two col=side",
+			"pill three col=side",
+			"before --> target",
+			"one --> target from=top to=top",
+			`two --> target from=top to=top.${mirrored ? 1 : 4}`,
+			"three --> target from=top to=top",
+		].join("\n"));
+		const [main, ...entries] = layout.routes;
+		const center = main.points[0][0];
+		const target = layout.nodes.find((p) => p.node.id === "target");
+		assert.ok(target);
+		const ports = entries.map((r) => r.points[3][0]);
+		assert.equal(new Set(ports).size, 3);
+		assert.ok(ports.every((x) => mirrored ? x < center : x > center));
+		assert.equal(ports[1], Math.round(target.x + target.w * (mirrored ? 1 / 8 : 5 / 8)));
+		for (const route of entries) {
+			assert.equal(route.points.length, 4);
+			assert.equal(route.points[1][1], target.y - 24);
+			assert.equal(route.points[2][1], target.y - 24);
+		}
+	}
+});
+
+test("numbered and unnumbered return entries use ordered ports beside the centre", () => {
+	const source = [
+		"flow v0",
+		"columns left main right outer",
+		"box before col=main",
+		"pill target col=main",
+		"pill right col=right",
+		"pill outer col=outer",
+		"pill left col=left",
+		"before --> target",
+		"right --> target from=top to=top.3",
+		"outer --> target from=top to=top.4",
+		"left --> target from=top to=top.1",
+	].join("\n");
+	for (const extra of ["", "\nleft -.-> target from=right to=top"]) {
+		const { layout } = render(source + extra);
+		const main = layout.routes[0];
+		const target = layout.nodes.find((p) => p.node.id === "target");
+		assert.ok(target);
+		assert.equal(main.points.length, 2);
+		assert.ok(Math.abs(main.points[0][0] - (target.x + target.w / 2)) <= 1);
+		const entries = layout.routes.slice(1).map((r) => {
+			const end = r.points.at(-1);
+			assert.ok(end);
+			assert.equal(end[1], target.y);
+			assert.notEqual(end[0], main.points[0][0]);
+			return end[0];
+		});
+		const [right, outer, left, unnumbered] = entries;
+		assert.ok(left < main.points[0][0] && main.points[0][0] < right && right < outer);
+		if (extra) assert.ok(left < unnumbered && unnumbered < main.points[0][0]);
+		assert.equal(new Set(entries).size, entries.length);
+		// Equal top sides keep the authored loop shape above both nodes.
+		for (const route of layout.routes.slice(1, 4)) {
+			assert.equal(route.points.length, 4);
+			assert.equal(route.points[1][1], target.y - 24);
+			assert.equal(route.points[2][1], target.y - 24);
+		}
+	}
+});
+
+test("a return into the top leaves the main arrow centred without diagnostics", () => {
+	for (const mirrored of [false, true]) {
+		for (const slot of ["", `.${mirrored ? 1 : 2}`]) {
+			const { layout, diagnostics } = render([
+				"flow v0",
+				mirrored ? "columns side main" : "columns main side",
+				"box before col=main",
+				"pill target col=main",
+				"pill retry col=side",
+				`retry --> target from=top to=top${slot}`,
+				"before --> target",
+			].join("\n"));
+			assert.deepEqual(diagnostics, []);
+			const [loop, main] = layout.routes;
+			assert.equal(main.points.length, 2);
+			const before = layout.nodes[0];
+			assert.ok(Math.abs(main.points[0][0] - (before.x + before.w / 2)) <= 1);
+			assert.equal(loop.points.length, 4);
+			const entry = loop.points[3];
+			assert.ok(mirrored ? entry[0] < main.points[0][0] : entry[0] > main.points[0][0]);
+			assert.equal(loop.points[1][1], entry[1] - 24);
+			assert.equal(loop.points[2][1], entry[1] - 24);
+		}
+	}
+});
+
 test("automatic and pinned palettes keep every host override", () => {
 	const automatic = render(example("loop")).svg;
 	assert.match(automatic, /@media \(prefers-color-scheme:dark\)/);
@@ -274,19 +441,6 @@ test("the documented host CSS supplies both complete palettes", () => {
 			]),
 	);
 	assert.deepEqual(palettes, { light: LIGHT, dark: DARK });
-});
-
-test("empty row= values are diagnosed while nodes still render on new rows", () => {
-	for (const row of ["row=", 'row=""']) {
-		const { diagnostics, layout, svg } = render(`flow v0\nbox a\nbox b ${row}`);
-		assert.deepEqual(
-			diagnostics.map((d) => [d.line, d.message]),
-			[[3, "row= must name another node; starting a new row"]],
-		);
-		assert.equal(layout.nodes.length, 2);
-		assert.ok(layout.nodes[1].y > layout.nodes[0].y);
-		assert.match(svg, /^<svg /);
-	}
 });
 
 test("row= chains reach the row's first node, and loops are reported", () => {
