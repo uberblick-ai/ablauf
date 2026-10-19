@@ -29,23 +29,19 @@ npm package.
 
 ## Deploying
 
-A Cloudflare Pages project connected to this repository builds the site on
-every push to `main`. Its settings are a maintainer step; no token lives in the
-repository:
+Cloudflare Pages builds the site on every push to `main` that touches `site/`,
+`spike/flow/` or `spike/examples/`, and serves it at ablauf.uberblick.ai. The
+Pages project and the DNS record are Terraform in
+[uberblick-infra](https://github.com/uberblick-ai/uberblick-infra)
+(`cloudflare/ablauf.tf`, set up as in its `docs/website.md`), beside the
+ub-agents and skills sites; no token lives in this repository.
 
-| Setting | Value |
-| --- | --- |
-| Production branch | `main` |
-| Framework preset | None |
-| Root directory | empty: the build imports the renderer from `spike/flow` |
-| Build command | `node site/build.ts` |
-| Build output directory | `site/out` |
-| Build watch paths | `site/*`, `spike/flow/*`, `spike/examples/*` |
-| `NODE_VERSION` | `26`, as in `mise.toml` (22.18 or newer works) |
-| `SITE_URL` | the origin the project serves; omitted, canonical links name `https://ablauf.uberblick.ai` |
-| `SITE_NOINDEX` | `1` on a preview host search engines should not index |
-| Custom domain | `ablauf.uberblick.ai`; Cloudflare adds the DNS record when the zone is on Cloudflare, otherwise add a CNAME to the project's `pages.dev` host |
+The project runs `node site/build.ts` on Node 26 from the repository root and
+publishes `site/out`. The build needs no `pnpm install`: Node strips the
+renderer's types itself. Pages serves `404.html` for unknown paths and
+redirects `/<path>.html` to `/<path>`, which is why the build writes
+extensionless pages.
 
-The build needs no `pnpm install`: Node strips the renderer's types itself.
-Pages serves `404.html` for unknown paths and redirects `/<path>.html` to
-`/<path>`, which is why the build writes extensionless pages.
+`SITE_URL` sets the origin that canonical links and the sitemap name (default
+`https://ablauf.uberblick.ai`), and `SITE_NOINDEX=1` keeps a preview host out of
+search engines.

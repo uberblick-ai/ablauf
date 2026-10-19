@@ -23,6 +23,10 @@ test("the site builds every page with clean examples and a section per kind", (t
 		for (const example of kind.examples) assert.match(showcase, new RegExp(`id="${kind.id}-${example.name}"`));
 	}
 	assert.match(readFileSync(join(out, "index.html"), "utf8"), /<link rel="canonical" href="https:\/\/ablauf\.uberblick\.ai\/">/);
+	const sitemap = readFileSync(join(out, "sitemap.xml"), "utf8");
+	assert.match(sitemap, /<loc>https:\/\/ablauf\.uberblick\.ai\/showcase<\/loc>/);
+	assert.doesNotMatch(sitemap, /404/);
+	assert.match(readFileSync(join(out, "robots.txt"), "utf8"), /Sitemap: https:\/\/ablauf\.uberblick\.ai\/sitemap\.xml/);
 });
 
 test("an edit marks only the lines it changed or added", (t) => {

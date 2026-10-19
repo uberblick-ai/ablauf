@@ -19,7 +19,9 @@
 // Any diagnostic, a kind whose example has another header, an unknown
 // placeholder or a link to a page that is not built fails the build.
 //
-// SITE_URL sets the origin canonical links name (default
+// It also writes robots.txt and sitemap.xml, like the sibling sites.
+//
+// SITE_URL sets the origin canonical links and the sitemap name (default
 // https://ablauf.uberblick.ai); SITE_NOINDEX, set to anything, keeps search
 // engines off a preview host.
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -136,6 +138,12 @@ ${items.join("\n")}
 	}
 	for (const [href, page] of hrefs)
 		if (!built.has(href) && !existsSync(join(out, href))) problems.push(`${page}: links to ${href}, which is not built`);
+	const listed = [...built].filter((p) => p !== "/404").sort();
+	writeFileSync(join(out, "robots.txt"), `User-agent: *\nAllow: /\n\nSitemap: ${site}/sitemap.xml\n`);
+	writeFileSync(
+		join(out, "sitemap.xml"),
+		`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${listed.map((p) => `  <url><loc>${site}${p}</loc></url>\n`).join("")}</urlset>\n`,
+	);
 	return { pages: [...built].sort(), problems };
 }
 
