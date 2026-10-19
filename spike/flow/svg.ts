@@ -50,10 +50,10 @@ const vars = (t: typeof LIGHT) =>
 		.map(([k, v]) => `--${k}:var(--ab-${k},${v});`)
 		.join("");
 
-const palette = (scheme?: "light" | "dark") =>
-	scheme
-		? `.ab{${vars(scheme === "dark" ? DARK : LIGHT)}}`
-		: `.ab{${vars(LIGHT)}}@media (prefers-color-scheme:dark){.ab{${vars(DARK)}}}`;
+const palette = (mode: "light" | "dark" | "auto") =>
+	mode === "auto"
+		? `.ab.ab-auto{${vars(LIGHT)}}@media (prefers-color-scheme:dark){.ab.ab-auto{${vars(DARK)}}}`
+		: `.ab.ab-${mode}{${vars(mode === "dark" ? DARK : LIGHT)}}`;
 
 const style = (fonts: Typography) => `
 .ab text{font-family:${fonts.text ? `"${fonts.text.family}"` : '"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif'};${fonts.text || fonts.mono ? "font-weight:400;" : ""}fill:var(--ink)}
@@ -89,6 +89,10 @@ export interface SvgOptions {
 }
 
 export function toSvg(layout: Layout, options: SvgOptions = {}): string {
+	const mode =
+		options.scheme === "light" || options.scheme === "dark"
+			? options.scheme
+			: "auto";
 	// A dot plus four hex digits encodes each unsafe UTF-16 code unit. Dots
 	// are escaped too, so this is reversible and cannot collide with safe input.
 	// The resulting alphabet is safe in both attributes and local url(#...) refs.
@@ -106,9 +110,9 @@ export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 	].sort();
 	const out: string[] = [];
 	out.push(
-		`<svg xmlns="http://www.w3.org/2000/svg" class="ab" viewBox="0 0 ${layout.width} ${layout.height}" width="${layout.width}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? describe(layout))}">`,
+		`<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-${mode}" viewBox="0 0 ${layout.width} ${layout.height}" width="${layout.width}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? describe(layout))}">`,
 	);
-	out.push(`<style>${palette(options.scheme)}\n${style(layout.typography)}</style>`);
+	out.push(`<style>${palette(mode)}\n${style(layout.typography)}</style>`);
 	out.push("<defs>");
 	for (const t of tones) {
 		out.push(

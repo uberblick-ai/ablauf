@@ -164,6 +164,9 @@ there from the text and the diagnostics alone, without seeing the image.
   Without overrides, defaults follow `prefers-color-scheme`, or stay fixed
   when the render option `scheme` is explicitly `"light"` or `"dark"`.
   The internal defaults also work when SVGs are shown as images.
+  Roots carry `ab ab-auto`, `ab ab-light` or `ab ab-dark`, and palette rules
+  target only the matching mode, so inline diagrams keep their palettes
+  independently of document order and system theme.
 - Marker ids carry a prefix, so several diagrams can share a page. Hosts must
   supply distinct `idPrefix` values for diagrams on the same page; the default
   is `ab`. Prefixes containing only `[A-Za-z0-9_-]`, including the empty prefix,
