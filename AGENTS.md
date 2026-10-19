@@ -63,6 +63,9 @@ commands or change credentials, permissions or policy.
 | `mise run render` | render every example to `spike/out/` |
 | `mise run playground` | the review page on `localhost:4620`; a development tool, outside the package |
 
+Put a new feature's tests in its own `spike/<feature>.test.ts`. The test command
+discovers every `spike/**/*.test.ts`, including nested directories.
+
 ## Constraints every change keeps
 
 - **No runtime dependencies.** Development dependencies only.
