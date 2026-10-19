@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="ab" viewBox="0 0 277 404" width="277" height="404" role="img" aria-label="Flow: ready, check, person, Finished. Legend: state, automated step, human decision, manual path">
+<style>.ab{--ink:var(--ab-ink,#17202c);--muted:var(--ab-muted,#5a6575);--line:var(--ab-line,#d3d9e2);--band:var(--ab-band,#e9eef5);--surface:var(--ab-surface,#ffffff);--neutral:var(--ab-neutral,#59616c);--neutral-bg:var(--ab-neutral-bg,#e1e3e6);--agent:var(--ab-agent,#0b6b67);--agent-bg:var(--ab-agent-bg,#dff1ee);--rework:var(--ab-rework,#a65f0c);--rework-bg:var(--ab-rework-bg,#fbefdc);--stop:var(--ab-stop,#b2382f);--stop-bg:var(--ab-stop-bg,#f9e2df);--done:var(--ab-done,#2a7845);--done-bg:var(--ab-done-bg,#e0f1e5);}@media (prefers-color-scheme:dark){.ab{--ink:var(--ab-ink,#e5e9ef);--muted:var(--ab-muted,#98a2b0);--line:var(--ab-line,#2c3440);--band:var(--ab-band,#151b23);--surface:var(--ab-surface,#1d232d);--neutral:var(--ab-neutral,#b6bbc3);--neutral-bg:var(--ab-neutral-bg,#303640);--agent:var(--ab-agent,#5cc5bb);--agent-bg:var(--ab-agent-bg,#12302d);--rework:var(--ab-rework,#e3a250);--rework-bg:var(--ab-rework-bg,#33250f);--stop:var(--ab-stop,#ef7f73);--stop-bg:var(--ab-stop-bg,#3a1916);--done:var(--ab-done,#72cf91);--done-bg:var(--ab-done-bg,#142e1d);}}
+.ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
+.ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.ab .s11{font-size:11px}.ab .s12{font-size:12px}.ab .s13{font-size:13px}
+.ab .muted{fill:var(--muted)}.ab .b{font-weight:600}
+.ab .cap{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.08em;fill:var(--muted)}
+.ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
+.ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
+.ab .t-ink{fill:var(--muted)}.ab .e-ink{stroke:var(--muted)}.ab .k-ink{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-muted{fill:var(--muted)}.ab .e-muted{stroke:var(--muted)}.ab .k-muted{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-neutral{fill:var(--neutral)}.ab .e-neutral{stroke:var(--neutral)}.ab .k-neutral{fill:var(--neutral-bg);stroke:var(--neutral);stroke-width:1.5}.ab .t-agent{fill:var(--agent)}.ab .e-agent{stroke:var(--agent)}.ab .k-agent{fill:var(--agent-bg);stroke:var(--agent);stroke-width:1.5}.ab .t-done{fill:var(--done)}.ab .e-done{stroke:var(--done)}.ab .k-done{fill:var(--done-bg);stroke:var(--done);stroke-width:1.5}.ab .t-rework{fill:var(--rework)}.ab .e-rework{stroke:var(--rework)}.ab .k-rework{fill:var(--rework-bg);stroke:var(--rework);stroke-width:1.5}.ab .t-stop{fill:var(--stop)}.ab .e-stop{stroke:var(--stop)}.ab .k-stop{fill:var(--stop-bg);stroke:var(--stop);stroke-width:1.5}
+.ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}</style>
+<defs>
+<marker id="approval-narrow-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker>
+<marker id="approval-narrow-stop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-stop"/></marker>
+</defs>
+<path d="M121,50 L121,80" class="e e-ink" marker-end="url(#approval-narrow-ink)"/>
+<path d="M211,103 L235,103 L235,313 L206,313" class="e e-ink" marker-end="url(#approval-narrow-ink)"/>
+<path d="M121,126 L121,156" class="e e-stop" marker-end="url(#approval-narrow-stop)"/>
+<path d="M121,266 L121,296" class="e e-stop" marker-end="url(#approval-narrow-stop)"/>
+<g><rect x="85" y="16" width="72" height="34" rx="17" class="pill"/>
+<circle cx="99" cy="33" r="5" class="t-muted"/>
+<text x="111" y="37" class="m s12">ready</text></g>
+<g>
+<rect x="31" y="80" width="180" height="46" rx="8" class="k-agent"/>
+<text x="121" y="99" text-anchor="middle" class="m s13 b t-agent">check</text>
+<text x="121" y="116" text-anchor="middle" class="s11 muted">runs the checks</text>
+</g>
+<g><rect x="16" y="156" width="209" height="110" rx="10" class="k-stop panel"/>
+<rect x="64" y="168" width="115" height="30" rx="15" class="pill"/>
+<circle cx="78" cy="183" r="5" class="t-stop"/>
+<text x="90" y="187" class="m s12">needs-human</text>
+<text x="121" y="217" text-anchor="middle" class="s12 b">A person decides</text>
+<text x="121" y="235" text-anchor="middle" class="s11">Resolves the blocked check</text>
+<text x="121" y="253" text-anchor="middle" class="s11 muted">Then the work can continue.</text></g>
+<rect x="36" y="296" width="170" height="34" rx="17" class="k-done"/>
+<text x="121" y="317" text-anchor="middle" class="s12 b t-done">Finished</text>
+<text x="131" y="69" class="m s11">trigger</text>
+<text x="221" y="96" class="m s11">passed</text>
+<text x="131" y="145" class="m s11 t-stop">blocked</text>
+<text x="131" y="285" class="m s11 t-stop">cleared</text>
+<line x1="8" y1="346" x2="269" y2="346" class="rule"/>
+<g><rect x="16" y="360" width="24" height="12" rx="6" class="pill"/><circle cx="23" cy="366" r="3" class="t-muted"/><text x="46" y="370" class="s11 muted">state</text></g>
+<g><rect x="97" y="360" width="24" height="12" rx="3" class="k-agent"/><text x="127" y="370" class="s11 muted">automated step</text></g>
+<g><rect x="16" y="380" width="24" height="12" rx="3" class="k-stop panel"/><text x="46" y="390" class="s11 muted">human decision</text></g>
+<g><path d="M151,386 L175,386" class="e e-stop" marker-end="url(#approval-narrow-stop)"/><text x="181" y="390" class="s11 muted">manual path</text></g>
+</svg>

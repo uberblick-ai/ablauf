@@ -12,7 +12,7 @@
   "scripts": {
     "lint": "biome lint --error-on-warnings .",
     "typecheck": "tsc --noEmit",
-    "test": "node --test spike/flow.test.ts",
+    "test": "node --test 'spike/**/*.test.ts'",
     "render": "node spike/render.ts",
     "check": "node spike/check.ts",
     "measure": "node spike/measure.ts",
