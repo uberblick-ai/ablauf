@@ -16,7 +16,7 @@ test("the site builds every page, with a page per kind and clean examples", (t) 
 	const out = scratch(t);
 	const { pages, problems } = build({ out });
 	assert.deepEqual(problems, []);
-	assert.deepEqual(pages, ["/", "/404", "/fan-out", "/flow", "/guides/colours", "/guides/tiptap", "/motivation"]);
+	assert.deepEqual(pages, ["/", "/404", "/fan-out", "/flow", "/guides/colours", "/guides/tiptap", "/motivation", "/uberblick"]);
 	for (const kind of kinds) {
 		const html = readFileSync(join(out, `${kind.id}.html`), "utf8");
 		assert.match(html, new RegExp(`<h1>${kind.name}</h1>`));

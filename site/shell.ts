@@ -10,7 +10,7 @@ const PRIMER = `${REPO}/blob/main/spike/PRIMER.md`;
 
 // [group title or null for an ungrouped list, [href, label][]]
 const SIDE: [string | null, [string, string][]][] = [
-	[null, [["/", "Overview"], ["/motivation", "Motivation"]]],
+	[null, [["/", "Overview"], ["/motivation", "Motivation"], ["/uberblick", "With Uberblick"]]],
 	["Kinds", kinds.map((k) => [`/${k.id}`, k.name])],
 	["Guides", [["/guides/colours", "Customise colours"], ["/guides/tiptap", "Tiptap editor"]]],
 	[
@@ -71,7 +71,7 @@ ${page.body}
       <h2>Who builds this.</h2>
       <p>Uberblick, ub-agents and the small libraries beside them, such as wireframe and ablauf, are made by a team in Berlin that likes to find out how far AI engineering can go. What holds up in our own work becomes a framework and a few products that run on GitHub alone, so a team no longer needs Notion, Linear or Jira beside it. Take them as a starting point for your own variant.</p>
       <div class="cols">
-        <div><h3>ablauf</h3><ul>${kinds.map((k) => `<li><a href="/${k.id}">${k.name}</a></li>`).join("")}<li><a href="/guides/colours">Customise colours</a></li><li><a href="/guides/tiptap">Tiptap editor</a></li><li><a href="/motivation">Motivation</a></li><li><a href="${PRIMER}">Format primer</a></li><li><a href="${NPM}">npm package</a></li></ul></div>
+        <div><h3>ablauf</h3><ul>${kinds.map((k) => `<li><a href="/${k.id}">${k.name}</a></li>`).join("")}<li><a href="/guides/colours">Customise colours</a></li><li><a href="/guides/tiptap">Tiptap editor</a></li><li><a href="/motivation">Motivation</a></li><li><a href="/uberblick">With Uberblick</a></li><li><a href="${PRIMER}">Format primer</a></li><li><a href="${NPM}">npm package</a></li></ul></div>
         <div><h3>Uberblick</h3><ul><li><a href="https://next.uberblick.ai">Uberblick</a></li><li><a href="https://agents.uberblick.ai">ub-agents</a></li><li><a href="https://skills.uberblick.ai">Skills</a></li><li><a href="https://github.com/uberblick-ai/wireframe-md">wireframe.md</a></li></ul></div>
         <div><h3>Project</h3><ul><li><a href="${REPO}">GitHub</a></li><li><a href="${REPO}/blob/main/docs/plan.md">The plan</a></li><li><a href="${REPO}/blob/main/LICENSE">License</a></li></ul></div>
       </div>
