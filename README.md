@@ -9,7 +9,8 @@ the diagram without looking at the picture. The renderer sizes the grid and
 draws; it never moves anything, and it reports every problem with its line
 number.
 
-The first kind is a flow. The format is v0; this repository prepares
+The kinds are routed flows and standalone outcome fan-outs. The formats
+are v0; this repository prepares
 `@uberblick/ablauf` 0.2.0 for maintainer publication.
 
 ## Use in a build script

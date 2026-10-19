@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-auto" viewBox="0 0 678 392" width="678" height="392" role="img" aria-label="Fan-out: Record how the run ended. Success: The work and required checks finished; destination: Hand off for review. Blocked: A person must resolve a decision or missing access; destination: Ask a maintainer. Crash: The process ended before it could report; destination: Retry the run. Retries exhausted: The run used every permitted retry; destination: Ask a maintainer">
+<style>.ab.ab-auto{--ink:var(--ab-ink,#17202c);--muted:var(--ab-muted,#5a6575);--line:var(--ab-line,#d3d9e2);--band:var(--ab-band,#e9eef5);--surface:var(--ab-surface,#ffffff);--agent:var(--ab-agent,#0b6b67);--agent-bg:var(--ab-agent-bg,#dff1ee);--rework:var(--ab-rework,#a65f0c);--rework-bg:var(--ab-rework-bg,#fbefdc);--stop:var(--ab-stop,#b2382f);--stop-bg:var(--ab-stop-bg,#f9e2df);--done:var(--ab-done,#2a7845);--done-bg:var(--ab-done-bg,#e0f1e5);}@media (prefers-color-scheme:dark){.ab.ab-auto{--ink:var(--ab-ink,#e5e9ef);--muted:var(--ab-muted,#98a2b0);--line:var(--ab-line,#2c3440);--band:var(--ab-band,#151b23);--surface:var(--ab-surface,#1d232d);--agent:var(--ab-agent,#5cc5bb);--agent-bg:var(--ab-agent-bg,#12302d);--rework:var(--ab-rework,#e3a250);--rework-bg:var(--ab-rework-bg,#33250f);--stop:var(--ab-stop,#ef7f73);--stop-bg:var(--ab-stop-bg,#3a1916);--done:var(--ab-done,#72cf91);--done-bg:var(--ab-done-bg,#142e1d);}}
+.ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
+.ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.ab .s11{font-size:11px}.ab .s12{font-size:12px}.ab .s13{font-size:13px}
+.ab .muted{fill:var(--muted)}.ab .b{font-weight:600}
+.ab .cap{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.08em;fill:var(--muted)}
+.ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
+.ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
+.ab .t-ink{fill:var(--muted)}.ab .e-ink{stroke:var(--muted)}.ab .k-ink{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-muted{fill:var(--muted)}.ab .e-muted{stroke:var(--muted)}.ab .k-muted{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-agent{fill:var(--agent)}.ab .e-agent{stroke:var(--agent)}.ab .k-agent{fill:var(--agent-bg);stroke:var(--agent);stroke-width:1.5}.ab .t-done{fill:var(--done)}.ab .e-done{stroke:var(--done)}.ab .k-done{fill:var(--done-bg);stroke:var(--done);stroke-width:1.5}.ab .t-rework{fill:var(--rework)}.ab .e-rework{stroke:var(--rework)}.ab .k-rework{fill:var(--rework-bg);stroke:var(--rework);stroke-width:1.5}.ab .t-stop{fill:var(--stop)}.ab .e-stop{stroke:var(--stop)}.ab .k-stop{fill:var(--stop-bg);stroke:var(--stop);stroke-width:1.5}
+.ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}</style>
+<rect x="16" y="16" width="646" height="62" rx="8" class="k-agent"/>
+<text x="32" y="38" class="cap">STEP</text>
+<text x="32" y="60" class="m s13 b t-agent">Record how the run ended</text>
+<text x="32" y="108" class="cap">OUTCOME</text>
+<text x="190" y="108" class="cap">REASON</text>
+<text x="464" y="108" class="cap">DESTINATION</text>
+<g data-line="4">
+<rect x="16" y="122" width="646" height="60" rx="8" class="pill"/>
+<text x="32" y="148" class="m s12 b">Success</text>
+<text x="190" y="148" class="m s12 muted">The work and required checks</text>
+<text x="190" y="166" class="m s12 muted">finished</text>
+<text x="464" y="148" class="m s12 b">Hand off for review</text>
+</g>
+<g data-line="5">
+<rect x="16" y="190" width="646" height="60" rx="8" class="pill"/>
+<text x="32" y="216" class="m s12 b">Blocked</text>
+<text x="190" y="216" class="m s12 muted">A person must resolve a decision or</text>
+<text x="190" y="234" class="m s12 muted">missing access</text>
+<text x="464" y="216" class="m s12 b">Ask a maintainer</text>
+</g>
+<g data-line="6">
+<rect x="16" y="258" width="646" height="60" rx="8" class="pill"/>
+<text x="32" y="284" class="m s12 b">Crash</text>
+<text x="190" y="284" class="m s12 muted">The process ended before it could</text>
+<text x="190" y="302" class="m s12 muted">report</text>
+<text x="464" y="284" class="m s12 b">Retry the run</text>
+</g>
+<g data-line="7">
+<rect x="16" y="326" width="646" height="42" rx="8" class="pill"/>
+<text x="32" y="352" class="m s12 b">Retries exhausted</text>
+<text x="190" y="352" class="m s12 muted">The run used every permitted retry</text>
+<text x="464" y="352" class="m s12 b">Ask a maintainer</text>
+</g>
+</svg>
