@@ -72,7 +72,7 @@ ${(["ink", "muted", "agent", "done", "rework", "stop"] as Tone[])
 .ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}
 `.trim();
 
-const esc = (s: string) =>
+export const esc = (s: string) =>
 	s
 		.replace(/&/g, "&amp;")
 		.replace(/</g, "&lt;")
@@ -85,6 +85,9 @@ export interface SvgOptions {
 	/** Pin one palette instead of following prefers-color-scheme. */
 	scheme?: "light" | "dark";
 }
+
+export const svgStyle = (scheme?: "light" | "dark") =>
+	`<style>${palette(scheme)}\n${STYLE}</style>`;
 
 export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 	// A dot plus four hex digits encodes each unsafe UTF-16 code unit. Dots
@@ -106,7 +109,7 @@ export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 	out.push(
 		`<svg xmlns="http://www.w3.org/2000/svg" class="ab" viewBox="0 0 ${layout.width} ${layout.height}" width="${layout.width}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? describe(layout))}">`,
 	);
-	out.push(`<style>${palette(options.scheme)}\n${STYLE}</style>`);
+	out.push(svgStyle(options.scheme));
 	out.push("<defs>");
 	for (const t of tones) {
 		out.push(

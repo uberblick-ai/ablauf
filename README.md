@@ -9,8 +9,8 @@ the diagram without looking at the picture. The renderer sizes the grid and
 draws; it never moves anything, and it reports every problem with its line
 number.
 
-The first kind is a flow. Early work: the format is v0 and nothing is published
-from this repository yet.
+The kinds are routed flows and standalone outcome fan-outs. Early work: the
+formats are v0 and nothing is published from this repository yet.
 
 ## Examples
 
