@@ -68,10 +68,9 @@ export const kinds: readonly Kind[] = [
 				note: "The loop that runs on Uberblick's repositories: labels, agent roles, a rework column on the left and a person's decision on the right.",
 			},
 			{
-				name: "loop-insert",
-				title: "The same loop with a role inserted",
-				note: "A security review after the reviewer. The marked lines are the whole edit: every other node keeps its column and row, and the rows below simply make room.",
-				editOf: "loop",
+				name: "project-workflow",
+				title: "A classic flowchart",
+				note: "A project from concept to handover. <code>decision</code> draws a question over a small diamond, and <code>label=inline</code> sets each answer into a gap in its edge.",
 			},
 		],
 	},
