@@ -1,0 +1,31 @@
+<head>
+<title>How it works with Uberblick · ablauf</title>
+<meta name="description" content="How ablauf diagrams live in Uberblick documents: a fenced block that agents write over MCP, people edit in the browser and export_markdown gives back unchanged.">
+</head>
+<div class="hero sub">
+  <p class="crumb"><a href="/">ablauf</a> / With Uberblick</p>
+  <h1>How it works with Uberblick.</h1>
+  <p class="lede"><a href="https://next.uberblick.ai">Uberblick</a> is where a team's documents live, written by people and agents together. A flow in an Uberblick document is an ablauf block, and since Uberblick 0.4.5 it is the only diagram format there: Mermaid blocks were removed in its favour.</p>
+</div>
+
+<section class="q" id="document">
+<h2>A flow in a document</h2>
+<p>The block is a fenced code block with the language <code>ablauf</code>. This one is from Uberblick's own docs and shows the check its server runs before an agent's edit.</p>
+<!-- markdown guidance -->
+</section>
+
+<section class="q" id="writing">
+<h2>Agents write it, people edit it</h2>
+<p>An agent writes the block over Uberblick's MCP server like any other Markdown, after reading the one-page <a href="https://github.com/uberblick-ai/ablauf/blob/main/spike/PRIMER.md">format primer</a>. A person edits the same text in the browser. <code>export_markdown</code> gives the document back as a Markdown file with the fence unchanged, so GitHub and any other Markdown tool still show the source.</p>
+<p>Because the source places every node, an edit changes only the lines it touches. A reviewer reads the diff of a diagram the way they read the diff of the words around it.</p>
+</section>
+
+<section class="q" id="checking">
+<h2>Checking a diagram</h2>
+<p><code>render</code> reports every crossing, overlap or unknown name with its line number. An agent fixes the source until the list is empty, so it gets to a clean diagram without looking at the picture. The <a href="/#use">build script</a> on the overview does exactly that and fails while any problem is left.</p>
+</section>
+
+<section class="q" id="drawn">
+<h2>Where it is drawn</h2>
+<p>The docs on uberblick.ai draw their ablauf blocks at build time with this renderer, in the site's own colours. The Uberblick web editor keeps an ablauf block as a code block and shows its source; it does not draw it yet. The <a href="/guides/tiptap">Tiptap guide</a> shows how an editor built on Tiptap can draw it above the source.</p>
+</section>

@@ -1,19 +1,26 @@
 /* What ablauf adds to the shared look (shared.css, a copy of uberblick.ai's):
-   rendered diagrams and their sources. */
+   rendered diagrams in Displayed / Source tabs. */
 
 /* A diagram at its own size on the panel ground, themed by the site's tokens.
    The --ab-* properties sit on the wrapper, not the SVG, so they never refer
    to the SVG's own variables. Wide diagrams scroll inside their frame. */
-.ex { margin: 0 0 8px }
-.ex-pic { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 16px; margin: 0 0 12px; overflow-x: auto;
+.tabs.ex { margin: 0 0 16px }
+.ex-pic { padding: 16px; overflow-x: auto;
   --ab-bg: var(--panel); --ab-ink: var(--fg); --ab-muted: var(--muted); --ab-line: var(--line); --ab-surface: var(--bg); --ab-band: var(--code) }
+.ex-pic > div { width: fit-content; margin-inline: auto }
 .ex-pic svg { display: block; max-width: none; height: auto; margin-inline: auto }
-.ex .block pre { max-height: 480px }
+.tabs.ex .panel pre { max-height: 560px }
+/* shared.css keeps an install command's code on one line; a source keeps its lines. */
+.tabs.ex .panel pre code { white-space: pre; font-size: inherit }
 /* A marked line spans the frame: the newline after it still ends the line. */
-.ex mark { display: inline-block; width: calc(100% + 32px); margin-left: -16px; padding-left: 14px; background: var(--tint); color: inherit; border-left: 2px solid var(--accent) }
+.tabs.ex mark { display: inline-block; width: calc(100% + 32px); margin-left: -16px; padding-left: 14px; background: var(--tint); color: inherit; border-left: 2px solid var(--accent) }
 
-/* Showcase: a section per kind, its header line beside the heading. */
-.kind .blk-h code { font-size: 13px; color: var(--muted) }
-.ex-item { margin-top: 36px }
-.ex-item h3 { font-size: 17px; font-weight: 600; margin: 0 0 6px }
+/* Kind pages and guides: a section per example. */
 .ex-item > p { color: var(--muted); font-size: 14.5px }
+
+/* The header mark, as on skills.uberblick.ai: uberblick / ablauf. uberblick
+   carries the amber bar of the ub icon, the slash ablauf's purple. */
+.mark a { color: inherit; text-decoration: none }
+.mark > span { color: var(--accent); margin-inline: 1px }
+.mark .ub { text-decoration: underline 2px #bc7509; text-underline-offset: 4px }
+.mark a:hover { color: var(--accent) }

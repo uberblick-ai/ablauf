@@ -1,0 +1,13 @@
+flow v0
+columns main side
+
+pill opened col=main tone=muted "pull request opened"
+box review tone=agent "an agent reviews it"
+end merged tone=done "Merged"
+
+pill changes col=side row=review tone=rework "changes requested"
+
+opened --> review
+review --> merged : approved
+review --> changes tone=rework : changes
+changes --> opened tone=rework from=top to=right : fixed

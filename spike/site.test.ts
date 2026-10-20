@@ -12,45 +12,57 @@ const scratch = (t: { after: (fn: () => void) => void }) => {
 	return out;
 };
 
-test("the site builds every page with clean examples and a section per kind", (t) => {
+test("the site builds every page, with a page per kind and clean examples", (t) => {
 	const out = scratch(t);
 	const { pages, problems } = build({ out });
 	assert.deepEqual(problems, []);
-	assert.deepEqual(pages, ["/", "/404", "/showcase"]);
-	const showcase = readFileSync(join(out, "showcase", "index.html"), "utf8");
+	assert.deepEqual(pages, ["/", "/404", "/fan-out", "/flow", "/guides/colours", "/guides/tiptap", "/motivation", "/uberblick"]);
 	for (const kind of kinds) {
-		assert.match(showcase, new RegExp(`<section class="blk kind" id="${kind.id}">`));
-		for (const example of kind.examples) assert.match(showcase, new RegExp(`id="${kind.id}-${example.name}"`));
+		const html = readFileSync(join(out, `${kind.id}.html`), "utf8");
+		assert.match(html, new RegExp(`<h1>${kind.name}</h1>`));
+		for (const example of kind.examples) assert.match(html, new RegExp(`<section class="q ex-item" id="${example.name}">`));
+		assert.match(readFileSync(join(out, "index.html"), "utf8"), new RegExp(`href="/${kind.id}"`));
 	}
 	assert.match(readFileSync(join(out, "index.html"), "utf8"), /<link rel="canonical" href="https:\/\/ablauf\.uberblick\.ai\/">/);
 	const sitemap = readFileSync(join(out, "sitemap.xml"), "utf8");
-	assert.match(sitemap, /<loc>https:\/\/ablauf\.uberblick\.ai\/showcase<\/loc>/);
+	assert.match(sitemap, /<loc>https:\/\/ablauf\.uberblick\.ai\/guides\/colours<\/loc>/);
 	assert.doesNotMatch(sitemap, /404/);
 	assert.match(readFileSync(join(out, "robots.txt"), "utf8"), /Sitemap: https:\/\/ablauf\.uberblick\.ai\/sitemap\.xml/);
 });
 
-test("an edit marks only the lines it changed or added", (t) => {
+test("an example is a Displayed tab and a Source tab", (t) => {
 	const out = scratch(t);
 	build({ out });
-	const showcase = readFileSync(join(out, "showcase", "index.html"), "utf8");
-	const item = showcase.slice(showcase.indexOf('id="flow-loop-insert"'));
-	const marked = [...item.slice(0, item.indexOf("</article>")).matchAll(/<mark>(.*?)<\/mark>/g)].map((m) => m[1]);
-	assert.ok(marked.includes("pill needs-security tone=agent"));
-	assert.ok(marked.every((line) => !line.startsWith("#")));
-	assert.ok(!marked.includes("columns rework main stop"));
+	const html = readFileSync(join(out, "index.html"), "utf8");
+	assert.match(html, /<button role="tab" id="t1-0" aria-selected="true" aria-controls="p1-0" type="button">Displayed<\/button><button role="tab" id="t1-1" aria-selected="false" aria-controls="p1-1" type="button">Source<\/button>/);
+	assert.match(html, /<div class="panel" role="tabpanel" id="p1-1" aria-labelledby="t1-1" hidden><pre><code>flow v0\n/);
+});
+
+test("a styled example applies its CSS, shows it in a third tab and keeps ids apart", (t) => {
+	const out = scratch(t);
+	build({ out });
+	const html = readFileSync(join(out, "guides", "colours.html"), "utf8");
+	const css = readFileSync(join(import.meta.dirname, "..", "site", "styles", "paper.css"), "utf8").replace(/\n$/, "");
+	assert.ok(html.includes(`<style>${css}</style>`));
+	assert.match(html, /<div class="paper"><svg /);
+	assert.match(html, /type="button">CSS<\/button>/);
+	const ids = [...html.matchAll(/ id="([^"]+)"/g)].map((m) => m[1]);
+	assert.equal(new Set(ids).size, ids.length, "every id on the page is unique");
 });
 
 test("a kind whose example has another header fails the build", (t) => {
 	const out = scratch(t);
 	const { problems } = build({ out, kinds: [{ ...kinds[0], examples: [{ name: "approvals", title: "t", note: "n" }] }] });
-	assert.equal(problems.length, 1);
-	assert.match(problems[0], /approvals\.flow starts with "fan-out v0", not the Flow header "flow v0"/);
+	// The shell still links to the real kinds, so only the header problem is checked.
+	const header = problems.filter((p) => p.startsWith("site/kinds.ts:"));
+	assert.equal(header.length, 1);
+	assert.match(header[0], /approvals\.flow starts with "fan-out v0", not the Flow header "flow v0"/);
 });
 
 test("SITE_URL and SITE_NOINDEX shape a preview host", (t) => {
 	const out = scratch(t);
 	build({ out, site: "https://preview.example/", noindex: true });
-	const html = readFileSync(join(out, "showcase", "index.html"), "utf8");
-	assert.match(html, /href="https:\/\/preview\.example\/showcase"/);
+	const html = readFileSync(join(out, "flow.html"), "utf8");
+	assert.match(html, /href="https:\/\/preview\.example\/flow"/);
 	assert.match(html, /<meta name="robots" content="noindex">/);
 });

@@ -1,0 +1,15 @@
+flow v0
+columns rework main
+
+pill edit_block col=main tone=agent "agent calls edit_block"
+box server "checks the guidance lease"
+end applied "Edit applied"
+
+pill guidance_required col=rework row=server tone=rework
+box get_doc "agent reads the pages it was told to"
+
+edit_block --> server
+server --> applied : read within ten minutes
+server --> guidance_required tone=rework : not read
+guidance_required --> get_doc tone=rework
+get_doc --> edit_block tone=rework from=left to=left label=end : calls again
