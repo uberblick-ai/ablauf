@@ -136,3 +136,18 @@ test("diagrams without decisions or inline labels add no styles for them", () =>
 	const { svg } = render(example("loop"));
 	assert.doesNotMatch(svg, /decision|\.gap/);
 });
+
+test("an inline label on a Z edge between neighbouring columns leaves the column gap alone", () => {
+	const source = (label: string) => `flow v0
+columns a b
+box one col=a
+box mid col=b row=one
+box two col=b
+one --> two from=right to=left label=inline : ${label}
+`;
+	const short = render(source("x"));
+	const long = render(source("a fairly long answer here"));
+	const x = (r: typeof short) => r.layout.nodes.find((p) => p.node.id === "two")?.x;
+	assert.equal(x(long), x(short));
+	assert.equal(long.layout.routes[0].points.length, 4);
+});

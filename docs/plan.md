@@ -121,8 +121,9 @@ there from the text and the diagnostics alone, without seeing the image.
   sides reach past the diamond. The question wraps around 26 characters and
   the box grows. Each side has one port at its middle (the tips on top and
   bottom); an explicit slot above 1 is diagnosed and drawn at that port.
-  The diamond and the box take the node's tone; the box is mostly opaque,
-  so the diamond shows through faintly. Default tone `neutral`.
+  The diamond takes the node's tone. The box has the tone's border over a
+  mostly opaque surface fill, so the diamond shows through faintly.
+  Default tone `neutral`.
 - `label=inline` on an edge draws its label in small capitals, tracked and
   bold in the edge's tone, centred on the edge's longest segment in a gap
   that takes the canvas colour (`--ab-bg`, or `--ab-band` on a shaded

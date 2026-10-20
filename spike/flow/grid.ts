@@ -443,7 +443,8 @@ export function grid(
 	const gaps = model.columns.map(() => MIN_COL_GAP);
 	const frac = (end: End) => end.fraction;
 	for (const e of model.edges) {
-		if (!e.label) continue;
+		// Inline labels sit on the edge, not beside its end; they size the gap below.
+		if (!e.label || e.inline) continue;
 		const [a, b] = ends.filter((x) => x.edge === e);
 		const near = e.label_at === "start" ? a : b;
 		const far = near === a ? b : a;
@@ -475,6 +476,9 @@ export function grid(
 		if (!e.label || !e.inline) continue;
 		const [a, b] = ends.filter((x) => x.edge === e);
 		if (!horizontal(a.side) || !horizontal(b.side) || a.side === b.side) continue;
+		// Only an edge that can run straight, between overlapping rows, puts
+		// its label in the column gap; a Z puts it on its vertical segment.
+		if (first(a.node) > last(b.node) || first(b.node) > last(a.node)) continue;
 		const ca = colIndex(a.node);
 		const cb = colIndex(b.node);
 		if (Math.abs(ca - cb) !== 1) continue;
