@@ -1,0 +1,151 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-light" viewBox="0 0 1256 596" width="1256" height="596" role="img" aria-label="Flow: Start, Project complete, Brainstorm ideas, Do stakeholders approve of the project concept?, Discuss concept, Delegate tasks, Do stakeholders approve of the project output?, Initial evaluation, Are they major?, Any issues found?, Final evaluation, Return output, Revise documents. Legend: start / end, process, decision">
+<style>.ab.ab-light{--bg:var(--ab-bg,#ffffff);--ink:var(--ab-ink,#17202c);--muted:var(--ab-muted,#5a6575);--line:var(--ab-line,#d3d9e2);--band:var(--ab-band,#e9eef5);--surface:var(--ab-surface,#ffffff);--neutral:var(--ab-neutral,#59616c);--neutral-bg:var(--ab-neutral-bg,#e1e3e6);--agent:var(--ab-agent,#3e6563);--agent-bg:var(--ab-agent-bg,#e7eeed);--system:var(--ab-system,#4f5d76);--system-bg:var(--ab-system-bg,#ebedf3);--rework:var(--ab-rework,#826954);--rework-bg:var(--ab-rework-bg,#f3f0eb);--stop:var(--ab-stop,#815f5a);--stop-bg:var(--ab-stop-bg,#ede6e5);--done:var(--ab-done,#536e5a);--done-bg:var(--ab-done-bg,#e8ede9);}
+.ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
+.ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.ab .s11{font-size:11px}.ab .s12{font-size:12px}.ab .s13{font-size:13px}
+.ab .muted{fill:var(--muted)}.ab .b{font-weight:600}
+.ab .cap{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.08em;fill:var(--muted)}
+.ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
+.ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
+.ab .knockout{fill:none;stroke:var(--bg);stroke-width:5.6}.ab .knockout-band{stroke:var(--band)}
+.ab .arrow{fill:none;stroke:none}
+.ab .t-ink{fill:var(--muted)}.ab .e-ink{stroke:var(--muted)}.ab .k-ink{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-muted{fill:var(--muted)}.ab .e-muted{stroke:var(--muted)}.ab .k-muted{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-neutral{fill:var(--neutral)}.ab .e-neutral{stroke:var(--neutral)}.ab .k-neutral{fill:var(--neutral-bg);stroke:var(--neutral);stroke-width:1.5}.ab .t-agent{fill:var(--agent)}.ab .e-agent{stroke:var(--agent)}.ab .k-agent{fill:var(--agent-bg);stroke:var(--agent);stroke-width:1.5}.ab .t-system{fill:var(--system)}.ab .e-system{stroke:var(--system)}.ab .k-system{fill:var(--system-bg);stroke:var(--system);stroke-width:1.5}.ab .t-done{fill:var(--done)}.ab .e-done{stroke:var(--done)}.ab .k-done{fill:var(--done-bg);stroke:var(--done);stroke-width:1.5}.ab .t-rework{fill:var(--rework)}.ab .e-rework{stroke:var(--rework)}.ab .k-rework{fill:var(--rework-bg);stroke:var(--rework);stroke-width:1.5}.ab .t-stop{fill:var(--stop)}.ab .e-stop{stroke:var(--stop)}.ab .k-stop{fill:var(--stop-bg);stroke:var(--stop);stroke-width:1.5}
+.ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}
+.ab .decision{stroke-opacity:.5;stroke-linejoin:round}.ab .decision-box{fill:var(--surface);fill-opacity:.82}
+.ab .gap{fill:var(--bg)}.ab .gap-band{fill:var(--band)}</style>
+<defs>
+<marker id="project-workflow-done" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-done"/></marker>
+<marker id="project-workflow-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker>
+<marker id="project-workflow-rework" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-rework"/></marker>
+</defs>
+<path d="M106,50 L106,80" class="e e-ink"/>
+<path d="M106,126 L106,177" class="e e-ink"/>
+<path d="M196,200 L252,200" class="e e-ink"/>
+<path d="M353,156 L353,103 L196,103" class="e e-rework"/>
+<path d="M454,200 L537,200" class="e e-done"/>
+<path d="M627,223 L627,295" class="e e-ink"/>
+<path d="M627,341 L627,392" class="e e-ink"/>
+<path d="M552,429 L181,429" class="e e-done"/>
+<path d="M106,392 L106,223" class="e e-done"/>
+<path d="M106,466 L106,519 L778,519" class="e e-rework"/>
+<path d="M702,429 L778,429" class="e e-rework"/>
+<path d="M868,496 L868,452" class="e e-ink"/>
+<path d="M958,429 L1016,429" class="e e-ink"/>
+<path d="M1115,406 L1115,362" class="e e-ink"/>
+<path d="M1115,274 L1115,50" class="e e-done"/>
+<path d="M1216,318 L1240,318 L1240,519 L958,519" class="e e-rework"/>
+<path d="M106,50 L106,80" class="arrow" marker-end="url(#project-workflow-ink)"/>
+<path d="M106,126 L106,177" class="arrow" marker-end="url(#project-workflow-ink)"/>
+<path d="M196,200 L252,200" class="arrow" marker-end="url(#project-workflow-ink)"/>
+<path d="M353,103 L196,103" class="arrow" marker-end="url(#project-workflow-rework)"/>
+<path d="M454,200 L537,200" class="arrow" marker-end="url(#project-workflow-done)"/>
+<path d="M627,223 L627,295" class="arrow" marker-end="url(#project-workflow-ink)"/>
+<path d="M627,341 L627,392" class="arrow" marker-end="url(#project-workflow-ink)"/>
+<path d="M552,429 L181,429" class="arrow" marker-end="url(#project-workflow-done)"/>
+<path d="M106,392 L106,223" class="arrow" marker-end="url(#project-workflow-done)"/>
+<path d="M106,519 L778,519" class="arrow" marker-end="url(#project-workflow-rework)"/>
+<path d="M702,429 L778,429" class="arrow" marker-end="url(#project-workflow-rework)"/>
+<path d="M868,496 L868,452" class="arrow" marker-end="url(#project-workflow-ink)"/>
+<path d="M958,429 L1016,429" class="arrow" marker-end="url(#project-workflow-ink)"/>
+<path d="M1115,406 L1115,362" class="arrow" marker-end="url(#project-workflow-ink)"/>
+<path d="M1115,274 L1115,50" class="arrow" marker-end="url(#project-workflow-done)"/>
+<path d="M1240,519 L958,519" class="arrow" marker-end="url(#project-workflow-rework)"/>
+<rect x="21" y="16" width="170" height="34" rx="17" class="k-done"/>
+<text x="106" y="37" text-anchor="middle" class="s12 b t-done">Start</text>
+<g>
+<rect x="16" y="80" width="180" height="46" rx="8" class="k-system"/>
+<text x="106" y="99" text-anchor="middle" class="m s13 b t-system">Brainstorm ideas</text>
+<text x="106" y="116" text-anchor="middle" class="s11 muted">for the project concept</text>
+</g>
+<g>
+<rect x="16" y="177" width="180" height="46" rx="8" class="k-system"/>
+<text x="106" y="196" text-anchor="middle" class="m s13 b t-system">Discuss concept</text>
+<text x="106" y="213" text-anchor="middle" class="s11 muted">with stakeholders</text>
+</g>
+<g>
+<rect x="537" y="295" width="180" height="46" rx="8" class="k-system"/>
+<text x="627" y="314" text-anchor="middle" class="m s13 b t-system">Initial evaluation</text>
+<text x="627" y="331" text-anchor="middle" class="s11 muted">conduct it</text>
+</g>
+<g>
+<path d="M627,392 L673,429 L627,466 L581,429 Z" class="k-neutral decision"/>
+<rect x="552" y="410" width="150" height="38" rx="6" class="k-neutral decision-box"/>
+<text x="627" y="433" text-anchor="middle" class="s12 b t-neutral">Any issues found?</text>
+</g>
+<g>
+<rect x="778" y="496" width="180" height="46" rx="8" class="k-system"/>
+<text x="868" y="515" text-anchor="middle" class="m s13 b t-system">Revise documents</text>
+
+</g>
+<rect x="1030" y="16" width="170" height="34" rx="17" class="k-done"/>
+<text x="1115" y="37" text-anchor="middle" class="s12 b t-done">Project complete</text>
+<g>
+<path d="M353,156 L408,200 L353,244 L298,200 Z" class="k-neutral decision"/>
+<rect x="252" y="174" width="202" height="52" rx="6" class="k-neutral decision-box"/>
+<text x="353" y="197" text-anchor="middle" class="s12 b t-neutral">Do stakeholders approve of</text>
+<text x="353" y="212" text-anchor="middle" class="s12 b t-neutral">the project concept?</text>
+</g>
+<g>
+<rect x="537" y="177" width="180" height="46" rx="8" class="k-system"/>
+<text x="627" y="196" text-anchor="middle" class="m s13 b t-system">Delegate tasks</text>
+
+</g>
+<g>
+<path d="M1115,274 L1170,318 L1115,362 L1060,318 Z" class="k-neutral decision"/>
+<rect x="1014" y="292" width="202" height="52" rx="6" class="k-neutral decision-box"/>
+<text x="1115" y="315" text-anchor="middle" class="s12 b t-neutral">Do stakeholders approve of</text>
+<text x="1115" y="330" text-anchor="middle" class="s12 b t-neutral">the project output?</text>
+</g>
+<g>
+<path d="M106,392 L152,429 L106,466 L60,429 Z" class="k-neutral decision"/>
+<rect x="31" y="410" width="150" height="38" rx="6" class="k-neutral decision-box"/>
+<text x="106" y="433" text-anchor="middle" class="s12 b t-neutral">Are they major?</text>
+</g>
+<g>
+<rect x="778" y="406" width="180" height="46" rx="8" class="k-system"/>
+<text x="868" y="425" text-anchor="middle" class="m s13 b t-system">Final evaluation</text>
+<text x="868" y="442" text-anchor="middle" class="s11 muted">conduct it</text>
+</g>
+<g>
+<rect x="1016" y="406" width="199" height="46" rx="8" class="k-system"/>
+<text x="1116" y="425" text-anchor="middle" class="m s13 b t-system">Return output</text>
+<text x="1116" y="442" text-anchor="middle" class="s11 muted">to stakeholders for approval</text>
+</g>
+<g>
+<rect x="260" y="93.5" width="30" height="19" class="gap"/>
+<text x="275" y="107" text-anchor="middle" letter-spacing="0.06em" class="s11 b t-rework">NO</text>
+</g>
+<g>
+<rect x="477.5" y="190.5" width="37" height="19" class="gap"/>
+<text x="496" y="204" text-anchor="middle" letter-spacing="0.06em" class="s11 b t-done">YES</text>
+</g>
+<g>
+<rect x="348.5" y="419.5" width="37" height="19" class="gap"/>
+<text x="367" y="433" text-anchor="middle" letter-spacing="0.06em" class="s11 b t-done">YES</text>
+</g>
+<g>
+<rect x="87.5" y="298.5" width="37" height="19" class="gap"/>
+<text x="106" y="312" text-anchor="middle" letter-spacing="0.06em" class="s11 b t-done">YES</text>
+</g>
+<g>
+<rect x="427" y="509.5" width="30" height="19" class="gap"/>
+<text x="442" y="523" text-anchor="middle" letter-spacing="0.06em" class="s11 b t-rework">NO</text>
+</g>
+<g>
+<rect x="725" y="419.5" width="30" height="19" class="gap"/>
+<text x="740" y="433" text-anchor="middle" letter-spacing="0.06em" class="s11 b t-rework">NO</text>
+</g>
+<g>
+<rect x="1096.5" y="152.5" width="37" height="19" class="gap"/>
+<text x="1115" y="166" text-anchor="middle" letter-spacing="0.06em" class="s11 b t-done">YES</text>
+</g>
+<g>
+<rect x="1084" y="509.5" width="30" height="19" class="gap"/>
+<text x="1099" y="523" text-anchor="middle" letter-spacing="0.06em" class="s11 b t-rework">NO</text>
+</g>
+<line x1="8" y1="558" x2="1248" y2="558" class="rule"/>
+<g><rect x="16" y="572" width="24" height="12" rx="6" class="k-done"/><text x="46" y="582" class="s11 muted">start / end</text></g>
+<g><rect x="133" y="572" width="24" height="12" rx="3" class="k-system"/><text x="163" y="582" class="s11 muted">process</text></g>
+<g><path d="M238,568 L245,578 L238,588 L231,578 Z" class="k-neutral decision"/><rect x="226" y="574" width="24" height="8" rx="2" class="k-neutral decision-box"/><text x="256" y="582" class="s11 muted">decision</text></g>
+</svg>
