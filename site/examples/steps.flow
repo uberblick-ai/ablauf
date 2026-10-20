@@ -1,0 +1,8 @@
+flow v0
+
+pill asked "question asked"
+box agent "looks it up"
+end answered "Answered"
+
+asked --> agent
+agent --> answered
