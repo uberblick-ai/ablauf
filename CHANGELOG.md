@@ -70,6 +70,16 @@ rewritten. The 0.1.x line lives in
   edge passes above the earlier one, using the canvas or section background.
   Crossing diagnostics remain, and routes stay as authored.
   ([#41](https://github.com/uberblick-ai/ablauf/pull/41))
+- Ask questions with `decision` nodes, drawn as a label box over a small
+  diamond whose edges meet at the middle of each side, and label their
+  answers with `label=inline`, which sets the label in small capitals into a
+  gap in its edge. Gaps grow so inline labels keep clear line on both sides.
+  ([#61](https://github.com/uberblick-ai/ablauf/pull/61))
+- Quiet the default tone colours: each coloured tone keeps its hue and
+  lightness at a low chroma, and text on every fill keeps at least 4.5:1
+  contrast in light and 5:1 in dark. Base colours and `neutral` are
+  unchanged.
+  ([#60](https://github.com/uberblick-ai/ablauf/pull/60))
 - Put text inside legend shape samples with `sample=`, sizing and wrapping
   entries to fit. Blank or whitespace-only samples produce a diagnostic and
   retain a small sample. Repeated keys on a node, edge or legend-entry line
@@ -80,7 +90,7 @@ rewritten. The 0.1.x line lives in
 ### Outcome fan-outs
 
 - Add standalone `fan-out v0` diagrams with one `step` and ordered
-  `entry "outcome" to="destination" because="reason"` declarations. Entries
+  `outcome "…" reason="…" destination="…"` lines. Entries
   remain separate even when destinations match. Malformed source produces
   line-numbered diagnostics and remains visible in the output.
   ([#47](https://github.com/uberblick-ai/ablauf/pull/47))
@@ -108,9 +118,14 @@ rewritten. The 0.1.x line lives in
   [#53](https://github.com/uberblick-ai/ablauf/pull/53))
 - Add the ablauf.uberblick.ai site and showcase, then dedicated Flow and
   Fan-out pages with Displayed/Source tabs, colour and Tiptap integration
-  guides, and motivation and Uberblick integration pages.
+  guides, and motivation and Uberblick integration pages. The Flow page
+  opens with small examples that build on each other and ends with a
+  classic flowchart; the Tiptap example lives in `examples/tiptap`, outside
+  the npm package.
   ([#56](https://github.com/uberblick-ai/ablauf/pull/56),
-  [#57](https://github.com/uberblick-ai/ablauf/pull/57))
+  [#57](https://github.com/uberblick-ai/ablauf/pull/57),
+  [#58](https://github.com/uberblick-ai/ablauf/pull/58),
+  [#62](https://github.com/uberblick-ai/ablauf/pull/62))
 - Add a maintainer release command with a read-only preflight, dated changelog
   parsing, trusted npm publishing workflow and recovery documentation.
   ([#51](https://github.com/uberblick-ai/ablauf/pull/51))
