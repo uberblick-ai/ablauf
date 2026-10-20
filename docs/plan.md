@@ -106,6 +106,10 @@ there from the text and the diagnostics alone, without seeing the image.
   with a warning, never an error.
 - Line grammar in wireframe-md's style: `kind id "text" key=value`, two-space
   indent for panel contents, `#` comments.
+- Repeating a key on one node, edge or legend-entry line warns with the key
+  name, even when its values are identical. Valid repeated values still use the
+  last value; existing invalid-value fallbacks are unchanged. Reusing a key on
+  separate lines is allowed.
 - Edges are spelled like Mermaid (`-->`, `-.->`, `: label`), because agents
   already know that spelling. Nothing else is Mermaid.
 - Ids are the labels people read (`reviewer`, `needs-changes`) unless `title=`
@@ -117,8 +121,10 @@ there from the text and the diagnostics alone, without seeing the image.
   `sample="two words"`, drawn inside the sample with its shape and tone.
   The meaning in quotes is still required alongside it. Samples without text
   keep their small size. `edge` and `dashed` stay line samples and diagnose
-  `sample=` on their source line. An empty `sample=` or `sample=""` on a shape
-  entry reports a diagnostic and draws the small sample.
+  `sample=` on their source line. Empty or whitespace-only sample text on a
+  shape entry (including `sample=`, `sample=""` and `sample=" "`) reports
+  `sample= needs non-empty text` and draws the small sample with its shape,
+  tone and meaning.
 - Wherever `tone=` is supported (nodes, edges and legend entries), it accepts
   `ink`, `muted`, `neutral`, `agent`, `system`, `done`, `rework` or `stop`. `neutral` gives
   boxes, panels and end states a grey fill distinct from the surface and

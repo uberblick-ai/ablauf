@@ -175,6 +175,33 @@ legend
 	assert.equal(layout.legend?.keys[0].item.text, "tone= meaning");
 });
 
+test("whitespace-only shape samples use the empty sample fallback in both schemes", () => {
+	for (const kind of ["pill", "box", "end", "panel"]) {
+		for (const sample of [" ", "   ", "\t", " \t ", "\u00a0"]) {
+			const source = `flow v0\nlegend\n  ${kind} tone=rework sample="${sample}" "meaning"`;
+			for (const scheme of ["light", "dark"] as const) {
+				const { svg, diagnostics, layout } = render(source, { scheme });
+				assert.deepEqual(diagnostics, [{
+					line: 3,
+					severity: "warning",
+					message: "sample= needs non-empty text",
+				}]);
+				assert.deepEqual(layout.legend?.keys.map(({ item }) => item), [{
+					kind, tone: "rework", sample: "", text: "meaning", line: 3,
+				}]);
+				assert.equal(svg, render(source.replace(`sample="${sample}"`, 'sample=""'), { scheme }).svg);
+				assert.equal(svg, render(source.replace(` sample="${sample}"`, ""), { scheme }).svg);
+			}
+		}
+	}
+});
+
+test("non-blank sample text keeps its surrounding whitespace", () => {
+	const { diagnostics, layout } = render('flow v0\nlegend\n  pill sample=" ready " "meaning"');
+	assert.deepEqual(diagnostics, []);
+	assert.equal(layout.legend?.keys[0].item.sample, " ready ");
+});
+
 test("legends without sample text preserve existing SVG bytes", () => {
 	assert.equal(render(example("deploy"), { idPrefix: "deploy" }).svg,
 		readFileSync(join(import.meta.dirname, "out", "deploy.svg"), "utf8"));
