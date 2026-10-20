@@ -33,11 +33,7 @@ routed flow format; 0.1 sources must be rewritten. The 0.1.x line lives in
   destination. ([#47](https://github.com/uberblick-ai/ablauf/pull/47))
 - Curved branches into toned outcome boxes, or a compact `style ladder`. ([#55](https://github.com/uberblick-ai/ablauf/pull/55))
 
-### Tools and docs
+### Docs
 
-- An authoring primer, a checker, a batch renderer and examples. ([#1](https://github.com/uberblick-ai/ablauf/pull/1), [#36](https://github.com/uberblick-ai/ablauf/pull/36), [#53](https://github.com/uberblick-ai/ablauf/pull/53))
-- A local playground with live render and clickable diagnostics, grouped by
-  kind. ([#1](https://github.com/uberblick-ai/ablauf/pull/1), [#29](https://github.com/uberblick-ai/ablauf/pull/29), [#55](https://github.com/uberblick-ai/ablauf/pull/55))
-- The [ablauf.uberblick.ai](https://ablauf.uberblick.ai) site, with a page per kind and guides. ([#56](https://github.com/uberblick-ai/ablauf/pull/56), [#57](https://github.com/uberblick-ai/ablauf/pull/57), [#58](https://github.com/uberblick-ai/ablauf/pull/58), [#62](https://github.com/uberblick-ai/ablauf/pull/62))
-- A README for the npm page. ([#63](https://github.com/uberblick-ai/ablauf/pull/63))
-- A maintainer release command with a read-only check. ([#51](https://github.com/uberblick-ai/ablauf/pull/51))
+- The [ablauf.uberblick.ai](https://ablauf.uberblick.ai) site, with a page per kind and guides, and a one-page
+  [authoring primer](https://github.com/uberblick-ai/ablauf/blob/main/spike/PRIMER.md). ([#56](https://github.com/uberblick-ai/ablauf/pull/56), [#57](https://github.com/uberblick-ai/ablauf/pull/57), [#58](https://github.com/uberblick-ai/ablauf/pull/58), [#62](https://github.com/uberblick-ai/ablauf/pull/62))
