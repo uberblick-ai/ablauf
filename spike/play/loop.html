@@ -3,48 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>spike/play/loop.play</title>
+<title>spike/play/loop.flow</title>
 <style>
-:root{color-scheme:light dark;--hl:#2f6fde;--page:#f6f7f9;--fg:#17202c;--mute:#5a6575;--rail:#d3d9e2}
-@media (prefers-color-scheme:dark){:root{--hl:#6ea0ff;--page:#11151b;--fg:#e5e9ef;--mute:#98a2b0;--rail:#2c3440}}
+:root{color-scheme:light dark;--page:#f6f7f9;--fg:#17202c;--mute:#5a6575;--rail:#d3d9e2}
+@media (prefers-color-scheme:dark){:root{--page:#11151b;--fg:#e5e9ef;--mute:#98a2b0;--rail:#2c3440}}
 body{margin:0;background:var(--page);color:var(--fg);font:14px/1.4 system-ui,sans-serif}
 main{max-width:820px;margin:0 auto;padding:24px 16px}
 .bar{display:flex;gap:8px;align-items:center}
 button{font:inherit;color:inherit;background:none;border:1px solid var(--rail);border-radius:999px;height:32px;padding:0 12px;cursor:pointer}
-#play{width:32px;padding:0;background:var(--hl);border-color:var(--hl);color:#fff}
 #segs{flex:1;display:flex;gap:3px}
 #segs button{flex:1;height:6px;padding:0;border:0;border-radius:3px;background:var(--rail)}
-#segs button.done{background:color-mix(in srgb,var(--hl) 45%,var(--rail))}
-#segs button.on{background:var(--hl)}
+#segs button.done{background:var(--mute)}
+#segs button.on{background:var(--fg)}
 #caption{min-height:20px;margin:14px 0 8px;color:var(--mute)}
-.stage svg{max-width:100%;height:auto}
-#log{margin:12px 0 0;padding:0;list-style:none;font-size:13px}
-#log li{display:grid;grid-template-columns:150px 1fr;gap:12px;padding:3px 8px;border-radius:6px;color:var(--mute);opacity:.45}
-#log li.done{opacity:1}
-#log li.on{opacity:1;color:var(--fg);background:color-mix(in srgb,var(--hl) 14%,transparent)}
-#log b{font-family:ui-monospace,monospace;font-weight:500}
-
-/* What the player does to the flow: future parts fade, the current node
-   rings in the highlight colour, the edge just taken runs as moving dashes. */
-.ab [data-node],.ab [data-from]{transition:opacity .3s}
-.ab.playing [data-node]:not(.on):not(.done),.ab.playing [data-from]:not(.on):not(.done){opacity:.28}
-.ab [data-node].on rect,.ab [data-node].on path{stroke:var(--hl);stroke-width:2.5}
-.ab [data-node].on{filter:drop-shadow(0 0 6px color-mix(in srgb,var(--hl) 55%,transparent))}
-.ab [data-node].on text.b,.ab [data-node].on > text:only-child{fill:var(--hl)}
-.ab path.e[data-from].on{stroke-width:2.6;stroke-dasharray:6 5;animation:ab-run .6s linear infinite}
-@keyframes ab-run{to{stroke-dashoffset:-11}}
-@media (prefers-reduced-motion:reduce){.ab path.e[data-from].on{animation:none}}
+svg{max-width:100%;height:auto}
 </style>
 </head>
 <body>
 <main>
-<div class="bar">
-<button type="button" id="play" aria-label="Pause">❚❚</button>
-<button type="button" id="restart">Restart</button>
-<div id="segs"></div>
-</div>
+<div class="bar"><button type="button" id="play">Play</button><div id="segs"></div></div>
 <p id="caption" aria-live="polite"></p>
-<div class="stage"><svg xmlns="http://www.w3.org/2000/svg" class="ab ab-auto" viewBox="0 0 786 780" width="786" height="780" role="img" aria-label="Flow: A maintainer adds the first label, needs-preparation, issue-preparer, ready, implementer, needs-review, human, reviewer, needs-changes, ready-to-merge, integrator, Merged · issue closed. Legend: ready: GitHub label, agent role, a person decides, set by the launcher">
+<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-auto" viewBox="0 0 786 780" width="786" height="780" role="img" aria-label="Flow: A maintainer adds the first label, needs-preparation, issue-preparer, ready, implementer, needs-review, human, reviewer, needs-changes, ready-to-merge, integrator, Merged · issue closed. Legend: ready: GitHub label, agent role, a person decides, set by the launcher">
 <style>.ab.ab-auto{--bg:var(--ab-bg,#ffffff);--ink:var(--ab-ink,#17202c);--muted:var(--ab-muted,#5a6575);--line:var(--ab-line,#d3d9e2);--band:var(--ab-band,#e9eef5);--surface:var(--ab-surface,#ffffff);--neutral:var(--ab-neutral,#59616c);--neutral-bg:var(--ab-neutral-bg,#e1e3e6);--agent:var(--ab-agent,#3e6563);--agent-bg:var(--ab-agent-bg,#e7eeed);--system:var(--ab-system,#4f5d76);--system-bg:var(--ab-system-bg,#ebedf3);--rework:var(--ab-rework,#826954);--rework-bg:var(--ab-rework-bg,#f3f0eb);--stop:var(--ab-stop,#815f5a);--stop-bg:var(--ab-stop-bg,#ede6e5);--done:var(--ab-done,#536e5a);--done-bg:var(--ab-done-bg,#e8ede9);}@media (prefers-color-scheme:dark){.ab.ab-auto{--bg:var(--ab-bg,#171c24);--ink:var(--ab-ink,#e5e9ef);--muted:var(--ab-muted,#98a2b0);--line:var(--ab-line,#2c3440);--band:var(--ab-band,#151b23);--surface:var(--ab-surface,#1d232d);--neutral:var(--ab-neutral,#b6bbc3);--neutral-bg:var(--ab-neutral-bg,#303640);--agent:var(--ab-agent,#85aaa5);--agent-bg:var(--ab-agent-bg,#232d2b);--system:var(--ab-system,#98a5bf);--system-bg:var(--ab-system-bg,#262a31);--rework:var(--ab-rework,#b29d87);--rework-bg:var(--ab-rework-bg,#2c2720);--stop:var(--ab-stop,#ac8c88);--stop-bg:var(--ab-stop-bg,#2b2221);--done:var(--ab-done,#95b09c);--done-bg:var(--ab-done-bg,#222a24);}}
 .ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
 .ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
@@ -57,90 +36,96 @@ button{font:inherit;color:inherit;background:none;border:1px solid var(--rail);b
 .ab .knockout{fill:none;stroke:var(--bg);stroke-width:5.6}.ab .knockout-band{stroke:var(--band)}
 .ab .arrow{fill:none;stroke:none}
 .ab .t-ink{fill:var(--muted)}.ab .e-ink{stroke:var(--muted)}.ab .k-ink{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-muted{fill:var(--muted)}.ab .e-muted{stroke:var(--muted)}.ab .k-muted{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-neutral{fill:var(--neutral)}.ab .e-neutral{stroke:var(--neutral)}.ab .k-neutral{fill:var(--neutral-bg);stroke:var(--neutral);stroke-width:1.5}.ab .t-agent{fill:var(--agent)}.ab .e-agent{stroke:var(--agent)}.ab .k-agent{fill:var(--agent-bg);stroke:var(--agent);stroke-width:1.5}.ab .t-system{fill:var(--system)}.ab .e-system{stroke:var(--system)}.ab .k-system{fill:var(--system-bg);stroke:var(--system);stroke-width:1.5}.ab .t-done{fill:var(--done)}.ab .e-done{stroke:var(--done)}.ab .k-done{fill:var(--done-bg);stroke:var(--done);stroke-width:1.5}.ab .t-rework{fill:var(--rework)}.ab .e-rework{stroke:var(--rework)}.ab .k-rework{fill:var(--rework-bg);stroke:var(--rework);stroke-width:1.5}.ab .t-stop{fill:var(--stop)}.ab .e-stop{stroke:var(--stop)}.ab .k-stop{fill:var(--stop-bg);stroke:var(--stop);stroke-width:1.5}
-.ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}</style>
+.ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}
+.ab [data-ab-part]{transition:opacity .3s}
+.ab.ab-playing [data-ab-part]:not(.ab-on):not(.ab-done){opacity:.3}
+.ab .ab-on rect:not(.gap),.ab .ab-on path.decision{stroke:var(--ab-play,var(--ink));stroke-width:2.4}
+.ab path.e.ab-on,.ab .ab-on path.e{stroke:var(--ab-play,var(--ink));stroke-width:2.4;stroke-dasharray:6 5;animation:ab-run .6s linear infinite}
+@keyframes ab-run{to{stroke-dashoffset:-11}}
+@media (prefers-reduced-motion:reduce){.ab path.e.ab-on,.ab .ab-on path.e{animation:none}}</style>
 <defs>
-<marker id="play-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker>
-<marker id="play-rework" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-rework"/></marker>
-<marker id="play-stop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-stop"/></marker>
+<marker id="ab-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker>
+<marker id="ab-rework" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-rework"/></marker>
+<marker id="ab-stop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-stop"/></marker>
 </defs>
 
 <rect x="8" y="278" width="770" height="448" class="band"/>
 <line x1="8" y1="278" x2="778" y2="278" class="rule"/>
-<path data-from="start" data-to="needs-preparation" d="M378,32 L378,62" class="e e-ink"/>
-<path data-from="needs-preparation" data-to="issue-preparer" d="M378,96 L378,134" class="e e-ink"/>
-<path data-from="issue-preparer" data-to="ready" d="M378,180 L378,218" class="e e-ink"/>
-<path data-from="ready" data-to="implementer" d="M378,252 L378,304" class="e e-ink"/>
-<path data-from="implementer" data-to="needs-review" d="M378,350 L378,388" class="e e-ink"/>
-<path data-from="needs-review" data-to="reviewer" d="M378,422 L378,452" class="e e-ink"/>
-<path data-from="reviewer" data-to="ready-to-merge" d="M378,498 L378,536" class="e e-ink"/>
-<path data-from="ready-to-merge" data-to="integrator" d="M378,570 L378,600" class="e e-ink"/>
-<path data-from="integrator" data-to="merged" d="M378,646 L378,684" class="e e-ink"/>
-<path data-from="reviewer" data-to="needs-changes" d="M278,475 L146,475" class="e e-rework"/>
-<path data-from="ready-to-merge" data-to="needs-changes" d="M309,553 L103,553 L103,492" class="e e-rework dash"/>
-<path data-from="integrator" data-to="needs-changes" d="M278,623 L59,623 L59,492" class="e e-rework"/>
-<path data-from="needs-changes" data-to="implementer" d="M81,458 L81,327 L278,327" class="e e-rework"/>
-<path data-from="issue-preparer" data-to="human" d="M477,157 L698,157 L698,388" class="e e-stop"/>
-<path data-from="implementer" data-to="human" d="M477,327 L626,327 L626,388" class="e e-stop"/>
-<path data-from="reviewer" data-to="human" d="M477,475 L554,475" class="e e-stop"/>
-<path data-from="integrator" data-to="human" d="M477,623 L662,623 L662,570" class="e e-stop"/>
-<path data-from="start" data-to="needs-preparation" d="M378,32 L378,62" class="arrow" marker-end="url(#play-ink)"/>
-<path data-from="needs-preparation" data-to="issue-preparer" d="M378,96 L378,134" class="arrow" marker-end="url(#play-ink)"/>
-<path data-from="issue-preparer" data-to="ready" d="M378,180 L378,218" class="arrow" marker-end="url(#play-ink)"/>
-<path data-from="ready" data-to="implementer" d="M378,252 L378,304" class="arrow" marker-end="url(#play-ink)"/>
-<path data-from="implementer" data-to="needs-review" d="M378,350 L378,388" class="arrow" marker-end="url(#play-ink)"/>
-<path data-from="needs-review" data-to="reviewer" d="M378,422 L378,452" class="arrow" marker-end="url(#play-ink)"/>
-<path data-from="reviewer" data-to="ready-to-merge" d="M378,498 L378,536" class="arrow" marker-end="url(#play-ink)"/>
-<path data-from="ready-to-merge" data-to="integrator" d="M378,570 L378,600" class="arrow" marker-end="url(#play-ink)"/>
-<path data-from="integrator" data-to="merged" d="M378,646 L378,684" class="arrow" marker-end="url(#play-ink)"/>
-<path data-from="reviewer" data-to="needs-changes" d="M278,475 L146,475" class="arrow" marker-end="url(#play-rework)"/>
-<path data-from="ready-to-merge" data-to="needs-changes" d="M103,553 L103,492" class="arrow" marker-end="url(#play-rework)"/>
-<path data-from="integrator" data-to="needs-changes" d="M59,623 L59,492" class="arrow" marker-end="url(#play-rework)"/>
-<path data-from="needs-changes" data-to="implementer" d="M81,327 L278,327" class="arrow" marker-end="url(#play-rework)"/>
-<path data-from="issue-preparer" data-to="human" d="M698,157 L698,388" class="arrow" marker-end="url(#play-stop)"/>
-<path data-from="implementer" data-to="human" d="M626,327 L626,388" class="arrow" marker-end="url(#play-stop)"/>
-<path data-from="reviewer" data-to="human" d="M477,475 L554,475" class="arrow" marker-end="url(#play-stop)"/>
-<path data-from="integrator" data-to="human" d="M662,623 L662,570" class="arrow" marker-end="url(#play-stop)"/>
+<path data-ab-part="edge:start&gt;needs-preparation" d="M378,32 L378,62" class="e e-ink"/>
+<path data-ab-part="edge:needs-preparation&gt;issue-preparer" d="M378,96 L378,134" class="e e-ink"/>
+<path data-ab-part="edge:issue-preparer&gt;ready" d="M378,180 L378,218" class="e e-ink"/>
+<path data-ab-part="edge:ready&gt;implementer" d="M378,252 L378,304" class="e e-ink"/>
+<path data-ab-part="edge:implementer&gt;needs-review" d="M378,350 L378,388" class="e e-ink"/>
+<path data-ab-part="edge:needs-review&gt;reviewer" d="M378,422 L378,452" class="e e-ink"/>
+<path data-ab-part="edge:reviewer&gt;ready-to-merge" d="M378,498 L378,536" class="e e-ink"/>
+<path data-ab-part="edge:ready-to-merge&gt;integrator" d="M378,570 L378,600" class="e e-ink"/>
+<path data-ab-part="edge:integrator&gt;merged" d="M378,646 L378,684" class="e e-ink"/>
+<path data-ab-part="edge:reviewer&gt;needs-changes" d="M278,475 L146,475" class="e e-rework"/>
+<path data-ab-part="edge:ready-to-merge&gt;needs-changes" d="M309,553 L103,553 L103,492" class="e e-rework dash"/>
+<path data-ab-part="edge:integrator&gt;needs-changes" d="M278,623 L59,623 L59,492" class="e e-rework"/>
+<path data-ab-part="edge:needs-changes&gt;implementer" d="M81,458 L81,327 L278,327" class="e e-rework"/>
+<path data-ab-part="edge:issue-preparer&gt;human" d="M477,157 L698,157 L698,388" class="e e-stop"/>
+<path data-ab-part="edge:implementer&gt;human" d="M477,327 L626,327 L626,388" class="e e-stop"/>
+<path data-ab-part="edge:reviewer&gt;human" d="M477,475 L554,475" class="e e-stop"/>
+<path data-ab-part="edge:integrator&gt;human" d="M477,623 L662,623 L662,570" class="e e-stop"/>
+<path data-ab-part="edge:start&gt;needs-preparation" d="M378,32 L378,62" class="arrow" marker-end="url(#ab-ink)"/>
+<path data-ab-part="edge:needs-preparation&gt;issue-preparer" d="M378,96 L378,134" class="arrow" marker-end="url(#ab-ink)"/>
+<path data-ab-part="edge:issue-preparer&gt;ready" d="M378,180 L378,218" class="arrow" marker-end="url(#ab-ink)"/>
+<path data-ab-part="edge:ready&gt;implementer" d="M378,252 L378,304" class="arrow" marker-end="url(#ab-ink)"/>
+<path data-ab-part="edge:implementer&gt;needs-review" d="M378,350 L378,388" class="arrow" marker-end="url(#ab-ink)"/>
+<path data-ab-part="edge:needs-review&gt;reviewer" d="M378,422 L378,452" class="arrow" marker-end="url(#ab-ink)"/>
+<path data-ab-part="edge:reviewer&gt;ready-to-merge" d="M378,498 L378,536" class="arrow" marker-end="url(#ab-ink)"/>
+<path data-ab-part="edge:ready-to-merge&gt;integrator" d="M378,570 L378,600" class="arrow" marker-end="url(#ab-ink)"/>
+<path data-ab-part="edge:integrator&gt;merged" d="M378,646 L378,684" class="arrow" marker-end="url(#ab-ink)"/>
+<path data-ab-part="edge:reviewer&gt;needs-changes" d="M278,475 L146,475" class="arrow" marker-end="url(#ab-rework)"/>
+<path data-ab-part="edge:ready-to-merge&gt;needs-changes" d="M103,553 L103,492" class="arrow" marker-end="url(#ab-rework)"/>
+<path data-ab-part="edge:integrator&gt;needs-changes" d="M59,623 L59,492" class="arrow" marker-end="url(#ab-rework)"/>
+<path data-ab-part="edge:needs-changes&gt;implementer" d="M81,327 L278,327" class="arrow" marker-end="url(#ab-rework)"/>
+<path data-ab-part="edge:issue-preparer&gt;human" d="M698,157 L698,388" class="arrow" marker-end="url(#ab-stop)"/>
+<path data-ab-part="edge:implementer&gt;human" d="M626,327 L626,388" class="arrow" marker-end="url(#ab-stop)"/>
+<path data-ab-part="edge:reviewer&gt;human" d="M477,475 L554,475" class="arrow" marker-end="url(#ab-stop)"/>
+<path data-ab-part="edge:integrator&gt;human" d="M662,623 L662,570" class="arrow" marker-end="url(#ab-stop)"/>
 <text x="20" y="22" class="cap">ISSUE</text>
 <text x="20" y="300" class="cap">PULL REQUEST</text>
-<g data-node="start"><text x="378" y="28" text-anchor="middle" class="s12 muted">A maintainer adds the first label</text></g>
-<g data-node="needs-preparation"><g><rect x="299" y="62" width="158" height="34" rx="17" class="pill"/>
+<g data-ab-part="node:start"><text x="378" y="28" text-anchor="middle" class="s12 muted">A maintainer adds the first label</text></g>
+<g data-ab-part="node:needs-preparation"><g><rect x="299" y="62" width="158" height="34" rx="17" class="pill"/>
 <circle cx="313" cy="79" r="5" class="t-muted"/>
 <text x="325" y="83" class="m s12">needs-preparation</text></g></g>
-<g data-node="issue-preparer"><g>
+<g data-ab-part="node:issue-preparer"><g>
 <rect x="278" y="134" width="199" height="46" rx="8" class="k-agent"/>
 <text x="378" y="153" text-anchor="middle" class="m s13 b t-agent">issue-preparer</text>
 <text x="378" y="170" text-anchor="middle" class="s11 muted">writes scope and criteria</text>
 </g></g>
-<g data-node="ready"><g><rect x="342" y="218" width="72" height="34" rx="17" class="pill"/>
+<g data-ab-part="node:ready"><g><rect x="342" y="218" width="72" height="34" rx="17" class="pill"/>
 <circle cx="356" cy="235" r="5" class="t-done"/>
 <text x="368" y="239" class="m s12">ready</text></g></g>
-<g data-node="implementer"><g>
+<g data-ab-part="node:implementer"><g>
 <rect x="278" y="304" width="199" height="46" rx="8" class="k-agent"/>
 <text x="378" y="323" text-anchor="middle" class="m s13 b t-agent">implementer</text>
 <text x="378" y="340" text-anchor="middle" class="s11 muted">codes, checks, opens the PR</text>
 </g></g>
-<g data-node="needs-review"><g><rect x="317" y="388" width="122" height="34" rx="17" class="pill"/>
+<g data-ab-part="node:needs-review"><g><rect x="317" y="388" width="122" height="34" rx="17" class="pill"/>
 <circle cx="331" cy="405" r="5" class="t-agent"/>
 <text x="343" y="409" class="m s12">needs-review</text></g></g>
-<g data-node="reviewer"><g>
+<g data-ab-part="node:reviewer"><g>
 <rect x="278" y="452" width="199" height="46" rx="8" class="k-agent"/>
 <text x="378" y="471" text-anchor="middle" class="m s13 b t-agent">reviewer</text>
 <text x="378" y="488" text-anchor="middle" class="s11 muted">reviews the exact head SHA</text>
 </g></g>
-<g data-node="ready-to-merge"><g><rect x="309" y="536" width="137" height="34" rx="17" class="pill"/>
+<g data-ab-part="node:ready-to-merge"><g><rect x="309" y="536" width="137" height="34" rx="17" class="pill"/>
 <circle cx="323" cy="553" r="5" class="t-done"/>
 <text x="335" y="557" class="m s12">ready-to-merge</text></g></g>
-<g data-node="integrator"><g>
+<g data-ab-part="node:integrator"><g>
 <rect x="278" y="600" width="199" height="46" rx="8" class="k-agent"/>
 <text x="378" y="619" text-anchor="middle" class="m s13 b t-agent">integrator</text>
 <text x="378" y="636" text-anchor="middle" class="s11 muted">updates base, checks, merges</text>
 </g></g>
-<g data-node="merged"><rect x="287" y="684" width="181" height="34" rx="17" class="k-done"/>
+<g data-ab-part="node:merged"><rect x="287" y="684" width="181" height="34" rx="17" class="k-done"/>
 <text x="378" y="705" text-anchor="middle" class="s12 b t-done">Merged · issue closed</text></g>
-<g data-node="needs-changes"><g><rect x="16" y="458" width="130" height="34" rx="17" class="pill"/>
+<g data-ab-part="node:needs-changes"><g><rect x="16" y="458" width="130" height="34" rx="17" class="pill"/>
 <circle cx="30" cy="475" r="5" class="t-rework"/>
 <text x="42" y="479" class="m s12">needs-changes</text></g></g>
-<g data-node="human"><g><rect x="554" y="388" width="216" height="182" rx="10" class="k-stop panel"/>
+<g data-ab-part="node:human"><g><rect x="554" y="388" width="216" height="182" rx="10" class="k-stop panel"/>
 <rect x="605" y="420" width="115" height="30" rx="15" class="pill"/>
 <circle cx="619" cy="435" r="5" class="t-stop"/>
 <text x="631" y="439" class="m s12">needs-human</text>
@@ -149,77 +134,150 @@ button{font:inherit;color:inherit;background:none;border:1px solid var(--rail);b
 <text x="662" y="501" text-anchor="middle" class="s12 b">A person decides</text>
 <text x="662" y="519" text-anchor="middle" class="s11">adds the trigger of any role</text>
 <text x="662" y="537" text-anchor="middle" class="s11 muted">blocked, same role: retry</text></g></g>
-<text data-from="needs-preparation" data-to="issue-preparer" x="388" y="119" class="m s11">trigger</text>
-<text data-from="issue-preparer" data-to="ready" x="388" y="203" class="m s11">prepared</text>
-<text data-from="implementer" data-to="needs-review" x="388" y="373" class="m s11">handed-off</text>
-<text data-from="reviewer" data-to="ready-to-merge" x="388" y="521" class="m s11">approved</text>
-<text data-from="integrator" data-to="merged" x="388" y="669" class="m s11">merged</text>
-<text data-from="reviewer" data-to="needs-changes" x="268" y="468" text-anchor="end" class="m s11 t-rework">changes-requested</text>
-<text data-from="ready-to-merge" data-to="needs-changes" x="299" y="546" text-anchor="end" class="m s11 t-rework">on-conflict · launcher</text>
-<text data-from="integrator" data-to="needs-changes" x="268" y="616" text-anchor="end" class="m s11 t-rework">changes-requested</text>
-<text data-from="needs-changes" data-to="implementer" x="268" y="320" text-anchor="end" class="m s11 t-rework">revise the same PR</text>
-<text data-from="issue-preparer" data-to="human" x="487" y="150" class="m s11 t-stop">needs-human</text>
-<text data-from="implementer" data-to="human" x="487" y="320" class="m s11 t-stop">blocked</text>
-<text data-from="reviewer" data-to="human" x="487" y="468" class="m s11 t-stop">blocked</text>
-<text data-from="integrator" data-to="human" x="487" y="616" class="m s11 t-stop">maintainer-merge, blocked</text>
+<text data-ab-part="edge:needs-preparation&gt;issue-preparer" x="388" y="119" class="m s11">trigger</text>
+<text data-ab-part="edge:issue-preparer&gt;ready" x="388" y="203" class="m s11">prepared</text>
+<text data-ab-part="edge:implementer&gt;needs-review" x="388" y="373" class="m s11">handed-off</text>
+<text data-ab-part="edge:reviewer&gt;ready-to-merge" x="388" y="521" class="m s11">approved</text>
+<text data-ab-part="edge:integrator&gt;merged" x="388" y="669" class="m s11">merged</text>
+<text data-ab-part="edge:reviewer&gt;needs-changes" x="268" y="468" text-anchor="end" class="m s11 t-rework">changes-requested</text>
+<text data-ab-part="edge:ready-to-merge&gt;needs-changes" x="299" y="546" text-anchor="end" class="m s11 t-rework">on-conflict · launcher</text>
+<text data-ab-part="edge:integrator&gt;needs-changes" x="268" y="616" text-anchor="end" class="m s11 t-rework">changes-requested</text>
+<text data-ab-part="edge:needs-changes&gt;implementer" x="268" y="320" text-anchor="end" class="m s11 t-rework">revise the same PR</text>
+<text data-ab-part="edge:issue-preparer&gt;human" x="487" y="150" class="m s11 t-stop">needs-human</text>
+<text data-ab-part="edge:implementer&gt;human" x="487" y="320" class="m s11 t-stop">blocked</text>
+<text data-ab-part="edge:reviewer&gt;human" x="487" y="468" class="m s11 t-stop">blocked</text>
+<text data-ab-part="edge:integrator&gt;human" x="487" y="616" class="m s11 t-stop">maintainer-merge, blocked</text>
 <line x1="8" y1="734" x2="778" y2="734" class="rule"/>
 <g><rect x="16" y="748" width="57" height="20" rx="10" class="pill"/><circle cx="23" cy="758" r="3" class="t-done"/><text x="31" y="762" class="m s11">ready</text><text x="79" y="762" class="s11 muted">GitHub label</text></g>
 <g><rect x="172" y="752" width="24" height="12" rx="3" class="k-agent"/><text x="202" y="762" class="s11 muted">agent role</text></g>
 <g><rect x="283" y="752" width="24" height="12" rx="3" class="k-stop panel"/><text x="313" y="762" class="s11 muted">a person decides</text></g>
-<g><path d="M431,758 L455,758" class="e e-rework dash" marker-end="url(#play-rework)"/><text x="461" y="762" class="s11 muted">set by the launcher</text></g>
+<g><path d="M431,758 L455,758" class="e e-rework dash" marker-end="url(#ab-rework)"/><text x="461" y="762" class="s11 muted">set by the launcher</text></g>
 </svg>
-</div>
-<ol id="log"></ol>
-</main>
-<script>const STEPS = [{"node":"start","ms":1600,"caption":"A maintainer adds the first label"},{"node":"needs-preparation","ms":1600,"caption":""},{"node":"issue-preparer","ms":1600,"caption":"found the issue small and clear, marked it ready"},{"node":"ready","ms":1600,"caption":""},{"node":"implementer","ms":2400,"caption":"changed 7 files, ran 2,109 tests, opened #598"},{"node":"needs-review","ms":1600,"caption":""},{"node":"reviewer","ms":2400,"caption":"changes requested: P1 in the parser"},{"node":"needs-changes","ms":1600,"caption":""},{"node":"implementer","ms":2400,"caption":"revised the same PR, fixed the P1"},{"node":"needs-review","ms":1600,"caption":""},{"node":"reviewer","ms":1600,"caption":"approved against the acceptance criteria"},{"node":"ready-to-merge","ms":1600,"caption":""},{"node":"integrator","ms":2000,"caption":"confirmed CI and the merge policy"},{"node":"merged","ms":3000,"caption":"#598 merged, #597 closed"}];
 
-const svg = document.querySelector(".ab");
-const nodes = (id) => svg.querySelectorAll(`[data-node="${CSS.escape(id)}"]`);
-const edges = (a, b) => svg.querySelectorAll(`[data-from="${CSS.escape(a)}"][data-to="${CSS.escape(b)}"]`);
-const segs = document.getElementById("segs"), log = document.getElementById("log");
-const caption = document.getElementById("caption"), playBtn = document.getElementById("play");
-let at = 0, playing = !matchMedia("(prefers-reduced-motion: reduce)").matches, timer = 0;
-STEPS.forEach((s, i) => {
+
+</main>
+<script>
+// Plays a timeline on a rendered SVG by setting classes on its parts: the
+// current step's parts are `ab-on`, earlier ones `ab-done`, and the SVG is
+// `ab-playing` so later parts fade. It draws no controls; the host does.
+
+                                              
+
+                         
+	                                                
+	                       
+	                          
+	             
+	              
+	                                                               
+	                          
+	             
+	                 
+	                                                            
+	              
+	                
+ 
+
+                                
+	                                                       
+	                                    
+	                                                                  
+	               
+ 
+
+function createPlayer(svg         , timeline                , options                = {})         {
+	const parts = new Map                   ();
+	for (const el of svg.querySelectorAll("[data-ab-part]")) {
+		const name = el.getAttribute("data-ab-part") ?? "";
+		parts.set(name, [...(parts.get(name) ?? []), el]);
+	}
+	let index = -1;
+	let playing = false;
+	let timer                                           ;
+
+	const paint = () => {
+		for (const list of parts.values()) for (const el of list) el.classList.remove("ab-on", "ab-done");
+		svg.classList.toggle("ab-playing", index >= 0);
+		for (let k = 0; k <= index; k++) {
+			for (const name of timeline[k].parts) {
+				for (const el of parts.get(name) ?? []) {
+					el.classList.toggle("ab-on", k === index);
+					el.classList.toggle("ab-done", k < index);
+				}
+			}
+		}
+	};
+	const schedule = () => {
+		clearTimeout(timer);
+		if (!playing || index < 0) return;
+		timer = setTimeout(() => {
+			if (index + 1 < timeline.length) show(index + 1);
+			else if (options.loop) show(0);
+			else {
+				playing = false;
+				options.onChange?.(player);
+			}
+		}, timeline[index].ms);
+	};
+	const show = (i        ) => {
+		index = Math.max(-1, Math.min(i, timeline.length - 1));
+		paint();
+		schedule();
+		options.onChange?.(player);
+	};
+	const player         = {
+		get index() {
+			return index;
+		},
+		get playing() {
+			return playing;
+		},
+		play() {
+			if (!timeline.length) return;
+			playing = true;
+			// Playing from the end starts over.
+			show(index < 0 || index >= timeline.length - 1 ? 0 : index);
+		},
+		pause() {
+			playing = false;
+			clearTimeout(timer);
+			options.onChange?.(player);
+		},
+		seek: show,
+		next: () => show(index + 1),
+		previous: () => show(Math.max(index - 1, 0)),
+		reset() {
+			playing = false;
+			show(-1);
+		},
+		destroy() {
+			clearTimeout(timer);
+			playing = false;
+		},
+	};
+	return player;
+}
+
+const STEPS = [{"parts":["node:start"],"ms":1600,"caption":"A maintainer adds the first label"},{"parts":["node:needs-preparation","edge:start>needs-preparation"],"ms":1600,"caption":""},{"parts":["node:issue-preparer","edge:needs-preparation>issue-preparer"],"ms":1600,"caption":"found the issue small and clear, marked it ready"},{"parts":["node:ready","edge:issue-preparer>ready"],"ms":1600,"caption":""},{"parts":["node:implementer","edge:ready>implementer"],"ms":2400,"caption":"changed 7 files, ran 2,109 tests, opened #598"},{"parts":["node:needs-review","edge:implementer>needs-review"],"ms":1600,"caption":""},{"parts":["node:reviewer","edge:needs-review>reviewer"],"ms":2400,"caption":"changes requested: P1 in the parser"},{"parts":["node:needs-changes","edge:reviewer>needs-changes"],"ms":1600,"caption":""},{"parts":["node:implementer","edge:needs-changes>implementer"],"ms":2400,"caption":"revised the same PR, fixed the P1"},{"parts":["node:needs-review","edge:implementer>needs-review"],"ms":1600,"caption":""},{"parts":["node:reviewer","edge:needs-review>reviewer"],"ms":1600,"caption":"approved against the acceptance criteria"},{"parts":["node:ready-to-merge","edge:reviewer>ready-to-merge"],"ms":1600,"caption":""},{"parts":["node:integrator","edge:ready-to-merge>integrator"],"ms":2000,"caption":"confirmed CI and the merge policy"},{"parts":["node:merged","edge:integrator>merged"],"ms":3000,"caption":"#598 merged, #597 closed"}];
+const button = document.getElementById("play");
+const segs = document.getElementById("segs");
+const caption = document.getElementById("caption");
+const p = createPlayer(document.querySelector("svg.ab"), STEPS, {
+  onChange(p) {
+    button.textContent = p.playing ? "Pause" : "Play";
+    caption.textContent = p.index >= 0 ? STEPS[p.index].caption : "";
+    [...segs.children].forEach((b, k) => { b.className = k === p.index ? "on" : k < p.index ? "done" : ""; });
+  },
+});
+STEPS.forEach((_, i) => {
   const b = document.createElement("button");
   b.type = "button";
-  b.setAttribute("aria-label", `Step ${i + 1}: ${s.node}`);
-  b.onclick = () => { setPlaying(false); show(i); };
+  b.setAttribute("aria-label", `Step ${i + 1}`);
+  b.onclick = () => { p.pause(); p.seek(i); };
   segs.append(b);
-  const li = document.createElement("li");
-  li.innerHTML = "<b></b><span></span>";
-  li.children[0].textContent = s.node;
-  li.children[1].textContent = s.caption;
-  log.append(li);
 });
-function show(i) {
-  at = i;
-  svg.classList.add("playing");
-  for (const el of svg.querySelectorAll(".on,.done")) el.classList.remove("on", "done");
-  for (let k = 0; k <= i; k++) {
-    const cls = k === i ? "on" : "done";
-    const lit = [...nodes(STEPS[k].node), ...(k ? edges(STEPS[k - 1].node, STEPS[k].node) : [])];
-    for (const el of lit) { el.classList.remove("done"); el.classList.add(cls); }
-  }
-  const state = (k) => (k === i ? "on" : k < i ? "done" : "");
-  [...segs.children].forEach((b, k) => { b.className = state(k); });
-  [...log.children].forEach((li, k) => { li.className = state(k); });
-  caption.textContent = STEPS[i].caption;
-  schedule();
-}
-function schedule() {
-  clearTimeout(timer);
-  if (playing) timer = setTimeout(() => show(at + 1 < STEPS.length ? at + 1 : 0), STEPS[at].ms);
-}
-function setPlaying(p) {
-  playing = p;
-  playBtn.textContent = p ? "❚❚" : "▶";
-  playBtn.setAttribute("aria-label", p ? "Pause" : "Play");
-  schedule();
-}
-playBtn.onclick = () => setPlaying(!playing);
-document.getElementById("restart").onclick = () => { setPlaying(true); show(0); };
-setPlaying(playing);
-show(0);
+button.onclick = () => (p.playing ? p.pause() : p.play());
+if (!matchMedia("(prefers-reduced-motion: reduce)").matches) p.play();
 </script>
 </body>
 </html>

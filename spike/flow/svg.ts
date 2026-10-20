@@ -110,7 +110,7 @@ export interface SvgOptions {
 	title?: string;
 	/** Pin one palette instead of following prefers-color-scheme. */
 	scheme?: "light" | "dark";
-	/** Mark each node and edge with data attributes a player can target. */
+	/** Mark each node and edge as a part a play timeline can light. */
 	targets?: boolean;
 }
 
@@ -118,6 +118,20 @@ export interface SvgOptions {
 // existing diagrams keep their exact bytes.
 const DECISION_STYLE =
 	".ab .decision{stroke-opacity:.5;stroke-linejoin:round}.ab .decision-box{fill:var(--surface);fill-opacity:.82}";
+// Playback states, set by the player: parts not reached yet fade, the current
+// one takes the play colour, and the edge just taken runs as moving dashes.
+export const PLAY_STYLE = [
+	".ab [data-ab-part]{transition:opacity .3s}",
+	".ab.ab-playing [data-ab-part]:not(.ab-on):not(.ab-done){opacity:.3}",
+	".ab .ab-on rect:not(.gap),.ab .ab-on path.decision{stroke:var(--ab-play,var(--ink));stroke-width:2.4}",
+	".ab path.e.ab-on,.ab .ab-on path.e{stroke:var(--ab-play,var(--ink));stroke-width:2.4;stroke-dasharray:6 5;animation:ab-run .6s linear infinite}",
+	"@keyframes ab-run{to{stroke-dashoffset:-11}}",
+	"@media (prefers-reduced-motion:reduce){.ab path.e.ab-on,.ab .ab-on path.e{animation:none}}",
+].join("\n");
+export const nodePart = (id: string) => `node:${id}`;
+export const edgePart = (from: string, to: string) => `edge:${from}>${to}`;
+export const STEP_PART = "step";
+export const outcomeIndexPart = (n: number) => `outcome:${n}`;
 const GAP_STYLE = ".ab .gap{fill:var(--bg)}.ab .gap-band{fill:var(--band)}";
 
 export const svgStyle = (
@@ -160,6 +174,7 @@ export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 	)
 		extra.push(DECISION_STYLE);
 	if (layout.routes.some((r) => r.label?.inline)) extra.push(GAP_STYLE);
+	if (options.targets) extra.push(PLAY_STYLE);
 	out.push(svgStyle(mode, layout.typography, extra));
 	out.push("<defs>");
 	for (const t of tones) {
@@ -180,7 +195,7 @@ export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 		out.push(`<text x="20" y="${b.y + 22}" class="cap">${esc(b.label.toUpperCase())}</text>`);
 	for (const p of layout.nodes) {
 		const drawn = node(p, layout.typography);
-		out.push(options.targets ? `<g data-node="${esc(p.node.id)}">${drawn}</g>` : drawn);
+		out.push(options.targets ? `<g data-ab-part="${esc(nodePart(p.node.id))}">${drawn}</g>` : drawn);
 	}
 	for (const r of layout.routes)
 		if (r.label) out.push(tag(edgeLabel(r, layout.bands), r, options));
@@ -268,13 +283,10 @@ function knockouts(r: Route, earlier: Route[], bands: Band[]): string[] {
 	return out;
 }
 
-// Adds the edge's ends to the first element of a drawn part, when asked.
+// Names the edge on the first element of a drawn part, when asked.
 function tag(drawn: string, r: Route, options: SvgOptions): string {
 	if (!options.targets) return drawn;
-	return drawn.replace(
-		/^<(\w+)/,
-		`<$1 data-from="${esc(r.edge.from)}" data-to="${esc(r.edge.to)}"`,
-	);
+	return drawn.replace(/^<(\w+)/, `<$1 data-ab-part="${esc(edgePart(r.edge.from, r.edge.to))}"`);
 }
 
 function route(r: Route): string {
