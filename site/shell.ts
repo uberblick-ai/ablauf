@@ -13,15 +13,6 @@ const SIDE: [string | null, [string, string][]][] = [
 	[null, [["/", "Overview"], ["/motivation", "Motivation"], ["/uberblick", "With Uberblick"]]],
 	["Kinds", kinds.map((k) => [`/${k.id}`, k.name])],
 	["Guides", [["/guides/colours", "Customise colours"], ["/guides/tiptap", "Tiptap editor"]]],
-	[
-		"Reference",
-		[
-			[PRIMER, "Format primer"],
-			[`${REPO}#use-in-a-build-script`, "Build script"],
-			[`${REPO}/blob/main/docs/theming.md`, "Host themes"],
-			[`${REPO}/blob/main/docs/narrow-layouts.md`, "Narrow layouts"],
-		],
-	],
 ];
 
 function sidebar(path: string) {
