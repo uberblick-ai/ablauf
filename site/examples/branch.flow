@@ -1,0 +1,12 @@
+flow v0
+columns main side
+
+pill asked col=main "question asked"
+box agent "looks it up"
+end answered "Answered"
+
+pill unclear col=side row=agent tone=rework "needs detail"
+
+asked --> agent
+agent --> answered : found
+agent --> unclear tone=rework : unclear

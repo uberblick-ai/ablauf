@@ -1,0 +1,22 @@
+flow v0
+columns stop main side
+
+pill asked col=main "question asked"
+box agent "looks it up"
+end answered "Answered"
+
+pill unclear col=side row=agent tone=rework "needs detail"
+panel person col=stop row=agent tone=stop
+  pill out-of-scope
+  muted "a person answers"
+
+asked --> agent
+agent --> answered : found
+agent --> unclear tone=rework : unclear
+unclear -.-> asked tone=rework from=top to=right : asks again
+agent --> person tone=stop : not ours
+
+legend
+  box "an agent's step"
+  panel tone=stop "a person decides"
+  dashed tone=rework "the asker acts"

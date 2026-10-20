@@ -13,15 +13,6 @@ const SIDE: [string | null, [string, string][]][] = [
 	[null, [["/", "Overview"], ["/motivation", "Motivation"], ["/uberblick", "With Uberblick"]]],
 	["Kinds", kinds.map((k) => [`/${k.id}`, k.name])],
 	["Guides", [["/guides/colours", "Customise colours"], ["/guides/tiptap", "Tiptap editor"]]],
-	[
-		"Reference",
-		[
-			[PRIMER, "Format primer"],
-			[`${REPO}#use-in-a-build-script`, "Build script"],
-			[`${REPO}/blob/main/docs/theming.md`, "Host themes"],
-			[`${REPO}/blob/main/docs/narrow-layouts.md`, "Narrow layouts"],
-		],
-	],
 ];
 
 function sidebar(path: string) {
@@ -52,10 +43,6 @@ ${page.head}${page.canonical}${page.noindex ? '<meta name="robots" content="noin
 <header class="top">
   <span class="mark"><a class="ub" href="https://next.uberblick.ai">uberblick</a><span>/</span><a href="/">ablauf</a></span>
   <nav aria-label="Site">
-    <a href="/#kinds">Kinds</a>
-    <a href="/guides/colours">Colours</a>
-    <a href="/guides/tiptap">Tiptap</a>
-    <a href="${PRIMER}">Primer</a>
     <a href="${REPO}">GitHub</a>
   </nav>
 </header>

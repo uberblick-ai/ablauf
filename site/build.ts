@@ -130,7 +130,7 @@ export function build(options: BuildOptions = {}): BuildResult {
 		return `<div class="hero sub">
   <p class="crumb"><a href="/">ablauf</a> / <a href="/#kinds">Kinds</a> / ${esc(k.name)}</p>
   <h1>${esc(k.name)}</h1>
-  <p class="lede">${esc(k.summary)} Every source starts with <code>${esc(k.header)}</code>.</p>
+  <p class="lede">${esc(k.summary)} Every source starts with <code>${esc(k.header)}</code>.${k.intro ? ` ${k.intro}` : ""}</p>
 </div>
 ${items.join("\n")}`;
 	};
