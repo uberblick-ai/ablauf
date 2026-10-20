@@ -1,0 +1,13 @@
+/* The picture above its source. The --ab-* properties give it your page's
+   colours; see Customise colours for the full list. */
+.ablauf {
+  overflow-x: auto;
+  padding: 12px 0;
+  --ab-bg: #ffffff;
+  --ab-ink: #1d1b24;
+}
+.ablauf svg {
+  display: block;
+  max-width: none;
+  height: auto;
+}
