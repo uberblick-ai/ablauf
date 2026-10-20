@@ -27,6 +27,21 @@ breadth, Mermaid is the better choice. The
 [motivation page](https://ablauf.uberblick.ai/motivation) has the longer
 story.
 
+## Try it
+
+The playground puts an editor beside the live render and lists each problem
+with its line number; click one to jump to it. It switches between light and
+dark and between a bare page and a 710 px document column, and it opens every
+example in this repository. In a checkout, with [mise](https://mise.jdx.dev):
+
+```sh
+mise trust && mise run setup
+mise run playground
+```
+
+Then open http://localhost:4620. Rendered examples of both kinds are on
+[ablauf.uberblick.ai](https://ablauf.uberblick.ai).
+
 ## Use in a build script
 
 Requires Node.js 22.18 or newer. The package ships compiled JavaScript and
