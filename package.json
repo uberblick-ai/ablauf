@@ -2,6 +2,9 @@
   "name": "@uberblick/ablauf",
   "version": "0.2.0",
   "description": "Diagrams that agents lay out as text and a renderer draws as themed SVG.",
+  "keywords": ["diagram", "flowchart", "svg", "text-to-diagram", "agents"],
+  "homepage": "https://ablauf.uberblick.ai",
+  "bugs": "https://github.com/uberblick-ai/ablauf/issues",
   "license": "MIT",
   "type": "module",
   "exports": {

@@ -20,7 +20,7 @@ for (const file of readdirSync(join(here, "examples"))
 	problems += diagnostics.length;
 }
 // The README shows these in GitHub's own theme, one file per scheme.
-for (const name of ["deploy", "checkout", "loop"]) {
+for (const name of ["deploy", "checkout", "loop", "project-workflow", "approvals"]) {
 	const source = readFileSync(join(here, "examples", `${name}.flow`), "utf8");
 	for (const scheme of ["light", "dark"] as const)
 		writeFileSync(
