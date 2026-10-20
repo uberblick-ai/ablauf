@@ -43,10 +43,6 @@ ${page.head}${page.canonical}${page.noindex ? '<meta name="robots" content="noin
 <header class="top">
   <span class="mark"><a class="ub" href="https://next.uberblick.ai">uberblick</a><span>/</span><a href="/">ablauf</a></span>
   <nav aria-label="Site">
-    <a href="/#kinds">Kinds</a>
-    <a href="/guides/colours">Colours</a>
-    <a href="/guides/tiptap">Tiptap</a>
-    <a href="${PRIMER}">Primer</a>
     <a href="${REPO}">GitHub</a>
   </nav>
 </header>
