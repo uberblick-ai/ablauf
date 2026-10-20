@@ -32,11 +32,20 @@ worker --> person tone=stop : stuck
 
 - `columns a b c` names the columns from left to right, once, before any node.
 - Each node starts a new row below the previous one. `row=<id>` puts it in the
-  same row as that node instead. `span=N` makes it cover N rows from there,
+  same row as that node instead. An empty `row=` is diagnosed and starts a
+  new row. `span=N` makes it cover N rows from there,
   top to bottom.
 - `col=<name>` picks the column. Without it, a node uses the column of the
   node declared before it, so the first node always needs `col=`.
 - `section "Title"` starts a horizontal band. The rows that follow belong to it.
+- `gap=60` on a node requests at least 60px after its last covered row
+  (after the final row of `span=`, when present). It grows that boundary
+  across every column, including nodes joined with `row=`. Omit it for no
+  request. Use a non-negative whole number of pixels; requests combine by
+  largest minimum, never addition, with other nodes' requests, automatic
+  label clearance, the ordinary 30px gap and the 52px section gap. A request
+  after the final row is diagnosed, as is an invalid value. This key belongs
+  on nodes, including when no edge has a label.
 
 ## Nodes
 
@@ -103,6 +112,14 @@ share a width measured from their titles and wrapped subtitles.
   several rows takes a straight edge from each of them. A side to a top or
   bottom gives one bend; otherwise there are two.
 - `label=end` puts the label at the target end instead of the source end.
+- Vertical labels between adjacent, non-overlapping row ranges automatically
+  get at least 12px above and below their box to the segment's ports or elbows.
+  This covers straight edges, L edges with a vertical selected label end and
+  Z edges between opposite top/bottom sides, in either direction. The whole
+  boundary grows; a Z needs more space because its segment gets only half
+  the endpoint separation. Horizontal labels, same-side loops, overlapping
+  rows and segments crossing multiple boundaries keep their usual placement
+  and diagnostics. Use a node's `gap=` for additional space when needed.
 - At an interior crossing, the edge declared later passes above the earlier
   edge with a short canvas-colour knockout gap. Swapping the declarations
   swaps which edge has the break, without changing routes or styling. The

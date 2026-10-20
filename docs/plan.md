@@ -74,6 +74,7 @@ integrator --> human tone=stop : maintainer-merge, blocked
 | --- | --- |
 | Named columns, left to right | Column widths and gaps, from node and label widths |
 | Rows: each node starts a new row unless `row=<id>` joins another node's row; `span=` covers several rows | Row heights; a spanning node fills the rows it covers, so each of them can meet it with a straight edge |
+| Optional `gap=N` on a node requests more space after its covered rows | Row-boundary gaps, satisfying the largest minimum from labels, requests and sections |
 | Sections (the horizontal bands) | Band shading and labels |
 | Node kind (`text`, `pill`, `box`, `end`, `panel`) and tone | Shapes, colours, fonts, light and dark |
 | Which side an edge leaves and enters (`from=`, `to=`) and its slot on that side (`bottom.2`) | The elbow those sides imply: straight, one bend (L) or two bends (Z), one fixed rule each |
@@ -109,6 +110,8 @@ there from the text and the diagnostics alone, without seeing the image.
   already know that spelling. Nothing else is Mermaid.
 - Ids are the labels people read (`reviewer`, `needs-changes`) unless `title=`
   says otherwise, so the source reads like the picture.
+- `row=<id>` must name another node. An empty value is diagnosed on the
+  node's line, and the node starts a new row.
 - A `legend` has indented entries: `kind tone=done "meaning"`. Shape entries
   (`pill`, `box`, `end`, `panel`) also accept `sample=ready` or
   `sample="two words"`, drawn inside the sample with its shape and tone.
@@ -169,6 +172,36 @@ in one small diagram for light/dark review in the playground's document column.
 
 ## Rendering rules
 
+- Ordinary row gaps have a 30px minimum; a change of section has a 52px
+  minimum. A node's optional `gap=N` requests a minimum gap of N pixels
+  after its last covered row: after its own row by default, or after the
+  final row of `span=N`. It affects the entire boundary across all columns,
+  including nodes joined with `row=`, rather than adding padding to that
+  node. Omission makes no request. Values must be non-negative whole decimal
+  numbers representable as safe integers; `gap=0` keeps the other minimums.
+  Requests from nodes sharing that boundary, automatic label clearance and
+  ordinary or section minimums combine by maximum, never addition. A request
+  after the diagram's final row is inapplicable and produces a diagnostic
+  on that node's line. Invalid values are diagnosed and ignored; `gap=` on
+  an edge is an unknown key. A span past the final row is still diagnosed
+  and clipped before its gap request is evaluated.
+- A label beside a vertical segment gets at least 12px above and below its
+  label box (baseline minus 9px through baseline plus 3px), measured to that
+  segment's ends: ports or elbows. This automatic guarantee applies only
+  between adjacent, non-overlapping row ranges: straight edges, L edges
+  whose selected label end is vertical, and Z edges between opposite top
+  and bottom sides. It applies in both directions, with default label
+  placement or `label=end`. The single boundary between the ranges grows
+  as needed. The current midpoint-plus-4px baseline requires a 38px segment;
+  a Z requires 76px between endpoint ports because its labeled segment gets
+  half the separation. Node insets and side ports can already provide some
+  of that space. Horizontal label segments, same-side loops, overlapping
+  row ranges and vertical segments crossing multiple boundaries retain
+  their existing placement and overlap diagnostics, without this guarantee.
+  Boundaries without a qualifying label or author request keep their existing
+  spacing. Added space preserves row order, alignment and span coverage;
+  it never changes columns, sides, slots or routing choices. Remaining
+  overlaps are still diagnosed at their source lines.
 - SVG as a string, with no browser and no DOM, and the same bytes for the same input.
 - By default, labels use IBM Plex Mono and other text uses IBM Plex Sans,
   with fixed width estimates. Hosts can supply fonts and matching metrics

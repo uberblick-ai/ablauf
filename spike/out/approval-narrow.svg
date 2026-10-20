@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-auto" viewBox="0 0 277 404" width="277" height="404" role="img" aria-label="Flow: ready, check, person, Finished. Legend: state, automated step, human decision, manual path">
+<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-auto" viewBox="0 0 277 428" width="277" height="428" role="img" aria-label="Flow: ready, check, person, Finished. Legend: state, automated step, human decision, manual path">
 <style>.ab.ab-auto{--bg:var(--ab-bg,#ffffff);--ink:var(--ab-ink,#17202c);--muted:var(--ab-muted,#5a6575);--line:var(--ab-line,#d3d9e2);--band:var(--ab-band,#e9eef5);--surface:var(--ab-surface,#ffffff);--neutral:var(--ab-neutral,#59616c);--neutral-bg:var(--ab-neutral-bg,#e1e3e6);--agent:var(--ab-agent,#0b6b67);--agent-bg:var(--ab-agent-bg,#dff1ee);--system:var(--ab-system,#3459a3);--system-bg:var(--ab-system-bg,#e7edfb);--rework:var(--ab-rework,#a65f0c);--rework-bg:var(--ab-rework-bg,#fbefdc);--stop:var(--ab-stop,#b2382f);--stop-bg:var(--ab-stop-bg,#f9e2df);--done:var(--ab-done,#2a7845);--done-bg:var(--ab-done-bg,#e0f1e5);}@media (prefers-color-scheme:dark){.ab.ab-auto{--bg:var(--ab-bg,#171c24);--ink:var(--ab-ink,#e5e9ef);--muted:var(--ab-muted,#98a2b0);--line:var(--ab-line,#2c3440);--band:var(--ab-band,#151b23);--surface:var(--ab-surface,#1d232d);--neutral:var(--ab-neutral,#b6bbc3);--neutral-bg:var(--ab-neutral-bg,#303640);--agent:var(--ab-agent,#5cc5bb);--agent-bg:var(--ab-agent-bg,#12302d);--system:var(--ab-system,#91b4fa);--system-bg:var(--ab-system-bg,#1c2945);--rework:var(--ab-rework,#e3a250);--rework-bg:var(--ab-rework-bg,#33250f);--stop:var(--ab-stop,#ef7f73);--stop-bg:var(--ab-stop-bg,#3a1916);--done:var(--ab-done,#72cf91);--done-bg:var(--ab-done-bg,#142e1d);}}
 .ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
 .ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
@@ -16,38 +16,38 @@
 <marker id="approval-narrow-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker>
 <marker id="approval-narrow-stop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-stop"/></marker>
 </defs>
-<path d="M121,50 L121,80" class="e e-ink"/>
-<path d="M211,103 L235,103 L235,313 L206,313" class="e e-ink"/>
-<path d="M121,126 L121,156" class="e e-stop"/>
-<path d="M121,266 L121,296" class="e e-stop"/>
-<path d="M121,50 L121,80" class="arrow" marker-end="url(#approval-narrow-ink)"/>
-<path d="M235,313 L206,313" class="arrow" marker-end="url(#approval-narrow-ink)"/>
-<path d="M121,126 L121,156" class="arrow" marker-end="url(#approval-narrow-stop)"/>
-<path d="M121,266 L121,296" class="arrow" marker-end="url(#approval-narrow-stop)"/>
+<path d="M121,50 L121,88" class="e e-ink"/>
+<path d="M211,111 L235,111 L235,337 L206,337" class="e e-ink"/>
+<path d="M121,134 L121,172" class="e e-stop"/>
+<path d="M121,282 L121,320" class="e e-stop"/>
+<path d="M121,50 L121,88" class="arrow" marker-end="url(#approval-narrow-ink)"/>
+<path d="M235,337 L206,337" class="arrow" marker-end="url(#approval-narrow-ink)"/>
+<path d="M121,134 L121,172" class="arrow" marker-end="url(#approval-narrow-stop)"/>
+<path d="M121,282 L121,320" class="arrow" marker-end="url(#approval-narrow-stop)"/>
 <g><rect x="85" y="16" width="72" height="34" rx="17" class="pill"/>
 <circle cx="99" cy="33" r="5" class="t-muted"/>
 <text x="111" y="37" class="m s12">ready</text></g>
 <g>
-<rect x="31" y="80" width="180" height="46" rx="8" class="k-agent"/>
-<text x="121" y="99" text-anchor="middle" class="m s13 b t-agent">check</text>
-<text x="121" y="116" text-anchor="middle" class="s11 muted">runs the checks</text>
+<rect x="31" y="88" width="180" height="46" rx="8" class="k-agent"/>
+<text x="121" y="107" text-anchor="middle" class="m s13 b t-agent">check</text>
+<text x="121" y="124" text-anchor="middle" class="s11 muted">runs the checks</text>
 </g>
-<g><rect x="16" y="156" width="209" height="110" rx="10" class="k-stop panel"/>
-<rect x="64" y="168" width="115" height="30" rx="15" class="pill"/>
-<circle cx="78" cy="183" r="5" class="t-stop"/>
-<text x="90" y="187" class="m s12">needs-human</text>
-<text x="121" y="217" text-anchor="middle" class="s12 b">A person decides</text>
-<text x="121" y="235" text-anchor="middle" class="s11">Resolves the blocked check</text>
-<text x="121" y="253" text-anchor="middle" class="s11 muted">Then the work can continue.</text></g>
-<rect x="36" y="296" width="170" height="34" rx="17" class="k-done"/>
-<text x="121" y="317" text-anchor="middle" class="s12 b t-done">Finished</text>
-<text x="131" y="69" class="m s11">trigger</text>
-<text x="221" y="96" class="m s11">passed</text>
-<text x="131" y="145" class="m s11 t-stop">blocked</text>
-<text x="131" y="285" class="m s11 t-stop">cleared</text>
-<line x1="8" y1="346" x2="269" y2="346" class="rule"/>
-<g><rect x="16" y="360" width="24" height="12" rx="6" class="pill"/><circle cx="23" cy="366" r="3" class="t-muted"/><text x="46" y="370" class="s11 muted">state</text></g>
-<g><rect x="97" y="360" width="24" height="12" rx="3" class="k-agent"/><text x="127" y="370" class="s11 muted">automated step</text></g>
-<g><rect x="16" y="380" width="24" height="12" rx="3" class="k-stop panel"/><text x="46" y="390" class="s11 muted">human decision</text></g>
-<g><path d="M151,386 L175,386" class="e e-stop" marker-end="url(#approval-narrow-stop)"/><text x="181" y="390" class="s11 muted">manual path</text></g>
+<g><rect x="16" y="172" width="209" height="110" rx="10" class="k-stop panel"/>
+<rect x="64" y="184" width="115" height="30" rx="15" class="pill"/>
+<circle cx="78" cy="199" r="5" class="t-stop"/>
+<text x="90" y="203" class="m s12">needs-human</text>
+<text x="121" y="233" text-anchor="middle" class="s12 b">A person decides</text>
+<text x="121" y="251" text-anchor="middle" class="s11">Resolves the blocked check</text>
+<text x="121" y="269" text-anchor="middle" class="s11 muted">Then the work can continue.</text></g>
+<rect x="36" y="320" width="170" height="34" rx="17" class="k-done"/>
+<text x="121" y="341" text-anchor="middle" class="s12 b t-done">Finished</text>
+<text x="131" y="73" class="m s11">trigger</text>
+<text x="221" y="104" class="m s11">passed</text>
+<text x="131" y="157" class="m s11 t-stop">blocked</text>
+<text x="131" y="305" class="m s11 t-stop">cleared</text>
+<line x1="8" y1="370" x2="269" y2="370" class="rule"/>
+<g><rect x="16" y="384" width="24" height="12" rx="6" class="pill"/><circle cx="23" cy="390" r="3" class="t-muted"/><text x="46" y="394" class="s11 muted">state</text></g>
+<g><rect x="97" y="384" width="24" height="12" rx="3" class="k-agent"/><text x="127" y="394" class="s11 muted">automated step</text></g>
+<g><rect x="16" y="404" width="24" height="12" rx="3" class="k-stop panel"/><text x="46" y="414" class="s11 muted">human decision</text></g>
+<g><path d="M151,410 L175,410" class="e e-stop" marker-end="url(#approval-narrow-stop)"/><text x="181" y="414" class="s11 muted">manual path</text></g>
 </svg>
