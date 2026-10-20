@@ -1,0 +1,112 @@
+<head>
+<title>Tiptap · ablauf</title>
+<meta name="description" content="Draw ablauf diagrams inside a Tiptap editor: one code block extension renders the fenced ablauf source above itself, and the Markdown stays unchanged.">
+</head>
+<div class="hero sub">
+  <p class="crumb"><a href="/">ablauf</a> / Guides / Tiptap</p>
+  <h1>Draw diagrams in a Tiptap editor.</h1>
+  <p class="lede">In Markdown an ablauf diagram is a fenced code block with the language <code>ablauf</code>. Tiptap reads that as an ordinary code block, so one small extension is enough: it draws the diagram above its source while the source stays editable text, and the Markdown comes back out unchanged.</p>
+</div>
+
+<section class="q" id="markdown">
+<h2>The Markdown</h2>
+<p>A document holds the diagram as text, so it diffs, reviews and merges like the rest of the file. An agent writes it the same way, after reading the <a href="https://github.com/uberblick-ai/ablauf/blob/main/spike/PRIMER.md">format primer</a>.</p>
+<!-- markdown release -->
+</section>
+
+<section class="q" id="install">
+<h2>Install</h2>
+<p>This guide uses Tiptap 3 with its Markdown extension. <code>render</code> has no dependencies and no Node.js APIs, so it runs in the browser as it is.</p>
+<div class="tabs"><div class="panel sh"><code>npm install @uberblick/ablauf @tiptap/core @tiptap/pm @tiptap/starter-kit @tiptap/extension-code-block @tiptap/markdown</code><button class="copy" type="button">Copy</button></div></div>
+</section>
+
+<section class="q" id="extension">
+<h2>The extension</h2>
+<p>It extends Tiptap's code block with a node view: the picture sits above the <code>&lt;pre&gt;</code> that holds the source, and is shown only when the block's language is <code>ablauf</code>. Every other code block looks as before. The editor then swaps the starter kit's code block for this one.</p>
+<div class="tabs ex"><div class="tablist" role="tablist" aria-label="Tiptap extension"><button role="tab" id="code-t0" aria-selected="true" aria-controls="code-p0" type="button">ablauf-block.ts</button><button role="tab" id="code-t1" aria-selected="false" aria-controls="code-p1" type="button">editor.ts</button><button role="tab" id="code-t2" aria-selected="false" aria-controls="code-p2" type="button">ablauf.css</button><button class="copy" type="button">Copy</button></div>
+<div class="panel" role="tabpanel" id="code-p0" aria-labelledby="code-t0"><pre><code>import CodeBlock from "@tiptap/extension-code-block";
+import { render } from "@uberblick/ablauf";
+
+let diagrams = 0;
+
+// A code block that draws itself when its language is ablauf. The source
+// stays the editable content, so Markdown keeps the fence as it is.
+export const AblaufCodeBlock = CodeBlock.extend({
+  addNodeView() {
+    return ({ node }) =&gt; {
+      const dom = document.createElement("div");
+      const picture = document.createElement("div");
+      const pre = document.createElement("pre");
+      const code = document.createElement("code");
+      picture.className = "ablauf";
+      picture.contentEditable = "false";
+      pre.append(code);
+      dom.append(picture, pre);
+
+      // Ids inside one SVG must not clash with another diagram's.
+      const idPrefix = `ablauf-${++diagrams}`;
+      let drawn: string | null = null;
+      const draw = (n: typeof node) =&gt; {
+        const language = n.attrs.language;
+        code.className = language ? `language-${language}` : "";
+        picture.hidden = language !== "ablauf";
+        if (picture.hidden || n.textContent === drawn) return;
+        drawn = n.textContent;
+        const { svg, diagnostics } = render(drawn, { idPrefix });
+        picture.innerHTML = svg;
+        picture.title = diagnostics.map((d) =&gt; `line ${d.line}: ${d.message}`).join("\n");
+      };
+      draw(node);
+
+      return {
+        dom,
+        contentDOM: code,
+        update(updated) {
+          if (updated.type !== node.type) return false;
+          draw(updated);
+          return true;
+        },
+        // The picture is ours, not ProseMirror's to re-read.
+        ignoreMutation: (m) =&gt; picture.contains(m.target),
+      };
+    };
+  },
+});</code></pre></div>
+<div class="panel" role="tabpanel" id="code-p1" aria-labelledby="code-t1" hidden><pre><code>import { Editor } from "@tiptap/core";
+import { Markdown } from "@tiptap/markdown";
+import StarterKit from "@tiptap/starter-kit";
+import { AblaufCodeBlock } from "./ablauf-block.ts";
+
+export const editor = (element: HTMLElement, markdown: string) =&gt;
+  new Editor({
+    element,
+    extensions: [StarterKit.configure({ codeBlock: false }), AblaufCodeBlock, Markdown],
+    content: markdown,
+    contentType: "markdown",
+  });</code></pre></div>
+<div class="panel" role="tabpanel" id="code-p2" aria-labelledby="code-t2" hidden><pre><code>/* The picture above its source. The --ab-* properties give it your page's
+   colours; see Customise colours for the full list. */
+.ablauf {
+  overflow-x: auto;
+  padding: 12px 0;
+  --ab-bg: #ffffff;
+  --ab-ink: #1d1b24;
+}
+.ablauf svg {
+  display: block;
+  max-width: none;
+  height: auto;
+}</code></pre></div>
+</div>
+</section>
+
+<section class="q" id="how">
+<h2>What it does</h2>
+<ul>
+<li>The source stays the block's content. Typing, undo, collaboration and the Markdown output work as for any code block, and <code>editor.getMarkdown()</code> writes the same fence back.</li>
+<li>The picture is redrawn only when the text changes, so moving the cursor costs nothing. A diagram of a few dozen lines renders in well under a frame.</li>
+<li>The renderer never throws. While someone types, it draws what it can, and the problems, each with its line number, go to the picture's <code>title</code>. A list under the picture works just as well.</li>
+<li>Each diagram gets its own <code>idPrefix</code>, so the ids inside one inline SVG never clash with another's on the same page.</li>
+</ul>
+<p>Outside an editor the pattern is the same: wherever your Markdown renderer handles fenced code, call <code>render(source)</code> for the <code>ablauf</code> language and put the SVG in its place. To match your page's colours, see <a href="/guides/colours">customise colours</a>.</p>
+</section>

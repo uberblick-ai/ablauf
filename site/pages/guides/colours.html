@@ -1,0 +1,50 @@
+<head>
+<title>Customise colours · ablauf</title>
+<meta name="description" content="Give ablauf diagrams your page's colours: set --ab-* custom properties in your CSS, for the neutrals, for the tones, and for light and dark.">
+</head>
+<div class="hero sub">
+  <p class="crumb"><a href="/">ablauf</a> / Guides / Customise colours</p>
+  <h1>Customise colours</h1>
+  <p class="lede">A diagram takes every colour from <code>--ab-*</code> custom properties, with light and dark defaults that follow the reader's system. Set the properties in your page's CSS and an inline diagram picks them up, with no new render.</p>
+</div>
+
+<section class="q" id="default"><h2>The defaults</h2>
+<p>Rendered with no options and no host CSS, a diagram uses its built-in palette and follows <code>prefers-color-scheme</code>. This page sets only the neutrals to its own text, line and panel colours.</p>
+<!-- example review -->
+</section>
+
+<section class="q" id="neutrals"><h2>Match your page's neutrals</h2>
+<p>Text, outlines, node surfaces and section bands come from six properties. Set them on a wrapper, here <code>.paper</code>, or on <code>:root</code> for every diagram on the page. <code>--ab-bg</code> is the colour behind the diagram: the SVG itself is transparent, and edge crossings are cut out in that colour.</p>
+<!-- example review paper -->
+</section>
+
+<section class="q" id="tones"><h2>Brand the tones</h2>
+<p>Each tone has a foreground for text, outlines, edges and arrowheads, and a background for shapes. Override only the tones you use; the others keep their defaults.</p>
+<!-- example review brand -->
+</section>
+
+<section class="q" id="theme-switch"><h2>Follow a theme switch</h2>
+<p>Both examples follow the system's light or dark mode with a media query. If your page has its own switch, such as <code>data-theme="dark"</code> on the root element, put the dark values under that selector instead. Set every property in both themes, so a page in light mode on a dark system stays consistent.</p>
+<p>Page CSS reaches a diagram only when its <code>&lt;svg&gt;</code> is inline in the page. An SVG loaded through <code>&lt;img&gt;</code> is its own document; render it with <code>scheme: "light"</code> or <code>"dark"</code> to pin a palette instead.</p>
+</section>
+
+<section class="q" id="properties"><h2>All properties</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>Property</th><th>Colours</th></tr></thead>
+<tbody>
+<tr><td><code>--ab-bg</code></td><td>The ground behind the diagram, used where edges cross</td></tr>
+<tr><td><code>--ab-ink</code></td><td>Main text, pill labels and panel text</td></tr>
+<tr><td><code>--ab-muted</code></td><td>Secondary text, and the foreground of the ink and muted tones</td></tr>
+<tr><td><code>--ab-line</code></td><td>Outlines of ink and muted shapes and pills, and separator rules</td></tr>
+<tr><td><code>--ab-band</code></td><td>Shaded section backgrounds</td></tr>
+<tr><td><code>--ab-surface</code></td><td>Pill backgrounds and ink and muted node backgrounds</td></tr>
+<tr><td><code>--ab-neutral</code>, <code>--ab-neutral-bg</code></td><td>The neutral tone</td></tr>
+<tr><td><code>--ab-agent</code>, <code>--ab-agent-bg</code></td><td>The agent tone</td></tr>
+<tr><td><code>--ab-system</code>, <code>--ab-system-bg</code></td><td>The system tone</td></tr>
+<tr><td><code>--ab-done</code>, <code>--ab-done-bg</code></td><td>The done tone</td></tr>
+<tr><td><code>--ab-rework</code>, <code>--ab-rework-bg</code></td><td>The rework tone</td></tr>
+<tr><td><code>--ab-stop</code>, <code>--ab-stop-bg</code></td><td>The stop tone</td></tr>
+</tbody>
+</table></div>
+<p>The default values for light and dark, and how to check an integration, are in <a href="https://github.com/uberblick-ai/ablauf/blob/main/docs/theming.md">host page themes</a>.</p>
+</section>

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-auto" viewBox="0 0 458 550" width="458" height="550" role="img" aria-label="Flow: Compare light and dark, ink-panel, ink, muted-panel, muted, neutral-panel, neutral, waiting, Complete. Legend: grey step, grey panel, neutral label, neutral end, neutral path, dashed path">
+<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-auto" viewBox="0 0 458 558" width="458" height="558" role="img" aria-label="Flow: Compare light and dark, ink-panel, ink, muted-panel, muted, neutral-panel, neutral, waiting, Complete. Legend: grey step, grey panel, neutral label, neutral end, neutral path, dashed path">
 <style>.ab.ab-auto{--bg:var(--ab-bg,#ffffff);--ink:var(--ab-ink,#17202c);--muted:var(--ab-muted,#5a6575);--line:var(--ab-line,#d3d9e2);--band:var(--ab-band,#e9eef5);--surface:var(--ab-surface,#ffffff);--neutral:var(--ab-neutral,#59616c);--neutral-bg:var(--ab-neutral-bg,#e1e3e6);--agent:var(--ab-agent,#0b6b67);--agent-bg:var(--ab-agent-bg,#dff1ee);--system:var(--ab-system,#3459a3);--system-bg:var(--ab-system-bg,#e7edfb);--rework:var(--ab-rework,#a65f0c);--rework-bg:var(--ab-rework-bg,#fbefdc);--stop:var(--ab-stop,#b2382f);--stop-bg:var(--ab-stop-bg,#f9e2df);--done:var(--ab-done,#2a7845);--done-bg:var(--ab-done-bg,#e0f1e5);}@media (prefers-color-scheme:dark){.ab.ab-auto{--bg:var(--ab-bg,#171c24);--ink:var(--ab-ink,#e5e9ef);--muted:var(--ab-muted,#98a2b0);--line:var(--ab-line,#2c3440);--band:var(--ab-band,#151b23);--surface:var(--ab-surface,#1d232d);--neutral:var(--ab-neutral,#b6bbc3);--neutral-bg:var(--ab-neutral-bg,#303640);--agent:var(--ab-agent,#5cc5bb);--agent-bg:var(--ab-agent-bg,#12302d);--system:var(--ab-system,#91b4fa);--system-bg:var(--ab-system-bg,#1c2945);--rework:var(--ab-rework,#e3a250);--rework-bg:var(--ab-rework-bg,#33250f);--stop:var(--ab-stop,#ef7f73);--stop-bg:var(--ab-stop-bg,#3a1916);--done:var(--ab-done,#72cf91);--done-bg:var(--ab-done-bg,#142e1d);}}
 .ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
 .ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
@@ -16,12 +16,12 @@
 <marker id="neutral-neutral" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-neutral"/></marker>
 </defs>
 
-<rect x="8" y="230" width="442" height="254" class="band"/>
+<rect x="8" y="230" width="442" height="262" class="band"/>
 <line x1="8" y1="230" x2="450" y2="230" class="rule"/>
 <path d="M106,325 L106,378" class="e e-neutral"/>
-<path d="M106,412 L106,442" class="e e-neutral dash"/>
+<path d="M106,412 L106,450" class="e e-neutral dash"/>
 <path d="M106,325 L106,378" class="arrow" marker-end="url(#neutral-neutral)"/>
-<path d="M106,412 L106,442" class="arrow" marker-end="url(#neutral-neutral)"/>
+<path d="M106,412 L106,450" class="arrow" marker-end="url(#neutral-neutral)"/>
 <text x="20" y="22" class="cap">SURFACE-FILLED</text>
 <text x="20" y="252" class="cap">FILLED GREY</text>
 <text x="348" y="28" text-anchor="middle" class="s12 muted">Compare light and dark</text>
@@ -55,15 +55,15 @@
 <g><rect x="63" y="378" width="86" height="34" rx="17" class="pill"/>
 <circle cx="77" cy="395" r="5" class="t-neutral"/>
 <text x="89" y="399" class="m s12">waiting</text></g>
-<rect x="21" y="442" width="170" height="34" rx="17" class="k-neutral"/>
-<text x="106" y="463" text-anchor="middle" class="s12 b t-neutral">Complete</text>
+<rect x="21" y="450" width="170" height="34" rx="17" class="k-neutral"/>
+<text x="106" y="471" text-anchor="middle" class="s12 b t-neutral">Complete</text>
 <text x="116" y="356" class="m s11 t-neutral">next</text>
-<text x="116" y="431" class="m s11 t-neutral">finish</text>
-<line x1="8" y1="492" x2="450" y2="492" class="rule"/>
-<g><rect x="16" y="506" width="24" height="12" rx="3" class="k-neutral"/><text x="46" y="516" class="s11 muted">grey step</text></g>
-<g><rect x="121" y="506" width="24" height="12" rx="3" class="k-neutral panel"/><text x="151" y="516" class="s11 muted">grey panel</text></g>
-<g><rect x="232" y="506" width="24" height="12" rx="6" class="pill"/><circle cx="239" cy="512" r="3" class="t-neutral"/><text x="262" y="516" class="s11 muted">neutral label</text></g>
-<g><rect x="16" y="526" width="24" height="12" rx="6" class="k-neutral"/><text x="46" y="536" class="s11 muted">neutral end</text></g>
-<g><path d="M133,532 L157,532" class="e e-neutral" marker-end="url(#neutral-neutral)"/><text x="163" y="536" class="s11 muted">neutral path</text></g>
-<g><path d="M256,532 L280,532" class="e e-neutral dash" marker-end="url(#neutral-neutral)"/><text x="286" y="536" class="s11 muted">dashed path</text></g>
+<text x="116" y="435" class="m s11 t-neutral">finish</text>
+<line x1="8" y1="500" x2="450" y2="500" class="rule"/>
+<g><rect x="16" y="514" width="24" height="12" rx="3" class="k-neutral"/><text x="46" y="524" class="s11 muted">grey step</text></g>
+<g><rect x="121" y="514" width="24" height="12" rx="3" class="k-neutral panel"/><text x="151" y="524" class="s11 muted">grey panel</text></g>
+<g><rect x="232" y="514" width="24" height="12" rx="6" class="pill"/><circle cx="239" cy="520" r="3" class="t-neutral"/><text x="262" y="524" class="s11 muted">neutral label</text></g>
+<g><rect x="16" y="534" width="24" height="12" rx="6" class="k-neutral"/><text x="46" y="544" class="s11 muted">neutral end</text></g>
+<g><path d="M133,540 L157,540" class="e e-neutral" marker-end="url(#neutral-neutral)"/><text x="163" y="544" class="s11 muted">neutral path</text></g>
+<g><path d="M256,540 L280,540" class="e e-neutral dash" marker-end="url(#neutral-neutral)"/><text x="286" y="544" class="s11 muted">dashed path</text></g>
 </svg>

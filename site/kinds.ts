@@ -1,9 +1,9 @@
-// The showcase's diagram kinds, in display order. A new kind is one entry:
-// it gets its own section on /showcase, a sidebar link and a line on the
-// landing page. Every example's first line must be the kind's header.
+// The diagram kinds, in display order. A new kind is one entry: it gets its
+// own page at /<id>, a sidebar link and a line on the landing page. Every
+// example's first line must be the kind's header.
 
 export interface Example {
-	/** A file in spike/examples, without `.flow`. */
+	/** A file in site/examples or spike/examples, without `.flow`. */
 	name: string;
 	title: string;
 	/** One or two sentences under the title; may contain inline HTML. */
@@ -13,7 +13,7 @@ export interface Example {
 }
 
 export interface Kind {
-	/** The section's anchor on /showcase. */
+	/** The kind's page: /<id>. */
 	id: string;
 	name: string;
 	/** The source's first line, such as `flow v0`. */
