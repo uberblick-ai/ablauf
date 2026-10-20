@@ -30,7 +30,7 @@ legend
 		assert.match(svg, /height="20" rx="10" class="k-done"\/><text[^>]+class="m s11 t-done">Complete<\/text>/);
 		assert.match(svg, /height="20" rx="3" class="k-stop panel"\/><text[^>]+class="m s11 t-stop">A person decides<\/text>/);
 		assert.match(svg, /Legend: ready: GitHub label, two words: agent role, Complete: final state, A person decides: manual step/);
-		assert.ok(svg.includes(scheme === "light" ? "var(--ab-done,#2a7845)" : "var(--ab-done,#72cf91)"));
+		assert.ok(svg.includes(scheme === "light" ? "var(--ab-done,#4c7155)" : "var(--ab-done,#8cbb9a)"));
 		assert.equal(svg, render(source, { scheme }).svg);
 	}
 });

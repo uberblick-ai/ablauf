@@ -19,16 +19,16 @@ These are the complete palette and the built-in defaults:
 | `--ab-surface` | Pill and ink/muted node backgrounds | `#ffffff` | `#1d232d` |
 | `--ab-neutral` | Neutral tone foreground | `#59616c` | `#b6bbc3` |
 | `--ab-neutral-bg` | Neutral tone background | `#e1e3e6` | `#303640` |
-| `--ab-agent` | Agent tone foreground | `#0b6b67` | `#5cc5bb` |
-| `--ab-agent-bg` | Agent tone background | `#dff1ee` | `#12302d` |
-| `--ab-system` | System tone foreground | `#3459a3` | `#91b4fa` |
-| `--ab-system-bg` | System tone background | `#e7edfb` | `#1c2945` |
-| `--ab-done` | Done tone foreground | `#2a7845` | `#72cf91` |
-| `--ab-done-bg` | Done tone background | `#e0f1e5` | `#142e1d` |
-| `--ab-rework` | Rework tone foreground | `#a65f0c` | `#e3a250` |
-| `--ab-rework-bg` | Rework tone background | `#fbefdc` | `#33250f` |
-| `--ab-stop` | Stop tone foreground | `#b2382f` | `#ef7f73` |
-| `--ab-stop-bg` | Stop tone background | `#f9e2df` | `#3a1916` |
+| `--ab-agent` | Agent tone foreground | `#3f6562` | `#80b3ad` |
+| `--ab-agent-bg` | Agent tone background | `#e6efed` | `#202d2c` |
+| `--ab-system` | System tone foreground | `#465b83` | `#98acd2` |
+| `--ab-system-bg` | System tone background | `#eaedf4` | `#232a38` |
+| `--ab-done` | Done tone foreground | `#4c7155` | `#8cbb9a` |
+| `--ab-done-bg` | Done tone background | `#e6eee8` | `#1f2b22` |
+| `--ab-rework` | Rework tone foreground | `#8c6544` | `#c4a078` |
+| `--ab-rework-bg` | Rework tone background | `#f6f0e6` | `#2d271d` |
+| `--ab-stop` | Stop tone foreground | `#925149` | `#c68981` |
+| `--ab-stop-bg` | Stop tone background | `#f1e5e3` | `#301f1d` |
 
 A tone foreground colours box/end text and outlines, pill dots, edges,
 arrowheads, edge labels and legend samples. Its background colours box, end
@@ -55,16 +55,16 @@ keep the whole palette consistent when the system and page themes disagree.
   --ab-surface: #ffffff;
   --ab-neutral: #59616c;
   --ab-neutral-bg: #e1e3e6;
-  --ab-agent: #0b6b67;
-  --ab-agent-bg: #dff1ee;
-  --ab-system: #3459a3;
-  --ab-system-bg: #e7edfb;
-  --ab-done: #2a7845;
-  --ab-done-bg: #e0f1e5;
-  --ab-rework: #a65f0c;
-  --ab-rework-bg: #fbefdc;
-  --ab-stop: #b2382f;
-  --ab-stop-bg: #f9e2df;
+  --ab-agent: #3f6562;
+  --ab-agent-bg: #e6efed;
+  --ab-system: #465b83;
+  --ab-system-bg: #eaedf4;
+  --ab-done: #4c7155;
+  --ab-done-bg: #e6eee8;
+  --ab-rework: #8c6544;
+  --ab-rework-bg: #f6f0e6;
+  --ab-stop: #925149;
+  --ab-stop-bg: #f1e5e3;
 }
 
 :root[data-theme="dark"] {
@@ -76,16 +76,16 @@ keep the whole palette consistent when the system and page themes disagree.
   --ab-surface: #1d232d;
   --ab-neutral: #b6bbc3;
   --ab-neutral-bg: #303640;
-  --ab-agent: #5cc5bb;
-  --ab-agent-bg: #12302d;
-  --ab-system: #91b4fa;
-  --ab-system-bg: #1c2945;
-  --ab-done: #72cf91;
-  --ab-done-bg: #142e1d;
-  --ab-rework: #e3a250;
-  --ab-rework-bg: #33250f;
-  --ab-stop: #ef7f73;
-  --ab-stop-bg: #3a1916;
+  --ab-agent: #80b3ad;
+  --ab-agent-bg: #202d2c;
+  --ab-system: #98acd2;
+  --ab-system-bg: #232a38;
+  --ab-done: #8cbb9a;
+  --ab-done-bg: #1f2b22;
+  --ab-rework: #c4a078;
+  --ab-rework-bg: #2d271d;
+  --ab-stop: #c68981;
+  --ab-stop-bg: #301f1d;
 }
 ```
 
