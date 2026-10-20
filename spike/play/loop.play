@@ -1,0 +1,20 @@
+play v0
+# A playback of examples/loop.flow: one review round, then a merge.
+# Each step lights one node; the edge from the previous step lights with it.
+flow ../examples/loop.flow
+tempo 1.6s
+
+step start             "A maintainer adds the first label"
+step needs-preparation
+step issue-preparer    "found the issue small and clear, marked it ready"
+step ready
+step implementer 2.4s  "changed 7 files, ran 2,109 tests, opened #598"
+step needs-review
+step reviewer 2.4s     "changes requested: P1 in the parser"
+step needs-changes
+step implementer 2.4s  "revised the same PR, fixed the P1"
+step needs-review
+step reviewer          "approved against the acceptance criteria"
+step ready-to-merge
+step integrator 2s     "confirmed CI and the merge policy"
+step merged 3s         "#598 merged, #597 closed"

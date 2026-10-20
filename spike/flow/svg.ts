@@ -110,6 +110,8 @@ export interface SvgOptions {
 	title?: string;
 	/** Pin one palette instead of following prefers-color-scheme. */
 	scheme?: "light" | "dark";
+	/** Mark each node and edge with data attributes a player can target. */
+	targets?: boolean;
 }
 
 // Rules for shapes a diagram may not use are added only when it does, so
@@ -170,14 +172,18 @@ export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 	for (let i = 0; i < layout.routes.length; i++) {
 		const r = layout.routes[i];
 		out.push(...knockouts(r, layout.routes.slice(0, i), layout.bands));
-		out.push(route(r));
+		out.push(tag(route(r), r, options));
 	}
 	// Knockouts affect edge strokes only; all foreground content follows them.
-	for (const r of layout.routes) out.push(arrow(r, id));
+	for (const r of layout.routes) out.push(tag(arrow(r, id), r, options));
 	for (const b of layout.bands)
 		out.push(`<text x="20" y="${b.y + 22}" class="cap">${esc(b.label.toUpperCase())}</text>`);
-	for (const p of layout.nodes) out.push(node(p, layout.typography));
-	for (const r of layout.routes) if (r.label) out.push(edgeLabel(r, layout.bands));
+	for (const p of layout.nodes) {
+		const drawn = node(p, layout.typography);
+		out.push(options.targets ? `<g data-node="${esc(p.node.id)}">${drawn}</g>` : drawn);
+	}
+	for (const r of layout.routes)
+		if (r.label) out.push(tag(edgeLabel(r, layout.bands), r, options));
 	if (layout.legend) {
 		out.push(
 			`<line x1="8" y1="${layout.legend.y}" x2="${layout.width - 8}" y2="${layout.legend.y}" class="rule"/>`,
@@ -260,6 +266,15 @@ function knockouts(r: Route, earlier: Route[], bands: Band[]): string[] {
 		}
 	}
 	return out;
+}
+
+// Adds the edge's ends to the first element of a drawn part, when asked.
+function tag(drawn: string, r: Route, options: SvgOptions): string {
+	if (!options.targets) return drawn;
+	return drawn.replace(
+		/^<(\w+)/,
+		`<$1 data-from="${esc(r.edge.from)}" data-to="${esc(r.edge.to)}"`,
+	);
 }
 
 function route(r: Route): string {
