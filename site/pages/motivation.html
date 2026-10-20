@@ -14,7 +14,7 @@
 </section>
 
 <section class="q" id="approach"><h2>The author places, the renderer draws</h2>
-<p>In ablauf the source records those placement decisions on a coarse grid. The renderer sizes the grid and draws the elbows the chosen sides imply. It never moves anything to fix a problem; it reports the problem with its line number, and the author fixes it. That keeps the picture stable: <a href="/flow#loop-insert">inserting a role</a> moves the rows below it down and leaves everything else where it was.</p>
+<p>In ablauf the source records those placement decisions on a coarse grid. The renderer sizes the grid and draws the elbows the chosen sides imply. It never moves anything to fix a problem; it reports the problem with its line number, and the author fixes it. That keeps the picture stable: inserting a role moves the rows below it down and leaves everything else where it was.</p>
 <p>Agents can do this without seeing the picture. In our trial, five fresh agents given only the one-page <a href="https://github.com/uberblick-ai/ablauf/blob/main/spike/PRIMER.md">primer</a> each wrote the ub-agents loop with no problems left, and five more each added a role to another agent's file. Edges are still spelled like Mermaid's (<code>--&gt;</code>, <code>: label</code>), because agents already know that spelling. Nothing else is Mermaid.</p>
 </section>
 
