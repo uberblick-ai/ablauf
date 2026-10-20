@@ -91,29 +91,90 @@ test("fan-out SVG is deterministic, escaped and uses the shared theme options", 
 	}
 });
 
-// Check cell bounds in SVG coordinates, including long tokens and tall rows.
+test("fan-out tones colour their outcome boxes and unknown tones are reported", () => {
+	const ok = render('fan-out v0\nstep "Check"\noutcome "Yes" reason="Why" destination="Here" tone="done"\noutcome "No" tone="stop" reason="Why not" destination="There"\noutcome "Plain" reason="Untoned" destination="Elsewhere"');
+	assert.deepEqual(ok.diagnostics, []);
+	assert.match(ok.svg, /class="k-done"\/>/);
+	assert.match(ok.svg, /class="k-stop panel"\/>/);
+	assert.match(ok.svg, /<g data-line="5">[\s\S]*?class="pill"\/>/);
+	const bad = render('fan-out v0\nstep "Check"\noutcome "Yes" reason="Why" destination="Here" tone="loud"');
+	assert.deepEqual(bad.diagnostics.map((d) => d.line), [3]);
+	assert.match(bad.diagnostics[0].message, /unknown tone/);
+	assert.match(bad.svg, />Line 3:/);
+});
+
+// Check text bounds in SVG coordinates, including long tokens and tall rows.
 // A maintainer still reviews the actual fonts in both playground themes.
-test("fan-out text stays inside cells and rows at document width", () => {
+test("fan-out text stays inside its step, outcome and effect at document width", () => {
 	const sources = [example("approvals"), example("run-endings"),
-		`fan-out v0\nstep "${"Long step ".repeat(35)}"\noutcome "${"a".repeat(100)}" reason="${"a long explanation ".repeat(50)}" destination="${"Destination".repeat(20)}"\noutcome "Next" reason="No overlap" destination="End"`];
+		`fan-out v0\nstep "${"Long step ".repeat(35)}"\noutcome "${"a".repeat(100)}" reason="${"a long explanation ".repeat(50)}" destination="${"Destination".repeat(20)}"\noutcome "Next" reason="No overlap" destination="End"`,
+		'fan-out v0\nstep "Only one outcome"\noutcome "Done" reason="Why" destination="There" tone="done"'];
+	const right: Record<string, number> = { 32: 150, 230: 372, 426: 662 };
 	for (const source of sources) for (const scheme of ["light", "dark"] as const) {
 		const { svg, diagnostics, layout } = render(source, { scheme });
 		assert.deepEqual(diagnostics, []);
 		assert.ok(layout.width <= 710);
-		for (const [, x, y, classes, content] of svg.matchAll(/<text x="(\d+)" y="(\d+)" class="([^"]+)">([^<]*)<\/text>/g)) {
-			const charWidth = classes.includes("s13") ? CHAR.mono13 : classes.includes("cap") ? CHAR.mono11 + 0.88 : CHAR.mono12;
-			const right = x === "32" && !classes.includes("s13") && !classes.includes("cap") ? 174 : x === "190" ? 448 : 646;
-			assert.ok(Number(x) + [...content].length * charWidth <= right, content);
-			assert.ok(Number(y) < layout.height);
+		for (const [, x, y, classes, content] of svg.matchAll(/<text x="(\d+)" y="([\d.]+)" class="([^"]+)">([^<]*)<\/text>/g)) {
+			const charWidth = classes.includes("s13") ? CHAR.mono13 : CHAR.mono12;
+			assert.ok(x in right, `unexpected text column ${x}`);
+			assert.ok(Number(x) + [...content].length * charWidth <= right[x], content);
+			assert.ok(Number(y) - 12 >= 0 && Number(y) + 4 < layout.height, content);
 		}
-		const rows = [...svg.matchAll(/<g data-line="\d+">\n<rect x="16" y="(\d+)" width="646" height="(\d+)"[^>]*\/>([\s\S]*?)<\/g>/g)];
-		for (const [i, row] of rows.entries()) {
-			const top = Number(row[1]);
-			const bottom = top + Number(row[2]);
-			for (const [, y] of row[3].matchAll(/<text x="\d+" y="(\d+)"/g)) {
-				assert.ok(Number(y) - 12 >= top && Number(y) + 4 <= bottom);
-			}
-			if (rows[i + 1]) assert.ok(bottom < Number(rows[i + 1][1]));
+		// Each row's outcome box holds its text, and rows never overlap.
+		const extents = [...svg.matchAll(/<g data-line="\d+">([\s\S]*?)<\/g>/g)].map(([, row]) => {
+			const [, top, height] = /<rect x="216" y="([\d.]+)" width="170" height="(\d+)"/.exec(row) ?? [];
+			const box = { top: Number(top), bottom: Number(top) + Number(height) };
+			for (const [, y] of row.matchAll(/<text x="230" y="([\d.]+)"/g)) assert.ok(Number(y) - 12 >= box.top && Number(y) + 4 <= box.bottom);
+			const ys = [...row.matchAll(/<text x="\d+" y="([\d.]+)"/g)].map(([, y]) => Number(y));
+			assert.match(row, /<path d="M166,/);
+			return { top: Math.min(box.top, ...ys.map((y) => y - 12)), bottom: Math.max(box.bottom, ...ys.map((y) => y + 4)) };
+		});
+		for (const [i, row] of extents.entries()) {
+			assert.ok(row.top >= 0 && row.bottom <= layout.height);
+			if (extents[i + 1]) assert.ok(row.bottom < extents[i + 1].top);
 		}
 	}
+});
+
+test("ladder fan-outs keep each outcome clear of its right-aligned destination", () => {
+	const long = `fan-out v0\nstyle ladder\nstep "${"Long step ".repeat(80)}"\noutcome "${"a".repeat(60)}" reason="${"a long explanation ".repeat(30)}" destination="${"Destination ".repeat(30)}" tone="stop"\noutcome "Next" reason="No overlap" destination="End"`;
+	for (const source of [example("run-endings-ladder"), long]) for (const scheme of ["light", "dark"] as const) {
+		const { svg, diagnostics, layout } = render(source, { scheme });
+		assert.deepEqual(diagnostics, []);
+		assert.doesNotMatch(svg, /<marker/);
+		for (const [, x, y, anchor, classes, content] of svg.matchAll(/<text x="(\d+)" y="([\d.]+)"( text-anchor="end")? class="([^"]+)">([^<]*)<\/text>/g)) {
+			const width = [...content].length * (classes.includes("s13") ? CHAR.mono13 : CHAR.mono12);
+			if (anchor) assert.ok(x === "662" && width <= 220, content);
+			else assert.ok(Number(x) + width <= 662, content);
+			assert.ok(Number(y) - 12 >= 0 && Number(y) + 4 < layout.height, content);
+		}
+		let previous = 0;
+		for (const [, row] of svg.matchAll(/<g data-line="\d+">([\s\S]*?)<\/g>/g)) {
+			const ys = [...row.matchAll(/ y="([\d.]+)"/g)].map(([, y]) => Number(y));
+			assert.ok(Math.min(...ys) - 12 > previous);
+			previous = Math.max(...ys) + 4;
+			const [outcome] = [...row.matchAll(/<text x="60" y="[\d.]+" class="m s12 b">([^<]*)</g)].map(([, t]) => t);
+			const [destination] = [...row.matchAll(/text-anchor="end" class="m s12 b">([^<]*)</g)].map(([, t]) => t);
+			assert.ok(60 + [...outcome].length * CHAR.mono12 < 662 - [...destination].length * CHAR.mono12);
+		}
+	}
+});
+
+test("fan-out styles are checked and the default stays branches", () => {
+	const entry = 'step "Check"\noutcome "Yes" reason="Why" destination="Here"';
+	assert.match(render(`fan-out v0\n${entry}`).svg, /<marker/);
+	assert.match(render(`fan-out v0\nstyle branches\n${entry}`).svg, /<marker/);
+	for (const [style, message] of [["style zigzag", /unknown style/], ["style", /unknown style/]] as const) {
+		const { svg, diagnostics } = render(`fan-out v0\n${style}\n${entry}`);
+		assert.deepEqual(diagnostics.map((d) => d.line), [2]);
+		assert.match(diagnostics[0].message, message);
+		assert.match(svg, /<marker/);
+		assert.match(svg, />Line 2:/);
+	}
+	const twice = render(`fan-out v0\nstyle ladder\nstyle branches\n${entry}`);
+	assert.deepEqual(twice.diagnostics.map((d) => d.line), [3]);
+	assert.doesNotMatch(twice.svg, /<marker/);
+	const late = render(`fan-out v0\n${entry}\nstyle ladder`);
+	assert.deepEqual(late.diagnostics.map((d) => d.line), [4]);
+	assert.match(late.diagnostics[0].message, /before the step/);
 });

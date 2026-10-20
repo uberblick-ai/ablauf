@@ -10,5 +10,5 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["spike/**/*.ts"]
+  "include": ["spike/**/*.ts", "site/**/*.ts"]
 }

@@ -106,18 +106,21 @@ export interface SvgOptions {
 export const svgStyle = (mode: "light" | "dark" | "auto" = "auto", fonts: Typography = new Typography()) =>
 	`<style>${palette(mode)}\n${style(fonts)}</style>`;
 
+// A dot plus four hex digits encodes each unsafe UTF-16 code unit. Dots
+// are escaped too, so this is reversible and cannot collide with safe input.
+// The resulting alphabet is safe in both attributes and local url(#...) refs.
+export const markerPrefix = (options: SvgOptions) =>
+	(options.idPrefix ?? "ab").replace(
+		/[^A-Za-z0-9_-]/g,
+		(c) => `.${c.charCodeAt(0).toString(16).padStart(4, "0")}`,
+	);
+
 export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 	const mode =
 		options.scheme === "light" || options.scheme === "dark"
 			? options.scheme
 			: "auto";
-	// A dot plus four hex digits encodes each unsafe UTF-16 code unit. Dots
-	// are escaped too, so this is reversible and cannot collide with safe input.
-	// The resulting alphabet is safe in both attributes and local url(#...) refs.
-	const id = (options.idPrefix ?? "ab").replace(
-		/[^A-Za-z0-9_-]/g,
-		(c) => `.${c.charCodeAt(0).toString(16).padStart(4, "0")}`,
-	);
+	const id = markerPrefix(options);
 	const tones = [
 		...new Set([
 			...layout.routes.map((r) => r.tone),

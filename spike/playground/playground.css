@@ -21,6 +21,8 @@ button { font: inherit; }
 .pg-sidebar { border-right: 1px solid var(--line); padding: 12px; display: grid; align-content: start; gap: 8px; font-size: 13.5px; }
 .pg-sidebar summary { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); cursor: pointer; margin: 6px 0; }
 .pg-item { display: block; padding: 3px 8px; border-radius: 6px; color: var(--ink); text-decoration: none; font-family: var(--mono); font-size: 12.5px; }
+.pg-folder { color: var(--muted); }
+.pg-item[aria-current] .pg-folder { color: inherit; opacity: .7; }
 .pg-item:hover { background: var(--line); }
 .pg-item[aria-current] { background: var(--accent); color: var(--panel); }
 .pg-main { padding: 14px 20px; display: grid; gap: 12px; align-content: start; min-width: 0; }

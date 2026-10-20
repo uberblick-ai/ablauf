@@ -1,6 +1,6 @@
 fan-out v0
 step "Check whether approval permits the run"
 
-outcome "Approved" reason="A maintainer started it and the input is unchanged" destination="Start the run"
-outcome "Outside input" reason="The input has not been cleared by a maintainer" destination="Ask a maintainer"
-outcome "Edited since" reason="The input changed after the maintainer started it" destination="Ask a maintainer"
+outcome "Approved" reason="A maintainer started it and the input is unchanged" destination="Start the run" tone="done"
+outcome "Outside input" reason="The input has not been cleared by a maintainer" destination="Ask a maintainer" tone="stop"
+outcome "Edited since" reason="The input changed after the maintainer started it" destination="Ask a maintainer" tone="stop"

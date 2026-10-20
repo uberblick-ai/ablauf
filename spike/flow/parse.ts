@@ -65,7 +65,7 @@ export interface Model {
 }
 
 const KINDS: Kind[] = ["text", "pill", "box", "end", "panel"];
-const TONES: Tone[] = ["ink", "muted", "neutral", "agent", "system", "done", "rework", "stop"];
+export const TONES: Tone[] = ["ink", "muted", "neutral", "agent", "system", "done", "rework", "stop"];
 const CHILD_KINDS: ChildKind[] = ["pill", "text", "muted", "strong", "rule"];
 const LEGEND_KINDS: LegendKind[] = [
 	"pill",
