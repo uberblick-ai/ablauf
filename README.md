@@ -12,6 +12,21 @@ number.
 The kinds are routed flows and standalone outcome fan-outs; both formats are
 v0. See them on [ablauf.uberblick.ai](https://ablauf.uberblick.ai).
 
+## Why ablauf
+
+We started with Mermaid, and the first version of ablauf was a Mermaid
+subset. Mermaid lays a diagram out automatically, which makes it quick to
+write. For the documents we work on we wanted the author to decide where each
+step sits and which side each edge leaves and enters, so that a small edit to
+the text leaves the rest of the picture where it was. Edges are still spelled
+like Mermaid's (`-->`, `: label`), because agents already know that spelling.
+
+ablauf is much narrower than Mermaid: two kinds, flows and fan-outs, no
+automatic layout and no Mermaid import or export. If you need Mermaid's
+breadth, Mermaid is the better choice. The
+[motivation page](https://ablauf.uberblick.ai/motivation) has the longer
+story.
+
 ## Use in a build script
 
 Requires Node.js 22.18 or newer. The package ships compiled JavaScript and
