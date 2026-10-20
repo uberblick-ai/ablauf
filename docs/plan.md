@@ -76,9 +76,9 @@ integrator --> human tone=stop : maintainer-merge, blocked
 | Rows: each node starts a new row unless `row=<id>` joins another node's row; `span=` covers several rows | Row heights; a spanning node fills the rows it covers, so each of them can meet it with a straight edge |
 | Optional `gap=N` on a node requests more space after its covered rows | Row-boundary gaps, satisfying the largest minimum from labels, requests and sections |
 | Sections (the horizontal bands) | Band shading and labels |
-| Node kind (`text`, `pill`, `box`, `end`, `panel`) and tone | Shapes, colours, fonts, light and dark |
+| Node kind (`text`, `pill`, `box`, `end`, `panel`, `decision`) and tone | Shapes, colours, fonts, light and dark |
 | Which side an edge leaves and enters (`from=`, `to=`) and its slot on that side (`bottom.2`) | The elbow those sides imply: straight, one bend (L) or two bends (Z), one fixed rule each |
-| Edge tone, dashed or solid, and whether the label sits at the start or end | Label position next to that end, port spacing along a side. Where two facing sides overlap, the port on the longer side slides to meet the other end head on, so the edge runs straight; a slot there sets the order, not the exact point. Sides with a reserved main centre keep their ports fixed |
+| Edge tone, dashed or solid, and whether the label sits at the start, the end or inline in the edge | Label position next to that end, port spacing along a side. Where two facing sides overlap, the port on the longer side slides to meet the other end head on, so the edge runs straight; a slot there sets the order, not the exact point. Sides with a reserved main centre keep their ports fixed |
 | A legend: which shapes and tones to explain, optional sample text, and what each means | Fine print under the diagram, sizing samples to fit their text and wrapping entries onto further rows |
 
 When the author leaves out `from=` or `to=`, three small rules apply: same
@@ -116,8 +116,23 @@ there from the text and the diagnostics alone, without seeing the image.
   says otherwise, so the source reads like the picture.
 - `row=<id>` must name another node. An empty value is diagnosed on the
   node's line, and the node starts a new row.
+- A `decision` is a label box laid over a small diamond, wider than the
+  diamond, so the diamond's tips show above and below the box and the box's
+  sides reach past the diamond. The question wraps around 26 characters and
+  the box grows. Each side has one port at its middle (the tips on top and
+  bottom); an explicit slot above 1 is diagnosed and drawn at that port.
+  The diamond takes the node's tone. The box has the tone's border over a
+  mostly opaque surface fill, so the diamond shows through faintly.
+  Default tone `neutral`.
+- `label=inline` on an edge draws its label in small capitals, tracked and
+  bold in the edge's tone, centred on the edge's longest segment in a gap
+  that takes the canvas colour (`--ab-bg`, or `--ab-band` on a shaded
+  section). It wraps around 22 characters. A straight edge between adjacent
+  columns or adjacent rows grows that gap to keep 18px of line on both sides;
+  otherwise a segment shorter than the label plus that clearance is
+  diagnosed. The label's own edge does not count as overlapping it.
 - A `legend` has indented entries: `kind tone=done "meaning"`. Shape entries
-  (`pill`, `box`, `end`, `panel`) also accept `sample=ready` or
+  (`pill`, `box`, `end`, `panel`, `decision`) also accept `sample=ready` or
   `sample="two words"`, drawn inside the sample with its shape and tone.
   The meaning in quotes is still required alongside it. Samples without text
   keep their small size. `edge` and `dashed` stay line samples and diagnose

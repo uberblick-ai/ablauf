@@ -62,6 +62,7 @@ Reusing keys on separate lines is allowed.
 | `box` | a role or step; the id is the title | the subtitle |
 | `end` | a final state | the caption |
 | `panel` | a box with indented content: `pill`, `text`, `muted`, `strong`, `rule` | |
+| `decision` | a question: a label box over a small diamond | the question |
 
 Tones: `ink`, `muted`, `neutral`, `agent`, `system`, `done`, `rework`, `stop`. Use
 `tone=neutral` for a filled grey box, panel or end state; `ink` and `muted`
@@ -81,6 +82,20 @@ box loop col=main tone=system title="The loop" "claims eligible items in order"
 ```
 
 It uses the same `col=`, `row=`, `span=` and edges as any box.
+
+A `decision` asks a question with several ways out. Its text wraps at word
+boundaries around 26 characters; the box grows to fit, and the diamond's tips
+show above and below it. Keep questions short. Edges meet a decision at the
+middle of each side: the diamond's tips on the top and bottom, the box's sides
+on the left and right. Every edge on one side shares that point, so a slot
+like `bottom.2` on a decision is diagnosed. The default tone is `neutral`.
+Label its ways out with inline labels:
+
+```
+decision approved col=main "Do stakeholders approve?"
+approved --> ship tone=done label=inline : yes
+approved --> rework tone=rework from=right to=right label=inline : no
+```
 
 Panel sizes are automatic. Their `text`, `muted` and `strong` lines wrap at
 word boundaries to fit the panel's inner width; a long child pill widens the
@@ -116,6 +131,11 @@ share a width measured from their titles and wrapped subtitles.
   several rows takes a straight edge from each of them. A side to a top or
   bottom gives one bend; otherwise there are two.
 - `label=end` puts the label at the target end instead of the source end.
+- `label=inline` sets the label in small capitals into a gap in the edge,
+  centred on its longest segment. Labels wrap around 22 characters. Column
+  and row gaps grow so a straight edge between neighbouring columns or rows
+  keeps clear line on both sides of the label; when the segment is still too
+  short, the check says so. Use it for a decision's answers.
 - Vertical labels between adjacent, non-overlapping row ranges automatically
   get at least 12px above and below their box to the segment's ports or elbows.
   This covers straight edges, L edges with a vertical selected label end and
@@ -147,9 +167,9 @@ legend
   dashed tone=rework "set by the launcher"
 ```
 
-Entries are `pill`, `box`, `end`, `panel`, `edge` or `dashed`, with an
+Entries are `pill`, `box`, `end`, `panel`, `decision`, `edge` or `dashed`, with an
 optional `tone=` and the meaning in quotes.
-Shape entries (`pill`, `box`, `end`, `panel`) can add `sample=ready` or
+Shape entries (`pill`, `box`, `end`, `panel`, `decision`) can add `sample=ready` or
 `sample="two words"` to put text inside the sample. The meaning is still
 required alongside it. Samples grow to fit the text and entries wrap to new
 rows. Without `sample=`, the small sample stays the same. `edge` and `dashed`
