@@ -1,0 +1,39 @@
+flow v0
+columns left d1 mid final out
+
+end start col=left "Start"
+box brainstorm tone=system title="Brainstorm ideas" "for the project concept"
+box discuss tone=system title="Discuss concept" "with stakeholders"
+box initial col=mid tone=system title="Initial evaluation" "conduct it"
+decision issues col=mid "Any issues found?"
+box revise col=final tone=system title="Revise documents" ""
+
+end complete col=out row=start "Project complete"
+decision approve-concept col=d1 row=discuss "Do stakeholders approve of the project concept?"
+box delegate col=mid row=discuss tone=system title="Delegate tasks" ""
+decision approve-output col=out row=initial "Do stakeholders approve of the project output?"
+decision major col=left row=issues "Are they major?"
+box final col=final row=issues tone=system title="Final evaluation" "conduct it"
+box handover col=out row=issues tone=system title="Return output" "to stakeholders for approval"
+
+start --> brainstorm
+brainstorm --> discuss
+discuss --> approve-concept
+approve-concept --> brainstorm tone=rework from=top to=right label=inline : No
+approve-concept --> delegate tone=done label=inline : Yes
+delegate --> initial
+initial --> issues
+issues --> major tone=done label=inline : Yes
+major --> discuss tone=done label=inline : Yes
+major --> revise tone=rework from=bottom to=left label=inline : No
+issues --> final tone=rework label=inline : No
+revise --> final
+final --> handover
+handover --> approve-output
+approve-output --> complete tone=done label=inline : Yes
+approve-output --> revise tone=rework from=right to=right label=inline : No
+
+legend
+  end "start / end"
+  box tone=system "process"
+  decision "decision"
