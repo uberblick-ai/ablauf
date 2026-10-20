@@ -1,11 +1,11 @@
 // Line grammar for the narrow flow. Never throws: problems become diagnostics.
 
 export type Tone = "ink" | "muted" | "neutral" | "agent" | "system" | "done" | "rework" | "stop";
-export type Kind = "text" | "pill" | "box" | "end" | "panel";
+export type Kind = "text" | "pill" | "box" | "end" | "panel" | "decision";
 export type SideName = "top" | "right" | "bottom" | "left";
 export type LabelAt = "start" | "end";
 export type ChildKind = "pill" | "text" | "muted" | "strong" | "rule";
-export type LegendKind = "pill" | "box" | "end" | "panel" | "edge" | "dashed";
+export type LegendKind = "pill" | "box" | "end" | "panel" | "decision" | "edge" | "dashed";
 
 export interface Diagnostic {
 	line: number;
@@ -53,6 +53,7 @@ export interface FlowEdge {
 	to_side: SideName | null;
 	to_slot: number;
 	label_at: LabelAt;
+	inline: boolean; // the label sits in a gap in the edge, centred on it
 	line: number;
 }
 
@@ -64,7 +65,7 @@ export interface Model {
 	legend: LegendItem[];
 }
 
-const KINDS: Kind[] = ["text", "pill", "box", "end", "panel"];
+const KINDS: Kind[] = ["text", "pill", "box", "end", "panel", "decision"];
 export const TONES: Tone[] = ["ink", "muted", "neutral", "agent", "system", "done", "rework", "stop"];
 const CHILD_KINDS: ChildKind[] = ["pill", "text", "muted", "strong", "rule"];
 const LEGEND_KINDS: LegendKind[] = [
@@ -72,6 +73,7 @@ const LEGEND_KINDS: LegendKind[] = [
 	"box",
 	"end",
 	"panel",
+	"decision",
 	"edge",
 	"dashed",
 ];
@@ -81,6 +83,7 @@ const DEFAULT_TONE: Record<Kind, Tone> = {
 	box: "agent",
 	end: "done",
 	panel: "stop",
+	decision: "neutral",
 };
 const EDGE =
 	/^(\S+)\s+(-->|-\.->)\s+(\S+)((?:\s+[a-z]+=\S+)*)\s*(?::\s*(.+))?$/;
@@ -232,6 +235,7 @@ export function parse(source: string): {
 				to_side: null,
 				to_slot: 0,
 				label_at: "start",
+				inline: false,
 				line,
 			};
 			const rest = tokens(edge[4] ?? "");
@@ -255,7 +259,8 @@ export function parse(source: string): {
 					else [e.to_side, e.to_slot] = [m[1] as SideName, Number(m[2] ?? 0)];
 				} else if (key === "label") {
 					if (value === "start" || value === "end") e.label_at = value;
-					else warn(line, "label= takes start or end");
+					else if (value === "inline") e.inline = true;
+					else warn(line, "label= takes start, end or inline");
 				} else warn(line, `unknown edge key \`${key}\``);
 			}
 			model.edges.push(e);
@@ -359,7 +364,7 @@ export function parse(source: string): {
 		else if (titled && quoted)
 			warn(line, "title= and the quoted text both name this node; using title=");
 		else if (quoted) node.label = quoted;
-		else if (!titled && (kind === "text" || kind === "end")) node.label = id;
+		else if (!titled && (kind === "text" || kind === "end" || kind === "decision")) node.label = id;
 		filled.add(node.section);
 
 		model.nodes.push(node);

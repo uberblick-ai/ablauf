@@ -9,6 +9,12 @@ import {
 	type Placed,
 	type Point,
 	type Route,
+	DECISION_DIAMOND,
+	DECISION_LEADING,
+	DECISION_TIP,
+	INLINE_LEADING,
+	INLINE_TRACKING,
+	decisionLines,
 	legendSampleSize,
 	panelContentHeight,
 	panelLines,
@@ -89,6 +95,9 @@ ${(["ink", "muted", "neutral", "agent", "system", "done", "rework", "stop"] as T
 .ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}
 `.trim();
 
+const diamond = (x0: number, y0: number, x1: number, y1: number) =>
+	`M${(x0 + x1) / 2},${y0} L${x1},${(y0 + y1) / 2} L${(x0 + x1) / 2},${y1} L${x0},${(y0 + y1) / 2} Z`;
+
 export const esc = (s: string) =>
 	s
 		.replace(/&/g, "&amp;")
@@ -103,8 +112,17 @@ export interface SvgOptions {
 	scheme?: "light" | "dark";
 }
 
-export const svgStyle = (mode: "light" | "dark" | "auto" = "auto", fonts: Typography = new Typography()) =>
-	`<style>${palette(mode)}\n${style(fonts)}</style>`;
+// Rules for shapes a diagram may not use are added only when it does, so
+// existing diagrams keep their exact bytes.
+const DECISION_STYLE =
+	".ab .decision{stroke-opacity:.5;stroke-linejoin:round}.ab .decision-box{fill:var(--surface);fill-opacity:.82}";
+const GAP_STYLE = ".ab .gap{fill:var(--bg)}.ab .gap-band{fill:var(--band)}";
+
+export const svgStyle = (
+	mode: "light" | "dark" | "auto" = "auto",
+	fonts: Typography = new Typography(),
+	extra: string[] = [],
+) => `<style>${palette(mode)}\n${[style(fonts), ...extra].join("\n")}</style>`;
 
 // A dot plus four hex digits encodes each unsafe UTF-16 code unit. Dots
 // are escaped too, so this is reversible and cannot collide with safe input.
@@ -133,7 +151,14 @@ export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 	out.push(
 		`<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-${mode}" viewBox="0 0 ${layout.width} ${layout.height}" width="${layout.width}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? describe(layout))}">`,
 	);
-	out.push(svgStyle(mode, layout.typography));
+	const extra: string[] = [];
+	if (
+		layout.nodes.some((p) => p.node.kind === "decision") ||
+		layout.legend?.keys.some((k) => k.item.kind === "decision")
+	)
+		extra.push(DECISION_STYLE);
+	if (layout.routes.some((r) => r.label?.inline)) extra.push(GAP_STYLE);
+	out.push(svgStyle(mode, layout.typography, extra));
 	out.push("<defs>");
 	for (const t of tones) {
 		out.push(
@@ -152,7 +177,7 @@ export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 	for (const b of layout.bands)
 		out.push(`<text x="20" y="${b.y + 22}" class="cap">${esc(b.label.toUpperCase())}</text>`);
 	for (const p of layout.nodes) out.push(node(p, layout.typography));
-	for (const r of layout.routes) if (r.label) out.push(edgeLabel(r));
+	for (const r of layout.routes) if (r.label) out.push(edgeLabel(r, layout.bands));
 	if (layout.legend) {
 		out.push(
 			`<line x1="8" y1="${layout.legend.y}" x2="${layout.width - 8}" y2="${layout.legend.y}" class="rule"/>`,
@@ -195,6 +220,8 @@ function key(k: Key, id: string, fonts: Typography): string {
 	const sample =
 		item.kind === "edge" || item.kind === "dashed"
 			? `<path d="M${x},${y} L${x + w},${y}" class="e e-${t}${item.kind === "dashed" ? " dash" : ""}" marker-end="url(#${id}-${t})"/>`
+			: item.kind === "decision"
+				? `<path d="${diamond(x + w / 2 - 7, y - h / 2 - 4, x + w / 2 + 7, y + h / 2 + 4)}" class="k-${t} decision"/><rect x="${x}" y="${y - h / 2 + 2}" width="${w}" height="${h - 4}" rx="2" class="k-${t} decision-box"/>`
 			: item.kind === "pill"
 				? `<rect x="${x}" y="${y - h / 2}" width="${w}" height="${h}" rx="${h / 2}" class="pill"/><circle cx="${x + 7}" cy="${y}" r="3" class="t-${t}"/>`
 				: `<rect x="${x}" y="${y - h / 2}" width="${w}" height="${h}" rx="${item.kind === "end" ? h / 2 : 3}" class="k-${t}${item.kind === "panel" ? " panel" : ""}"/>`;
@@ -245,9 +272,23 @@ function arrow(r: Route, id: string): string {
 	return `<path d="M${a[0]},${a[1]} L${b[0]},${b[1]}" class="arrow" marker-end="url(#${id}-${r.tone})"/>`;
 }
 
-function edgeLabel(r: Route): string {
+function edgeLabel(r: Route, bands: Band[]): string {
 	const l = r.label;
 	if (!l) return "";
+	if (l.inline) {
+		// The gap takes the canvas colour underneath, like crossing knockouts.
+		const shaded = bands.some((b) => b.shaded && l.y >= b.y && l.y < b.y + b.h - 8);
+		const top = l.y - ((l.lines.length - 1) * INLINE_LEADING) / 2 + 4;
+		return [
+			"<g>",
+			`<rect x="${l.x - l.w / 2}" y="${l.y - l.h / 2}" width="${l.w}" height="${l.h}" class="gap${shaded ? " gap-band" : ""}"/>`,
+			...l.lines.map(
+				(line, i) =>
+					`<text x="${l.x}" y="${Math.round(top + i * INLINE_LEADING)}" text-anchor="middle" letter-spacing="${INLINE_TRACKING}em" class="s11 b t-${r.tone === "ink" ? "muted" : r.tone}">${esc(line)}</text>`,
+			),
+			"</g>",
+		].join("\n");
+	}
 	const tone = r.tone === "ink" ? "" : ` t-${r.tone}`;
 	return `<text x="${l.x}" y="${l.y}"${l.anchor === "end" ? ' text-anchor="end"' : ""} class="m s11${tone}">${esc(l.text)}</text>`;
 }
@@ -296,6 +337,24 @@ function node(p: Placed, fonts: Typography): string {
 					: "",
 				"</g>",
 			].join("\n");
+		case "decision": {
+			const cy = y + h / 2;
+			const lines = decisionLines(n);
+			const top = cy - ((lines.length - 1) * DECISION_LEADING) / 2 + 4;
+			const half = Math.round(h * DECISION_DIAMOND);
+			return [
+				"<g>",
+				// The diamond marks the decision; the box over it holds the question
+				// and lets the diamond show through faintly.
+				`<path d="${diamond(cx - half, y, cx + half, y + h)}" class="k-${n.tone} decision"/>`,
+				`<rect x="${x}" y="${y + DECISION_TIP}" width="${w}" height="${h - 2 * DECISION_TIP}" rx="6" class="k-${n.tone} decision-box"/>`,
+				...lines.map(
+					(line, i) =>
+						`<text x="${cx}" y="${Math.round(top + i * DECISION_LEADING)}" text-anchor="middle" class="s12 b t-${n.tone === "muted" ? "ink" : n.tone}">${esc(line)}</text>`,
+				),
+				"</g>",
+			].join("\n");
+		}
 		case "panel": {
 			const parts = [
 				`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" class="k-${n.tone} panel"/>`,

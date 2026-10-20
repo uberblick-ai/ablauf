@@ -28,8 +28,12 @@ export interface Label {
 	text: string;
 	x: number;
 	y: number;
-	anchor: "start" | "end";
+	anchor: "start" | "end" | "middle";
 	w: number;
+	// An inline label sits centred in a gap in its edge, in one or more lines.
+	inline: boolean;
+	lines: string[];
+	h: number;
 }
 
 export interface Route {
@@ -130,6 +134,35 @@ export function wrap(text: string, width = WRAP_CHARS, measure = len): string[] 
 }
 const horizontal = (s: SideName) => s === "left" || s === "right";
 
+// A decision is a label box laid over a small diamond. The box holds the
+// question and is wider than the diamond; the diamond's tips show above and
+// below it. Edges meet the tips and the middle of the box's sides.
+const DECISION_CHARS = 26;
+export const DECISION_LEADING = 15;
+export const DECISION_TIP = 18;
+export function decisionLines(n: FlowNode): string[] {
+	return wrap(n.label, DECISION_CHARS);
+}
+// The diamond's half-width as a share of its height.
+export const DECISION_DIAMOND = 0.625;
+
+// Inline labels are small capitals set into a gap in the edge.
+const INLINE_CHARS = 22;
+export const INLINE_LEADING = 13;
+const INLINE_PAD = 8;
+// Clear line on either side of an inline label, so it reads as part of the edge.
+const INLINE_CLEAR = 18;
+export const INLINE_TRACKING = 0.06; // em
+export function inlineLines(text: string): string[] {
+	return wrap(text.toUpperCase(), INLINE_CHARS);
+}
+export function inlineSize(text: string, fonts: Typography): { lines: string[]; w: number; h: number } {
+	const lines = inlineLines(text);
+	const tracking = INLINE_TRACKING * 11;
+	const w = Math.max(...lines.map((t) => fonts.width(t, "text", 11, 600) + len(t) * tracking));
+	return { lines, w: Math.ceil(w + 2 * INLINE_PAD), h: lines.length * INLINE_LEADING + 6 };
+}
+
 function size(n: FlowNode, fonts: Typography): { w: number; h: number } {
 	switch (n.kind) {
 		case "text":
@@ -153,6 +186,14 @@ function size(n: FlowNode, fonts: Typography): { w: number; h: number } {
 				),
 				h: 46 + (lines.length - 1) * 15,
 			};
+		}
+		case "decision": {
+			const lines = decisionLines(n);
+			const tw = Math.max(...lines.map((t) => fonts.width(t, "text", 12, 600)));
+			const boxW = Math.round(Math.max(150, tw + 28));
+			// Even, so the side ports and the diamond's side corners share a pixel row.
+			const h = lines.length * DECISION_LEADING + 22 + 2 * DECISION_TIP + (lines.length % 2);
+			return { w: Math.max(boxW, Math.round(2 * DECISION_DIAMOND * h)), h };
 		}
 		case "panel": {
 			let w = 190;
@@ -334,6 +375,16 @@ export function grid(
 		bySide.get(k)?.push(end);
 	}
 	for (const group of bySide.values()) {
+		// A decision has one port per vertex; every end on a side meets there.
+		if (group[0].node.node.kind === "decision") {
+			for (const g of group) {
+				if (g.slot > 1)
+					warn(g.edge.line, `${g.node.node.id} is a decision; it has one port per side, so ${g.side}.${g.slot} is drawn at the middle`);
+				g.fraction = 0.5;
+				g.centered = false;
+			}
+			continue;
+		}
 		const reserve = group.some((g) => g.centered);
 		const slotted = group.filter((g) => !g.centered);
 		let count = Math.max(slotted.length, ...slotted.map((g) => g.slot));
@@ -420,6 +471,20 @@ export function grid(
 			Math.round(labelWidth(e.label) + 2 * LABEL_PAD - inset - room),
 		);
 	}
+	for (const e of model.edges) {
+		if (!e.label || !e.inline) continue;
+		const [a, b] = ends.filter((x) => x.edge === e);
+		if (!horizontal(a.side) || !horizontal(b.side) || a.side === b.side) continue;
+		const ca = colIndex(a.node);
+		const cb = colIndex(b.node);
+		if (Math.abs(ca - cb) !== 1) continue;
+		const gap = Math.min(ca, cb);
+		const insets = (colW[ca] - a.node.w) / 2 + (colW[cb] - b.node.w) / 2;
+		gaps[gap] = Math.max(
+			gaps[gap],
+			Math.round(inlineSize(e.label, typography).w + 2 * INLINE_CLEAR + 10 - insets),
+		);
+	}
 	const colX: number[] = [];
 	let x = MARGIN;
 	model.columns.forEach((_, c) => {
@@ -453,7 +518,10 @@ export function grid(
 				continue;
 			const k = horizontal(a.side) ? 1 : 0;
 			const extent = (end: End) => (k ? end.node.h : end.node.w);
-			const [mover, fixed] = extent(b) >= extent(a) ? [b, a] : [a, b];
+			let [mover, fixed] = extent(b) >= extent(a) ? [b, a] : [a, b];
+			// A decision's port is its corner, so the other end slides instead.
+			if (mover.node.node.kind === "decision") [mover, fixed] = [fixed, mover];
+			if (mover.node.node.kind === "decision") continue;
 			// Sliding a port on a side with a reserved centre would undo its order.
 			if (bySide.get(`${mover.node.node.id}:${mover.side}`)?.some((g) => g.centered))
 				continue;
@@ -482,6 +550,19 @@ export function grid(
 		if (!e.label) continue;
 		const [a, b] = ends.filter((end) => end.edge === e);
 		const near = e.label_at === "start" ? a : b;
+		if (e.inline) {
+			// An inline label on a straight vertical edge needs line above and below it.
+			if (horizontal(a.side) || horizontal(b.side) || a.side === b.side) continue;
+			const [upper, lower] = first(a.node) < first(b.node) ? [a, b] : [b, a];
+			const boundary = first(lower.node);
+			if (last(upper.node) + 1 !== boundary || a.point[0] !== b.point[0]) continue;
+			const separation = Math.abs(a.point[1] - b.point[1]);
+			labelGaps[boundary] = Math.max(
+				labelGaps[boundary],
+				rowGaps[boundary] + inlineSize(e.label, typography).h + 2 * INLINE_CLEAR + 10 - separation,
+			);
+			continue;
+		}
 		if (horizontal(near.side) || a.side === b.side) continue;
 		const [upper, lower] = first(a.node) < first(b.node) ? [a, b] : [b, a];
 		const boundary = first(lower.node);
@@ -543,7 +624,7 @@ export function grid(
 			edge: e,
 			points,
 			tone: e.tone,
-			label: placeLabel(e, points, a, b, labelWidth(e.label)),
+			label: placeLabel(e, points, a, b, labelWidth(e.label), typography),
 		});
 	}
 
@@ -644,8 +725,27 @@ function placeLabel(
 	a: End,
 	b: End,
 	w: number,
+	fonts: Typography,
 ): Label | null {
 	if (!e.label) return null;
+	if (e.inline) {
+		// Centred on the longest segment, where it reads as part of the edge.
+		let best = 0;
+		let bestLen = -1;
+		for (let i = 1; i < points.length; i++) {
+			const l = Math.abs(points[i][0] - points[i - 1][0]) + Math.abs(points[i][1] - points[i - 1][1]);
+			if (l > bestLen) [best, bestLen] = [i, l];
+		}
+		const [p, q] = [points[best - 1], points[best]];
+		return {
+			text: e.label,
+			x: Math.round((p[0] + q[0]) / 2),
+			y: Math.round((p[1] + q[1]) / 2),
+			anchor: "middle",
+			...inlineSize(e.label, fonts),
+			inline: true,
+		};
+	}
 	const atEnd = e.label_at === "end";
 	const end = atEnd ? b : a;
 	const p = atEnd ? points[points.length - 1] : points[0];
@@ -659,6 +759,9 @@ function placeLabel(
 			y: p[1] - 7,
 			anchor: awayRight ? "start" : "end",
 			w,
+			inline: false,
+			lines: [e.label],
+			h: 12,
 		};
 	}
 	return {
@@ -667,6 +770,9 @@ function placeLabel(
 		y: Math.round((p[1] + q[1]) / 2 + 4),
 		anchor: "start",
 		w,
+		inline: false,
+		lines: [e.label],
+		h: 12,
 	};
 }
 
@@ -678,12 +784,15 @@ interface Rect {
 	h: number;
 }
 
-const labelRect = (l: Label): Rect => ({
-	x: l.anchor === "start" ? l.x : l.x - l.w,
-	y: l.y - 9,
-	w: l.w,
-	h: 12,
-});
+const labelRect = (l: Label): Rect =>
+	l.inline
+		? { x: l.x - l.w / 2, y: l.y - l.h / 2, w: l.w, h: l.h }
+		: {
+				x: l.anchor === "start" ? l.x : l.x - l.w,
+				y: l.y - 9,
+				w: l.w,
+				h: 12,
+			};
 const overlaps = (a: Rect, b: Rect) =>
 	a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 
@@ -770,10 +879,26 @@ function check(
 	const labels = routes.filter((r) => r.label);
 	for (const r of labels) {
 		const box = labelRect(r.label as Label);
+		const l = r.label as Label;
+		if (l.inline) {
+			// The label sits on the edge's longest segment; it needs clear line
+			// on both sides, or it reads as a box with the arrow behind it.
+			const s = segments(r).find(([p, q]) =>
+				Math.min(p[0], q[0]) <= l.x && l.x <= Math.max(p[0], q[0]) &&
+				Math.min(p[1], q[1]) <= l.y && l.y <= Math.max(p[1], q[1]));
+			if (s) {
+				const along = s[0][1] === s[1][1];
+				const room = along ? Math.abs(s[1][0] - s[0][0]) : Math.abs(s[1][1] - s[0][1]);
+				if (room < (along ? l.w : l.h) + 2 * INLINE_CLEAR)
+					warn(r.edge.line, `inline label "${l.text}" needs a longer segment; widen the gap or use label=start`);
+			}
+		}
 		for (const n of nodes)
 			if (overlaps(box, n))
 				warn(r.edge.line, `label "${r.label?.text}" overlaps ${n.node.id}`);
 		for (const o of routes) {
+			// An inline label sits on its own edge by design.
+			if (o === r && r.label?.inline) continue;
 			for (const s of segments(o))
 				if (segRect(s, box))
 					warn(
