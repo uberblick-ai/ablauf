@@ -116,7 +116,7 @@ legend
 
 - `columns` names the columns left to right. Each node starts a new row unless
   `row=` puts it beside another node.
-- Nodes are `text`, `pill`, `box`, `end` or `panel`, coloured by a tone.
+- Nodes are `text`, `pill`, `box`, `end`, `panel` or `decision`, coloured by a tone.
 - Edges use Mermaid's arrows. `from=` and `to=` pick the sides an edge leaves
   and enters; each pair of sides has one fixed shape.
 - `legend` explains the shapes in fine print under the diagram.
