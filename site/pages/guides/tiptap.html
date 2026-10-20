@@ -22,82 +22,13 @@
 
 <section class="q" id="extension">
 <h2>The extension</h2>
-<p>It extends Tiptap's code block with a node view: the picture sits above the <code>&lt;pre&gt;</code> that holds the source, and is shown only when the block's language is <code>ablauf</code>. Every other code block looks as before. The editor then swaps the starter kit's code block for this one.</p>
-<div class="tabs ex"><div class="tablist" role="tablist" aria-label="Tiptap extension"><button role="tab" id="code-t0" aria-selected="true" aria-controls="code-p0" type="button">ablauf-block.ts</button><button role="tab" id="code-t1" aria-selected="false" aria-controls="code-p1" type="button">editor.ts</button><button role="tab" id="code-t2" aria-selected="false" aria-controls="code-p2" type="button">ablauf.css</button><button class="copy" type="button">Copy</button></div>
-<div class="panel" role="tabpanel" id="code-p0" aria-labelledby="code-t0"><pre><code>import CodeBlock from "@tiptap/extension-code-block";
-import { render } from "@uberblick/ablauf";
-
-let diagrams = 0;
-
-// A code block that draws itself when its language is ablauf. The source
-// stays the editable content, so Markdown keeps the fence as it is.
-export const AblaufCodeBlock = CodeBlock.extend({
-  addNodeView() {
-    return ({ node }) =&gt; {
-      const dom = document.createElement("div");
-      const picture = document.createElement("div");
-      const pre = document.createElement("pre");
-      const code = document.createElement("code");
-      picture.className = "ablauf";
-      picture.contentEditable = "false";
-      pre.append(code);
-      dom.append(picture, pre);
-
-      // Ids inside one SVG must not clash with another diagram's.
-      const idPrefix = `ablauf-${++diagrams}`;
-      let drawn: string | null = null;
-      const draw = (n: typeof node) =&gt; {
-        const language = n.attrs.language;
-        code.className = language ? `language-${language}` : "";
-        picture.hidden = language !== "ablauf";
-        if (picture.hidden || n.textContent === drawn) return;
-        drawn = n.textContent;
-        const { svg, diagnostics } = render(drawn, { idPrefix });
-        picture.innerHTML = svg;
-        picture.title = diagnostics.map((d) =&gt; `line ${d.line}: ${d.message}`).join("\n");
-      };
-      draw(node);
-
-      return {
-        dom,
-        contentDOM: code,
-        update(updated) {
-          if (updated.type !== node.type) return false;
-          draw(updated);
-          return true;
-        },
-        // The picture is ours, not ProseMirror's to re-read.
-        ignoreMutation: (m) =&gt; picture.contains(m.target),
-      };
-    };
-  },
-});</code></pre></div>
-<div class="panel" role="tabpanel" id="code-p1" aria-labelledby="code-t1" hidden><pre><code>import { Editor } from "@tiptap/core";
-import { Markdown } from "@tiptap/markdown";
-import StarterKit from "@tiptap/starter-kit";
-import { AblaufCodeBlock } from "./ablauf-block.ts";
-
-export const editor = (element: HTMLElement, markdown: string) =&gt;
-  new Editor({
-    element,
-    extensions: [StarterKit.configure({ codeBlock: false }), AblaufCodeBlock, Markdown],
-    content: markdown,
-    contentType: "markdown",
-  });</code></pre></div>
-<div class="panel" role="tabpanel" id="code-p2" aria-labelledby="code-t2" hidden><pre><code>/* The picture above its source. The --ab-* properties give it your page's
-   colours; see Customise colours for the full list. */
-.ablauf {
-  overflow-x: auto;
-  padding: 12px 0;
-  --ab-bg: #ffffff;
-  --ab-ink: #1d1b24;
-}
-.ablauf svg {
-  display: block;
-  max-width: none;
-  height: auto;
-}</code></pre></div>
-</div>
+<p>It extends Tiptap's code block with a node view: the picture sits above the <code>&lt;pre&gt;</code> that holds the source, and is shown only when the block's language is <code>ablauf</code>. Every other code block looks as before. The editor then swaps the starter kit's code block for this one. The files are in the repository under <a href="https://github.com/uberblick-ai/ablauf/tree/main/examples/tiptap"><code>examples/tiptap</code></a>:</p>
+<ul>
+<li><a href="https://github.com/uberblick-ai/ablauf/blob/main/examples/tiptap/ablauf-block.ts"><code>ablauf-block.ts</code></a>, the code block with its node view.</li>
+<li><a href="https://github.com/uberblick-ai/ablauf/blob/main/examples/tiptap/editor.ts"><code>editor.ts</code></a>, an editor with Markdown in and out.</li>
+<li><a href="https://github.com/uberblick-ai/ablauf/blob/main/examples/tiptap/ablauf.css"><code>ablauf.css</code></a>, room and colours for the picture.</li>
+</ul>
+<p>Copy them into your project; they are about 70 lines in all.</p>
 </section>
 
 <section class="q" id="how">

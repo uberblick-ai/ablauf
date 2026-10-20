@@ -20,6 +20,8 @@ export interface Kind {
 	header: string;
 	/** One sentence on what the kind is for. */
 	summary: string;
+	/** A sentence or two after the summary on the kind's page; may contain inline HTML. */
+	intro?: string;
 	examples: readonly Example[];
 }
 
@@ -30,7 +32,36 @@ export const kinds: readonly Kind[] = [
 		header: "flow v0",
 		summary:
 			"Routed nodes and edges on a grid the author lays out: columns, rows and the sides each edge leaves and enters.",
+		intro: "The first four examples build one small flow, each adding a few options to the one before with the new and changed lines marked. Two complete flows follow.",
 		examples: [
+			{
+				name: "steps",
+				title: "Three nodes and two edges",
+				note: 'Every line after the header is a node or an edge. A node is <code>kind id "text"</code>: a <code>pill</code> for a state, a <code>box</code> for a step, whose id is its title, and an <code>end</code> for the outcome. Each node starts a new row below the one before, and <code>a --> b</code> draws an arrow.',
+			},
+			{
+				name: "branch",
+				title: "A branch to the side",
+				note: "<code>columns</code> names the columns from left to right, and <code>col=</code> puts a node in one; the nodes after it stay there. <code>row=agent</code> puts the new pill in the agent's row instead of a new one. Text after a colon labels an edge, and <code>tone=</code> colours a node or an edge.",
+				editOf: "steps",
+			},
+			{
+				name: "sides",
+				title: "A way back",
+				note: "<code>from=</code> and <code>to=</code> pick the sides an edge leaves and enters, so the return goes up and into the question's right side instead of across the box. <code>-.-></code> draws the edge dashed.",
+				editOf: "branch",
+			},
+			{
+				name: "person",
+				title: "A person and a legend",
+				note: "A third column on the left holds a <code>panel</code>: a box with indented lines, here a pill and a <code>muted</code> note. <code>tone=stop</code> marks where a person steps in, and <code>legend</code> explains the shapes under the diagram.",
+				editOf: "sides",
+			},
+			{
+				name: "checkout",
+				title: "An online order",
+				note: "<code>section</code> groups rows into bands, here checkout and fulfilment.",
+			},
 			{
 				name: "loop",
 				title: "The ub-agents delivery loop",
@@ -41,11 +72,6 @@ export const kinds: readonly Kind[] = [
 				title: "The same loop with a role inserted",
 				note: "A security review after the reviewer. The marked lines are the whole edit: every other node keeps its column and row, and the rows below simply make room.",
 				editOf: "loop",
-			},
-			{
-				name: "checkout",
-				title: "An online order",
-				note: "<code>section</code> groups rows into bands, here checkout and fulfilment.",
 			},
 		],
 	},
