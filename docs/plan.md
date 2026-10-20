@@ -305,7 +305,8 @@ string at the requested size and weight instead of counting characters.
 
 ## Standalone fan-out v0
 
-A fan-out records one step and its ordered possible outcomes without edges.
+A fan-out records one step and everything it can lead to, read left to right.
+There are no authored edges: the renderer draws one branch per outcome.
 Use it when the reason for each outcome matters as much as its destination.
 It is a separate diagram kind, not a node embedded in a routed flow.
 
@@ -313,29 +314,45 @@ It is a separate diagram kind, not a node embedded in a routed flow.
 fan-out v0
 step "Check whether approval permits the run"
 
-outcome "Approved" reason="A maintainer started it and the input is unchanged" destination="Start the run"
-outcome "Outside input" reason="The input has not been cleared by a maintainer" destination="Ask a maintainer"
-outcome "Edited since" reason="The input changed after the maintainer started it" destination="Ask a maintainer"
+outcome "Approved" reason="A maintainer started it and the input is unchanged" destination="Start the run" tone="done"
+outcome "Outside input" reason="The input has not been cleared by a maintainer" destination="Ask a maintainer" tone="stop"
+outcome "Edited since" reason="The input changed after the maintainer started it" destination="Ask a maintainer" tone="stop"
 ```
 
 - The first non-blank, non-comment line is `fan-out v0`. A newer version
   warns and renders as v0. Blank lines and whole-line `#` comments are ignored.
+- An optional `style branches` or `style ladder` line comes before the step;
+  `branches` is the default. A second, unknown or late style is diagnosed on
+  its line and the diagram draws in the style already chosen.
 - Declare exactly one `step "text"` before the entries, then one or more
   `outcome "text" reason="text" destination="text"` lines. All three entry
-  fields and the step text are required and non-empty. `reason=` and
-  `destination=` may appear in either order, exactly once each. Indentation
-  is optional; there are no ids, separately authored edges or layout keys.
+  fields and the step text are required and non-empty. An optional
+  `tone="…"` takes any flow tone (`done`, `rework`, `stop`, `agent`,
+  `system`, `neutral`, `muted`, `ink`) and colours the outcome box, with a
+  dashed border for `stop` as on flow panels; without it the box is plain. `reason=`, `destination=` and `tone=` may appear in
+  any order, at most once each. Indentation is optional; there are no ids,
+  separately authored edges or layout keys.
 - Every value is a double-quoted JSON string on one source line. Use `\"`
   for a quote and `\\` for a backslash. Destinations are display text, never
   links or node references.
-- The renderer shows the step once, then aligned Outcome, Reason and
-  Destination columns. Entries keep their source order; matching destinations
-  never combine entries or reasons. Each row grows to fit its tallest cell.
+- The default `branches` style draws the step once, on the left, and a
+  curved branch from it into each outcome box. A short arrow leads from each
+  box to its effect: the destination in bold with the reason below it.
+  Entries keep their source order, top to bottom; matching destinations never
+  combine entries or reasons. Each row grows to fit its taller side, and the
+  step is centred on the rows. Every curve ends in a short straight run, so
+  its arrowhead points into the box.
 - The canvas is 678 px wide, within the playground's 710 px document column.
-  Cells use 12 px monospace text with 18 px leading and widths of 142, 258
-  and 182 px. Text wraps at word boundaries, splitting individual long words
-  when necessary. The step wraps at 13 px in a 614 px text area. There is no
-  route search, node placement or overlap correction.
+  The step box is 150 px wide with 13 px text in a 118 px area. Outcome boxes
+  are 170 px wide with a 142 px text area, and effects get 236 px. Text is
+  12 px monospace with 18 px leading and wraps at word boundaries, splitting
+  individual long words when necessary. There is no route search, node
+  placement or overlap correction.
+- The ladder draws the step on top, then a rail of dots, one per entry in its
+  tone (muted without one). Each outcome sits beside its dot with the reason
+  below it, and the destination is right-aligned on the outcome's line,
+  joined by a dotted leader when there is room. It has no arrows. Outcomes
+  wrap at 260 px, reasons at 400 px and destinations at 220 px.
 - Malformed, incomplete, duplicate and unknown declarations produce
   diagnostics on their own source lines and still render. Missing step or
   entries are diagnosed at the header. Partial entries show missing-field
@@ -343,13 +360,14 @@ outcome "Edited since" reason="The input changed after the maintainer started it
   below the entries. The first step and first value of a duplicate field win,
   with the rejected source still visible. All text is escaped.
 - Fan-outs share the flow SVG's scoped styles, `--ab-*` palettes and render
-  options (`title`, `scheme`, `idPrefix`; no marker ids are needed here).
+  options (`title`, `scheme`, and `idPrefix` for the branches' arrow marker).
   Their returned layout has canvas dimensions and diagnostics, with empty
   routed-flow nodes, routes and bands, so the grid overlay has nothing to draw.
   Save them as `.flow` files for the existing check, render and playground tools.
 
 See [approvals](../spike/examples/approvals.flow) and
-[run endings](../spike/examples/run-endings.flow) for the review examples.
+[run endings](../spike/examples/run-endings.flow) for the review examples, and
+[run endings as a ladder](../spike/examples/run-endings-ladder.flow).
 
 ## The spike (now)
 
@@ -374,8 +392,9 @@ as the hand-drawn figure, and when most trial agents reach zero diagnostics.
    MCP help topic pointing at the primer, and Markdown export as the fenced
    source. Nothing goes into uberblick-2 before the spike passes.
 3. Turn the ub-agents loop explainer into the first corpus doc that uses it.
-4. Add further kinds on the same grid: architecture (boxes in groups), class,
-   and data model. Standalone fan-out v0 is implemented above; other kinds
+4. Add further kinds on the same grid, sequence (UML) first: lifelines are
+   columns and messages are rows. Then architecture (boxes in groups), and
+   data model with class as one kind until they need to differ. Standalone fan-out v0 is implemented above; other kinds
    without edges remain: decision ladder, steps, timeline, tree and grid.
 
 ## Non-goals

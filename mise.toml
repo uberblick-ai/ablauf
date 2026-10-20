@@ -53,6 +53,15 @@ run = "pnpm -s render"
 description = "Show what moved between the loop and the loop with a role inserted"
 run = "pnpm -s measure"
 
+[tasks.site]
+description = "Build ablauf.uberblick.ai into site/out"
+run = "node site/build.ts"
+
+[tasks.site-serve]
+description = "Build the site and serve it on localhost:8000"
+depends = ["site"]
+run = "python3 -m http.server 8000 --directory site/out"
+
 [tasks.release]
 description = "Maintainer only: release an already-prepared X.Y.Z (--check is read-only)"
 run = "node spike/release/command.ts"

@@ -4,8 +4,8 @@
 import { DARK, LIGHT, render } from "../flow/index.ts";
 
 interface Group {
-	folder: string;
-	names: string[];
+	kind: string;
+	flows: { folder: string; name: string }[];
 }
 
 interface Flow {
@@ -131,8 +131,17 @@ async function sidebar() {
 			const details = document.createElement("details");
 			details.open = true;
 			const summary = document.createElement("summary");
-			summary.textContent = g.folder;
-			details.append(summary, ...g.names.map((n) => Object.assign(document.createElement("a"), { className: "pg-item", href: `#${g.folder}/${n}`, textContent: n })));
+			summary.textContent = g.kind;
+			details.append(
+				summary,
+				...g.flows.map((f) => {
+					const link = Object.assign(document.createElement("a"), { className: "pg-item", href: `#${f.folder}/${f.name}` });
+					// Examples by name; a trial says where it lives, as trials are drafts.
+					if (f.folder !== "examples") link.append(Object.assign(document.createElement("span"), { className: "pg-folder", textContent: `${f.folder}/` }));
+					link.append(f.name);
+					return link;
+				}),
+			);
 			return details;
 		}),
 	);

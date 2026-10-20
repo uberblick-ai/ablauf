@@ -1,0 +1,46 @@
+<head>
+<title>ablauf · Diagrams agents write and people read</title>
+<meta name="description" content="A small text format for diagrams that agents write and people read, rendered as deterministic, themed SVG. The author places everything; the renderer only draws.">
+</head>
+<div class="hero">
+  <p class="kicker">Text format and renderer · MIT license</p>
+  <h1>Diagrams agents write and people read.</h1>
+  <p class="lede">ablauf is a small text format for diagrams, rendered as deterministic, themed SVG. The author decides where everything goes, the way they would draw the figure by hand. The text records those decisions, so another agent can read and edit the diagram without looking at the picture.</p>
+  <div class="cta"><div class="tabs"><div class="panel sh"><code>npm install @uberblick/ablauf</code><button class="copy" type="button">Copy</button></div></div><a href="/showcase">See the showcase →</a></div>
+</div>
+
+<section class="blk" id="example">
+<div class="blk-h"><h2>Thirty lines of text, one figure.</h2><a href="/showcase">More examples</a></div>
+<p class="blk-intro">A deploy pipeline. <code>columns</code> names the columns, each node starts a new row unless <code>row=</code> puts it beside another, and <code>from=</code> and <code>to=</code> pick the sides an edge leaves and enters.</p>
+<!-- example deploy -->
+</section>
+
+<section class="blk" id="why">
+<h2>The renderer never moves anything.</h2>
+<p>Automatic layout looks fine until someone edits the diagram, and then every node jumps. In ablauf the author places each node in a named column and a row, and picks the side each edge leaves and enters. Inserting a step moves what is below it down a row; every node keeps its column and its place in the order.</p>
+<p>The renderer sizes the grid and draws. When a placement does not work, such as an edge crossing a node or two labels overlapping, it still draws the diagram and reports the problem with its line number. A diagram is done when it has no problems, which is something an agent can check without seeing the picture.</p>
+<p>The output is one inert SVG with its own styles. It follows the reader's light or dark theme, or the host page's, through <code>--ab-*</code> custom properties, and the same source always gives the same bytes.</p>
+</section>
+
+<section class="blk" id="kinds">
+<div class="blk-h"><h2>One format, several kinds.</h2><a href="/showcase">Showcase</a></div>
+<p class="blk-intro">The first line of a diagram names its kind. More kinds are planned on the same grid.</p>
+<!-- kinds -->
+</section>
+
+<section class="blk" id="use">
+<h2>Render it in a build script.</h2>
+<p><code>render(source, options?)</code> returns the SVG and a list of problems, each with its line number. It needs Node.js 22.18 or newer and has no runtime dependencies.</p>
+<section class="block code"><div class="cap"><span>render-flow.mjs</span></div><pre><code>import { readFile, writeFile } from "node:fs/promises";
+import { render } from "@uberblick/ablauf";
+
+const [input, output] = process.argv.slice(2);
+const { svg, diagnostics } = render(await readFile(input, "utf8"));
+await writeFile(output, svg);
+
+for (const { line, severity, message } of diagnostics) {
+  console.error(`${input}:${line} ${severity}: ${message}`);
+}
+process.exitCode = diagnostics.length ? 1 : 0;</code></pre></section>
+<p>Agents read the <a href="https://github.com/uberblick-ai/ablauf/blob/main/spike/PRIMER.md">format primer</a>, one page, before they write a diagram. To follow a page's own theme switch, see <a href="https://github.com/uberblick-ai/ablauf/blob/main/docs/theming.md">host page themes</a>.</p>
+</section>

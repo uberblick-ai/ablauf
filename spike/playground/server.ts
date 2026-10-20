@@ -7,30 +7,20 @@
 // Listens on localhost only. Writes nothing but existing or new .flow files in
 // examples/ and trials/, and only for requests from its own page.
 
-import { closeSync, constants, lstatSync, openSync, readdirSync, readFileSync, realpathSync, writeSync } from "node:fs";
+import { closeSync, constants, lstatSync, openSync, readFileSync, realpathSync, writeSync } from "node:fs";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { stripTypeScriptTypes } from "node:module";
 import { join, normalize, sep } from "node:path";
+import { catalog, FOLDERS } from "./catalog.ts";
 
 process.removeAllListeners("warning"); // stripTypeScriptTypes is marked experimental
 const ROOT = join(import.meta.dirname, "..");
-const FOLDERS = ["examples", "trials"];
 const NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const PORT = Number(process.env.PORT ?? 4620);
 
 function send(res: ServerResponse, status: number, type: string, body: string) {
   res.writeHead(status, { "content-type": type, "cache-control": "no-store" });
   res.end(body);
-}
-
-function catalog() {
-  return FOLDERS.map((folder) => ({
-    folder,
-    names: readdirSync(join(ROOT, folder))
-      .filter((f) => f.endsWith(".flow"))
-      .map((f) => f.slice(0, -5))
-      .sort(),
-  }));
 }
 
 // A flow's file, only inside the real examples/ or trials/ folder and never
@@ -74,7 +64,7 @@ const server = createServer(async (req, res) => {
     const path = url.pathname;
     if (req.method === "GET" && path === "/") return send(res, 200, "text/html; charset=utf-8", readFileSync(join(import.meta.dirname, "index.html"), "utf8"));
     if (req.method === "GET" && path === "/playground.css") return send(res, 200, "text/css; charset=utf-8", readFileSync(join(import.meta.dirname, "playground.css"), "utf8"));
-    if (req.method === "GET" && path === "/api/catalog") return send(res, 200, "application/json", JSON.stringify(catalog()));
+    if (req.method === "GET" && path === "/api/catalog") return send(res, 200, "application/json", JSON.stringify(catalog(ROOT)));
     if (req.method === "GET" && path === "/reference/loop.svg") return send(res, 200, "image/svg+xml", readFileSync(join(ROOT, "reference", "loop.svg"), "utf8"));
     // The renderer and the page script, as JavaScript.
     if (req.method === "GET" && /^\/(flow\/[a-z]+|playground\/app)\.ts$/.test(path)) {

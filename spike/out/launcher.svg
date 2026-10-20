@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-auto" viewBox="0 0 806 458" width="806" height="458" role="img" aria-label="Flow: issue-preparer pass, Rank open milestones, Unmilestoned issues, Can it start an issue here?, skipped, Take its next issue, Start it first, Unmilestoned ranks higher?, Start the milestone issue">
+<style>.ab.ab-auto{--bg:var(--ab-bg,#ffffff);--ink:var(--ab-ink,#17202c);--muted:var(--ab-muted,#5a6575);--line:var(--ab-line,#d3d9e2);--band:var(--ab-band,#e9eef5);--surface:var(--ab-surface,#ffffff);--neutral:var(--ab-neutral,#59616c);--neutral-bg:var(--ab-neutral-bg,#e1e3e6);--agent:var(--ab-agent,#0b6b67);--agent-bg:var(--ab-agent-bg,#dff1ee);--system:var(--ab-system,#3459a3);--system-bg:var(--ab-system-bg,#e7edfb);--rework:var(--ab-rework,#a65f0c);--rework-bg:var(--ab-rework-bg,#fbefdc);--stop:var(--ab-stop,#b2382f);--stop-bg:var(--ab-stop-bg,#f9e2df);--done:var(--ab-done,#2a7845);--done-bg:var(--ab-done-bg,#e0f1e5);}@media (prefers-color-scheme:dark){.ab.ab-auto{--bg:var(--ab-bg,#171c24);--ink:var(--ab-ink,#e5e9ef);--muted:var(--ab-muted,#98a2b0);--line:var(--ab-line,#2c3440);--band:var(--ab-band,#151b23);--surface:var(--ab-surface,#1d232d);--neutral:var(--ab-neutral,#b6bbc3);--neutral-bg:var(--ab-neutral-bg,#303640);--agent:var(--ab-agent,#5cc5bb);--agent-bg:var(--ab-agent-bg,#12302d);--system:var(--ab-system,#91b4fa);--system-bg:var(--ab-system-bg,#1c2945);--rework:var(--ab-rework,#e3a250);--rework-bg:var(--ab-rework-bg,#33250f);--stop:var(--ab-stop,#ef7f73);--stop-bg:var(--ab-stop-bg,#3a1916);--done:var(--ab-done,#72cf91);--done-bg:var(--ab-done-bg,#142e1d);}}
+.ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
+.ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.ab .s11{font-size:11px}.ab .s12{font-size:12px}.ab .s13{font-size:13px}
+.ab .muted{fill:var(--muted)}.ab .b{font-weight:600}
+.ab .cap{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.08em;fill:var(--muted)}
+.ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
+.ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
+.ab .knockout{fill:none;stroke:var(--bg);stroke-width:5.6}.ab .knockout-band{stroke:var(--band)}
+.ab .arrow{fill:none;stroke:none}
+.ab .t-ink{fill:var(--muted)}.ab .e-ink{stroke:var(--muted)}.ab .k-ink{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-muted{fill:var(--muted)}.ab .e-muted{stroke:var(--muted)}.ab .k-muted{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-neutral{fill:var(--neutral)}.ab .e-neutral{stroke:var(--neutral)}.ab .k-neutral{fill:var(--neutral-bg);stroke:var(--neutral);stroke-width:1.5}.ab .t-agent{fill:var(--agent)}.ab .e-agent{stroke:var(--agent)}.ab .k-agent{fill:var(--agent-bg);stroke:var(--agent);stroke-width:1.5}.ab .t-system{fill:var(--system)}.ab .e-system{stroke:var(--system)}.ab .k-system{fill:var(--system-bg);stroke:var(--system);stroke-width:1.5}.ab .t-done{fill:var(--done)}.ab .e-done{stroke:var(--done)}.ab .k-done{fill:var(--done-bg);stroke:var(--done);stroke-width:1.5}.ab .t-rework{fill:var(--rework)}.ab .e-rework{stroke:var(--rework)}.ab .k-rework{fill:var(--rework-bg);stroke:var(--rework);stroke-width:1.5}.ab .t-stop{fill:var(--stop)}.ab .e-stop{stroke:var(--stop)}.ab .k-stop{fill:var(--stop-bg);stroke:var(--stop);stroke-width:1.5}
+.ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}</style>
+<defs>
+<marker id="launcher-done" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-done"/></marker>
+<marker id="launcher-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker>
+<marker id="launcher-rework" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-rework"/></marker>
+</defs>
+<path d="M397,50 L397,80" class="e e-ink"/>
+<path d="M397,126 L397,156" class="e e-ink"/>
+<path d="M397,202 L397,244" class="e e-ink"/>
+<path d="M518,179 L574,179" class="e e-rework"/>
+<path d="M682,156 L682,132 L457,132 L457,156" class="e e-rework"/>
+<path d="M275,179 L196,179" class="e e-ink"/>
+<path d="M397,290 L397,332" class="e e-ink"/>
+<path d="M275,355 L196,355" class="e e-done"/>
+<path d="M397,378 L397,408" class="e e-ink"/>
+<path d="M397,50 L397,80" class="arrow" marker-end="url(#launcher-ink)"/>
+<path d="M397,126 L397,156" class="arrow" marker-end="url(#launcher-ink)"/>
+<path d="M397,202 L397,244" class="arrow" marker-end="url(#launcher-ink)"/>
+<path d="M518,179 L574,179" class="arrow" marker-end="url(#launcher-rework)"/>
+<path d="M457,132 L457,156" class="arrow" marker-end="url(#launcher-rework)"/>
+<path d="M275,179 L196,179" class="arrow" marker-end="url(#launcher-ink)"/>
+<path d="M397,290 L397,332" class="arrow" marker-end="url(#launcher-ink)"/>
+<path d="M275,355 L196,355" class="arrow" marker-end="url(#launcher-done)"/>
+<path d="M397,378 L397,408" class="arrow" marker-end="url(#launcher-ink)"/>
+<g><rect x="310" y="16" width="173" height="34" rx="17" class="pill"/>
+<circle cx="324" cy="33" r="5" class="t-muted"/>
+<text x="336" y="37" class="m s12">issue-preparer pass</text></g>
+<g>
+<rect x="275" y="80" width="243" height="46" rx="8" class="k-agent"/>
+<text x="397" y="99" text-anchor="middle" class="m s13 b t-agent">Rank open milestones</text>
+<text x="397" y="116" text-anchor="middle" class="s11 muted">creation time, then number</text>
+</g>
+<g>
+<rect x="275" y="156" width="243" height="46" rx="8" class="k-agent"/>
+<text x="397" y="175" text-anchor="middle" class="m s13 b t-agent">Can it start an issue here?</text>
+<text x="397" y="192" text-anchor="middle" class="s11 muted">earliest remaining milestone</text>
+</g>
+<g>
+<rect x="275" y="244" width="243" height="46" rx="8" class="k-agent"/>
+<text x="397" y="263" text-anchor="middle" class="m s13 b t-agent">Take its next issue</text>
+<text x="397" y="280" text-anchor="middle" class="s11 muted">priority, creation time, number</text>
+</g>
+<g>
+<rect x="275" y="332" width="243" height="46" rx="8" class="k-agent"/>
+<text x="397" y="351" text-anchor="middle" class="m s13 b t-agent">Unmilestoned ranks higher?</text>
+<text x="397" y="368" text-anchor="middle" class="s11 muted">strictly higher priority only</text>
+</g>
+<rect x="293" y="408" width="208" height="34" rx="17" class="k-done"/>
+<text x="397" y="429" text-anchor="middle" class="s12 b t-done">Start the milestone issue</text>
+<g><rect x="574" y="156" width="216" height="146" rx="10" class="k-rework panel"/>
+<text x="682" y="181" text-anchor="middle" class="s12 b">Skipped, holds nothing</text>
+<text x="682" y="199" text-anchor="middle" class="s11 muted">no needs-preparation label</text>
+<text x="682" y="217" text-anchor="middle" class="s11 muted">stop label, e.g. needs-human</text>
+<text x="682" y="235" text-anchor="middle" class="s11 muted">an open blocker</text>
+<text x="682" y="253" text-anchor="middle" class="s11 muted">claimed by another launcher</text>
+<text x="682" y="271" text-anchor="middle" class="s11 muted">retry limit exhausted</text>
+<text x="682" y="289" text-anchor="middle" class="s11 muted">approval pending</text></g>
+<g>
+<rect x="16" y="156" width="180" height="46" rx="8" class="k-agent"/>
+<text x="106" y="175" text-anchor="middle" class="m s13 b t-agent">Unmilestoned issues</text>
+<text x="106" y="192" text-anchor="middle" class="s11 muted">by effective priority</text>
+</g>
+<g>
+<rect x="16" y="332" width="180" height="46" rx="8" class="k-done"/>
+<text x="106" y="351" text-anchor="middle" class="m s13 b t-done">Start it first</text>
+<text x="106" y="368" text-anchor="middle" class="s11 muted">beats the milestone pick</text>
+</g>
+<text x="407" y="227" class="m s11">yes</text>
+<text x="528" y="172" class="m s11 t-rework">no</text>
+<text x="467" y="148" class="m s11 t-rework">next milestone</text>
+<text x="265" y="172" text-anchor="end" class="m s11">none left</text>
+<text x="265" y="348" text-anchor="end" class="m s11 t-done">yes</text>
+<text x="407" y="397" class="m s11">no</text>
+</svg>
