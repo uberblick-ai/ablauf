@@ -1,0 +1,19 @@
+flow v0
+columns main rework
+
+box build col=main title="Build" "Compile and prepare the release" tone=system
+decision tests "Do tests pass?"
+box fix col=rework row=tests title="Fix" "Resolve test failures" tone=rework
+box deploy col=main title="Deploy" "Publish the tested build" tone=system
+end released "Released" tone=done
+
+build --> tests
+tests --> deploy tone=done label=inline : Yes
+tests --> fix tone=rework from=right to=left label=inline : No
+fix --> build tone=rework from=top to=right.1
+deploy --> released tone=done
+
+legend
+  box tone=system "Automated step"
+  edge tone=done "Successful path"
+  edge tone=rework "Rework and retry"

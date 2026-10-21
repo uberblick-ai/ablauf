@@ -1,0 +1,22 @@
+flow v0
+columns repair main
+
+box build col=main tone=system title="Build" "Compile and package the application"
+decision tests col=main "Do tests pass?"
+box fix col=repair row=tests tone=rework title="Fix" "Correct the failing tests or code"
+box deploy col=main tone=system title="Deploy" "Publish the tested build"
+end released col=main tone=done "Released"
+
+build --> tests
+tests --> deploy tone=done label=inline : yes
+tests --> fix tone=rework label=inline : no
+fix --> build tone=rework from=top to=left : rebuild
+deploy --> released tone=done
+
+legend
+  box tone=system "automated step"
+  box tone=rework "corrective work"
+  decision "test result"
+  edge tone=done "success path"
+  edge tone=rework "rework and retry"
+  end tone=done "successful release"
