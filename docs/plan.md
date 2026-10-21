@@ -102,16 +102,41 @@ there from the text and the diagnostics alone, without seeing the image.
 
 ## Format rules
 
+- [spike/PRIMER.md](../spike/PRIMER.md) is the self-contained authoring and
+  editing guide; this plan also records renderer mechanics and host contracts.
 - The first line is `flow v0`. A newer version renders as the newest known one,
   with a warning, never an error.
 - Line grammar in wireframe-md's style: `kind id "text" key=value`, two-space
-  indent for panel contents, `#` comments.
+  indent for panel contents and legend entries, blank lines and whole-line
+  `#` comments. Each declaration occupies one source line. Double quotes group
+  spaces in text and values such as `title="The loop"`; flow strings have no
+  escape syntax and backslashes stay literal. Edge labels are unquoted text
+  after the colon. Fan-out strings instead use JSON escaping, described below.
+- Declare `columns` once before nodes, with names in left-to-right order.
+  A node's omitted `col=` inherits the previously declared node's column;
+  the first node needs an explicit column. Rows follow node declaration order,
+  not edge order. Each node without `row=` starts the next row; `span=N` covers
+  N rows downward, defaulting to 1. A `section "Title"` starts a horizontal band
+  for the nodes declared after it.
+- Node keys are `col`, `row`, `span`, `gap`, `tone` and `title`.
+  Node defaults are `muted` for text and pills, `agent` for boxes, `done` for
+  ends, `stop` for panels and `neutral` for decisions. Text defaults to the id,
+  except that boxes use the id as title and have no subtitle, and panels draw
+  only their children, not the node's label or title. `title=` overrides
+  the visible title on other kinds; combining it with quoted text on a non-box
+  warns and keeps the title. Panel children are `pill`, `text`, `muted`, `strong` and
+  `rule`; they have no grid placement or independent tone keys.
 - Repeating a key on one node, edge or legend-entry line warns with the key
   name, even when its values are identical. Valid repeated values still use the
   last value; existing invalid-value fallbacks are unchanged. Reusing a key on
   separate lines is allowed.
 - Edges are spelled like Mermaid (`-->`, `-.->`, `: label`), because agents
   already know that spelling. Nothing else is Mermaid.
+  Keys precede the colon: `tone` (default `ink`), `from`, `to` and `label`.
+  `label=start` is the default and places text beside the source segment;
+  `label=end` selects the target segment instead. Facing sides give a straight
+  route when their row ranges overlap, side-to-top/bottom gives one bend,
+  otherwise there are two bends.
 - Ids are the labels people read (`reviewer`, `needs-changes`) unless `title=`
   says otherwise, so the source reads like the picture.
 - `row=<id>` must name another node. An empty value is diagnosed on the
@@ -146,6 +171,8 @@ there from the text and the diagnostics alone, without seeing the image.
   section bands, with a neutral foreground for titles, outlines, edges,
   arrowheads and pill dots. Legend samples use the same styles as the diagram.
   `ink` and `muted` keep surface-filled boxes and panels; defaults are unchanged.
+  Hosts override neutral foreground and fill with `--ab-neutral` and
+  `--ab-neutral-bg`, including matching legend samples in both themes.
 - Slots count left to right on a top or bottom, top to bottom on a left or
   right. Explicit slots are assigned first. Without a reserved centre,
   unnumbered ends fill gaps in source order, and ports are evenly spaced along
@@ -163,9 +190,28 @@ there from the text and the diagnostics alone, without seeing the image.
   Numbering either end of the main edge opts out of the centre reservation.
   Return edges use the same ports; their sides and loop paths remain the
   author's choice.
-- Inserting a step is two new lines in the source and nothing else changes.
-  In pixels, everything below the insert moves down by one row. Nothing moves
-  sideways unless a wider node widens its column.
+
+### Editing and layout stability
+
+To insert a step between `a` and `b`, put its node declaration after `a` and
+before `b` in row order. Replace `a --> b` with `a --> new` and `new --> b`;
+deliberately preserve or redirect every other connection. Edges do not set
+row order. To remove a step, delete its node and incident edges, reconnect its
+predecessor and successor, and update references to its id, including `row=`.
+
+A branch beside its source uses explicit `col=side row=source`. Adding a
+column edits the existing `columns` declaration; a new node aligned with an
+existing row uses `col=new-column row=existing-id`. Reset `col=` on the next
+declaration when it should not inherit the branch's column. Order slots on a
+shared side spatially, putting nearer branches nearer the main path and
+including return edges in that ordering. For example, on a shared right side,
+an upward edge at `right.1` leaves above a horizontal branch at `right.2`.
+
+Inserting a row shifts subsequent rows down. Removing one shifts them up.
+Review affected `span=` counts: they cover a number of rows, not a named
+range, so an insertion or removal can change coverage without a diagnostic.
+Nothing moves sideways unless changed text or a new node widens its column,
+or changed labels need more column clearance.
 
 ### System steps
 
@@ -434,7 +480,7 @@ as the hand-drawn figure, and when most trial agents reach zero diagnostics.
 
 ## After the spike
 
-1. Write the primer (`AUTHORING.md`, in wireframe-md's style) and publish
+1. Keep the authoring primer at the stable `spike/PRIMER.md` path and publish
    `@uberblick/ablauf` 0.2.0. The npm name is ours; 0.1.0 was the old project.
 2. Add a ```` ```ablauf ```` code block to uberblick-2 with a rendered view, an
    MCP help topic pointing at the primer, and Markdown export as the fenced
