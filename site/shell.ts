@@ -41,7 +41,7 @@ export function shell(page: { head: string; canonical: string; noindex: boolean;
 ${page.head}${page.canonical}${page.noindex ? '<meta name="robots" content="noindex">\n' : ""}</head>
 <body>
 <header class="top">
-  <span class="mark"><a class="ub" href="https://next.uberblick.ai">uberblick</a><span>/</span><a href="/">ablauf</a></span>
+  <span class="mark"><a class="ub" href="https://uberblick.ai">uberblick</a><span>/</span><a href="/">ablauf</a></span>
   <nav aria-label="Site">
     <a href="${REPO}">GitHub</a>
   </nav>
@@ -57,21 +57,30 @@ ${page.body}
     <section class="blk about" id="about">
       <h2>Who builds this.</h2>
       <p>Uberblick, ub-agents and the small libraries beside them, such as wireframe and ablauf, are made by a team in Berlin that likes to find out how far AI engineering can go. What holds up in our own work becomes a framework and a few products that run on GitHub alone, so a team no longer needs Notion, Linear or Jira beside it. Take them as a starting point for your own variant.</p>
-      <div class="cols">
-        <div><h3>ablauf</h3><ul>${kinds.map((k) => `<li><a href="/${k.id}">${k.name}</a></li>`).join("")}<li><a href="/guides/colours">Customise colours</a></li><li><a href="/guides/tiptap">Tiptap editor</a></li><li><a href="/motivation">Motivation</a></li><li><a href="/uberblick">With Uberblick</a></li><li><a href="${PRIMER}">Format primer</a></li><li><a href="${NPM}">npm package</a></li></ul></div>
-        <div><h3>Uberblick</h3><ul><li><a href="https://next.uberblick.ai">Uberblick</a></li><li><a href="https://agents.uberblick.ai">ub-agents</a></li><li><a href="https://skills.uberblick.ai">Skills</a></li><li><a href="https://github.com/uberblick-ai/wireframe-md">wireframe.md</a></li></ul></div>
-        <div><h3>Project</h3><ul><li><a href="${REPO}">GitHub</a></li><li><a href="${REPO}/blob/main/docs/plan.md">The plan</a></li><li><a href="${REPO}/blob/main/LICENSE">License</a></li></ul></div>
-      </div>
     </section>
   </main>
 </div>
 <footer class="foot">
-  <span>MIT license</span>
-  <a href="${REPO}">Source</a>
-  <a href="${NPM}">npm</a>
-  <a href="https://next.uberblick.ai">Uberblick</a>
-  <a href="https://agents.uberblick.ai">ub-agents</a>
-  <a href="https://skills.uberblick.ai">Skills</a>
+  <div><h3>Projects</h3><ul>
+    <li><a href="https://uberblick.ai">Uberblick</a></li>
+    <li><a href="https://agents.uberblick.ai">ub-agents</a></li>
+    <li><a href="https://skills.uberblick.ai">Skills</a></li>
+    <li><a href="/">ablauf</a></li>
+    <li><a href="https://github.com/uberblick-ai/wireframe-md">wireframe</a></li>
+  </ul></div>
+  <div><h3>Learn</h3><ul>
+    <li><a href="/">Overview</a></li>
+    <li><a href="/motivation">Motivation</a></li>
+    <li><a href="/uberblick">With Uberblick</a></li>
+    <li><a href="/guides/colours">Customise colours</a></li>
+    <li><a href="${PRIMER}">Format primer</a></li>
+  </ul></div>
+  <div><h3>GitHub</h3><ul>
+    <li><a href="${REPO}">Source</a></li>
+    <li><a href="${NPM}">npm</a></li>
+    <li><a href="${REPO}/blob/main/docs/plan.md">The plan</a></li>
+    <li><a href="${REPO}/blob/main/LICENSE">MIT license</a></li>
+  </ul></div>
 </footer>
 <div class="toast" role="status" aria-live="polite"></div>
 <script>
