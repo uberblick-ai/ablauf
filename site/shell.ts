@@ -73,6 +73,7 @@ ${page.body}
     <li><a href="/motivation">Motivation</a></li>
     <li><a href="/uberblick">With Uberblick</a></li>
     <li><a href="/guides/colours">Customise colours</a></li>
+    <li><a href="/guides/tiptap">Tiptap editor</a></li>
     <li><a href="${PRIMER}">Format primer</a></li>
   </ul></div>
   <div><h3>GitHub</h3><ul>
