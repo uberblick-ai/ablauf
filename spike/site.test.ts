@@ -24,6 +24,8 @@ test("the site builds every page, with a page per kind and clean examples", (t) 
 		assert.match(readFileSync(join(out, "index.html"), "utf8"), new RegExp(`href="/${kind.id}"`));
 	}
 	assert.match(readFileSync(join(out, "index.html"), "utf8"), /<link rel="canonical" href="https:\/\/ablauf\.uberblick\.ai\/">/);
+	const index = readFileSync(join(out, "index.html"), "utf8");
+	for (const column of ["Projects", "Learn", "GitHub"]) assert.match(index, new RegExp(`<footer class="foot">[\\s\\S]*<h3>${column}</h3>`));
 	const sitemap = readFileSync(join(out, "sitemap.xml"), "utf8");
 	assert.match(sitemap, /<loc>https:\/\/ablauf\.uberblick\.ai\/guides\/colours<\/loc>/);
 	assert.doesNotMatch(sitemap, /404/);
