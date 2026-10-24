@@ -1,0 +1,72 @@
+flow v0
+# The loop example with a play section: one review round, then a merge.
+# Every placement here is the author's choice; the renderer only draws it.
+
+columns rework main stop
+
+section "Issue"
+text start col=main "A maintainer adds the first label"
+pill needs-preparation tone=muted
+box issue-preparer "writes scope and criteria"
+pill ready tone=done
+
+section "Pull request"
+box implementer "codes, checks, opens the PR"
+pill needs-review tone=agent
+box reviewer "reviews the exact head SHA"
+pill ready-to-merge tone=done
+box integrator "updates base, checks, merges"
+end merged "Merged · issue closed"
+
+pill needs-changes col=rework row=reviewer tone=rework
+
+panel human col=stop row=needs-review span=3 tone=stop
+  pill needs-human
+  muted "or an Action needed comment"
+  rule
+  strong "A person decides"
+  text "adds the trigger of any role"
+  muted "blocked, same role: retry"
+
+start --> needs-preparation
+needs-preparation --> issue-preparer : trigger
+issue-preparer --> ready : prepared
+ready --> implementer
+implementer --> needs-review : handed-off
+needs-review --> reviewer
+reviewer --> ready-to-merge : approved
+ready-to-merge --> integrator
+integrator --> merged : merged
+
+reviewer --> needs-changes tone=rework : changes-requested
+ready-to-merge -.-> needs-changes tone=rework to=bottom.2 : on-conflict · launcher
+integrator --> needs-changes tone=rework to=bottom.1 : changes-requested
+needs-changes --> implementer tone=rework from=top to=left label=end : revise the same PR
+
+issue-preparer --> human tone=stop to=top.2 : needs-human
+implementer --> human tone=stop to=top.1 : blocked
+reviewer --> human tone=stop : blocked
+integrator --> human tone=stop : maintainer-merge, blocked
+
+legend
+  pill tone=done "GitHub label" sample=ready
+  box "agent role"
+  panel tone=stop "a person decides"
+  dashed tone=rework "set by the launcher"
+
+play
+  tempo 1.6s
+  step start             "A maintainer adds the first label"
+  step needs-preparation
+  step issue-preparer    "found the issue small and clear, marked it ready"
+  step ready
+  step implementer 2.4s  "changed 7 files, ran 2,109 tests, opened #598"
+  step needs-review
+  step reviewer 2.4s     "changes requested: P1 in the parser"
+  step needs-changes
+  step implementer 2.4s  "revised the same PR, fixed the P1"
+  step needs-review
+  step reviewer          "approved against the acceptance criteria"
+  step ready-to-merge
+  step integrator 2s     "confirmed CI and the merge policy"
+  step merged 3s         "#598 merged, #597 closed"
