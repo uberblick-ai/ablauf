@@ -246,6 +246,8 @@ for trusted-publishing setup, confirmation and partial-release recovery.
 The earlier Mermaid-subset version lives in
 [uberblick-ai/old-ablauf](https://github.com/uberblick-ai/old-ablauf).
 
+Report vulnerabilities privately as [SECURITY.md](SECURITY.md) describes, not in an issue.
+
 ## License
 
 MIT
