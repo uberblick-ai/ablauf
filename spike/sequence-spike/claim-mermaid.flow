@@ -1,0 +1,26 @@
+sequence v0
+participant Creator
+participant Studio
+participant Backend
+participant RSSFeed "RSS feed"
+participant OwnerInbox "Owner's inbox"
+
+Creator ->> Studio: Sign in, no show yet
+Studio -->> Creator: Claim existing, Add via RSS, Start from scratch
+Creator ->> Studio: Claim existing show
+Studio ->> Backend: POST claim for show
+Backend ->> RSSFeed: Fetch feed live
+RSSFeed -->> Backend: itunes owner email
+Backend ->> OwnerInbox: Send 6-digit code
+note over Backend: The code expires after 15 minutes
+OwnerInbox -->> Creator: Email with the code
+Creator ->> Studio: Enter code
+Studio ->> Backend: POST verify code
+Backend ->> Backend: Check code and expiry
+alt Code matches
+  Backend -->> Studio: Claim confirmed
+  Studio -->> Creator: The show is yours
+else Wrong or expired code
+  Backend -->> Studio: Rejected, attempts left
+  Studio -->> Creator: Try again or resend the code
+end
