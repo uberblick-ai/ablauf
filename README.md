@@ -91,8 +91,10 @@ problems return diagnostics with one-based `line`, `severity` and `message`
 fields while still producing SVG. Invalid caller options can throw.
 `idPrefix` defaults to `"ab"`; supply distinct prefixes for diagrams sharing
 a page. Omit `scheme` to follow the system theme, or pin it to `"light"` or
-`"dark"`. The existing `fonts` option accepts host font families and synchronous
-width metrics; see [host fonts and width metrics](https://github.com/uberblick-ai/ablauf/blob/main/docs/plan.md#host-fonts-and-width-metrics).
+`"dark"`. The `fonts` option accepts host font families and synchronous width
+metrics. Both fan-out styles use `fonts.mono` for all text and its layout;
+`fonts.text` affects flow text only. Omitting `fonts` or supplying `{}` keeps
+the default SVG bytes. See [host fonts and width metrics](https://github.com/uberblick-ai/ablauf/blob/main/docs/plan.md#host-fonts-and-width-metrics).
 TypeScript consumers can import `RenderOptions`, `Diagnostic`, `FontOptions`,
 `FontsOptions` and `TextStyle` from the same entry point. `LIGHT` and `DARK`
 export the default palettes.
