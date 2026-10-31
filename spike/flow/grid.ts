@@ -495,8 +495,12 @@ export function grid(
 		colX.push(x);
 		x += colW[c] + (c < model.columns.length - 1 && colW[c + 1] ? gaps[c] : 0);
 	});
-	for (const p of nodes)
-		p.x = Math.round(colX[colIndex(p)] + (colW[colIndex(p)] - p.w) / 2);
+	for (const p of nodes) {
+		// Round the shared centre first, then place each node so its rounded
+		// midpoint (including decision tips) lands there for either width parity.
+		const center = Math.round(colX[colIndex(p)] + colW[colIndex(p)] / 2);
+		p.x = center - Math.round(p.w / 2);
+	}
 
 	// Ports.
 	const placePorts = () => {

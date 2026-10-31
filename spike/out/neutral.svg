@@ -24,7 +24,7 @@
 <path d="M106,412 L106,450" class="arrow" marker-end="url(#neutral-neutral)"/>
 <text x="20" y="22" class="cap">SURFACE-FILLED</text>
 <text x="20" y="252" class="cap">FILLED GREY</text>
-<text x="348" y="28" text-anchor="middle" class="s12 muted">Compare light and dark</text>
+<text x="347" y="28" text-anchor="middle" class="s12 muted">Compare light and dark</text>
 <g>
 <rect x="16" y="67" width="180" height="46" rx="8" class="k-ink"/>
 <text x="106" y="86" text-anchor="middle" class="m s13 b t-ink">ink</text>
