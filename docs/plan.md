@@ -332,9 +332,10 @@ in one small diagram for light/dark review in the playground's document column.
 ### Host fonts and width metrics
 
 `render(source, { fonts })` accepts two independent roles: `fonts.mono` for
-box titles, pills, edge labels, section captions and legend sample text, and
+box titles, pills, edge labels, section captions, legend sample text and all
+fan-out text, and
 `fonts.text` for standalone text, end labels, box subtitles, panel text and
-legend descriptions.
+legend descriptions in flows. Fan-outs use no text-role metrics or face.
 Each configured role requires both `family` and `measureText`; an omitted role
 keeps its existing font stack and estimates. Omitting `fonts` (or passing `{}`)
 preserves the existing geometry and SVG bytes, including the historical panel
@@ -372,8 +373,11 @@ measured inner width. Vertical spacing stays fixed. Choose fonts whose
 vertical extents fit the existing line heights, and match metrics to the
 font the host actually loads at each rendered size and weight. Box titles use
 13px/600; end labels and strong panel lines use 12px/600; pills and standalone
-text use 12px/400; everything else uses 11px/400. Changing CSS fonts after
-rendering requires rerendering with matching metrics.
+text use 12px/400; other flow text uses 11px/400. In both fan-out styles,
+steps use 13px/600, outcomes and destinations use 12px/600, and reasons and
+line-numbered source text use 12px/400. Fan-out wrapping, ladder step sizing
+and dotted leaders use those same metrics. Changing CSS fonts after rendering
+requires rerendering with matching metrics.
 
 For example, to use IBM Plex Mono throughout, after making its regular and
 semibold faces available to the SVG (its glyph advance is 0.6em):
@@ -440,7 +444,10 @@ outcome "Edited since" reason="The input changed after the maintainer started it
   The step box is 150 px wide with 13 px text in a 118 px area. Outcome boxes
   are 170 px wide with a 142 px text area, and effects get 236 px. Text is
   12 px monospace with 18 px leading and wraps at word boundaries, splitting
-  individual long words when necessary. There is no route search, node
+  individual long words when necessary. Both styles honour `fonts.mono` for
+  the face and width metrics, including line-numbered rejected source text;
+  `fonts.text` does not affect fan-out text. A glyph wider than its area still
+  draws alone on a line. There is no route search, node
   placement or overlap correction.
 - The ladder draws the step on top, then a rail of dots, one per entry in its
   tone (muted without one). Each outcome sits beside its dot with the reason
@@ -454,7 +461,7 @@ outcome "Edited since" reason="The input changed after the maintainer started it
   below the entries. The first step and first value of a duplicate field win,
   with the rejected source still visible. All text is escaped.
 - Fan-outs share the flow SVG's scoped styles, `--ab-*` palettes and render
-  options (`title`, `scheme`, and `idPrefix` for the branches' arrow marker).
+  options (`title`, `scheme`, `fonts`, and `idPrefix` for the branches' arrow marker).
   Their returned layout has canvas dimensions and diagnostics, with empty
   routed-flow nodes, routes and bands, so the grid overlay has nothing to draw.
   Save them as `.flow` files for the existing check, render and playground tools.

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+
+- Fan-outs in both styles honour `fonts.mono` for typography, wrapping, ladder
+  step sizing and dotted leaders. Omitting fonts preserves the default SVG bytes.
+  ([#77](https://github.com/uberblick-ai/ablauf/issues/77))
+
 ## 0.2.0 — 2026-10-20
 
 **Breaking change:** 0.2.0 replaces the 0.1.x Mermaid-subset line with a new

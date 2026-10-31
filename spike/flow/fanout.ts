@@ -1,9 +1,10 @@
 // One step branching to its ordered outcomes. The author writes no edges:
 // every entry gets its own branch from the step to its destination.
-import { Typography } from "./fonts.ts";
+import { type TextStyle, Typography } from "./fonts.ts";
 import { CHAR, type Layout } from "./grid.ts";
+import type { RenderOptions } from "./index.ts";
 import { type Diagnostic, type Tone, TONES } from "./parse.ts";
-import { esc, markerPrefix, type SvgOptions, svgStyle } from "./svg.ts";
+import { esc, markerPrefix, svgStyle } from "./svg.ts";
 
 interface Entry {
 	outcome: string;
@@ -31,18 +32,26 @@ const STYLES = ["branches", "ladder"] as const;
 type Style = (typeof STYLES)[number];
 
 // Unlike flow labels, these cells have a fixed width. Break long words too.
-function wrap(text: string, width: number, charWidth = CHAR.mono12): string[] {
-	const limit = Math.floor(width / charWidth);
+function wrap(text: string, width: number, typography: Typography,
+	fontSize: TextStyle["fontSize"] = 12, fontWeight: TextStyle["fontWeight"] = 400): string[] {
+	// Retain the historical character limit exactly for the default font.
+	const limit = Math.floor(width / CHAR[`mono${fontSize}`]);
+	const fits = (text: string) => typography.mono
+		? typography.width(text, "mono", fontSize, fontWeight) <= width
+		: [...text].length <= limit;
 	const lines: string[] = [];
 	let line = "";
 	for (const word of text.split(/\s+/).filter(Boolean)) {
-		if (line && [...line, ...word].length + 1 > limit) {
+		if (line && !fits(`${line} ${word}`)) {
 			lines.push(line);
 			line = "";
 		}
 		const chars = [...word];
-		while (chars.length > limit) {
-			lines.push(chars.splice(0, limit).join(""));
+		while (chars.length && !fits(chars.join(""))) {
+			// Always consume a glyph, even if it alone exceeds the area.
+			let count = 1;
+			while (count < chars.length && fits(chars.slice(0, count + 1).join(""))) count++;
+			lines.push(chars.splice(0, count).join(""));
 		}
 		if (chars.length) line = line ? `${line} ${chars.join("")}` : chars.join("");
 	}
@@ -50,7 +59,10 @@ function wrap(text: string, width: number, charWidth = CHAR.mono12): string[] {
 	return lines;
 }
 
-export function renderFanout(source: string, options: SvgOptions = {}) {
+export function renderFanout(source: string, options: RenderOptions = {}) {
+	const typography = new Typography(options.fonts);
+	const wrapped = (text: string, width: number, fontSize: TextStyle["fontSize"] = 12,
+		fontWeight: TextStyle["fontWeight"] = 400) => wrap(text, width, typography, fontSize, fontWeight);
 	const mode =
 		options.scheme === "light" || options.scheme === "dark"
 			? options.scheme
@@ -164,10 +176,10 @@ export function renderFanout(source: string, options: SvgOptions = {}) {
 		// Each row: the outcome box a branch curves into, then an arrow to the
 		// destination with its reason below. Rows grow to fit their taller side.
 		const rows = entries.map((entry) => {
-			const outcome = wrap(entry.outcome.trim() ? entry.outcome : "[missing outcome]", OUTCOME.text);
-			const destination = wrap(entry.destination.trim() ? entry.destination : "[missing destination]", EFFECT.w, CHAR.mono12);
-			const reason = wrap(entry.reason.trim() ? entry.reason : "[missing reason]", EFFECT.w);
-			const raw = entry.raw ? wrap(`Line ${entry.line}: ${entry.raw}`, EFFECT.w) : [];
+			const outcome = wrapped(entry.outcome.trim() ? entry.outcome : "[missing outcome]", OUTCOME.text, 12, 600);
+			const destination = wrapped(entry.destination.trim() ? entry.destination : "[missing destination]", EFFECT.w, 12, 600);
+			const reason = wrapped(entry.reason.trim() ? entry.reason : "[missing reason]", EFFECT.w);
+			const raw = entry.raw ? wrapped(`Line ${entry.line}: ${entry.raw}`, EFFECT.w) : [];
 			const box = 16 + outcome.length * LEADING;
 			// The destination's first line sits beside the box's middle unless the
 			// effect text is too tall, then it starts at the top of the row.
@@ -178,7 +190,7 @@ export function renderFanout(source: string, options: SvgOptions = {}) {
 		});
 		const GAP = 18;
 		const span = rows.reduce((sum, row) => sum + row.height, 0) + GAP * Math.max(rows.length - 1, 0);
-		const stepLines = wrap(step.trim() ? step : "[missing step]", STEP.text, CHAR.mono13);
+		const stepLines = wrapped(step.trim() ? step : "[missing step]", STEP.text, 13, 600);
 		const stepHeight = 24 + stepLines.length * LEADING;
 		const top = 16 + Math.max(0, (stepHeight - span) / 2);
 		const stepTop = top + span / 2 - stepHeight / 2;
@@ -209,8 +221,8 @@ export function renderFanout(source: string, options: SvgOptions = {}) {
 	}
 
 	function drawLadder(): number {
-		const stepLines = wrap(step.trim() ? step : "[missing step]", 614, CHAR.mono13);
-		const stepWidth = Math.min(646, 32 + Math.max(...stepLines.map((l) => [...l].length)) * CHAR.mono13);
+		const stepLines = wrapped(step.trim() ? step : "[missing step]", 614, 13, 600);
+		const stepWidth = Math.min(646, 32 + Math.max(...stepLines.map((l) => typography.width(l, "mono", 13, 600))));
 		const stepHeight = 24 + stepLines.length * LEADING;
 		body.push(`<rect x="${STEP.x}" y="16" width="${stepWidth}" height="${stepHeight}" rx="8" class="k-agent"/>`);
 		body.push(...textLines(stepLines, STEP.x + 16, 42, "s13 b t-agent"));
@@ -218,17 +230,17 @@ export function renderFanout(source: string, options: SvgOptions = {}) {
 		let y = 16 + stepHeight + 30;
 		let last = y;
 		for (const entry of entries) {
-			const outcome = wrap(entry.outcome.trim() ? entry.outcome : "[missing outcome]", LADDER.outcome);
-			const destination = wrap(entry.destination.trim() ? entry.destination : "[missing destination]", LADDER.destination);
-			const reason = wrap(entry.reason.trim() ? entry.reason : "[missing reason]", LADDER.reason);
-			const raw = entry.raw ? wrap(`Line ${entry.line}: ${entry.raw}`, LADDER.right - LADDER.x) : [];
+			const outcome = wrapped(entry.outcome.trim() ? entry.outcome : "[missing outcome]", LADDER.outcome, 12, 600);
+			const destination = wrapped(entry.destination.trim() ? entry.destination : "[missing destination]", LADDER.destination, 12, 600);
+			const reason = wrapped(entry.reason.trim() ? entry.reason : "[missing reason]", LADDER.reason);
+			const raw = entry.raw ? wrapped(`Line ${entry.line}: ${entry.raw}`, LADDER.right - LADDER.x) : [];
 			const row = [`<g data-line="${entry.line}">`];
 			row.push(`<circle cx="${RAIL}" cy="${y - 4}" r="6" class="t-${entry.tone ?? "muted"}"/>`);
 			row.push(...textLines(outcome, LADDER.x, y, "s12 b"));
 			row.push(...textLines(destination, LADDER.right, y, "s12 b", "end"));
 			// A dotted leader joins the outcome to its destination when there is room.
-			const from = LADDER.x + [...outcome[0]].length * CHAR.mono12 + 12;
-			const to = LADDER.right - [...destination[0]].length * CHAR.mono12 - 12;
+			const from = LADDER.x + typography.width(outcome[0], "mono", 12, 600) + 12;
+			const to = LADDER.right - typography.width(destination[0], "mono", 12, 600) - 12;
 			if (to - from >= 24) row.push(`<line x1="${from}" y1="${y - 4}" x2="${to}" y2="${y - 4}" class="rule"/>`);
 			const left = Math.max(outcome.length, destination.length);
 			row.push(...textLines(reason, LADDER.x, y + left * LEADING, "s12 muted"));
@@ -243,7 +255,7 @@ export function renderFanout(source: string, options: SvgOptions = {}) {
 		return entries.length ? y - 22 - 12 : 16 + stepHeight;
 	}
 	for (const item of invalid) {
-		const lines = wrap(`Line ${item.line}: ${item.text}`, 614);
+		const lines = wrapped(`Line ${item.line}: ${item.text}`, 614);
 		body.push(...textLines(lines, 32, y + 20, "s12 t-stop"));
 		y += 32 + lines.length * LEADING;
 	}
@@ -251,8 +263,8 @@ export function renderFanout(source: string, options: SvgOptions = {}) {
 		? `<defs><marker id="${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker></defs>\n`
 		: "";
 	// No routed-flow nodes or edges: the playground's grid overlay is empty.
-	const layout: Layout = { width: WIDTH, height: y + 16, nodes: [], routes: [], bands: [], legend: null, diagnostics, typography: new Typography() };
+	const layout: Layout = { width: WIDTH, height: y + 16, nodes: [], routes: [], bands: [], legend: null, diagnostics, typography };
 	const description = `Fan-out: ${step}. ${entries.map((e) => `${e.outcome}: ${e.reason}; destination: ${e.destination}`).join(". ")}`;
-	const svg = `<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-${mode}" viewBox="0 0 ${WIDTH} ${layout.height}" width="${WIDTH}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? description)}">\n${svgStyle(mode)}\n${defs}${body.join("\n")}\n</svg>\n`;
+	const svg = `<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-${mode}" viewBox="0 0 ${WIDTH} ${layout.height}" width="${WIDTH}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? description)}">\n${svgStyle(mode, typography)}\n${defs}${body.join("\n")}\n</svg>\n`;
 	return { svg, diagnostics, layout };
 }
