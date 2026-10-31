@@ -40,9 +40,9 @@
 <path d="M580,295 L399,295" class="arrow" marker-end="url(#checkout-stop)"/>
 <text x="20" y="22" class="cap">CHECKOUT</text>
 <text x="20" y="268" class="cap">FULFILMENT</text>
-<g><rect x="277" y="16" width="65" height="34" rx="17" class="pill"/>
-<circle cx="291" cy="33" r="5" class="t-muted"/>
-<text x="303" y="37" class="m s12">cart</text></g>
+<g><rect x="276" y="16" width="65" height="34" rx="17" class="pill"/>
+<circle cx="290" cy="33" r="5" class="t-muted"/>
+<text x="302" y="37" class="m s12">cart</text></g>
 <g>
 <rect x="219" y="88" width="180" height="46" rx="8" class="k-agent"/>
 <text x="309" y="107" text-anchor="middle" class="m s13 b t-agent">address</text>
