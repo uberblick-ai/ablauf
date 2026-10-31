@@ -2,6 +2,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join } from "node:path";
+import { renderBars, renderLadder } from "./bold.ts";
 import { type LayoutMode, parse, renderSequence } from "./sequence.ts";
 
 const here = import.meta.dirname;
@@ -64,4 +65,20 @@ await browser.close();
 		console.log(`style-${style}.png`);
 	}
 	await b2.close();
+}
+
+// Bold departures: bars and ladder, light and dark at 678, light at 360.
+{
+	const model = parse(readFileSync(join(here, "claim-styled.flow"), "utf8"));
+	const b3 = await chromium.launch();
+	const t3 = await b3.newPage({ deviceScaleFactor: 2 });
+	const kinds = { bars: renderBars, ladder: renderLadder };
+	for (const [name, draw] of Object.entries(kinds)) {
+		const cell = (scheme: "light" | "dark", width: number) =>
+			`<div class="cell${scheme === "dark" ? " dark" : ""}"><div class="cap"${scheme === "dark" ? ' style="color:#98a2b0"' : ""}>${scheme} · ${width}px</div>${draw(model, width, scheme)}</div>`;
+		await t3.setContent(page(`Style: ${name}`, [cell("light", 678), cell("dark", 678), cell("light", 360)].join("")));
+		await t3.locator("body").screenshot({ path: join(out, `style-${name}.png`) });
+		console.log(`style-${name}.png`);
+	}
+	await b3.close();
 }

@@ -90,9 +90,9 @@ const GUTTER = 22;
 const PAD = 16;
 const SANS = CHAR.sans12;
 const MONO = CHAR.mono12;
-const tw = (s: string, c = SANS) => [...s].length * c;
+export const tw = (s: string, c = SANS) => [...s].length * c;
 
-function wrap(text: string, width: number, c = SANS): string[] {
+export function wrap(text: string, width: number, c = SANS): string[] {
 	const limit = Math.max(4, Math.floor(width / c));
 	const lines: string[] = [];
 	let line = "";

@@ -22,3 +22,8 @@ Style trials use [claim-styled.flow](claim-styled.flow), the Mermaid spelling
 with participant tones and sections: `plain` (the first look), `lanes` (tinted
 lanes, tone dots, numbered steps, soft groups) and `cards` (tone header cards,
 hairline lifelines, numbered steps).
+
+[bold.ts](bold.ts) tries two departures from lifelines and arrows: `bars`
+(each message a thin tone bar from sender lane to receiver lane, label above)
+and `ladder` (a numbered list of steps, each with a mini lane map, the sender
+and receiver in small caps and the label below).
