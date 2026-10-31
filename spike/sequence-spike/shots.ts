@@ -48,3 +48,20 @@ for (const syntax of ["mermaid", "ablauf"]) {
 		["phone-360-wrapped", "phone-360-from-source"].map((name) => `<div class="cell dark"><div class="cap" style="color:#98a2b0">${name}</div>${renderSequence(model, MODES[name], "dark").svg}</div>`).join("")));
 }
 await browser.close();
+
+// Style sheet: the same source in each style, light and dark, at 678 and 360.
+{
+	const source = readFileSync(join(here, "claim-styled.flow"), "utf8");
+	const model = parse(source);
+	for (const d of model.diagnostics) console.log(`  styled:${d.line} ${d.message}`);
+	const b2 = await chromium.launch();
+	const t2 = await b2.newPage({ deviceScaleFactor: 2 });
+	for (const style of ["plain", "lanes", "cards"] as const) {
+		const cell = (scheme: "light" | "dark", width: number) =>
+			`<div class="cell${scheme === "dark" ? " dark" : ""}"><div class="cap"${scheme === "dark" ? ' style="color:#98a2b0"' : ""}>${scheme} · ${width}px</div>${renderSequence(model, { width, labels: "source", style }, scheme).svg}</div>`;
+		await t2.setContent(page(`Style: ${style}`, [cell("light", 678), cell("dark", 678), cell("light", 360)].join("")));
+		await t2.locator("body").screenshot({ path: join(out, `style-${style}.png`) });
+		console.log(`style-${style}.png`);
+	}
+	await b2.close();
+}

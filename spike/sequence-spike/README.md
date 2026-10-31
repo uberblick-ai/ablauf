@@ -17,3 +17,8 @@ node spike/sequence-spike/shots.ts /tmp/seq
 ```
 
 writes screenshots of every syntax and layout mode, light and dark.
+
+Style trials use [claim-styled.flow](claim-styled.flow), the Mermaid spelling
+with participant tones and sections: `plain` (the first look), `lanes` (tinted
+lanes, tone dots, numbered steps, soft groups) and `cards` (tone header cards,
+hairline lifelines, numbered steps).

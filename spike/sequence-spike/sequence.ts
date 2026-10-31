@@ -81,9 +81,12 @@ export interface LayoutMode {
 	labels: "center" | "source";
 	/** Repeat participant headers below the lifelines. */
 	footer?: boolean;
+	/** plain: the first spike look. lanes: tinted lanes, no boxes. cards: tone cards and hairlines. */
+	style?: "plain" | "lanes" | "cards";
 }
 
 const LEAD = 15;
+const GUTTER = 22;
 const PAD = 16;
 const SANS = CHAR.sans12;
 const MONO = CHAR.mono12;
@@ -103,9 +106,10 @@ function wrap(text: string, width: number, c = SANS): string[] {
 
 function columns(model: Model, mode: LayoutMode): { xs: number[]; width: number } {
 	const n = model.participants.length;
+	const gutter = mode.style && mode.style !== "plain" ? GUTTER : 0;
 	if (mode.width) {
-		const col = (mode.width - 2 * PAD) / n;
-		return { xs: model.participants.map((_, i) => PAD + col * (i + 0.5)), width: mode.width };
+		const col = (mode.width - 2 * PAD - gutter) / n;
+		return { xs: model.participants.map((_, i) => PAD + gutter + col * (i + 0.5)), width: mode.width };
 	}
 	// Grow gaps until every header and single-line label fits its span.
 	const head = model.participants.map((p) => tw(p.title, MONO) + 28);
@@ -133,8 +137,13 @@ export function renderSequence(model: Model, mode: LayoutMode, scheme: "light" |
 	const { participants: ps, items } = model;
 	const { xs, width } = columns(model, mode);
 	const n = ps.length;
-	const colW = mode.width ? (mode.width - 2 * PAD) / n : 0;
+	const fancy = mode.style === "lanes" || mode.style === "cards";
+	const lanes = mode.style === "lanes";
+	const colW = mode.width ? (mode.width - 2 * PAD - (fancy ? GUTTER : 0)) / n : 0;
+	const under: string[] = [];
 	const back: string[] = [];
+	let step = 0;
+	const toneOf = (i: number) => ps[i].tone ?? "ink";
 	const body: string[] = [];
 	const front: string[] = [];
 	const text = (lines: string[], x: number, y: number, cls: string, anchor = "") =>
@@ -145,6 +154,12 @@ export function renderSequence(model: Model, mode: LayoutMode, scheme: "light" |
 	const headH = 16 + Math.max(...heads.map((h) => h.length)) * LEAD;
 	const drawHeads = (y: number) =>
 		ps.forEach((p, i) => {
+			if (lanes) {
+				const top = y + headH / 2 - ((heads[i].length - 1) * LEAD) / 2 + 4;
+				body.push(`<circle cx="${xs[i]}" cy="${y + 2}" r="3.5" class="t-${toneOf(i) === "ink" ? "muted" : toneOf(i)}"/>`);
+				body.push(text(heads[i], xs[i], top + 6, `m s12 b${p.tone && p.tone !== "neutral" ? ` t-${p.tone}` : ""}`, "middle"));
+				return;
+			}
 			const w = mode.width ? colW - 8 : tw(p.title, MONO) + 24;
 			const cls = p.tone ? `k-${p.tone}` : "pill";
 			body.push(`<rect x="${xs[i] - w / 2}" y="${y}" width="${w}" height="${headH}" rx="8" class="${cls}"/>`);
@@ -179,6 +194,15 @@ export function renderSequence(model: Model, mode: LayoutMode, scheme: "light" |
 	items.forEach((it, k) => {
 		if (it.t === "section") {
 			closeSection();
+			if (fancy) {
+				// A labelled rule instead of a band, so lanes keep their tint.
+				y += 4;
+				const label = it.title.toUpperCase();
+				front.push(`<text x="${PAD}" y="${y + 12}" class="cap">${esc(label)}</text>`);
+				front.push(`<path d="M${PAD + tw(label, CHAR.mono11 + 0.9) + 10},${y + 8} L${width - PAD},${y + 8}" class="sec-rule"/>`);
+				y += 30;
+				return;
+			}
 			y += section ? 4 : -8;
 			section = { top: y, title: it.title };
 			front.push(`<text x="${PAD}" y="${y + 18}" class="cap">${esc(it.title.toUpperCase())}</text>`);
@@ -191,7 +215,7 @@ export function renderSequence(model: Model, mode: LayoutMode, scheme: "light" |
 		} else if (it.t === "else") {
 			const g = stack[stack.length - 1];
 			g.elses.push({ y: y + 2, label: it.label });
-			y += 30;
+			y += fancy ? 28 : 30;
 		} else if (it.t === "end") {
 			const g = stack.pop();
 			if (!g) return;
@@ -199,6 +223,17 @@ export function renderSequence(model: Model, mode: LayoutMode, scheme: "light" |
 			const inset = 10 * stack.length;
 			const x0 = Math.max(4, xs[g.lo] - (mode.width ? colW / 2 - 6 : 44) + inset);
 			const x1 = Math.min(width - 4, xs[g.hi] + (g.self ? (mode.width ? colW / 2 - 6 : 160) : mode.width ? colW / 2 - 6 : 44) - inset);
+			if (fancy) {
+				const fx0 = Math.max(PAD + GUTTER - 6, x0);
+				back.push(`<rect x="${fx0}" y="${g.top}" width="${x1 - fx0}" height="${y - g.top}" rx="10" class="grp-soft"/>`);
+				front.push(`<text x="${fx0 + 12}" y="${g.top + 18}" class="cap"><tspan class="cap-b">${esc(g.kind.toUpperCase())}</tspan>  ${esc(g.label.toUpperCase())}</text>`);
+				for (const e of g.elses) {
+					front.push(`<path d="M${fx0 + 10},${e.y} L${x1 - 10},${e.y}" class="grp-split"/>`);
+					front.push(`<text x="${fx0 + 12}" y="${e.y + 17}" class="cap"><tspan class="cap-b">ELSE</tspan>  ${esc(e.label.toUpperCase())}</text>`);
+				}
+				y += 12;
+				return;
+			}
 			const tag = g.kind;
 			const tagW = tw(tag, CHAR.mono11) + 16;
 			front.push(`<rect x="${x0}" y="${g.top}" width="${x1 - x0}" height="${y - g.top}" rx="6" class="grp"/>`);
@@ -219,8 +254,14 @@ export function renderSequence(model: Model, mode: LayoutMode, scheme: "light" |
 			const w = Math.min(maxW, Math.max(...lines.map((l) => tw(l))) + 20);
 			const h = lines.length * LEAD + 12;
 			const x = Math.max(4, Math.min(width - 4 - w, cx - w / 2));
-			body.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="4" class="k-rework"/>`);
-			body.push(text(lines, x + 10, y + 19, "s12 t-rework"));
+			if (fancy) {
+				body.push(`<rect x="${x}" y="${y}" width="${w + 4}" height="${h}" rx="6" class="note-soft"/>`);
+				body.push(`<rect x="${x}" y="${y}" width="3" height="${h}" rx="1.5" class="t-rework"/>`);
+				body.push(text(lines, x + 14, y + 19, "s12 t-rework"));
+			} else {
+				body.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="4" class="k-rework"/>`);
+				body.push(text(lines, x + 10, y + 19, "s12 t-rework"));
+			}
 			y += h + 14;
 		} else if (it.t === "msg") {
 			const self = it.from === it.to;
@@ -228,13 +269,24 @@ export function renderSequence(model: Model, mode: LayoutMode, scheme: "light" |
 			const b = xs[it.to];
 			const lo = Math.min(a, b);
 			const hi = Math.max(a, b);
-			const marker = `url(#${scheme}-${it.dashed ? "open" : "fill"})`;
-			const cls = `e e-ink${it.dashed ? " dash" : ""}`;
+			const tone = fancy && !it.dashed ? toneOf(it.from) : "ink";
+			const marker = `url(#${scheme}-${it.dashed ? "open" : `fill-${tone}`})`;
+			const cls = `e e-${tone}${it.dashed ? " dash" : ""}${fancy && it.dashed ? " resp" : ""}`;
+			step++;
+			const number = (ay: number) => {
+				if (fancy) front.push(`<text x="${PAD + 2}" y="${ay + 4}" class="m s11 num">${String(step).padStart(2, "0")}</text>`);
+			};
+			const dot = (ax: number, ay: number) => {
+				if (fancy && !it.dashed) body.push(`<circle cx="${ax}" cy="${ay}" r="3" class="t-${tone === "ink" ? "muted" : tone}"/>`);
+			};
 			if (self) {
 				const room = mode.width ? Math.min(colW - 46, width - a - 50) : 999;
 				const lines = wrap(it.label, room);
 				const top = y + 2;
-				body.push(`<path d="M${a},${top} L${a + 28},${top} L${a + 28},${top + 24} L${a + 3},${top + 24}" class="${cls}" marker-end="${marker}"/>`);
+				if (fancy) body.push(`<path d="M${a},${top} L${a + 18},${top} Q${a + 30},${top} ${a + 30},${top + 12} Q${a + 30},${top + 24} ${a + 18},${top + 24} L${a + 3},${top + 24}" class="${cls}" marker-end="${marker}"/>`);
+				else body.push(`<path d="M${a},${top} L${a + 28},${top} L${a + 28},${top + 24} L${a + 3},${top + 24}" class="${cls}" marker-end="${marker}"/>`);
+				dot(a, top);
+				number(top + 12);
 				front.push(knock(lines, a + 36, top + 8, "start"));
 				front.push(text(lines, a + 36, top + 12, "s12"));
 				y += Math.max(36, lines.length * LEAD + 16) + 8;
@@ -258,6 +310,8 @@ export function renderSequence(model: Model, mode: LayoutMode, scheme: "light" |
 			y = ly + (lines.length - 1) * LEAD + 10;
 			const end = b + (b > a ? -3 : 3);
 			body.push(`<path d="M${a},${y} L${end},${y}" class="${cls}" marker-end="${marker}"/>`);
+			dot(a, y);
+			number(y);
 			y += 18;
 		}
 	});
@@ -268,22 +322,41 @@ export function renderSequence(model: Model, mode: LayoutMode, scheme: "light" |
 		drawHeads(y);
 		height = y + headH + PAD;
 	}
-	for (const x of xs) back.push(`<path d="M${x},${PAD + headH} L${x},${mode.footer ? y : y - 4}" class="life"/>`);
+	const laneW = mode.width ? colW : 0;
+	xs.forEach((x, i) => {
+		if (lanes) {
+			const w = laneW || (i ? x - xs[i - 1] : 60);
+			if (i % 2 === 0) under.push(`<rect x="${x - w / 2 + 3}" y="${PAD - 6}" width="${w - 6}" height="${y - PAD + 6}" rx="10" class="lane"/>`);
+			under.push(`<path d="M${x},${PAD + headH + 4} L${x},${y - 6}" class="life-faint"/>`);
+		} else if (mode.style === "cards") back.push(`<path d="M${x},${PAD + headH} L${x},${y - 4}" class="life-tone e-${toneOf(i) === "ink" ? "muted" : toneOf(i)}"/>`);
+		else back.push(`<path d="M${x},${PAD + headH} L${x},${mode.footer ? y : y - 4}" class="life"/>`);
+	});
 
 	function knock(lines: string[], x: number, y: number, anchor: string): string {
+		if (fancy) return "";
 		const w = Math.max(...lines.map((l) => tw(l))) + 8;
 		const x0 = anchor === "middle" ? x - w / 2 : anchor === "end" ? x - w + 4 : x - 4;
 		return `<rect x="${x0}" y="${y - 9}" width="${w}" height="${lines.length * LEAD + 2}" class="gap${section ? " gap-band" : ""}"/>`;
 	}
-	const defs = `<defs><marker id="${scheme}-fill" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker><marker id="${scheme}-open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto" markerUnits="userSpaceOnUse"><path d="M1,1 L9,5 L1,9" class="open"/></marker></defs>`;
+	const fills = ["ink", "muted", "neutral", "agent", "system", "done", "rework", "stop"]
+		.map((t) => `<marker id="${scheme}-fill-${t}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-${t}"/></marker>`)
+		.join("");
+	const defs = `<defs>${fills}<marker id="${scheme}-open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto" markerUnits="userSpaceOnUse"><path d="M1,1 L9,5 L1,9" class="open"/></marker></defs>`;
 	const extra = [
 		".ab .life{stroke:var(--line);stroke-width:1.4;stroke-dasharray:4 4}",
 		".ab .gap{fill:var(--bg)}.ab .gap-band{fill:var(--band)}",
 		".ab .grp{fill:none;stroke:var(--neutral);stroke-opacity:.55;stroke-width:1.2}",
 		".ab .grp-tag{fill:var(--neutral-bg);stroke:var(--neutral);stroke-opacity:.55;stroke-width:1.2}",
 		".ab .open{fill:none;stroke:var(--muted);stroke-width:1.6;stroke-linejoin:round}",
+		".ab .lane{fill:var(--neutral-bg);opacity:.4}.ab .life-faint{stroke:var(--line);stroke-width:1}",
+		".ab .life-tone{stroke-width:1;stroke-opacity:.35}",
+		".ab .sec-rule{stroke:var(--line);stroke-width:1}",
+		".ab .grp-soft{fill:var(--neutral-bg);opacity:.55}.ab .grp-split{stroke:var(--neutral);stroke-opacity:.35;stroke-width:1;stroke-dasharray:2 4}",
+		".ab .cap-b{font-weight:600;fill:var(--ink)}",
+		".ab .note-soft{fill:var(--rework-bg)}",
+		".ab .num{fill:var(--muted);opacity:.7}.ab .resp{stroke-width:1.3}",
 	];
 	// Sections sit on bands, so knockouts there take the band colour. Spike: approximate.
-	const svg = `<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-${scheme}" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">\n${svgStyle(scheme, undefined, extra)}\n${defs}\n<rect width="${width}" height="${height}" fill="var(--bg)"/>\n${back.join("\n")}\n${body.join("\n")}\n${front.join("\n")}\n</svg>\n`;
+	const svg = `<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-${scheme}" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">\n${svgStyle(scheme, undefined, extra)}\n${defs}\n<rect width="${width}" height="${height}" fill="var(--bg)"/>\n${under.join("\n")}\n${back.join("\n")}\n${body.join("\n")}\n${front.join("\n")}\n</svg>\n`;
 	return { svg, width, height };
 }
