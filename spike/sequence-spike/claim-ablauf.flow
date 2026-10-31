@@ -1,0 +1,29 @@
+sequence v0
+person creator "Creator"
+system studio "Studio"
+system backend "Backend"
+system feed "RSS feed"
+person inbox "Owner's inbox"
+
+section "Claim"
+creator --> studio : Sign in, no show yet
+studio -.-> creator : Claim existing, Add via RSS, Start from scratch
+creator --> studio : Claim existing show
+studio --> backend : POST claim for show
+backend --> feed : Fetch feed live
+feed -.-> backend : itunes owner email
+backend --> inbox : Send 6-digit code
+note backend "The code expires after 15 minutes"
+
+section "Verify"
+inbox -.-> creator : Email with the code
+creator --> studio : Enter code
+studio --> backend : POST verify code
+backend --> backend : Check code and expiry
+alt "Code matches"
+  backend -.-> studio : Claim confirmed
+  studio -.-> creator : The show is yours
+else "Wrong or expired code"
+  backend -.-> studio : Rejected, attempts left
+  studio -.-> creator : Try again or resend the code
+end
