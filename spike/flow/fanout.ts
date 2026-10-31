@@ -3,7 +3,7 @@
 import { Typography } from "./fonts.ts";
 import { CHAR, type Layout } from "./grid.ts";
 import { type Diagnostic, type Tone, TONES } from "./parse.ts";
-import { esc, markerPrefix, type SvgOptions, svgStyle } from "./svg.ts";
+import { esc, markerPrefix, outcomeIndexPart, PLAY_STYLE, STEP_PART, type SvgOptions, svgStyle } from "./svg.ts";
 
 interface Entry {
 	outcome: string;
@@ -158,6 +158,11 @@ export function renderFanout(source: string, options: SvgOptions = {}) {
 		lines.map((text, i) => `<text x="${x}" y="${y + i * LEADING}"${anchor ? ` text-anchor="${anchor}"` : ""} class="m ${classes}">${esc(text)}</text>`);
 	const id = `${markerPrefix(options)}-ink`;
 	const ladder = style === "ladder";
+	// With a play section, the step and each outcome are parts a timeline lights.
+	const stepOpen = options.targets ? `<g data-ab-part="${STEP_PART}">` : "";
+	const stepClose = options.targets ? "</g>" : "";
+	const outcomePart = (entry: Entry) =>
+		options.targets ? ` data-ab-part="${outcomeIndexPart(entries.indexOf(entry) + 1)}"` : "";
 	let y = ladder ? drawLadder() : drawBranches();
 
 	function drawBranches(): number {
@@ -184,8 +189,10 @@ export function renderFanout(source: string, options: SvgOptions = {}) {
 		const stepTop = top + span / 2 - stepHeight / 2;
 		const stepMid = top + span / 2;
 
+		if (stepOpen) body.push(stepOpen);
 		body.push(`<rect x="${STEP.x}" y="${stepTop}" width="${STEP.w}" height="${stepHeight}" rx="8" class="k-agent"/>`);
 		body.push(...textLines(stepLines, STEP.x + 16, stepTop + 26, "s13 b t-agent"));
+		if (stepClose) body.push(stepClose);
 		let y = top;
 		for (const row of rows) {
 			const mid = y + row.box / 2;
@@ -193,7 +200,7 @@ export function renderFanout(source: string, options: SvgOptions = {}) {
 			const end = OUTCOME.x - 2 - LEAD;
 			const bend = (from + end) / 2;
 			const tone = row.entry.tone ? `k-${row.entry.tone}${row.entry.tone === "stop" ? " panel" : ""}` : "pill";
-			body.push(`<g data-line="${row.entry.line}">`);
+			body.push(`<g data-line="${row.entry.line}"${outcomePart(row.entry)}>`);
 			body.push(`<path d="M${from},${stepMid} C${bend},${stepMid} ${bend},${mid} ${end},${mid} L${OUTCOME.x - 2},${mid}" class="e e-ink" marker-end="url(#${id})"/>`);
 			body.push(`<rect x="${OUTCOME.x}" y="${y}" width="${OUTCOME.w}" height="${row.box}" rx="8" class="${tone}"/>`);
 			body.push(...textLines(row.outcome, OUTCOME.x + 14, y + 22, "s12 b"));
@@ -212,8 +219,10 @@ export function renderFanout(source: string, options: SvgOptions = {}) {
 		const stepLines = wrap(step.trim() ? step : "[missing step]", 614, CHAR.mono13);
 		const stepWidth = Math.min(646, 32 + Math.max(...stepLines.map((l) => [...l].length)) * CHAR.mono13);
 		const stepHeight = 24 + stepLines.length * LEADING;
+		if (stepOpen) body.push(stepOpen);
 		body.push(`<rect x="${STEP.x}" y="16" width="${stepWidth}" height="${stepHeight}" rx="8" class="k-agent"/>`);
 		body.push(...textLines(stepLines, STEP.x + 16, 42, "s13 b t-agent"));
+		if (stepClose) body.push(stepClose);
 		const rows: string[][] = [];
 		let y = 16 + stepHeight + 30;
 		let last = y;
@@ -222,7 +231,7 @@ export function renderFanout(source: string, options: SvgOptions = {}) {
 			const destination = wrap(entry.destination.trim() ? entry.destination : "[missing destination]", LADDER.destination);
 			const reason = wrap(entry.reason.trim() ? entry.reason : "[missing reason]", LADDER.reason);
 			const raw = entry.raw ? wrap(`Line ${entry.line}: ${entry.raw}`, LADDER.right - LADDER.x) : [];
-			const row = [`<g data-line="${entry.line}">`];
+			const row = [`<g data-line="${entry.line}"${outcomePart(entry)}>`];
 			row.push(`<circle cx="${RAIL}" cy="${y - 4}" r="6" class="t-${entry.tone ?? "muted"}"/>`);
 			row.push(...textLines(outcome, LADDER.x, y, "s12 b"));
 			row.push(...textLines(destination, LADDER.right, y, "s12 b", "end"));
@@ -253,6 +262,6 @@ export function renderFanout(source: string, options: SvgOptions = {}) {
 	// No routed-flow nodes or edges: the playground's grid overlay is empty.
 	const layout: Layout = { width: WIDTH, height: y + 16, nodes: [], routes: [], bands: [], legend: null, diagnostics, typography: new Typography() };
 	const description = `Fan-out: ${step}. ${entries.map((e) => `${e.outcome}: ${e.reason}; destination: ${e.destination}`).join(". ")}`;
-	const svg = `<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-${mode}" viewBox="0 0 ${WIDTH} ${layout.height}" width="${WIDTH}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? description)}">\n${svgStyle(mode)}\n${defs}${body.join("\n")}\n</svg>\n`;
-	return { svg, diagnostics, layout };
+	const svg = `<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-${mode}" viewBox="0 0 ${WIDTH} ${layout.height}" width="${WIDTH}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? description)}">\n${svgStyle(mode, undefined, options.targets ? [PLAY_STYLE] : [])}\n${defs}${body.join("\n")}\n</svg>\n`;
+	return { svg, diagnostics, layout, outcomes: entries.map((e) => e.outcome) };
 }
