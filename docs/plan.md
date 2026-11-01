@@ -752,10 +752,15 @@ ids. Distinct edges, including parallel edges, have distinct part identities.
 Use `querySelectorAll('[data-ab-part="' + part + '"]')` within the SVG to
 find **all** fragments of a part. Apply `ab-current` or `ab-played` to every
 matching wrapper; current takes precedence if both are present. Remove both
-classes and the root's `ab-in-progress` class for the full default figure.
+classes and the root's `ab-in-progress` and `ab-playing` classes for the full
+default figure.
 Hand-driven hosts set `ab-in-progress` on the SVG root exactly while a scenario
 step is shown (`step >= 0`), including paused and ended states. Remove it at
 idle (`step === -1`), for empty scenarios and after destruction.
+Hand-driven hosts also set `ab-playing` on the SVG root exactly while playing.
+Remove it on pause, end, manual navigation, scenario changes, idle, empty
+scenarios, the reduced-motion reset and destruction. `createPlayer` owns both
+root hooks, including when called through `mount.player` or built-in controls.
 
 All six node kinds and every edge stroke, head and label fragment take state
 colours. While `ab-in-progress` is present, unplayed node, edge stroke and head
@@ -769,10 +774,33 @@ in every playable SVG; hosts need no CSS. Navigation, scenario changes and
 looping recompute the faded parts. Idle, the reduced-motion reset, empty
 scenarios and destruction restore the full unfaded figure.
 
+Whenever a step is shown, including paused and ended frames, its current node
+outlines/decision shapes and incoming edge strokes have a soft glow and a
+slightly heavier stroke. Played parts do not glow. Filters apply to individual
+shapes only, never groups, label text, inline gaps, crossing knockouts or the
+root. Glow colour uses `color-mix()` from internal `--play`, following host
+`--ab-play` overrides in light and dark. Its blur size is `--ab-play-glow`,
+default `6px` in both schemes; the literal `--ab-play-glow: 0` removes the glow.
+
+Only while `ab-playing` is present, current incoming edge strokes run as moving
+dashes toward their targets, with a seamless loop; arrowheads stay put. The
+current step's timeline `parts` identify the incoming edges, including parallel
+edges. Steps without an incoming edge animate none. Paused and ended edges are
+still. Fades and colour changes ease over 0.35s only while playing; manual
+navigation and other non-playing changes are instant. Animation, transitions
+and keyframes are embedded in every playable SVG and scoped to its figure;
+distinct `idPrefix` values keep independently driven figures isolated, including
+in shadow roots. Reduced motion disables running dashes and all transitions;
+a manually shown current step may still glow. Idle and destruction remove all
+glow, heavier strokes and running-edge overrides, restoring the default figure.
+Static SVG bytes stay identical; compared with the post-#112 baseline, playable
+idle SVGs change only by added playback styles and the colour defaults below.
+
 Playable SVGs define internal `--play` and `--play-done` through the host's
-`--ab-play` and `--ab-play-done` overrides. Current defaults are `#2869b8`
-(light) and `#88baff` (dark); played defaults are `#62798e` (light) and
-`#8498ac` (dark). Auto follows `prefers-color-scheme`; pinned schemes keep
+`--ab-play` and `--ab-play-done` overrides. Current defaults are `#0a7a60`
+(light) and `#6ff0cf` (dark); played defaults are `#596e81` (light) and
+`#5f9e8a` (dark). Each reaches WCAG sRGB text contrast of at least 4.5:1 on
+its scheme's canvas and band. Auto follows `prefers-color-scheme`; pinned schemes keep
 their defaults. These tokens are separate from the existing exported palette.
 
 ### Behaviour and theming
@@ -785,8 +813,8 @@ their defaults. These tokens are separate from the existing exported palette.
   a host may do so when a gallery card scrolls into view. With reduced motion
   playback resets to idle at step `-1` and the full figure shows; manual
   stepping still works. Preference changes are observed while playing;
-  disabling reduced motion never starts playback. State changes are instant,
-  with no player animations or transitions.
+  disabling reduced motion never starts playback. Manual navigation remains
+  instant; only playing frames enable motion and easing as described above.
 - Without a player, the diagram is the full figure.
 - One accent marks the current step; played parts keep a quieter tint. Use
   `--ab-play` for current and `--ab-play-done` for played parts, emitted only

@@ -53,22 +53,28 @@ test("embedded fade rules scope to each figure, composite whole parts and exempt
 				`${selector}:has(.gap) text{opacity:.3}`,
 			]);
 			assert.match(styles, /\.ab \.gap\{fill:var\(--bg\)\}\.ab \.gap-band\{fill:var\(--band\)\}/);
-			assert.doesNotMatch(styles, /transition|animation/);
+			assert.match(styles, /\.ab-playing/);
 			assert.doesNotMatch(svg.match(/<svg[^>]*>/)?.[0] ?? "", /ab-in-progress/);
 			assert.equal(svg, render(example, { scheme, idPrefix }).svg);
 		}
 	}
 });
 
-test("playable idle bytes differ from the pre-fade main baseline only by fade CSS", () => {
+test("pre-fade drawing and style bytes survive added fade/effects CSS and playback defaults", () => {
 	// Captured from spike/out/loop-play.svg at 559775a720de6543ad0cf033df7973d6f32216e2.
 	// The existing pre-playback.json.gz static baseline stays unchanged too.
-	const before = gunzipSync(readFileSync(new URL("./fixtures/pre-fade-loop-play.svg.gz", import.meta.url))).toString();
+	const before = gunzipSync(readFileSync(new URL("./fixtures/pre-fade-loop-play.svg.gz", import.meta.url))).toString()
+		.replaceAll("#2869b8", "#0a7a60").replaceAll("#88baff", "#6ff0cf").replaceAll("#62798e", "#596e81").replaceAll("#8498ac", "#5f9e8a");
 	const source = readFileSync(new URL("./examples/loop-play.flow", import.meta.url), "utf8");
 	const after = render(source, { idPrefix: "loop-play" }).svg;
 	const rules = /\.ab\[data-ab-play="loop-play"\]\.ab-in-progress [^{}]+\{opacity:\.3\}/g;
 	assert.equal(after.match(rules)?.length, 2);
-	assert.equal(after.replace(rules, ""), before);
+	// The final style line adds motion/glow; playback-effects.test.ts checks
+	// its scope and guards and compares the complete post-112 baseline.
+	const styles = after.match(/<style>([\s\S]*?)<\/style>/)?.[1];
+	assert.ok(styles);
+	const withoutEffects = after.replace(styles, styles.split("\n").slice(0, -1).join("\n"));
+	assert.equal(withoutEffects.replace(rules, ""), before);
 });
 
 test("fade fixture covers all six node kinds and opaque inline gaps without geometry changes", () => {

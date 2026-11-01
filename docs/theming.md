@@ -7,7 +7,9 @@ updates the existing SVG immediately; there is no need to render it again.
 
 ## Supported properties
 
-These are the complete palette and the built-in defaults:
+These are the supported properties and their built-in defaults. The last three
+apply only to playable SVGs; playback colours are separate from the exported
+static `Palette` and `checkPalette` contract.
 
 | Property | Use | Light | Dark |
 | --- | --- | --- | --- |
@@ -29,6 +31,9 @@ These are the complete palette and the built-in defaults:
 | `--ab-rework-bg` | Rework tone background | `#f3f0eb` | `#2c2720` |
 | `--ab-stop` | Stop tone foreground | `#815f5a` | `#ac8c88` |
 | `--ab-stop-bg` | Stop tone background | `#ede6e5` | `#2b2221` |
+| `--ab-play` | Current playback colour and glow; controls accent | `#0a7a60` | `#6ff0cf` |
+| `--ab-play-done` | Played parts' quieter colour | `#596e81` | `#5f9e8a` |
+| `--ab-play-glow` | Current outlines' and incoming strokes' glow blur; literal `0` removes glow | `6px` | `6px` |
 
 A tone foreground colours box/end text and outlines, pill dots, edges,
 arrowheads, edge labels and legend samples. Its background colours box, end
@@ -37,6 +42,14 @@ legend descriptions use the base text colours; pill shapes use the base
 surface and outline colours. The SVG canvas itself is transparent. Set
 `--ab-bg` to the host canvas colour so crossing knockouts blend into it;
 knockouts over shaded sections use `--ab-band` instead.
+
+Playback glow derives from the current colour with `color-mix()`, so it follows
+`--ab-play` host overrides. Set `--ab-play-glow: 0` to remove the glow while
+keeping the current colour and heavier outline. Only playing figures run
+incoming edge dashes and ease fades/colour changes; paused and ended figures
+stay still. Reduced motion disables animation and transitions, while manual
+stepping can still show the glow. Built-in controls have matching current-colour
+defaults and honour the same host override in automatic and pinned schemes.
 
 ## Complete host CSS
 
@@ -65,6 +78,9 @@ keep the whole palette consistent when the system and page themes disagree.
   --ab-rework-bg: #f3f0eb;
   --ab-stop: #815f5a;
   --ab-stop-bg: #ede6e5;
+  --ab-play: #0a7a60;
+  --ab-play-done: #596e81;
+  --ab-play-glow: 6px;
 }
 
 :root[data-theme="dark"] {
@@ -86,6 +102,9 @@ keep the whole palette consistent when the system and page themes disagree.
   --ab-rework-bg: #2c2720;
   --ab-stop: #ac8c88;
   --ab-stop-bg: #2b2221;
+  --ab-play: #6ff0cf;
+  --ab-play-done: #5f9e8a;
+  --ab-play-glow: 6px;
 }
 ```
 

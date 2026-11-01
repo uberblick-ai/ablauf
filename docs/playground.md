@@ -41,16 +41,30 @@ all six node kinds and inline label gaps on canvas and band backgrounds, with
 zero diagnostics. The playground-only `spike/playground/playback-crossings.flow`
 visibly exercises canvas and band knockouts; its two crossing warnings are
 intentional and shown on the page. It stays outside the rendered example set.
-The page also shows a single timeline without tabs and a tabbed case with an
-empty scenario. Each document is 710px wide,
+The page also shows a single timeline without tabs, a direct `createPlayer`
+case without built-in controls, and a tabbed case with an empty scenario.
+Current-colour and zero-glow controls apply host overrides to every case,
+including the shadow root. Each document is 710px wide,
 with 16px side padding giving a 678px figure at full width.
 
 A maintainer checks these in a real browser before merging playback changes,
-including #112:
+including #112 and #113. Compare with the
+[scenario playback GIF](images/playback/scenario-tabs.gif):
 
 - Use the SVG/controls scheme selector for automatic, pinned light and pinned
   dark; choose a matching or contrasting host background separately. Automatic
   follows the browser/OS colour preference, including changes while mounted.
+- Check the mint defaults and switch the Current colour host override: the
+  current stroke, glow and built-in controls must follow it in both schemes.
+  Toggle Zero glow (`--ab-play-glow: 0`): no glow, with the heavier current
+  outlines preserved. Toggle back without rerendering.
+- Play and pause both the direct `createPlayer` case and built-in controls.
+  Current node outlines/decision shapes and incoming strokes glow, including
+  when paused or ended; played parts do not glow. Playing incoming dashes move
+  toward fixed arrowheads with no jump at the loop seam. No incoming edge means
+  no running stroke. Fades and colours change gently over about 0.35s while
+  playing; manual navigation and scenario changes are instant. Paused/ended
+  figures are still. Gaps and crossing knockouts have no glow or running dashes.
 - Play two figures simultaneously, switch scenarios and navigate. Check that
   each caption, actor, range and Play/Pause/Replay label follows only its player.
   Enable looping and watch the last step return to the first.
@@ -74,7 +88,8 @@ including #112:
   usable tabs. Verify the single-timeline case has no tab row.
 - Enable reduced motion before Play and during playback. The figure resets
   to full idle, manual stepping still works, and disabling the preference does
-  not start playback.
+  not start playback. No running dashes or transitions remain; a manually
+  shown step may still glow.
 - While playing, try both `mount.destroy()` and `player.destroy()` for each
   case, including the shadow root. The figure and host content remain, controls
   disappear, the full unfaded figure returns, and other mounts continue.

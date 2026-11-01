@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Glow current playback outlines and incoming strokes, with a heavier stroke
+  and a `--ab-play-glow` size override (`6px`, or literal `0` for no glow).
+  Add the `ab-playing` root hook for forward running edge dashes and 0.35s
+  fade/colour easing only while playing; reduced motion disables motion and
+  transitions. Switch SVG and control defaults to mint: current `#0a7a60` /
+  `#6ff0cf`, played `#596e81` / `#5f9e8a` (light/dark), each above 4.5:1 on
+  its canvas and band. Static palettes and SVG bytes stay unchanged.
+  ([#113](https://github.com/uberblick-ai/ablauf/issues/113))
 - Fade unplayed flow parts to 0.3 while a playback step is shown, preserving
   opaque inline label gaps and crossing knockouts. Add the `ab-in-progress`
   root hook for hand-driven hosts and fade fixtures for browser review.

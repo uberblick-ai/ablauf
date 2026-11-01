@@ -224,7 +224,7 @@ test("every CSS selector is scoped; all schemes have independent token defaults"
 		const selectors = [...css.matchAll(/([^{}]+)\{/g)].map(match => match[1].trim()).filter(selector => !selector.startsWith("@"));
 		assert.ok(selectors.length > 10);
 		for (const group of selectors) for (const selector of group.split(",")) assert.match(selector, /^\.ab-playback(?:[ .[:]|$)/);
-		for (const [token, light, dark] of [["bg", "#ffffff", "#171c24"], ["ink", "#17202c", "#e5e9ef"], ["muted", "#5a6575", "#98a2b0"], ["line", "#d3d9e2", "#2c3440"], ["play", "#2869b8", "#88baff"]]) {
+		for (const [token, light, dark] of [["bg", "#ffffff", "#171c24"], ["ink", "#17202c", "#e5e9ef"], ["muted", "#5a6575", "#98a2b0"], ["line", "#d3d9e2", "#2c3440"], ["play", "#0a7a60", "#6ff0cf"]]) {
 			assert.ok(css.includes(`var(--ab-${token},${light})`));
 			assert.ok(css.includes(`var(--ab-${token},${dark})`));
 		}

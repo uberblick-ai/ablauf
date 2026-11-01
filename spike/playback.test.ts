@@ -197,7 +197,7 @@ test("playable SVG preserves drawing order and all labels, with scoped state col
 		const shapes = (value: string) => value.replace(/<defs>[\s\S]*?<\/defs>/, "").match(/<(?:path|rect|circle|line|text)\b[^>]*>/g)?.map(tag => tag.replace(/marker-end="[^"]*"/, 'marker-end="HEAD"'));
 		assert.deepEqual(shapes(svg), shapes(staticSvg));
 		const playbackStyle = svg.match(/--play:.*?<\/style>/s)?.[0] ?? "";
-		assert.doesNotMatch(playbackStyle, /transition|animation/);
+		assert.match(playbackStyle, /\.ab-playing/);
 	}
 	assert.doesNotMatch(staticSvg, /data-ab-part|ab-current|ab-played|--ab-play/);
 	assert.equal(Object.keys(LIGHT).length, 18);
