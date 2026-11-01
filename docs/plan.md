@@ -580,7 +580,7 @@ participant creation/destruction, autonumber and playback are outside v0.
   by its label in regular `--ab-muted`. Each else branch has a faint dotted
   `--ab-line` divider above bold `ELSE` and its regular muted label. Headings
   and branch labels wrap, including unbroken tokens, and rows grow to fit.
-- Notes own a row: one lifeline centres a note up to 220px wide; two span
+- Notes own a row: one lifeline centres a note sized to its text (80 to 300px); two span
   their lifelines. Notes stay within the diagram and their enclosing group.
   Rounded `--ab-rework-bg` fill carries a 3px left `--ab-rework` accent and
   opaque `--ab-rework` text, wrapped even for unbroken tokens.

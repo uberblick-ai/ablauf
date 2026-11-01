@@ -211,7 +211,7 @@ export function renderSequence(source: string, options: RenderOptions = {}) {
 	const wrapped = (text: string, width: number, size: TextStyle["fontSize"] = 12, weight: TextStyle["fontWeight"] = 400) => wrap(text, width, typography, size, weight);
 	const textLines = (lines: string[], x: number, y: number, classes: string, anchor = "") => lines.map((text, i) => `<text x="${x}" y="${y + i * LEADING}"${anchor ? ` text-anchor="${anchor}"` : ""} class="m ${classes}">${esc(text)}</text>`);
 	const titles = participants.map((p) => wrapped(p.title, laneWidth - 16, 12, 600));
-	const headerBottom = 36 + Math.max(1, ...titles.map((t) => t.length)) * LEADING;
+	const headerBottom = 30 + Math.max(1, ...titles.map((t) => t.length)) * LEADING;
 	for (const group of groups) {
 		const first = group.last < 0 ? 0 : group.first;
 		const last = group.last < 0 ? Math.max(0, participants.length - 1) : group.last;
@@ -237,7 +237,7 @@ export function renderSequence(source: string, options: RenderOptions = {}) {
 	let step = 0;
 	const drawing: Group[] = [];
 	for (const row of rows) {
-		if (row.type === "end") { row.group.bottom = y; drawing.pop(); y += 8; continue; }
+		if (row.type === "end") { row.group.bottom = y; drawing.pop(); y += 6; continue; }
 		if (row.type === "open" || row.type === "else") {
 			const group = row.group;
 			if (row.type === "open") { group.top = y; drawing.push(group); }
@@ -257,7 +257,7 @@ export function renderSequence(source: string, options: RenderOptions = {}) {
 			const labels = wrapped(label, width, 11);
 			const labelY = y + 14 + (kindLines.length - (inline ? 1 : 0)) * LEADING;
 			body.push(...textLines(labels, inline ? x + kindWidth : x, labelY, `s11 muted seq-${row.type === "open" ? "group" : "else"}-label`), "</g>");
-			y = labelY + labels.length * LEADING + 8;
+			y = labelY + labels.length * LEADING + 2;
 			continue;
 		}
 		if (row.type === "section") {
@@ -266,21 +266,23 @@ export function renderSequence(source: string, options: RenderOptions = {}) {
 			const end = GUTTER + 8 + typography.width(labels.at(-1) as string, "mono", 11) + 12;
 			const ruleY = y + 12 + (labels.length - 1) * LEADING;
 			if (end < RIGHT) body.push(`<line x1="${end}" y1="${ruleY}" x2="${RIGHT}" y2="${ruleY}" class="seq-rule"/>`);
-			body.push("</g>"); y += labels.length * LEADING + 24;
+			body.push("</g>"); y += labels.length * LEADING + 12;
 			continue;
 		}
 		if (row.type === "note") {
 			const positions = row.participants.map(centre).sort((a, b) => a - b);
 			const group = drawing.at(-1);
 			const left = group ? group.left + 8 : GUTTER + 4, right = group ? group.right - 8 : RIGHT;
-			const width = Math.min(right - left, positions.length === 1 ? 220 : positions[1] - positions[0]);
+			// A single-lifeline note fits its text, up to 300px, so short notes stay small.
+			const fit = Math.max(80, typography.width(row.label, "mono", 12) + 24);
+			const width = Math.min(right - left, positions.length === 1 ? Math.min(300, fit) : positions[1] - positions[0]);
 			const x = Math.max(left, Math.min(right - width, (positions[0] + positions[positions.length - 1]) / 2 - width / 2));
 			const labels = wrapped(row.label, width - 24);
-			const height = labels.length * LEADING + 18;
+			const height = labels.length * LEADING + 12;
 			body.push(`<g data-line="${row.line}" data-annotation="note">`, `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="6" class="seq-note"/>`,
 				`<rect x="${x}" y="${y + 5}" width="3" height="${height - 10}" rx="1.5" class="t-rework"/>`,
-				...textLines(labels, x + 12, y + 19, "s12 seq-note-text"), "</g>");
-			y += height + 16; continue;
+				...textLines(labels, x + 12, y + 16, "s12 seq-note-text"), "</g>");
+			y += height + 10; continue;
 		}
 		const message = row.message;
 		const i = step++;
@@ -290,7 +292,7 @@ export function renderSequence(source: string, options: RenderOptions = {}) {
 		const labelX = self ? from + loop + 8 : Math.min(from, to) + 8;
 		const labels = wrapped(message.label, RIGHT - labelX);
 		const numbers = wrapped(String(i + 1).padStart(2, "0"), GUTTER - 2, 11);
-		const arrowY = y + labels.length * LEADING + 8;
+		const arrowY = y + labels.length * LEADING + 2;
 		const tone = message.response ? "muted" : message.from.tone;
 		const path = self
 			? `M${from},${arrowY} H${from + loop - 5} Q${from + loop},${arrowY} ${from + loop},${arrowY + 5} V${arrowY + 17} Q${from + loop},${arrowY + 22} ${from + loop - 5},${arrowY + 22} H${to}`
@@ -301,7 +303,7 @@ export function renderSequence(source: string, options: RenderOptions = {}) {
 		body.push(`<path d="${path}" class="e e-${tone}${message.response ? " dash seq-response" : ""}" marker-end="url(#${prefix}-${message.response ? "response" : tone})"/>`);
 		if (!message.response) body.push(`<circle cx="${from}" cy="${arrowY}" r="2.5" class="t-${tone}"/>`);
 		body.push("</g>");
-		y = arrowY + Math.max(self ? 22 : 0, (numbers.length - 1) * LEADING) + 26;
+		y = arrowY + Math.max(self ? 22 : 0, (numbers.length - 1) * LEADING) + 12;
 	}
 	for (const item of invalid) {
 		const lines = wrapped(`Line ${item.line}: ${item.text}`, RIGHT - GUTTER - 8);

@@ -8,3 +8,7 @@ altering the strings. `spike/playback.test.ts` decompresses and compares these
 strings byte for byte. These are historical fixtures, not outputs to
 regenerate with the current renderer. A deliberate static change, such as a
 palette value, updates the expected strings in the test, not this file.
+
+`claim.flow` is a sequence diagram, which playback does not touch. Its entry
+was re-rendered when the sequence spacing was tightened (#108); the 15 flow
+examples keep their `04b1458` strings.
