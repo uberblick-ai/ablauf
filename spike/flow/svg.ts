@@ -39,7 +39,7 @@ export const LIGHT = {
 	"agent-bg": "#e7eeed",
 	system: "#4f5d76",
 	"system-bg": "#ebedf3",
-	rework: "#826954",
+	rework: "#806752",
 	"rework-bg": "#f3f0eb",
 	stop: "#815f5a",
 	"stop-bg": "#ede6e5",

@@ -62,7 +62,7 @@ function checkDiagram(svg: SVGSVGElement, scheme?: RenderOptions["scheme"]) {
   return result.minimum;
 }</code></pre>
 <p>Pass the actual SVG element to <code>checkDiagram</code>, whether it is in the document or in a shadow root. The probe is its child, so it sees inherited properties in that tree. After inserting a render made with <code>scheme: "dark"</code>, call <code>checkDiagram(svg, "dark")</code>. For an automatic render call <code>checkDiagram(svg)</code> after each system scheme change. The example reads only public <code>--ab-*</code> properties; renderer classes and internal unprefixed properties such as <code>--rework</code> are not an integration API.</p>
-<p>Test complete host palettes and renders with overrides removed, including a shadow-root fixture if you embed there. The defaults have known minima: DARK is about <code>4.707</code>; unchanged LIGHT is about <code>4.396</code>, from rework-toned edge labels on a band (including inline labels). A strict 4.5 test therefore reports LIGHT until you adjust the host palette. Palette correction with visual review is tracked separately in <a href="https://github.com/uberblick-ai/ablauf/issues/86">#86</a>.</p>
+<p>Test complete host palettes and renders with overrides removed, including a shadow-root fixture if you embed there. Both defaults meet 4.5: LIGHT has a minimum of <code>4.526146877943026</code>, from rework-toned edge labels on a band (including inline gap labels); DARK stays at <code>4.706637464097893</code>. Host overrides need their own contrast checks.</p>
 </section>
 
 <section class="q" id="contract"><h2>Read the paint contract</h2>

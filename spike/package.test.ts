@@ -84,7 +84,7 @@ assert.notDeepEqual(LIGHT, DARK);
 assert.equal(TOKENS.length, 18);
 assert.deepEqual([...TOKENS].sort(), Object.keys(LIGHT).sort());
 assert.ok(checkPalette(DARK).minimum >= 4.5);
-assert.ok(Math.abs(checkPalette(LIGHT).minimum - 4.395772012043759) < 1e-10);
+assert.ok(checkPalette(LIGHT).minimum >= 4.5);
 assert.ok(checkPalette(LIGHT).pairs.every(p => typeof p.where === "string" && p.ratio >= 1));
 `);
 	run(process.execPath, ["public-api.mjs"]);

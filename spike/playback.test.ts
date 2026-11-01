@@ -31,7 +31,9 @@ test("all pre-playback examples keep their captured main SVG bytes in every sche
 		const source = readFileSync(new URL(`./examples/${file}`, import.meta.url), "utf8");
 		for (const [i, scheme] of ([undefined, "light", "dark"] as const).entries()) {
 			const result = render(source, { scheme, idPrefix: file.slice(0, -5) });
-			assert.equal(result.svg, outputs[i], `${file} ${scheme ?? "auto"}`);
+			// Captured before #86 darkened LIGHT rework; that palette value is the only byte change.
+			const expected = outputs[i].replaceAll("#826954", "#806752");
+			assert.equal(result.svg, expected, `${file} ${scheme ?? "auto"}`);
 			assert.deepEqual(result.timelines, []);
 		}
 	}

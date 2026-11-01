@@ -246,25 +246,26 @@ test("claim preserves five titles, all 15 directed messages, the self-message an
 });
 
 // Frozen from main before sequence implementation, independent of regenerated
-// figures. Any change to existing flow/fan-out bytes must be deliberate.
+// figures, with only the LIGHT rework default corrected in #86. Any further
+// change to existing flow/fan-out bytes must be deliberate.
 const existing: Record<string, string> = {
-	"approval-narrow": "16ba87bbcfd02ca5cbcc4d535035c4ed5450258b789fbc635877e34f67a21258",
-	"approval-wide": "110a2ad44f29001a3107d7a1a10d14d121952033397d40dcdec871daada2e08b",
-	approvals: "52a1a54c974f3d794f9f192d121e631c1b2126b60093fd716b4547ac5e55569f",
-	checkout: "6123da943494683c90c755d41c2c9d1ed2ff1736291ae828b8e12f8881c8361c",
-	deploy: "521f32edd93647a497f3acf6f86e82b87c74b515b440df49c88c80146697055c",
-	launcher: "4822465ab254e733f082a1c7f1332dc155c599cd21943f532b3aa72689d393de",
-	"loop-insert": "e433f497819b322a1cc121621aee648195218846446d877328f51400456da238",
-	loop: "2d8f0563694d7f8ab589261fead69d60c08b1b42b61584596fde72830b45fed7",
-	neutral: "adb82c8e51e101e90db4a5684f7c03cf8ed3a37934e2758a85c7f4bafbc515f4",
-	"panel-wrap": "8839a4838e5f11b51cf9565eedef8f035e8211c482d69056093e83224102bc99",
-	"project-workflow": "dc47e284c9fbf88469385d0f45e1ce2675d9311e6399e9ba45e5d5982aea327f",
-	"run-endings-ladder": "0c8252a5293da914f31cb729eeda68b04ca4175d37fc15e6a9787dc754f4a9a5",
-	"run-endings": "e8fcca9ac33c8e5171125c98d7fa80322cc76cd3e3f1b296725dce7142460313",
-	"system-steps": "db2f5aba1e067a7256a3f2767cfcbaae48f53cd7d50d5760bea99630ade8aa1c",
-	"top-entries": "2d3d9863be0d4502ce0c619c225d0d0a8ffddbf7afcef8e0df9ac747eb0a31e0",
+	"approval-narrow": "3379b7a0289f78599e7e65623a281860157560bda3a28f85cfc19259d0f62c34",
+	"approval-wide": "f397c2bbb56c669f0e400c3b4b484e133e5031ff6e99105a619d3476561c74d5",
+	approvals: "51dfe86d7f5c9c7d9893c3a2b2eaad193c0464c058b05c753528202ddc5e4e93",
+	checkout: "71891698ea794f9313b5accfd5a068367fb5625d921f141027b72a84e57dff1e",
+	deploy: "f857e5a2bc6bea4551e3b577e3b7c796df09e44ff94a25c9177371121bb4372f",
+	launcher: "fb21241e4f801e04aa9a5701f6e3febb97796094cc5f1efdd58baa2ccebc81c4",
+	"loop-insert": "f4c15cea52cfb84fb7796dbacc85f778a62ada1adbbf366dafed24e0b466a5e4",
+	loop: "630532f0a08c9533934bdcb31ce360482c8dd1637ebc089a9f9757bd07b43682",
+	neutral: "63444d2958fa2fb058ad2a022825feaf13556d543686ce2eab348da20a1bc7ac",
+	"panel-wrap": "7f0e87994e49141c6868aec34e1b4f8780f8129b63b45394e8c1f31f2981a54b",
+	"project-workflow": "193612493494db6a023d7dac79bc0497dccf66e5ae1bf57b450082ad69a3fc2e",
+	"run-endings-ladder": "52a0ab947b93b70a3f92ffdc797dcdb5dfd86cc08b52351198908c47d5614aa4",
+	"run-endings": "3dd38dcc04e7a2ec35dcf62186c56172836ffa7833b80d860fccea54e1864f25",
+	"system-steps": "d0a38a0b8e3a8014827d1797562b7d754a8d6f0ee0f636feecfe46dd35d07b60",
+	"top-entries": "4bfc0fb42d59da409442d6a81468f24d7a01fd71bf5a38ebfd9b1e25d07d69fe",
 };
-test("existing flow and fan-out example SVG bytes stay unchanged", () => {
+test("existing flow and fan-out SVG bytes stay fixed after the LIGHT rework correction", () => {
 	assert.equal(Object.keys(existing).length, 15);
 	for (const [name, hash] of Object.entries(existing)) assert.equal(
 		createHash("sha256").update(render(example(name), { idPrefix: name }).svg).digest("hex"), hash, name,
