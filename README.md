@@ -52,7 +52,7 @@ play "Tests failing"
 In a page, one call adds the scenario tabs, the buttons, the step bar and the
 caption under the figure:
 
-```js
+```javascript
 import { render } from "@uberblick/ablauf";
 import { mountPlayback } from "@uberblick/ablauf/playback";
 
