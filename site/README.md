@@ -1,7 +1,7 @@
 # ablauf.uberblick.ai
 
 The site for ablauf: a landing page at `/`, a page per diagram kind (`/flow`,
-`/fan-out`), guides under `/guides/` and `/motivation`, in the shell the
+`/fan-out`, `/sequence`), guides under `/guides/` and `/motivation`, in the shell the
 uberblick.ai sites share (top bar, sidebar, "Who builds this").
 
 ```sh

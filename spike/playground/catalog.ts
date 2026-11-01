@@ -1,6 +1,6 @@
 // The playground's sidebar: every .flow in examples/ and trials/, grouped by
 // diagram kind as on the showcase. A file's kind is its first source line,
-// the same test render() uses; a file of neither kind is drawn as a flow.
+// the same test render() uses; an unrecognised kind is drawn as a flow.
 
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -18,8 +18,9 @@ export interface Group {
 }
 
 const KINDS = [
-  { kind: "Flow", test: (first: string) => !/^fan-out(?:\s|$)/.test(first) },
+  { kind: "Flow", test: (first: string) => !/^(?:fan-out|sequence)(?:\s|$)/.test(first) },
   { kind: "Fan-out", test: (first: string) => /^fan-out(?:\s|$)/.test(first) },
+  { kind: "Sequence", test: (first: string) => /^sequence(?:\s|$)/.test(first) },
 ];
 
 export function catalog(root: string): Group[] {

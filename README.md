@@ -9,8 +9,9 @@ the diagram without looking at the picture. The renderer sizes the grid and
 draws; it never moves anything, and it reports every problem with its line
 number.
 
-The kinds are routed flows and standalone outcome fan-outs; both formats are
-v0. See them on [ablauf.uberblick.ai](https://ablauf.uberblick.ai).
+The kinds are routed flows, standalone outcome fan-outs and sequences of
+messages between participants; all three formats are v0. See them on
+[ablauf.uberblick.ai](https://ablauf.uberblick.ai).
 
 ## Why ablauf
 
@@ -18,12 +19,14 @@ We started with Mermaid, and the first version of ablauf was a Mermaid
 subset. Mermaid lays a diagram out automatically, which makes it quick to
 write. For the documents we work on we wanted the author to decide where each
 step sits and which side each edge leaves and enters, so that a small edit to
-the text leaves the rest of the picture where it was. Edges are still spelled
-like Mermaid's (`-->`, `: label`), because agents already know that spelling.
+the text leaves the rest of the picture where it was. The arrow and label
+notation (`-->`, `-.->`, `: label`) is familiar from Mermaid, because agents
+already know that spelling. Sequence shares flow's `-->` requests and `-.->`
+responses, rather than Mermaid's sequence arrow aliases.
 
-ablauf is much narrower than Mermaid: two kinds, flows and fan-outs, no
-automatic layout and no Mermaid import or export. If you need Mermaid's
-breadth, Mermaid is the better choice. The
+ablauf has three kinds: flows, fan-outs and sequences, with no automatic
+layout and no Mermaid compatibility, import or export. Mermaid has far more
+diagram types. If you need Mermaid's breadth, Mermaid is the better choice. The
 [motivation page](https://ablauf.uberblick.ai/motivation) has the longer
 story.
 
@@ -39,7 +42,7 @@ mise trust && mise run setup
 mise run playground
 ```
 
-Then open http://localhost:4620. Rendered examples of both kinds are on
+Then open http://localhost:4620. Rendered examples of all three kinds are on
 [ablauf.uberblick.ai](https://ablauf.uberblick.ai).
 
 ## Use in a build script
@@ -148,8 +151,8 @@ legend
 - `columns` names the columns left to right. Each node starts a new row unless
   `row=` puts it beside another node.
 - Nodes are `text`, `pill`, `box`, `end`, `panel` or `decision`, coloured by a tone.
-- Edges use Mermaid's arrows. `from=` and `to=` pick the sides an edge leaves
-  and enters; each pair of sides has one fixed shape.
+- Edges use the familiar arrow notation. `from=` and `to=` pick the sides an
+  edge leaves and enters; each pair of sides has one fixed shape.
 - `legend` explains the shapes in fine print under the diagram.
 
 [spike/PRIMER.md](https://github.com/uberblick-ai/ablauf/blob/main/spike/PRIMER.md) is the full format on one page, and the
@@ -207,6 +210,21 @@ outcome "Edited since" reason="The input changed after the maintainer started it
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/uberblick-ai/ablauf/main/docs/images/approvals-dark.svg">
   <img alt="Whether approval permits a run: approved starts the run, while outside input or an edit since approval asks a maintainer." src="https://raw.githubusercontent.com/uberblick-ai/ablauf/main/docs/images/approvals-light.svg">
+</picture>
+
+### Claim your podcast
+
+Sequence (`sequence v0`) puts participants on ordered lifelines and messages
+in source order. It uses flow's `-->` requests and `-.->` responses with
+`: label` text. The
+annotated [claim example](https://github.com/uberblick-ai/ablauf/blob/main/spike/examples/claim.flow)
+has Claim and Verify sections, a note about code expiry and an `alt`/`else`
+group for the two verification outcomes. Messages 7–15 illustrate handshake
+details, not an agreed product protocol.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/uberblick-ai/ablauf/main/docs/images/claim-dark.svg">
+  <img alt="Claim your podcast: Creator, Studio, Backend, RSS feed and Owner's inbox exchange messages to claim a show and verify an emailed code, with a code-expiry note and alternative verification outcomes." src="https://raw.githubusercontent.com/uberblick-ai/ablauf/main/docs/images/claim-light.svg">
 </picture>
 
 ## Host page themes

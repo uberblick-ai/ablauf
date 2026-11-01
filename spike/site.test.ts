@@ -16,7 +16,7 @@ test("the site builds every page, with a page per kind and clean examples", (t) 
 	const out = scratch(t);
 	const { pages, problems } = build({ out });
 	assert.deepEqual(problems, []);
-	assert.deepEqual(pages, ["/", "/404", "/fan-out", "/flow", "/guides/colours", "/guides/testing", "/guides/tiptap", "/motivation", "/uberblick"]);
+	assert.deepEqual(pages, ["/", "/404", "/fan-out", "/flow", "/guides/colours", "/guides/testing", "/guides/tiptap", "/motivation", "/sequence", "/uberblick"]);
 	for (const kind of kinds) {
 		const html = readFileSync(join(out, `${kind.id}.html`), "utf8");
 		assert.match(html, new RegExp(`<h1>${kind.name}</h1>`));
@@ -32,6 +32,34 @@ test("the site builds every page, with a page per kind and clean examples", (t) 
 	assert.match(sitemap, /<loc>https:\/\/ablauf\.uberblick\.ai\/guides\/colours<\/loc>/);
 	assert.doesNotMatch(sitemap, /404/);
 	assert.match(readFileSync(join(out, "robots.txt"), "utf8"), /Sitemap: https:\/\/ablauf\.uberblick\.ai\/sitemap\.xml/);
+});
+
+test("Sequence shows the annotated claim once, with navigation and discovery alongside the other kinds", (t) => {
+	const out = scratch(t);
+	const { pages, problems } = build({ out });
+	assert.deepEqual(problems, []);
+	assert.deepEqual(kinds.map((k) => [k.id, k.name, k.header]), [
+		["flow", "Flow", "flow v0"],
+		["fan-out", "Fan-out", "fan-out v0"],
+		["sequence", "Sequence", "sequence v0"],
+	]);
+	assert.deepEqual(kinds.flatMap((k) => k.examples.filter((e) => e.name === "claim").map(() => k.id)), ["sequence"]);
+	const sequence = readFileSync(join(out, "sequence.html"), "utf8");
+	assert.equal([...sequence.matchAll(/<section class="q ex-item" id="claim">/g)].length, 1);
+	assert.match(sequence, /<div class="ex-pic"><svg /);
+	assert.match(sequence, /<pre><code>sequence v0\nparticipant Creator/);
+	for (const annotation of ['section "Claim"', 'section "Verify"', "note over Backend:", "alt Code matches", "else Wrong or expired code"])
+		assert.ok(sequence.includes(annotation.replaceAll('"', "&quot;")), annotation);
+	const index = readFileSync(join(out, "index.html"), "utf8");
+	const sitemap = readFileSync(join(out, "sitemap.xml"), "utf8");
+	for (const kind of kinds) {
+		assert.match(index, new RegExp(`<a href="/${kind.id}"><span class="n">${kind.header}</span>`));
+		assert.ok(sitemap.includes(`<loc>https://ablauf.uberblick.ai/${kind.id}</loc>`));
+		for (const page of pages) {
+			const html = readFileSync(join(out, `${page === "/" ? "index" : page.slice(1)}.html`), "utf8");
+			assert.match(html, new RegExp(`<a(?: class="on")? href="/${kind.id}">${kind.name}</a>`));
+		}
+	}
 });
 
 test("an example is a Displayed tab and a Source tab", (t) => {

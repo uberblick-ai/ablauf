@@ -12,9 +12,11 @@ test("the playground sidebar groups flows by kind, examples before trials", (t) 
 	mkdirSync(join(root, "trials"));
 	writeFileSync(join(root, "examples", "loop.flow"), "flow v0\n");
 	writeFileSync(join(root, "examples", "approvals.flow"), "# a comment first\n\nfan-out v0\n");
+	writeFileSync(join(root, "examples", "claim.flow"), "# annotated sequence\n\nsequence v0\n");
 	writeFileSync(join(root, "examples", "notes.txt"), "fan-out v0\n");
 	writeFileSync(join(root, "trials", "edit-1.flow"), "flow v0\n");
 	writeFileSync(join(root, "trials", "empty.flow"), "");
+	writeFileSync(join(root, "trials", "exchange.flow"), "sequence v0\n");
 	assert.deepEqual(catalog(root), [
 		{
 			kind: "Flow",
@@ -25,6 +27,7 @@ test("the playground sidebar groups flows by kind, examples before trials", (t) 
 			],
 		},
 		{ kind: "Fan-out", flows: [{ folder: "examples", name: "approvals" }] },
+		{ kind: "Sequence", flows: [{ folder: "examples", name: "claim" }, { folder: "trials", name: "exchange" }] },
 	]);
 });
 
@@ -37,9 +40,12 @@ test("a kind with no files has no group", (t) => {
 	assert.deepEqual(catalog(root), [{ kind: "Flow", flows: [{ folder: "examples", name: "loop" }] }]);
 });
 
-test("the real examples include both kinds", () => {
+test("the real examples include all three kinds, with claim only under Sequence", () => {
 	const groups = catalog(import.meta.dirname);
-	assert.deepEqual(groups.map((g) => g.kind), ["Flow", "Fan-out"]);
+	assert.deepEqual(groups.map((g) => g.kind), ["Flow", "Fan-out", "Sequence"]);
 	const fanouts = groups[1].flows.map((f) => f.name);
 	for (const name of ["approvals", "run-endings", "run-endings-ladder"]) assert.ok(fanouts.includes(name), name);
+	assert.deepEqual(groups.flatMap((g) => g.flows.filter((f) => f.name === "claim").map((f) => ({ kind: g.kind, ...f }))), [
+		{ kind: "Sequence", folder: "examples", name: "claim" },
+	]);
 });

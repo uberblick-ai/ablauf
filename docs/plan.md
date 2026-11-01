@@ -627,8 +627,7 @@ participant creation/destruction, autonumber and playback are outside v0.
   dimensions and diagnostics with empty nodes, routes and bands and no legend,
   so the playground grid overlay still works. Existing flow and fan-out
   rendering bytes are unchanged. Save sequence sources as `.flow` files for
-  the existing check and render tools; presentation belongs to #80, so they
-  currently stay in the playground's Flow group.
+  the existing check and render tools.
 
 [Claim your podcast](../spike/examples/claim.flow) preserves the spike fixture's
 five participant titles and all 15 directed messages, including its self-message.
