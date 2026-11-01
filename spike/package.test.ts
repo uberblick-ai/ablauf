@@ -29,6 +29,7 @@ test("the packed package works for an isolated production consumer", (t) => {
 	assert.deepEqual(manifest.dependencies ?? {}, {});
 	assert.deepEqual(manifest.optionalDependencies ?? {}, {});
 	assert.deepEqual(manifest.peerDependencies ?? {}, {});
+	assert.deepEqual(manifest.exports["./playback"], { types: "./dist/playback.d.ts", import: "./dist/playback.js" });
 	assert.deepEqual(readdirSync(join(consumer, "node_modules")).sort(), [".package-lock.json", "@uberblick"]);
 	assert.deepEqual(readdirSync(installed).sort(), ["LICENSE", "README.md", "dist", "package.json"]);
 	assert.ok(readdirSync(join(installed, "dist")).every((name) => name.endsWith(".js") || name.endsWith(".d.ts")));
@@ -88,6 +89,22 @@ assert.ok(checkPalette(LIGHT).pairs.every(p => typeof p.where === "string" && p.
 `);
 	run(process.execPath, ["public-api.mjs"]);
 
+	// Both entries can be imported in Node; even import-time browser probes fail.
+	writeFileSync(join(consumer, "import-entries.mjs"), `
+import assert from "node:assert/strict";
+for (const name of ["window", "document", "matchMedia", "SVGSVGElement", "Element"]) {
+  Object.defineProperty(globalThis, name, { get() { throw new Error("Browser API touched: " + name); } });
+}
+const core = await import("@uberblick/ablauf");
+const playback = await import("@uberblick/ablauf/playback");
+assert.equal(typeof core.render, "function");
+assert.equal(core.createPlayer, undefined);
+assert.deepEqual(Object.keys(playback), ["createPlayer"]);
+assert.equal(typeof playback.createPlayer, "function");
+assert.match(core.render("flow v0\\nbox a\\n").svg, /^<svg /);
+`);
+	run(process.execPath, ["import-entries.mjs"]);
+
 	// Only the producer uses tsc. The consumer's declarations resolve using
 	// the installed tarball, with no repository types or source imports.
 	writeFileSync(join(consumer, "types.mts"), `
@@ -117,4 +134,36 @@ const incomplete: Palette = { bg: "#fff" };
 	assert.ok(guideScript, "the integration guide has a complete TypeScript example");
 	writeFileSync(join(consumer, "guide.mts"), guideScript.replaceAll("&gt;", ">").replaceAll("&lt;", "<").replaceAll("&amp;", "&"));
 	run(process.execPath, [join(root, "node_modules/typescript/bin/tsc"), "--noEmit", "--strict", "--module", "nodenext", "--target", "es2023", "types.mts", "guide.mts"]);
+
+	writeFileSync(join(consumer, "core-types.mts"), `
+import { render, type Timeline, type TimelineStep } from "@uberblick/ablauf";
+const result = render("flow v0\\nbox a\\nplay\\n step a\\n");
+const timelines: Timeline[] = result.timelines;
+const step: TimelineStep = timelines[0].steps[0];
+const parts: string[] = step.parts;
+const ms: number = step.ms;
+`);
+	// No DOM library or Node ambient types are available to a core-only consumer.
+	run(process.execPath, [join(root, "node_modules/typescript/bin/tsc"), "--noEmit", "--strict", "--module", "nodenext", "--target", "es2023", "--lib", "es2023", "core-types.mts"]);
+	writeFileSync(join(consumer, "playback-types.mts"), `
+import type { Timeline } from "@uberblick/ablauf";
+import { createPlayer, type Player, type PlayerState } from "@uberblick/ablauf/playback";
+declare const svg: SVGSVGElement;
+declare const timelines: Timeline[];
+const player: Player = createPlayer(svg, timelines, { loop: true, onChange(state: PlayerState) {
+  const scenario: number = state.scenario;
+  const step: number = state.step;
+  const status: "idle" | "paused" | "playing" | "ended" = state.status;
+} });
+const minimal: Player = createPlayer(svg, timelines);
+const state: PlayerState = player.state;
+player.play(); player.pause(); player.next(); player.previous(); player.seek(-1); player.select(0); player.destroy();
+// @ts-expect-error Player state is a readonly property.
+player.state = state;
+// @ts-expect-error Seek takes a numeric step index.
+player.seek("first");
+// @ts-expect-error Unsupported status.
+const invalid: PlayerState = { scenario: 0, step: -1, status: "stopped" };
+`);
+	run(process.execPath, [join(root, "node_modules/typescript/bin/tsc"), "--noEmit", "--strict", "--module", "nodenext", "--target", "es2023", "--lib", "es2023,dom", "playback-types.mts"]);
 });

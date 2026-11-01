@@ -646,11 +646,12 @@ trials are references only. No spike code or dependency ships.
 
 ## Playback
 
-Flow play sections, resolved timelines and SVG state styles are implemented.
-The browser player (#69), built-in controls (#94), and sequence/fan-out target
-resolution are still planned. This design records the smallest package feature
-that lets a host show several scenarios of one diagram. It does not change
-the existing flow, sequence or fan-out syntax or static rendering rules.
+Flow play sections, resolved timelines, SVG state styles and the headless
+browser player (#69) are implemented. Built-in controls (#94) and
+sequence/fan-out target resolution are still planned. This design records the
+smallest package feature that lets a host show several scenarios of one
+diagram. It does not change the existing flow, sequence or fan-out syntax or
+static rendering rules.
 
 ### Vocabulary
 
@@ -725,11 +726,11 @@ interface TimelineStep {
 }
 ```
 
-The planned player and controls use only `parts`, never `kind`: a new diagram kind
-needs a resolver, not a new player. They will live in the browser entry
+The player and planned controls use only `parts`, never `kind`: a new diagram
+kind needs a resolver, not a new player. The player lives in the browser entry
 `@uberblick/ablauf/playback`; the core stays DOM-free. The player owns playback
-and scenario selection; the built-in controls supply buttons, scenario tabs
-and the caption so hosts do not need to recreate them.
+and scenario selection; the planned built-in controls supply buttons, scenario
+tabs and the caption so hosts do not need to recreate them.
 
 Reuse the seams from [the playback spike (#65)](https://github.com/uberblick-ai/ablauf/pull/65):
 split play sections off before diagram-kind dispatch, use a part lookup map
@@ -760,19 +761,32 @@ Playable SVGs define internal `--play` and `--play-done` through the host's
 `#8498ac` (dark). Auto follows `prefers-color-scheme`; pinned schemes keep
 their defaults. These tokens are separate from the existing exported palette.
 
-### Behaviour and theming (player behaviour planned)
+### Behaviour and theming
 
 - States are idle (full figure), paused, playing and ended. Previous, next,
   seek and switching scenario pause. Play on ended replays. Stop on the last
-  step and offer Replay; `loop` is opt-in.
+  step after its full duration; `loop` is opt-in. Resuming restarts the current
+  step's full duration. Controls will offer Replay.
 - Play on click is the default. Nothing starts unless the host calls play;
   a host may do so when a gallery card scrolls into view. With reduced motion
-  nothing animates and the full figure shows; manual stepping still works.
+  playback resets to idle at step `-1` and the full figure shows; manual
+  stepping still works. Preference changes are observed while playing;
+  disabling reduced motion never starts playback. State changes are instant,
+  with no player animations or transitions.
 - Without a player, the diagram is the full figure.
 - One accent marks the current step; played parts keep a quieter tint. Use
   `--ab-play` for current and `--ab-play-done` for played parts, emitted only
   in playable SVGs. They follow the existing host-override and light/dark
   default rules; the existing palette stays unchanged.
+
+`createPlayer(svg, timelines, { loop?, onChange? }?)` exports the headless API;
+see [usage and navigation semantics](../README.md#play-an-inline-svg).
+Creation is idle at scenario `0`, step `-1`, without callbacks or timers.
+Only a changed scenario/step/status tuple notifies `onChange`, after state
+and SVG updates, with a stable snapshot. Destroy is silent and idempotent,
+clears highlighting, timers and listeners, preserves the scenario, and
+leaves idle at step `-1`; later methods do nothing. Both package entries are
+safe to import without browser globals, and core types need no DOM library.
 
 ### Release boundaries
 
