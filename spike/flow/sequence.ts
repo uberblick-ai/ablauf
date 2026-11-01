@@ -102,12 +102,15 @@ export function renderSequence(source: string, options: RenderOptions = {}) {
 			const colon = text.indexOf(":");
 			if (colon < 0) error(line, "message needs a colon before its label");
 			const head = colon < 0 ? text : text.slice(0, colon).trim();
-			// Split on literal arrows in one pass. A backtracking endpoint regex
-			// would repeatedly revisit arrows in a long malformed library input.
-			const parts = head.split(/(-->|-\.->)/);
-			const fromId = parts[0].trim();
-			const toId = parts[2]?.trim() ?? "";
-			if (head.includes("->>") || parts.length !== 3 || !fromId || !toId || /\s/.test(fromId) || /\s/.test(toId))
+			// Literal searches bound the work on malformed library input, even
+			// when it contains thousands of arrows and no valid endpoints.
+			const request = head.indexOf("-->");
+			const response = head.indexOf("-.->");
+			const at = request < 0 ? response : response < 0 ? request : Math.min(request, response);
+			const arrow = at === response ? "-.->" : "-->";
+			const fromId = at < 0 ? "" : head.slice(0, at).trim();
+			const toId = at < 0 ? "" : head.slice(at + arrow.length).trim();
+			if (head.includes("->>") || toId.includes("-->") || toId.includes("-.->") || !fromId || !toId || /\s/.test(fromId) || /\s/.test(toId))
 				error(line, "malformed message arrow; use --> (request) or -.-> (response)");
 			else {
 				sawMessage = true;
@@ -115,13 +118,13 @@ export function renderSequence(source: string, options: RenderOptions = {}) {
 				const to = byId.get(toId);
 				for (const id of new Set([fromId, toId]))
 					if (!byId.has(id)) error(line, `unknown message participant \`${id}\``);
-				if (from && to && colon >= 0) messages.push({ from, to, response: parts[1] === "-.->", label: text.slice(colon + 1).trim(), line });
+				if (from && to && colon >= 0) messages.push({ from, to, response: arrow === "-.->", label: text.slice(colon + 1).trim(), line });
 			}
 		}
 		if (diagnostics.length > before) invalid.push({ line, text });
 	}
 
-	const mode = options.scheme === "light" || options.scheme === "dark" ? options.scheme : "auto";
+	const mode = options.scheme === "light" ? "light" : options.scheme === "dark" ? "dark" : "auto";
 	const laneWidth = (WIDTH - GUTTER) / Math.max(1, participants.length);
 	const centres = new Map(participants.map((p, i) => [p, Math.round(GUTTER + laneWidth * (i + 0.5))]));
 	const centre = (p: Participant) => centres.get(p) as number;

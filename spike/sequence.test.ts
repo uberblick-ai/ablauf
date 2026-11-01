@@ -146,6 +146,9 @@ test("sequence SVG is deterministic, inert and uses the existing render options"
 	assert.doesNotMatch(automatic.svg, /<script|<img|href=|onload=/);
 	const unsafeScheme = render(source, { scheme: '"><script>alert(1)</script>' } as unknown as RenderOptions);
 	assert.equal(unsafeScheme.svg, automatic.svg);
+	let schemeReads = 0;
+	const changingScheme = { get scheme() { return ++schemeReads === 1 ? "light" : '"><script>alert(1)</script>'; } } as unknown as RenderOptions;
+	assert.equal(render(source, changingScheme).svg, render(source, { scheme: "light" }).svg);
 	assert.match(automatic.svg, /class="seq-lane" fill-opacity="0.15"/);
 	assert.match(automatic.svg, /seq-life\{stroke:var\(--line\);stroke-width:1;stroke-opacity:.5\}/);
 	for (const scheme of ["light", "dark"] as const) {
