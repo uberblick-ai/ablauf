@@ -16,11 +16,11 @@
 <marker id="top-entries-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker>
 </defs>
 <path d="M227,62 L227,220" class="e e-ink"/>
-<path d="M81,109 L208,109 L208,220" class="e e-ink"/>
-<path d="M373,173 L247,173 L247,220" class="e e-ink"/>
+<path d="M81,109 L207,109 L207,220" class="e e-ink"/>
+<path d="M373,173 L246,173 L246,220" class="e e-ink"/>
 <path d="M227,62 L227,220" class="arrow" marker-end="url(#top-entries-ink)"/>
-<path d="M208,109 L208,220" class="arrow" marker-end="url(#top-entries-ink)"/>
-<path d="M247,173 L247,220" class="arrow" marker-end="url(#top-entries-ink)"/>
+<path d="M207,109 L207,220" class="arrow" marker-end="url(#top-entries-ink)"/>
+<path d="M246,173 L246,220" class="arrow" marker-end="url(#top-entries-ink)"/>
 <g>
 <rect x="137" y="16" width="180" height="46" rx="8" class="k-agent"/>
 <text x="227" y="35" text-anchor="middle" class="m s13 b t-agent">before</text>
@@ -32,7 +32,7 @@
 <g><rect x="373" y="156" width="72" height="34" rx="17" class="pill"/>
 <circle cx="387" cy="173" r="5" class="t-muted"/>
 <text x="399" y="177" class="m s12">right</text></g>
-<g><rect x="188" y="220" width="79" height="34" rx="17" class="pill"/>
-<circle cx="202" cy="237" r="5" class="t-muted"/>
-<text x="214" y="241" class="m s12">target</text></g>
+<g><rect x="187" y="220" width="79" height="34" rx="17" class="pill"/>
+<circle cx="201" cy="237" r="5" class="t-muted"/>
+<text x="213" y="241" class="m s12">target</text></g>
 </svg>
