@@ -14,15 +14,16 @@ const source = (style: string) => [
 	`invalid ${"🙂".repeat(100)}`,
 ].join("\n");
 
-test("fan-outs retain pre-font-fix SVG bytes with absent or empty fonts", () => {
-	// SHA-256 of the complete SVG from afb04ab, including fractional geometry.
+test("fan-outs retain pre-font-fix bytes except the LIGHT rework correction, with absent or empty fonts", () => {
+	// SHA-256 of the complete SVG from afb04ab with only the LIGHT rework
+	// default corrected in #86; fractional geometry remains unchanged.
 	const cases = [
-		[readFileSync(new URL("./examples/approvals.flow", import.meta.url), "utf8"), "e7bd04a928ec7f3859073687a537b97c4f776fd7c86aa57589e3d83ba7396a7a"],
-		[readFileSync(new URL("./examples/run-endings.flow", import.meta.url), "utf8"), "d2e82e267b34a8c470c677a1b9dcf910dbfd51177911ceaca5ad3ca846704458"],
-		[readFileSync(new URL("./examples/run-endings-ladder.flow", import.meta.url), "utf8"), "0c8252a5293da914f31cb729eeda68b04ca4175d37fc15e6a9787dc754f4a9a5"],
-		[source(""), "be707ee4ea274c159d5bab24ff7b555090d9cadbeb2af10a6590ea957c68c6ce"],
-		[source("branches"), "3aec066ee59f6ed50d0afd4c690891c53f6f45b7e7325013210517d0cec25c6f"],
-		[source("ladder"), "ca8eb366e0b601cf451b2398d7cd42828419655d0394a6021293028019820efc"],
+		[readFileSync(new URL("./examples/approvals.flow", import.meta.url), "utf8"), "5dd8d31357fde9fa108c617526fe97efd1bb468ad81e374f29d4ab8ddabe979e"],
+		[readFileSync(new URL("./examples/run-endings.flow", import.meta.url), "utf8"), "5fb740a8c151e46710cf0a7a8eab2939364c9fc062df8f05049dfb0314d38ee1"],
+		[readFileSync(new URL("./examples/run-endings-ladder.flow", import.meta.url), "utf8"), "52a0ab947b93b70a3f92ffdc797dcdb5dfd86cc08b52351198908c47d5614aa4"],
+		[source(""), "5b76be25e7fcb44e97be478e6205e491ba0b77c3bc236d37f47b12b5f90297f9"],
+		[source("branches"), "f5e5ec14adaeb4c116b5a1f9c9971720247ea9733469855adbc6595eb6a06cae"],
+		[source("ladder"), "0aef29da107321ca1fae9e3f7c90ca0512450feb80bbbb44e03b8b77312f73e1"],
 	];
 	for (const [input, hash] of cases) {
 		const svg = render(input).svg;
