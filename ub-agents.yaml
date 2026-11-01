@@ -26,13 +26,15 @@ queue:
 
 # Default arguments for each CLI: Codex builds, Claude reviews.
 # Codex gets full access without its sandbox; Claude gets file edits and the listed
-# commands without prompts: https://github.com/uberblick-ai/ub-agents/blob/main/docs/configuration.md#runtime-permissions
+# commands and both corpus servers without prompts:
+# https://github.com/uberblick-ai/ub-agents/blob/main/docs/configuration.md#runtime-permissions
 runtime-args:
   codex: [--sandbox, danger-full-access]
   claude: [--permission-mode, acceptEdits, --permission-prompts, none,
            --allowedTools, "Bash(git *)", "Bash(gh *)", "Bash(mise *)",
            "Bash({report_command} report *)", "Bash({report_command} read *)",
            "Bash({report_command} retrospective *)",
+           "mcp__ablauf-corpus__*", "mcp__uberblick-product-corpus__*",
            --add-dir, "{scratch}"]
 # An agent's runtime-args list or mapping replaces these defaults entirely.
 # Omit the agent key to inherit; an empty list or mapping disables the defaults.
