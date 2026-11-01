@@ -9,8 +9,15 @@
 
 - Export `TOKENS`, `Token`, `Palette` and DOM-free `checkPalette` for host text
   contrast checks, with a [Test your integration](https://ablauf.uberblick.ai/guides/testing)
-  guide. Built-in colours and rendered SVG bytes are unchanged.
+  guide. The checker does not alter rendering; the LIGHT palette correction
+  below changes its rework default and the corresponding SVG bytes.
   ([#76](https://github.com/uberblick-ai/ablauf/issues/76))
+
+- Darken LIGHT rework from `#826954` to `#806752` so every built-in text pair
+  reaches 4.5:1, including edge labels on bands and inline labels on gap bands.
+  The LIGHT minimum is now 4.526146877943026; DARK remains unchanged at
+  4.706637464097893. Geometry and all other palette values stay unchanged.
+  ([#86](https://github.com/uberblick-ai/ablauf/issues/86))
 
 - Same-column edges into and out of decisions stay on the column centreline
   across odd and even node widths, preserving inline-label clearance.

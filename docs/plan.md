@@ -339,8 +339,8 @@ legend descriptions in flows. Fan-outs and sequences use no text-role metrics
 or face. For sequences, `fonts.text` does not affect the SVG or layout.
 Each configured role requires both `family` and `measureText`; an omitted role
 keeps its existing font stack and estimates. Omitting `fonts` (or passing `{}`)
-preserves the existing geometry and SVG bytes, including the historical panel
-and caption diagnostic estimates.
+preserves the existing geometry and SVG bytes for the same palette, including
+the historical panel and caption diagnostic estimates.
 
 `family` is one literal font family name, always quoted in the SVG. It may
 contain Unicode letters and numbers, ASCII spaces, underscores and hyphens,
@@ -554,15 +554,17 @@ participant creation/destruction, autonumber and playback are outside v0.
 - Sequence adds its text/ground pairs to `checkPalette`: every participant
   tone, both message-label kinds, step numbers and rejected source on canvas
   and lane tint. Ground opacity is part of that contract; text stays opaque.
-  `TOKENS`, `LIGHT`, `DARK` and the unchanged-built-ins contrast regression
-  remain unchanged. The LIGHT minimum stays 4.395772012043759 (rework edge
-  labels on band); DARK stays 4.706637464097893, above 4.5.
+  `TOKENS` and `DARK` remain unchanged. After the palette-only LIGHT rework
+  correction (#86, `#826954` to `#806752`), the built-in contrast regression
+  requires both minima to reach 4.5. LIGHT is 4.526146877943026 (rework edge
+  labels on band, including inline gap labels); DARK stays 4.706637464097893.
 - Sequence shares scoped SVG styles, `--ab-*` palettes and the `title`,
   `scheme`, `idPrefix` and `fonts` render options. Its layout includes canvas
   dimensions and diagnostics with empty nodes, routes and bands and no legend,
   so the playground grid overlay still works. Existing flow and fan-out
-  rendering bytes are unchanged. Save sequence sources as `.flow` files for
-  the existing check and render tools; presentation belongs to #80, so they
+  rendering bytes are unchanged apart from the LIGHT rework default correction
+  above. Save sequence sources as `.flow` files for the existing check and
+  render tools; presentation belongs to #80, so they
   currently stay in the playground's Flow group.
 
 [Claim your podcast](../spike/examples/claim.flow) preserves the spike fixture's
