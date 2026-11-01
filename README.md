@@ -61,7 +61,7 @@ figure.innerHTML = svg;
 mountPlayback(figure, figure.querySelector("svg"), timelines);
 ```
 
-Playback works for flows today. Sequence diagrams and fan-outs follow.
+Playback in 0.3.0 supports flows. Sequence and fan-out playback will follow.
 
 ## Install
 
