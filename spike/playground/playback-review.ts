@@ -1,4 +1,4 @@
-import { render, type RenderOptions } from "../flow/index.ts";
+import { render } from "../flow/index.ts";
 import { mountPlayback, type PlaybackMount } from "../flow/playback.ts";
 
 const scheme = document.getElementById("review-scheme") as HTMLSelectElement;
@@ -19,7 +19,8 @@ function addCase(title: string, source: string, idPrefix: string, shadow = false
 	style.textContent = figureCSS;
 	const figure = document.createElement("div");
 	figure.className = "review-figure";
-	const result = render(source, { idPrefix, scheme: scheme.value as RenderOptions["scheme"] });
+	const selectedScheme = scheme.value === "dark" ? "dark" : scheme.value === "light" ? "light" : undefined;
+	const result = render(source, { idPrefix, scheme: selectedScheme });
 	figure.innerHTML = result.svg;
 	const svg = figure.querySelector("svg");
 	if (!svg) throw new Error("Missing rendered SVG");

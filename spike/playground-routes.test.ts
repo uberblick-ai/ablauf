@@ -45,6 +45,9 @@ test("playground and browser fixture serve complete module graphs inside the exi
 		}
 		assert.equal((await fetch(`${origin}/flow/controls.ts`, { method: "PUT", body: "no" })).status, 404);
 		assert.equal((await fetch(`${origin}/api/flow/examples/loop-play`, { method: "PUT", body: "no" })).status, 403);
+		const missing = await fetch(`${origin}/flow/missing-module.ts`);
+		assert.equal(missing.status, 500);
+		assert.equal(await missing.text(), "request failed", "filesystem errors must not expose local paths or stack information");
 	} finally {
 		server.closeAllConnections();
 		await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));

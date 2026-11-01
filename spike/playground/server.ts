@@ -84,8 +84,8 @@ export function createPlaygroundServer() {
         return send(res, 200, "text/plain", "saved");
       }
       send(res, 404, "text/plain", "not found");
-    } catch (error) {
-      send(res, 500, "text/plain", error instanceof Error ? error.message : String(error));
+    } catch {
+      send(res, 500, "text/plain", "request failed");
     }
   });
 
