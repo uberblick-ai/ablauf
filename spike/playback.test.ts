@@ -25,7 +25,7 @@ test("all pre-playback examples keep their captured main SVG bytes in every sche
 	const baseline = JSON.parse(gunzipSync(readFileSync(new URL("./fixtures/pre-playback.json.gz", import.meta.url))).toString()) as {
 		sha: string; fixtures: { file: string; outputs: string[] }[];
 	};
-	assert.equal(baseline.sha, "a7189341e0db26658e82a3b610be8716228bb00a");
+	assert.equal(baseline.sha, "04b1458a9b801e4f30c83896b78c183e86fe2c76");
 	assert.equal(baseline.fixtures.length, 16);
 	for (const { file, outputs } of baseline.fixtures) {
 		const source = readFileSync(new URL(`./examples/${file}`, import.meta.url), "utf8");
