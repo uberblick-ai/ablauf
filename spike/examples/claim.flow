@@ -1,0 +1,24 @@
+sequence v0
+participant Creator
+participant Studio tone=system
+participant Backend tone=system
+participant RSSFeed "RSS feed" tone=system
+participant OwnerInbox "Owner's inbox"
+
+Creator --> Studio: Sign in, no show yet
+Studio -.-> Creator: Claim existing, Add via RSS, Start from scratch
+Creator --> Studio: Claim existing show
+Studio --> Backend: POST claim for show
+Backend --> RSSFeed: Fetch feed live
+RSSFeed -.-> Backend: itunes owner email
+# Messages 7–15 illustrate handshake details, not an agreed product protocol.
+Backend --> OwnerInbox: Send 6-digit code
+OwnerInbox -.-> Creator: Email with the code
+Creator --> Studio: Enter code
+Studio --> Backend: POST verify code
+Backend --> Backend: Check code and expiry
+# Messages 12–15 are sequential until #79 supplies the alternative branches.
+Backend -.-> Studio: Claim confirmed
+Studio -.-> Creator: The show is yours
+Backend -.-> Studio: Rejected, attempts left
+Studio -.-> Creator: Try again or resend the code

@@ -2,6 +2,11 @@
 
 ## 0.2.1
 
+- Draw `sequence v0` with ordered UML participants, lifelines, requests,
+  responses and self-messages in bounded 678px lanes. Includes mono font
+  metrics, source-line diagnostics, paint coverage and the claim example.
+  ([#74](https://github.com/uberblick-ai/ablauf/issues/74))
+
 - Export `TOKENS`, `Token`, `Palette` and DOM-free `checkPalette` for host text
   contrast checks, with a [Test your integration](https://ablauf.uberblick.ai/guides/testing)
   guide. Built-in colours and rendered SVG bytes are unchanged.

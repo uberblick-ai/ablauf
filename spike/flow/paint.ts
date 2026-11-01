@@ -48,6 +48,16 @@ for (const band of [false, true]) {
 	}
 }
 
+// Bounded sequence lanes tint only the ground, never the foreground text.
+// ink/muted participant tones both use muted; message labels always use ink.
+for (const tinted of [false, true]) {
+	for (const ink of ["ink", "muted", ...tones] as const) paints.push({
+		ink, ground: tinted ? ["bg", "neutral-bg"] : ["bg"],
+		...(tinted ? { opacity: 0.15 } : {}),
+		where: `sequence ${ink === "ink" ? "request/response labels" : ink === "muted" ? "ink/muted participant titles and step numbers" : `${ink} participant titles`}${ink === "stop" ? " and visible rejected source" : ""} on ${tinted ? "lane tint" : "canvas"}`,
+	});
+}
+
 type Colour = [number, number, number, number];
 const number = /^[+-]?(?:\d*\.\d+|\d+)(?:e[+-]?\d+)?$/i;
 

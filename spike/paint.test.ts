@@ -197,6 +197,7 @@ test("focused renders cover every tone, section ground, label mode, node/legend 
 		}
 		for (const kind of ["box", "end", "decision", "pill", "panel"]) observe(`flow v0\nlegend\n  ${kind} tone=${tone} sample="Sample" "Meaning"\n`);
 		for (const style of ["branches", "ladder"]) observe(`fan-out v0\nstyle ${style}\nstep "Step"\noutcome "Outcome" reason="Reason" destination="Destination" tone="${tone}" extra="Invalid"\ninvalid\n`);
+		observe(`sequence v0\nparticipant a tone=${tone}\nparticipant b tone=${tone}\nparticipant c tone=${tone}\na --> b: Request on canvas\nb -.-> a: Response on canvas\nb --> c: Request on tint\nc -.-> b: Response on tint\ninvalid\n`);
 	}
 	// Distinct actual paints, rather than a second hand-maintained pair list.
 	for (const ink of ["ink", "muted", "neutral", "agent", "system", "done", "rework", "stop"]) {
