@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
-import { type FontsOptions, render, type TextStyle } from "./flow/index.ts";
+import { type FontsOptions, render, type RenderOptions, type TextStyle } from "./flow/index.ts";
 import { TONES } from "./flow/parse.ts";
 
 const example = (name: string) => readFileSync(join(import.meta.dirname, "examples", `${name}.flow`), "utf8");
@@ -96,6 +96,7 @@ test("bad arrows, missing colons and unknown endpoints diagnose without hiding t
 		['A -> B: Wrong', /malformed message arrow/],
 		['A -x B: Lost', /malformed message arrow/],
 		['A -) B: Async', /malformed message arrow/],
+		['A --> B --> A: Multiple arrows', /malformed message arrow/],
 		['A --> B Missing', /colon/],
 		['Missing --> B: Unknown', /unknown message participant/],
 		['A --> Missing: Unknown', /unknown message participant/],
@@ -107,6 +108,11 @@ test("bad arrows, missing colons and unknown endpoints diagnose without hiding t
 		assert.match(svg, />Line 4:/);
 		assert.equal(rows(svg).length, 1);
 	}
+});
+
+test("long malformed arrow input is rejected without backtracking through endpoints", () => {
+	const { diagnostics } = render(`${prelude}!-->${"!-->!".repeat(5000)} invalid endpoint: Rejected`);
+	assert.deepEqual(diagnostics.map((d) => [d.line, d.message]), [[4, "malformed message arrow; use --> (request) or -.-> (response)"]]);
 });
 
 test("requests and responses point in both directions with sender paints and distinct heads", () => {
@@ -138,6 +144,8 @@ test("sequence SVG is deterministic, inert and uses the existing render options"
 	assert.match(automatic.svg, /@media \(prefers-color-scheme:dark\)/);
 	assert.match(automatic.svg, /&quot;quoted&quot; \\path: &lt;script&gt;/);
 	assert.doesNotMatch(automatic.svg, /<script|<img|href=|onload=/);
+	const unsafeScheme = render(source, { scheme: '"><script>alert(1)</script>' } as unknown as RenderOptions);
+	assert.equal(unsafeScheme.svg, automatic.svg);
 	assert.match(automatic.svg, /class="seq-lane" fill-opacity="0.15"/);
 	assert.match(automatic.svg, /seq-life\{stroke:var\(--line\);stroke-width:1;stroke-opacity:.5\}/);
 	for (const scheme of ["light", "dark"] as const) {
