@@ -222,7 +222,7 @@ function covered(svg: string, name: string) {
 
 test("every example and real playground catalogue entry has its emitted text paints in the contract", () => {
 	const entries = catalog(root);
-	assert.deepEqual(entries.map((g) => g.kind), ["Flow", "Fan-out"]);
+	assert.deepEqual(entries.map((g) => g.kind), ["Flow", "Fan-out", "Sequence"]);
 	const paths = new Set(entries.flatMap((g) => g.flows.map((e) => join(e.folder, `${e.name}.flow`))));
 	for (const name of readdirSync(join(root, "examples"))) if (name.endsWith(".flow")) paths.add(join("examples", name));
 	for (const path of paths) {

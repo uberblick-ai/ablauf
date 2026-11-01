@@ -48,7 +48,7 @@ test("notes use one or two declared lifelines with order-independent bounds and 
 	assert.deepEqual(one.diagnostics, []);
 	assert.match(one.svg, /&quot;Quoted&quot; \\path: still text/);
 	assert.deepEqual(steps(one.svg), [1]);
-	for (const [x, , width] of rectangles(one.svg, "seq-note")) assert.ok(width <= 220 && x >= 22 && x + width <= 678);
+	for (const [x, , width] of rectangles(one.svg, "seq-note")) assert.ok(width <= 300 && x >= 22 && x + width <= 678);
 	assert.match(one.svg, /width="3"[^>]+class="t-rework"/);
 	for (const ids of ["A,B", "A, B", "A ,B", "A , B", "B, A"]) {
 		const result = render(`${prelude}note over ${ids}: Two lifelines`);

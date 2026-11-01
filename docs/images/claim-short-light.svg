@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-light" viewBox="0 0 678 466" width="678" height="466" role="img" aria-label="Sequence: Creator, Studio, Backend, Owner's inbox. Creator to Studio: Claim existing show. Studio to Backend: POST claim for show. Backend to Owner's inbox: Send 6-digit code. Creator to Studio: Enter code. Studio to Backend: POST verify code. Backend to Creator: The show is yours. Backend to Creator: Try again or resend the code">
+<style>.ab.ab-light{--bg:var(--ab-bg,#ffffff);--ink:var(--ab-ink,#17202c);--muted:var(--ab-muted,#5a6575);--line:var(--ab-line,#d3d9e2);--band:var(--ab-band,#e9eef5);--surface:var(--ab-surface,#ffffff);--neutral:var(--ab-neutral,#59616c);--neutral-bg:var(--ab-neutral-bg,#e1e3e6);--agent:var(--ab-agent,#3e6563);--agent-bg:var(--ab-agent-bg,#e7eeed);--system:var(--ab-system,#4f5d76);--system-bg:var(--ab-system-bg,#ebedf3);--rework:var(--ab-rework,#806752);--rework-bg:var(--ab-rework-bg,#f3f0eb);--stop:var(--ab-stop,#815f5a);--stop-bg:var(--ab-stop-bg,#ede6e5);--done:var(--ab-done,#536e5a);--done-bg:var(--ab-done-bg,#e8ede9);}
+.ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
+.ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.ab .s11{font-size:11px}.ab .s12{font-size:12px}.ab .s13{font-size:13px}
+.ab .muted{fill:var(--muted)}.ab .b{font-weight:600}
+.ab .cap{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.08em;fill:var(--muted)}
+.ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
+.ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
+.ab .knockout{fill:none;stroke:var(--bg);stroke-width:5.6}.ab .knockout-band{stroke:var(--band)}
+.ab .arrow{fill:none;stroke:none}
+.ab .t-ink{fill:var(--muted)}.ab .e-ink{stroke:var(--muted)}.ab .k-ink{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-muted{fill:var(--muted)}.ab .e-muted{stroke:var(--muted)}.ab .k-muted{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-neutral{fill:var(--neutral)}.ab .e-neutral{stroke:var(--neutral)}.ab .k-neutral{fill:var(--neutral-bg);stroke:var(--neutral);stroke-width:1.5}.ab .t-agent{fill:var(--agent)}.ab .e-agent{stroke:var(--agent)}.ab .k-agent{fill:var(--agent-bg);stroke:var(--agent);stroke-width:1.5}.ab .t-system{fill:var(--system)}.ab .e-system{stroke:var(--system)}.ab .k-system{fill:var(--system-bg);stroke:var(--system);stroke-width:1.5}.ab .t-done{fill:var(--done)}.ab .e-done{stroke:var(--done)}.ab .k-done{fill:var(--done-bg);stroke:var(--done);stroke-width:1.5}.ab .t-rework{fill:var(--rework)}.ab .e-rework{stroke:var(--rework)}.ab .k-rework{fill:var(--rework-bg);stroke:var(--rework);stroke-width:1.5}.ab .t-stop{fill:var(--stop)}.ab .e-stop{stroke:var(--stop)}.ab .k-stop{fill:var(--stop-bg);stroke:var(--stop);stroke-width:1.5}
+.ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}
+.ab .seq-lane{fill:var(--neutral-bg)}.ab .seq-life{stroke:var(--line);stroke-width:1;stroke-opacity:.5}.ab .seq-response{stroke-width:1.2}.ab .seq-group{fill:var(--neutral-bg)}.ab .seq-kind{fill:var(--ink)}.ab .seq-note{fill:var(--rework-bg)}.ab .seq-note-text{fill:var(--rework)}.ab .seq-divider{stroke:var(--line);stroke-width:1;stroke-dasharray:2 4}.ab .seq-rule{stroke:var(--line);stroke-width:1}</style>
+<defs><marker id="claim-short-seq-ink" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker>
+<marker id="claim-short-seq-system" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-system"/></marker>
+<marker id="claim-short-seq-response" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10" class="e e-muted seq-response"/></marker></defs>
+<rect x="186" y="8" width="164" height="450" rx="8" class="seq-lane" fill-opacity="0.15"/>
+<rect x="514" y="8" width="164" height="450" rx="8" class="seq-lane" fill-opacity="0.15"/>
+<rect x="24" y="308" width="488" height="140" rx="8" class="seq-group" fill-opacity="0.5"/>
+<line x1="104" y1="40" x2="104" y2="458" class="seq-life"/>
+<line x1="268" y1="40" x2="268" y2="458" class="seq-life"/>
+<line x1="432" y1="40" x2="432" y2="458" class="seq-life"/>
+<line x1="596" y1="40" x2="596" y2="458" class="seq-life"/>
+<g data-line="2">
+<circle cx="104" cy="20" r="3" class="t-ink"/>
+<text x="104" y="40" text-anchor="middle" class="m s12 b t-ink seq-title">Creator</text>
+</g>
+<g data-line="3">
+<circle cx="268" cy="20" r="3" class="t-system"/>
+<text x="268" y="40" text-anchor="middle" class="m s12 b t-system seq-title">Studio</text>
+</g>
+<g data-line="4">
+<circle cx="432" cy="20" r="3" class="t-system"/>
+<text x="432" y="40" text-anchor="middle" class="m s12 b t-system seq-title">Backend</text>
+</g>
+<g data-line="5">
+<circle cx="596" cy="20" r="3" class="t-ink"/>
+<text x="596" y="40" text-anchor="middle" class="m s12 b t-ink seq-title">Owner's inbox</text>
+</g>
+<g data-line="7" data-annotation="section">
+<text x="30" y="64" class="m s11 muted seq-section">CLAIM</text>
+<line x1="75" y1="60" x2="670" y2="60" class="seq-rule"/>
+</g>
+<g data-line="8" data-step="1">
+<text x="112" y="90" class="m s12 seq-label">Claim existing show</text>
+<text x="0" y="102" class="m s11 muted seq-number">01</text>
+<path d="M104,98 L268,98" class="e e-ink" marker-end="url(#claim-short-seq-ink)"/>
+<circle cx="104" cy="98" r="2.5" class="t-ink"/>
+</g>
+<g data-line="9" data-step="2">
+<text x="276" y="122" class="m s12 seq-label">POST claim for show</text>
+<text x="0" y="134" class="m s11 muted seq-number">02</text>
+<path d="M268,130 L432,130" class="e e-system" marker-end="url(#claim-short-seq-system)"/>
+<circle cx="268" cy="130" r="2.5" class="t-system"/>
+</g>
+<g data-line="10" data-step="3">
+<text x="440" y="154" class="m s12 seq-label">Send 6-digit code</text>
+<text x="0" y="166" class="m s11 muted seq-number">03</text>
+<path d="M432,162 L596,162" class="e e-system" marker-end="url(#claim-short-seq-system)"/>
+<circle cx="432" cy="162" r="2.5" class="t-system"/>
+</g>
+<g data-line="11" data-annotation="note">
+<rect x="301.2" y="174" width="261.6" height="30" rx="6" class="seq-note"/>
+<rect x="301.2" y="179" width="3" height="20" rx="1.5" class="t-rework"/>
+<text x="313.2" y="190" class="m s12 seq-note-text">The code expires after 15 minutes</text>
+</g>
+<g data-line="12" data-annotation="section">
+<text x="30" y="230" class="m s11 muted seq-section">VERIFY</text>
+<line x1="81.6" y1="226" x2="670" y2="226" class="seq-rule"/>
+</g>
+<g data-line="13" data-step="4">
+<text x="112" y="256" class="m s12 seq-label">Enter code</text>
+<text x="0" y="268" class="m s11 muted seq-number">04</text>
+<path d="M104,264 L268,264" class="e e-ink" marker-end="url(#claim-short-seq-ink)"/>
+<circle cx="104" cy="264" r="2.5" class="t-ink"/>
+</g>
+<g data-line="14" data-step="5">
+<text x="276" y="288" class="m s12 seq-label">POST verify code</text>
+<text x="0" y="300" class="m s11 muted seq-number">05</text>
+<path d="M268,296 L432,296" class="e e-system" marker-end="url(#claim-short-seq-system)"/>
+<circle cx="268" cy="296" r="2.5" class="t-system"/>
+</g>
+<g data-line="15" data-annotation="open">
+<text x="34" y="322" class="m s11 b seq-kind">ALT</text>
+<text x="65.8" y="322" class="m s11 muted seq-group-label">CODE MATCHES</text>
+</g>
+<g data-line="16" data-step="6">
+<text x="112" y="354" class="m s12 seq-label">The show is yours</text>
+<text x="0" y="366" class="m s11 muted seq-number">06</text>
+<path d="M432,362 L104,362" class="e e-muted dash seq-response" marker-end="url(#claim-short-seq-response)"/>
+</g>
+<line x1="32" y1="374" x2="504" y2="374" class="seq-divider"/>
+<g data-line="17" data-annotation="else">
+<text x="34" y="396" class="m s11 b seq-kind">ELSE</text>
+<text x="72.4" y="396" class="m s11 muted seq-else-label">WRONG OR EXPIRED CODE</text>
+</g>
+<g data-line="18" data-step="7">
+<text x="112" y="428" class="m s12 seq-label">Try again or resend the code</text>
+<text x="0" y="440" class="m s11 muted seq-number">07</text>
+<path d="M432,436 L104,436" class="e e-muted dash seq-response" marker-end="url(#claim-short-seq-response)"/>
+</g>
+</svg>
