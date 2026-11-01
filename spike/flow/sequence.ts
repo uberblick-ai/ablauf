@@ -147,7 +147,9 @@ export function renderSequence(source: string, options: RenderOptions = {}) {
 			} else {
 				const colon = label.indexOf(":");
 				const head = colon < 0 ? label : label.slice(0, colon);
-				const ids = /^over\s+(.+?)\s*$/.exec(head)?.[1].split(/\s*,\s*/);
+				// Literal splitting and trimming keep long malformed whitespace
+				// linear, without competing whitespace repetitions in regexes.
+				const ids = /^over(?:\s|$)/.test(head) ? head.slice(4).trim().split(",").map((id) => id.trim()) : undefined;
 				const noteText = colon < 0 ? "" : label.slice(colon + 1).trim();
 				if (!ids || ids.length < 1 || ids.length > 2 || ids.some((id) => !id || /\s/.test(id)) || new Set(ids).size !== ids.length || !noteText)
 					error(line, "note needs over, one or two distinct participant ids, a colon and non-empty text");

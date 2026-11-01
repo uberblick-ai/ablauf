@@ -75,6 +75,17 @@ test("annotation keyword precedence, reserved ids and literal unquoted group lab
 	assert.match(result.svg, /&quot;LITERAL&quot; : --&gt; \\TEXT/);
 });
 
+test("long note whitespace and malformed ids parse without competing regex repetitions", () => {
+	const spaces = " ".repeat(20000);
+	const valid = render(`${prelude}note over${spaces}A${spaces},${spaces}B${spaces}: Text`);
+	assert.deepEqual(valid.diagnostics, []);
+	assert.equal(rectangles(valid.svg, "seq-note").length, 1);
+	const invalid = render(`${prelude}note over A${spaces}extra: Rejected\nA --> C: Kept`);
+	assert.deepEqual(invalid.diagnostics.map((d) => d.line), [5]);
+	assert.match(invalid.svg, />Line 5:/);
+	assert.deepEqual(steps(invalid.svg), [1]);
+});
+
 test("every malformed annotation diagnoses its own source line, stays visible and leaves stack/section unchanged", () => {
 	for (const bad of [
 		"alt", "opt   ", "loop", "group", "else", "else Outside", "end", "end extra",
