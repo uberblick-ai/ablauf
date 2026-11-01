@@ -84,6 +84,14 @@ const [source, fade, crossings] = await Promise.all([
 	load("/playground/playback-crossings.flow"),
 ]);
 const single = 'flow v0\nbox a "Start"\nbox b "Finish"\na --> b\nplay "One scenario"\n step a actor="Author" "Start here"\n step b "Finish here"\n';
+const compact = [
+	'flow v0\nbox a "Start"\nbox b "Finish"\na --> b\n',
+	'play "Short captions"\n step a actor="Author" "Start here"\n step b actor="Reviewer" "Finish here"\n',
+	'play "Long caption wrapping"\n step a actor="Author" "This deliberately long caption wraps across several lines at document width. Every word should remain visible, and the controls should move down to accommodate it rather than clipping the text or overlapping the buttons and segmented step bar."\n',
+	'play "Caption without an actor"\n step a "The actor line still keeps its space"\n',
+	'play "Another short scenario"\n step b actor="Reviewer" "A short caption again"\n',
+	'play "An empty scenario at the end of the overflowing tabs"\n',
+].join("");
 
 function draw() {
 	for (const mount of mounts) mount.destroy();
@@ -91,6 +99,7 @@ function draw() {
 	cases.replaceChildren();
 	addCase("Loop · light DOM", source, "review-light-dom");
 	addCase("Loop · shadow root", source, "review-shadow", true);
+	addCase("Compact controls · overflowing tabs and wrapping captions", compact, "review-compact");
 	addCase("Fade · inline labels on canvas and band", fade, "review-fade");
 	addCase("Fade · crossing knockouts (two expected warnings)", crossings, "review-crossings");
 	addCase("Single timeline · no tabs", single, "review-single");

@@ -847,10 +847,29 @@ immediately activate the focused scenario; click, Enter and Space activate
 too. Activation calls `select`, pausing on step `0` (or `-1` when empty).
 Playback updates never move focus or recreate controls.
 
-Below tabs are native Previous, Play/Pause/Replay and Next buttons and a
-labelled native range covering `-1..last`, including the full figure at `-1`.
-Navigation pauses. Below them, the current actor appears above the caption
-(remark), cleared at `-1`. One polite atomic status announces actor and remark
+Tabs are borderless monospace text on one rule, scrolling horizontally without
+wrapping. Selection uses the play colour, a 2px underline and a faint glow.
+Below tabs, an outlined rounded counter shows the one-based step/total (`3/7`)
+beside the current actor above the caption (remark). The counter is blank and
+visually hidden at `-1` and in empty scenarios, retaining its space. The actor
+occupies one monospace line in the play colour; the caption uses the body face
+at 16px. This row reserves at least two lines, even at idle, with no actor or
+when empty; longer captions wrap and grow the row without clipping.
+
+Below the step line are exactly three native buttons: `<` (accessible name
+Previous), Play/Pause/Replay, and `>` (accessible name Next). They use monospace,
+30px height and 8px corners; the main button has a 68px minimum width. A segmented
+bar fills the rest of the row, one segment per resolved step of the selected
+scenario. Earlier segments use a muted play colour, the current segment uses
+the full play colour and a soft glow, and future segments are subdued. At `-1`
+no segment is current or played; an empty scenario has no segments. Pointer
+segment clicks seek and pause. Segments are presentation only, hidden from
+assistive technology and excluded from tab order. A visually hidden, labelled
+native range remains focusable, with a visible outline around the bar when
+focused, covering `-1..last`, including the full figure at `-1`. Its native
+keyboard and screen reader navigation is preserved. Navigation pauses.
+
+Actor and caption are cleared at `-1`. One polite atomic status announces actor and remark
 when the scenario/step changes to a playable step; pause and end alone do not
 repeat it. All source strings are assigned with `textContent`. A selected
 empty scenario shows “No playable steps” and disables buttons and range while
@@ -862,7 +881,11 @@ root's `ab-auto`, `ab-light` or `ab-dark` class at mounting. Controls resolve
 existing `--ab-*` host overrides with their own matching light/dark defaults:
 the SVG's internal variables cannot be inherited by sibling controls. Every
 selector is under `.ab-playback`, so document and shadow-root mounts do not
-style unrelated host elements. Focus is visible.
+style unrelated host elements. Focus is visible. All control colours derive
+from `--ab-play`, `--ab-line`, `--ab-muted`, `--ab-ink` and `--ab-bg`; muted play
+and glow shades use `color-mix()`. Every control glow honours the shared
+`--ab-play-glow` switch: literal `0` removes tab text and current-segment glows.
+An “All steps” list and scenario links remain host features.
 
 Both `mount.destroy()` and `mount.player.destroy()` perform the same idempotent
 teardown: destroy the player and remove this mount's controls, style and
