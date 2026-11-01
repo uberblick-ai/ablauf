@@ -42,7 +42,7 @@ export function splitPlay(source: string) {
 	const scenarios: Scenario[] = [];
 	const lines = source.split("\n");
 	// A node or participant named `play` can still be the source of an edge.
-	const isHeader = (text: string) => /^play(?:\s|$)/.test(text) && !/^play\s+(?:-->|-\.->)\s/.test(text);
+	const isHeader = (text: string) => /^play(?:\s|$)/.test(text) && !/^play\s+(?:-->|-\.->)/.test(text);
 	const start = lines.findIndex(line => isHeader(line.trim()));
 	if (start < 0) return { source, scenarios, diagnostics };
 	const error = (line: number, message: string) => diagnostics.push({ line, severity: "error", message } as Diagnostic);

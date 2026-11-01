@@ -163,6 +163,20 @@ test("diagram strings and a node named play keep the existing grammar", () => {
 	assert.deepEqual(splitPlay(source).scenarios, []);
 	assert.deepEqual(render(source).diagnostics, []);
 	assert.equal(render(`${source}play\n step play\n step b\n`).timelines[0].steps[0].actor, "A\\nB");
+	const sequence = "sequence v0\nparticipant play\nparticipant b\nplay -->b: Hello\nplay -.->b: Goodbye\n";
+	assert.deepEqual(splitPlay(sequence).scenarios, []);
+	assert.deepEqual(render(sequence).diagnostics, []);
+	assert.deepEqual(render(sequence).timelines, []);
+});
+
+test("the primer's complete playback example can be copied and rendered", () => {
+	const primer = readFileSync(new URL("./PRIMER.md", import.meta.url), "utf8");
+	const example = primer.split("## Flow playback")[1].match(/```text\n([\s\S]*?)\n```/)?.[1];
+	assert.ok(example);
+	const result = render(example);
+	assert.deepEqual(result.diagnostics, []);
+	assert.equal(result.timelines.length, 2);
+	assert.deepEqual(result.timelines.map(t => t.steps.length), [3, 5]);
 });
 
 test("playable SVG preserves drawing order and all labels, with scoped state colours and heads", () => {
