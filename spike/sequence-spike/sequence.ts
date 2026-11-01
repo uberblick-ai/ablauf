@@ -381,6 +381,6 @@ export function renderSequence(model: Model, mode: LayoutMode, scheme: "light" |
 		".ab .num{fill:var(--muted);opacity:.7}.ab .resp{stroke-width:1.3}",
 	];
 	// Sections sit on bands, so knockouts there take the band colour. Spike: approximate.
-	const svg = `<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-${scheme}" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">\n${svgStyle(scheme, undefined, extra)}\n${defs}\n<rect width="${width}" height="${height}" fill="var(--bg)"/>\n${under.join("\n")}\n${back.join("\n")}\n${body.join("\n")}\n${front.join("\n")}\n</svg>\n`;
+	const svg = `<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-${scheme}" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">\n<title>Sequence diagram comparison</title>\n${svgStyle(scheme, undefined, extra)}\n${defs}\n<rect width="${width}" height="${height}" fill="var(--bg)"/>\n${under.join("\n")}\n${back.join("\n")}\n${body.join("\n")}\n${front.join("\n")}\n</svg>\n`;
 	return { svg, width, height };
 }
