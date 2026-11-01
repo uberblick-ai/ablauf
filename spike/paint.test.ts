@@ -33,14 +33,21 @@ test("ordinary WCAG contrast and the unrounded minimum", () => {
 	assert.equal(result.minimum, 1);
 });
 
-test("unchanged built-ins: LIGHT minimum is rework-toned edge labels on band; DARK passes 4.5", () => {
+test("built-in palettes meet 4.5 for every text pair, including rework labels on bands", () => {
 	const light = checkPalette(LIGHT);
 	const minimum = light.pairs.find((p) => p.ratio === light.minimum);
 	assert.ok(minimum);
 	assert.equal(minimum.ink, "rework");
 	assert.deepEqual(minimum.ground, ["bg", "band"]);
 	assert.match(minimum.where, /rework-toned edge labels on band/);
-	close(light.minimum, 4.395772012043759);
+	assert.ok(light.minimum >= 4.5);
+	assert.ok(pair(LIGHT, "rework", ["bg", "band"]).ratio >= 4.5);
+	assert.ok(pair(LIGHT, "rework", ["bg", "band", "band"]).ratio >= 4.5);
+	for (const canvas of [["bg"], ["bg", "band"]] as Token[][]) {
+		assert.ok(pair(LIGHT, "rework", [...canvas, "rework-bg"]).ratio >= 4.5);
+		assert.ok(pair(LIGHT, "stop", [...canvas, "stop-bg"]).ratio >= 4.5);
+		assert.ok(pair(LIGHT, "muted", [...canvas, "neutral-bg"]).ratio >= 4.5);
+	}
 	close(checkPalette(DARK).minimum, 4.706637464097893);
 	assert.ok(checkPalette(DARK).minimum >= 4.5);
 });

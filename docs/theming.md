@@ -25,7 +25,7 @@ These are the complete palette and the built-in defaults:
 | `--ab-system-bg` | System tone background | `#ebedf3` | `#262a31` |
 | `--ab-done` | Done tone foreground | `#536e5a` | `#95b09c` |
 | `--ab-done-bg` | Done tone background | `#e8ede9` | `#222a24` |
-| `--ab-rework` | Rework tone foreground | `#826954` | `#b29d87` |
+| `--ab-rework` | Rework tone foreground | `#806752` | `#b29d87` |
 | `--ab-rework-bg` | Rework tone background | `#f3f0eb` | `#2c2720` |
 | `--ab-stop` | Stop tone foreground | `#815f5a` | `#ac8c88` |
 | `--ab-stop-bg` | Stop tone background | `#ede6e5` | `#2b2221` |
@@ -61,7 +61,7 @@ keep the whole palette consistent when the system and page themes disagree.
   --ab-system-bg: #ebedf3;
   --ab-done: #536e5a;
   --ab-done-bg: #e8ede9;
-  --ab-rework: #826954;
+  --ab-rework: #806752;
   --ab-rework-bg: #f3f0eb;
   --ab-stop: #815f5a;
   --ab-stop-bg: #ede6e5;
