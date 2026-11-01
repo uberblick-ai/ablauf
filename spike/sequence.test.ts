@@ -100,7 +100,6 @@ test("bad arrows, missing colons and unknown endpoints diagnose without hiding t
 		['A --> B Missing', /colon/],
 		['Missing --> B: Unknown', /unknown message participant/],
 		['A --> Missing: Unknown', /unknown message participant/],
-		['note over A: Out of scope', /malformed message arrow/],
 	] as const) {
 		const { svg, diagnostics } = render(`${prelude}${message}\nB --> A: Still here`);
 		assert.ok(diagnostics.some((d) => diagnostic.test(d.message)), message);

@@ -13,6 +13,8 @@ interface Paint {
 	ground: Token[];
 	/** Multiplies the alpha of the last ground layer only. */
 	opacity?: number;
+	/** Per-layer alpha multipliers, including 1 for bg; exclusive with opacity. */
+	groundOpacities?: number[];
 	where: string;
 }
 
@@ -56,6 +58,19 @@ for (const tinted of [false, true]) {
 		...(tinted ? { opacity: 0.15 } : {}),
 		where: `sequence ${ink === "ink" ? "request/response labels" : ink === "muted" ? "ink/muted participant titles and step numbers" : `${ink} participant titles`}${ink === "stop" ? " and visible rejected source" : ""} on ${tinted ? "lane tint" : "canvas"}`,
 	});
+}
+
+// Only the outermost two group depths paint. Deeper headings and messages
+// therefore reuse the two-fill pairs, even with arbitrary syntax nesting.
+for (const tinted of [false, true]) for (const depth of [0, 1, 2]) {
+	const ground: Token[] = ["bg", ...(tinted ? ["neutral-bg" as const] : []), ...Array<Token>(depth).fill("neutral-bg")];
+	const groundOpacities = [1, ...(tinted ? [0.15] : []), ...Array<number>(depth).fill(0.5)];
+	if (depth) for (const ink of ["ink", "muted"] as const) paints.push({
+		ink, ground, groundOpacities,
+		where: `sequence group/else ${ink === "ink" ? "kinds and request/response labels" : "labels"} on ${tinted ? "lane tint" : "canvas"} and ${depth} group fills (also deeper groups without additional fill)`,
+	});
+	paints.push({ ink: "rework", ground: [...ground, "rework-bg"], groundOpacities: [...groundOpacities, 1],
+		where: `sequence note text on rework fill over ${tinted ? "lane tint" : "canvas"} and ${depth} group fills` });
 }
 
 type Colour = [number, number, number, number];
@@ -132,11 +147,11 @@ export function checkPalette(palette: Palette): { minimum: number; pairs: (Paint
 	const pairs = paints.map((paint) => {
 		let ground = colours.bg;
 		for (let i = 1; i < paint.ground.length; i++) {
-			ground = over(colours[paint.ground[i]], ground, i === paint.ground.length - 1 ? paint.opacity : 1);
+			ground = over(colours[paint.ground[i]], ground, paint.groundOpacities?.[i] ?? (i === paint.ground.length - 1 ? paint.opacity : 1));
 		}
 		const a = luminance(over(colours[paint.ink], ground));
 		const b = luminance(ground);
-		return { ...paint, ground: [...paint.ground], ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) };
+		return { ...paint, ground: [...paint.ground], ...(paint.groundOpacities ? { groundOpacities: [...paint.groundOpacities] } : {}), ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) };
 	});
 	return { minimum: Math.min(...pairs.map((p) => p.ratio)), pairs };
 }

@@ -2,6 +2,10 @@
 
 ## 0.2.1
 
+- Add sequence groups (`alt`, `opt`, `loop`, `group`), notes over lifelines
+  and sections, with wrapping, recovery and per-layer `groundOpacities` in
+  the host paint contract. ([#79](https://github.com/uberblick-ai/ablauf/issues/79))
+
 - Draw `sequence v0` with ordered UML participants, lifelines, requests,
   responses and self-messages in bounded 678px lanes. Includes mono font
   metrics, source-line diagnostics, paint coverage and the claim example.

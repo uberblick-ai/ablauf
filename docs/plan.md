@@ -490,7 +490,9 @@ Sequence covers UML participants, lifelines and messages. `participant` stays
 because it is the clear UML term. Arrows use flow's `-->` for a solid request
 and `-.->` for a dashed response: one arrow means one line style in every
 ablauf kind. There are no Mermaid aliases; `->>` and `-->>` are malformed.
-Annotations are reserved for #79; activation bars, async/lost messages,
+Groups retain the clear UML terms `alt`, `opt`, `loop` and `group`;
+`note over` states placement on lifelines, and `section` matches flow's phase
+term. There are no compatibility aliases. Activation bars, async/lost messages,
 participant creation/destruction, autonumber and playback are outside v0.
 
 ### Syntax and recovery
@@ -511,6 +513,36 @@ participant creation/destruction, autonumber and playback are outside v0.
   the arrow are optional; the colon is required. Everything after the first
   colon is label text, including quotes and backslashes. Equal endpoints
   make a self-message. Messages keep source order.
+- Groups open with `alt LABEL`, `opt LABEL`, `loop LABEL` or `group LABEL`
+  and close with bare `end`. Nesting has no syntax-depth limit; indentation
+  is optional. `else LABEL` starts another branch only of the current open
+  `alt`, never searching past an inner non-alt group. Group and else labels
+  require non-whitespace text and consume the unquoted remainder literally,
+  including arrows, colons, quotes and backslashes. Quotes are not delimiters.
+- Notes are `note over A: text` or `note over A, B: text`. Require one or two
+  distinct, already-declared ids; spaces around the comma are optional and
+  either order spans the same lifelines. The first colon is required;
+  everything after it is literal text, including quotes and backslashes,
+  and must contain non-whitespace text.
+- `section "Title"` starts a phase lasting until the next section or EOF.
+  Titles use flow strings (double quotes, no escapes, literal backslashes,
+  no embedded ASCII double quote), require non-whitespace text and allow
+  no trailing text. A section inside any open group is invalid: phases and
+  groups cannot cross.
+- After indentation, leading `alt`, `opt`, `loop`, `group`, `else`, `end`,
+  `note` and `section` followed by whitespace or EOL take precedence over
+  message parsing, like `participant`. Thus `alt a --> b: c` and
+  `loop --> Studio: x` open groups. These eight exact ids are reserved;
+  their participant declarations diagnose visibly and create no lanes.
+  Longer ids such as `loopWorker` remain valid.
+- Diagnose missing group/else labels, `else` outside the current `alt`,
+  unmatched `end` or text after it; malformed notes (missing/wrong `over`,
+  colon or ids, unknown ids, empty text, over two or repeated ids); malformed
+  sections (unquoted, unclosed or blank title, trailing text) and sections
+  inside groups. Rejected annotations change neither the group stack nor
+  the current phase and remain visible as line-numbered rejected source.
+  At EOF close every unclosed group for drawing and diagnose each opening.
+  Valid annotations occupy source positions and have no message numbers.
 - Unknown message participants, malformed arrows and missing colons produce
   diagnostics on their source lines. Unparseable lines are shown below the
   messages as line-numbered source, in `--ab-stop`.
@@ -535,6 +567,26 @@ participant creation/destruction, autonumber and playback are outside v0.
   end above its line, may cross other lanes, and wraps only at the right edge.
   Unbreakable tokens split to stay within the SVG. Rows grow for wrapped
   labels. There are no label knockouts; lifelines stay faint behind them.
+- Groups span the participant lanes touched by messages and notes, including
+  nested content, with room for rightmost self-message loops. Empty groups
+  span all lanes. Their bounds stay outside the 22px number gutter and inside
+  the diagram. Nested bounds inset within their parents, with cumulative
+  inset capped at 24px (and less for narrow lanes) to retain heading width.
+  A soft rounded `--ab-neutral-bg` fill without outline lies over lane tints
+  and behind lifelines/content. Only the outermost two depths add a fill,
+  each with `fill-opacity="0.5"`; deeper groups retain headings, dividers
+  and layout without adding paint layers.
+- Group headings use small-caps text: the kind in bold `--ab-ink`, followed
+  by its label in regular `--ab-muted`. Each else branch has a faint dotted
+  `--ab-line` divider above bold `ELSE` and its regular muted label. Headings
+  and branch labels wrap, including unbroken tokens, and rows grow to fit.
+- Notes own a row: one lifeline centres a note up to 220px wide; two span
+  their lifelines. Notes stay within the diagram and their enclosing group.
+  Rounded `--ab-rework-bg` fill carries a 3px left `--ab-rework` accent and
+  opaque `--ab-rework` text, wrapped even for unbroken tokens.
+- Sections show an opaque small-caps `--ab-muted` title on the left and a
+  thin `--ab-line` rule across the remaining full width between rows. Long
+  titles wrap within the diagram. No band or fill changes the lane tint.
 - Requests use the sender's tone, a solid 1.6px line, filled head and small
   sender-end dot. For participant titles, dots, request lines and filled
   heads, `ink` and `muted` both resolve to `--ab-muted`, as in flow. Other tones
@@ -545,7 +597,7 @@ participant creation/destruction, autonumber and playback are outside v0.
   Their labels use all remaining width to the right of that loop.
 - Message numbers are `01`, `02`, … in `--ab-muted` mono, level with the
   arrows in the gutter. Rejected source is not a message and is not numbered.
-  Future annotation rows will not be numbered; message numbers will serve
+  Annotation rows are not numbered; message numbers will serve
   as playback steps later.
 - All text uses `fonts.mono`, including measured wrapping; `fonts.text` has
   no effect. The host-font contract above applies. As with fan-out, a glyph
@@ -554,6 +606,19 @@ participant creation/destruction, autonumber and playback are outside v0.
 - Sequence adds its text/ground pairs to `checkPalette`: every participant
   tone, both message-label kinds, step numbers and rejected source on canvas
   and lane tint. Ground opacity is part of that contract; text stays opaque.
+  Group/else kind and label headings and both message-label kinds cover
+  untinted and 0.15-tinted lanes with zero, one and two group fills, including
+  deeper groups with no additional fill and labels crossing fill boundaries.
+  Note text covers its rework fill over every lane/group combination,
+  including translucent host fills. Section titles cover canvas and lane tint.
+  Optional `groundOpacities` parallels back-to-front `ground`, starts with
+  `1` for `bg`, and contains multipliers in [0, 1]. Each scales that layer's
+  own colour alpha before source-over composition in encoded sRGB. For
+  example `["bg", "neutral-bg", "neutral-bg", "neutral-bg"]` uses
+  `[1, 0.15, 0.5, 0.5]`. A pair uses either this array or legacy scalar
+  `opacity` (last ground layer only); omitting both means all multipliers
+  are 1. Accepted alpha-bearing host colours compose exactly, with opaque
+  `bg` required; no opaque-colour folding of layers is used.
   `TOKENS`, `LIGHT`, `DARK` and the unchanged-built-ins contrast regression
   remain unchanged. The LIGHT minimum stays 4.395772012043759 (rework edge
   labels on band); DARK stays 4.706637464097893, above 4.5.
@@ -566,10 +631,12 @@ participant creation/destruction, autonumber and playback are outside v0.
   currently stay in the playground's Flow group.
 
 [Claim your podcast](../spike/examples/claim.flow) preserves the spike fixture's
-five participant titles and all 15 directed messages, translating its arrows
-and omitting annotations. Messages 7–15 illustrate handshake details, not an
-agreed product protocol. Messages 12–15 are temporarily sequential until #79
-adds alternative branches. A maintainer reviews the figure in a browser in
+five participant titles and all 15 directed messages, including its self-message.
+The Claim and Verify sections separate phases; a Backend note after message 7
+states that the code expires after 15 minutes. After message 11, `alt Code
+matches` holds messages 12–13 and `else Wrong or expired code` holds 14–15.
+Messages 7–15 illustrate handshake details, not an agreed product protocol.
+A maintainer reviews the figure in a browser in
 light and dark at 678px at this PR's maintainer merge; source inspection does
 not satisfy visual review. The spike's bounded-lanes
 [light](https://github.com/uberblick-ai/ablauf/blob/a10e93ffa9640a38c187982b71ae7b6bf2a29056/spike/sequence-spike/evidence/mermaid-bounded-lanes-light-doc710-fig678.png)
