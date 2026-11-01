@@ -3,6 +3,9 @@
 You choose placement; the renderer sizes and draws without moving nodes or
 rerouting edges. Save as `.flow`. [Renderer details](../docs/plan.md).
 
+[Playback is planned](../docs/plan.md#playback-planned); play sections do not
+render yet.
+
 ## Flow syntax and nodes
 
 Start with `flow v0`, then `columns` naming columns left to right, once,

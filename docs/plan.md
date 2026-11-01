@@ -576,6 +576,135 @@ not satisfy visual review. The spike's bounded-lanes
 and [dark](https://github.com/uberblick-ai/ablauf/blob/a10e93ffa9640a38c187982b71ae7b6bf2a29056/spike/sequence-spike/evidence/mermaid-bounded-lanes-dark-doc710-fig678.png)
 trials are references only. No spike code or dependency ships.
 
+## Playback (planned)
+
+Playback is planned work; play sections do not render yet. This design records
+the smallest package feature that lets a host show several scenarios of one
+diagram without writing playback code of its own. It does not change the
+existing flow, sequence or fan-out syntax or static rendering rules.
+
+### Vocabulary
+
+A **scenario** is one `play` section: a list of **steps**. Each step names a
+**target** in the diagram and may carry an **actor**, a **caption** and a
+**duration**. Rendering resolves each scenario into a **timeline**: the steps
+with the **parts** of the SVG they light. A **player** plays a timeline on the
+SVG; the **controls** are the package's buttons, scenario tabs and caption.
+These words hold for every diagram kind.
+
+### Play sections and recovery
+
+One or more play sections follow the diagram in the same `ablauf` code block,
+so Markdown, MCP and copy and paste need nothing new. The section format is
+shared across kinds; only what a target names differs.
+
+```text
+play "Tests failing"
+  tempo 1.8s
+  step dependabot actor="Dependabot files" "Bump zod from 4.4.3 to 4.6.6"
+  step integrator 2.4s "A test fails on the new version, so it gets one fix round"
+  step needs-changes
+```
+
+- A section starts with `play` or `play "Name"` and runs to the next `play`
+  or the end. Inside: an optional `tempo DURATION`, then
+  `step TARGET [DURATION] [actor="..."] ["caption"]`.
+- Play-section strings are JSON strings; ordinary quoted text without
+  backslashes reads as today. A target is a bare token, or a string when it
+  has spaces. This does not change the existing flow or sequence string
+  grammar: those strings still have no escape syntax.
+- Targets name a node id in a flow, a message number in a sequence, or an
+  outcome's text in a fan-out.
+- Durations are `2.4s` or `800ms`, between 100 ms and 60 s; default tempo is
+  1.6 s. Anything else is a diagnostic on its line and falls back to the tempo.
+- Unreadable lines are diagnostics on their line. The diagram always renders.
+- Until a diagram kind has a playback resolver, each play section produces
+  a diagnostic on its `play` line and `render()` returns `timelines: []`;
+  the static diagram still renders. This applies to sequence and fan-out in
+  v0.3.0, so splitting off play sections never silently discards them.
+
+### What a flow step lights
+
+A step lights its node and every edge from the last successfully resolved
+step's node in that scenario to it; parallel edges all light. The first
+successfully resolved step lights only its node. A repeated node needs no
+edge. An unknown target, or a step with no edge from the last successfully
+resolved step, is a diagnostic on that step's line and is skipped. A skipped
+step does not change that predecessor for later steps. Labels never fade.
+Sequence and fan-out define their own lighting rules when they arrive.
+
+### Timeline and browser contract
+
+`render()` adds `timelines: Timeline[]` without changing its other results:
+for a kind with a playback resolver, one timeline per section in source order;
+`[]` without play sections or when the kind has no resolver yet, as diagnosed
+above.
+
+```ts
+interface Timeline {
+  name: string;             // the quoted name, or "Scenario N"
+  slug: string;             // kebab-case of name, "-2", "-3" on collisions
+  steps: TimelineStep[];
+}
+interface TimelineStep {
+  target: string;           // as written, resolved for the diagram's kind
+  kind: string;             // box, pill, end, text, panel, decision; later message, outcome
+  actor: string;            // actor=, else the target's title
+  caption: string;          // "" when none
+  ms: number;
+  parts: string[];          // what this step lights
+}
+```
+
+The player and controls use only `parts`, never `kind`: a new diagram kind
+needs a resolver, not a new player. They live in the browser entry
+`@uberblick/ablauf/playback`; the core stays DOM-free. The player owns playback
+and scenario selection; the built-in controls supply buttons, scenario tabs
+and the caption so hosts do not need to recreate them.
+
+Reuse the seams from [the playback spike (#65)](https://github.com/uberblick-ai/ablauf/pull/65):
+split play sections off before diagram-kind dispatch, use a part lookup map
+to resolve targets to SVG parts, and apply states through classes. Its grammar
+and demo controls are not the design. The SVG gets play attributes and state
+styles only when a play section exists; otherwise its bytes are unchanged.
+Output remains deterministic and inert, with escaped source text and styles
+scoped under the SVG root class.
+
+### Behaviour and theming
+
+- States are idle (full figure), paused, playing and ended. Previous, next,
+  seek and switching scenario pause. Play on ended replays. Stop on the last
+  step and offer Replay; `loop` is opt-in.
+- Play on click is the default. Nothing starts unless the host calls play;
+  a host may do so when a gallery card scrolls into view. With reduced motion
+  nothing animates and the full figure shows; manual stepping still works.
+- Without a player, the diagram is the full figure.
+- One accent marks the current step; played parts keep a quieter tint. Use
+  `--ab-play` for current and `--ab-play-done` for played parts, emitted only
+  in playable SVGs. They follow the existing host-override and light/dark
+  default rules; the existing palette stays unchanged.
+
+### Release boundaries
+
+- **v0.3.0, flows:** play sections and timelines
+  ([#67](https://github.com/uberblick-ai/ablauf/issues/67)), the player
+  ([#69](https://github.com/uberblick-ai/ablauf/issues/69)), and built-in
+  controls with scenario tabs
+  ([#94](https://github.com/uberblick-ai/ablauf/issues/94)).
+- **v0.3.1, sequence diagrams:** the same play sections; a target is a
+  message number.
+- **v0.3.2, fan-outs:** [#68](https://github.com/uberblick-ai/ablauf/issues/68),
+  the same play sections; a target is an outcome's text.
+
+Extras cut from v0.3.0 wait for real need. Frozen frames come later. Timelines
+from real ub-agents run logs and visual timeline editing are out of scope.
+Implementation belongs to those follow-up issues; this section only records
+the design from [#66](https://github.com/uberblick-ai/ablauf/issues/66) and the
+[maintainer's prototype summary](https://github.com/uberblick-ai/ablauf/issues/66#issuecomment-6554358304).
+Uberblick integration is
+[uberblick-ai/uberblick-2#2007](https://github.com/uberblick-ai/uberblick-2/issues/2007)
+and follows #69.
+
 ## The spike (now)
 
 In the fresh `uberblick-ai/ablauf` repository, on a branch, with no
