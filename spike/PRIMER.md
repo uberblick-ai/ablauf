@@ -157,9 +157,15 @@ sequence v0
 participant Creator
 participant Studio tone=system
 participant RSSFeed "RSS feed" tone=system
+section "Sign in"
 Creator --> Studio: Sign in, no show yet
 Studio -.-> Creator: Claim existing, Add via RSS, Start from scratch
+note over Studio: Session expires after 15 minutes
+alt Session exists
 Studio --> Studio: Check session
+else New session
+Studio -.-> Creator: Sign in again
+end
 ```
 
 Declare participants before messages, in column order, with unique one-token
@@ -168,7 +174,31 @@ optional flow tones, defaulting to `ink`. Requests use `-->` (solid, filled
 head); responses use `-.->` (dashed, open head). These match flow line styles;
 Mermaid's `->>` and `-->>` are errors. Labels are everything after the first
 colon, including quotes. Matching endpoints make a self-message. Indentation,
-blank lines and whole-line comments are allowed. Annotations are not supported
-yet. Messages keep source order and are numbered automatically. The 678px
+blank lines and whole-line comments are allowed. Messages keep source order
+and are numbered automatically; annotations occupy rows without numbers. The 678px
 figure has evenly shared lanes; labels wrap at its right edge, including long
 tokens. Narrow hosts scroll horizontally. All sequence text uses `fonts.mono`.
+
+Use UML groups `alt LABEL`, `opt LABEL`, `loop LABEL` or `group LABEL`, closed
+by bare `end`; they nest without a depth limit. Only the current `alt` accepts
+`else LABEL`. Labels require text and take the unquoted remainder literally,
+including arrows, colons, quotes and backslashes. Groups span touched lanes
+(all lanes when empty); only the outermost two depths add soft half-opacity
+fills. Headings and branch labels wrap.
+
+Use `note over A: text` or `note over A, B: text` for lifeline placement. Ids
+must be distinct and already declared; spaces around commas and either order
+are fine. The first colon separates ids from non-blank literal note text.
+Notes wrap in their own rounded, accented row. Use `section "Title"` for a
+phase until the next section or EOF, consistent with flow. Titles are non-blank
+flow strings with no trailing text. Sections cannot occur inside groups.
+
+These terms retain clear UML meanings and flow's phase name without aliases.
+The eight exact ids `alt`, `opt`, `loop`, `group`, `else`, `end`, `note` and
+`section` are reserved. At line start, these keywords followed by whitespace
+or EOL take precedence over messages; `loopWorker` is still a valid id.
+Invalid annotations diagnose on their lines, remain visible as rejected
+source and leave the group/phase state unchanged. Unclosed groups draw to EOF
+and diagnose their opening lines. The claim example demonstrates Claim and
+Verify phases, an expiry note and the two verification branches; its messages
+7–15 remain illustrative handshake details.
