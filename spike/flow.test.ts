@@ -440,7 +440,11 @@ test("the documented host CSS supplies both complete palettes", () => {
 				),
 			]),
 	);
-	assert.deepEqual(palettes, { light: LIGHT, dark: DARK });
+	assert.deepEqual(palettes, {
+		light: { ...LIGHT, play: "#0a7a60", "play-done": "#596e81" },
+		dark: { ...DARK, play: "#6ff0cf", "play-done": "#5f9e8a" },
+	});
+	assert.equal(css.match(/--ab-play-glow: 6px;/g)?.length, 2);
 });
 
 test("row= chains reach the row's first node, and loops are reported", () => {

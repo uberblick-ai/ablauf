@@ -15,9 +15,9 @@ const pair = (palette: Palette, ink: Token, ground: Token[], opacity?: number) =
 	return p;
 };
 
-test("TOKENS follows the theming table and both palettes have exactly its keys", () => {
+test("TOKENS follows the static theming rows; documented playback tokens stay outside both palettes", () => {
 	const table = readFileSync(join(root, "../docs/theming.md"), "utf8");
-	assert.deepEqual(TOKENS, [...table.matchAll(/^\| `--ab-([^`]+)`/gm)].map((m) => m[1]));
+	assert.deepEqual([...TOKENS, "play", "play-done", "play-glow"], [...table.matchAll(/^\| `--ab-([^`]+)`/gm)].map((m) => m[1]));
 	assert.equal(new Set(TOKENS).size, TOKENS.length);
 	assert.ok(Object.isFrozen(TOKENS));
 	for (const palette of [LIGHT, DARK]) assert.deepEqual(Object.keys(palette).sort(), [...TOKENS].sort());

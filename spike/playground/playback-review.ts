@@ -1,14 +1,16 @@
 import { render } from "../flow/index.ts";
-import { mountPlayback, type PlaybackMount } from "../flow/playback.ts";
+import { createPlayer, mountPlayback, type PlaybackMount } from "../flow/playback.ts";
 
 const scheme = document.getElementById("review-scheme") as HTMLSelectElement;
 const hostScheme = document.getElementById("review-host") as HTMLSelectElement;
 const loop = document.getElementById("review-loop") as HTMLInputElement;
+const accent = document.getElementById("review-accent") as HTMLSelectElement;
+const zeroGlow = document.getElementById("review-zero-glow") as HTMLInputElement;
 const cases = document.getElementById("review-cases") as HTMLElement;
 const mounts: PlaybackMount[] = [];
 const figureCSS = ".review-figure svg{display:block;max-width:100%;height:auto}";
 
-function addCase(title: string, source: string, idPrefix: string, shadow = false) {
+function addCase(title: string, source: string, idPrefix: string, shadow = false, headless = false) {
 	const section = document.createElement("section");
 	section.className = "review-document";
 	const heading = document.createElement("h2");
@@ -28,7 +30,12 @@ function addCase(title: string, source: string, idPrefix: string, shadow = false
 	retained.className = "review-note";
 	retained.textContent = "Host content remains after either teardown entry point.";
 	container.append(style, figure, retained);
-	let mount = mountPlayback(figure, svg, result.timelines, { loop: loop.checked });
+	function makeMount(): PlaybackMount {
+		if (!headless) return mountPlayback(figure, svg as SVGSVGElement, result.timelines, { loop: loop.checked });
+		const player = createPlayer(svg as SVGSVGElement, result.timelines, { loop: loop.checked });
+		return { player, destroy: () => player.destroy() };
+	}
+	let mount = makeMount();
 	mounts.push(mount);
 	const note = document.createElement("p");
 	note.className = "review-note";
@@ -46,10 +53,17 @@ function addCase(title: string, source: string, idPrefix: string, shadow = false
 		button("Remount", () => {
 			mount.destroy();
 			mounts.splice(mounts.indexOf(mount), 1);
-			mount = mountPlayback(figure, svg, result.timelines, { loop: loop.checked });
+			mount = makeMount();
 			mounts.push(mount);
 			note.textContent = "Remounted, idle. No duplicate controls.";
 		}), note);
+	if (headless) section.append(
+		button("Direct Play / Replay", () => mount.player.play()),
+		button("Direct Pause", () => mount.player.pause()),
+		button("Direct Previous", () => mount.player.previous()),
+		button("Direct Next", () => mount.player.next()),
+		button("Direct full figure", () => mount.player.seek(-1)),
+	);
 	if (result.diagnostics.length) {
 		const diagnostics = document.createElement("p");
 		diagnostics.className = "review-note";
@@ -80,9 +94,18 @@ function draw() {
 	addCase("Fade · inline labels on canvas and band", fade, "review-fade");
 	addCase("Fade · crossing knockouts (two expected warnings)", crossings, "review-crossings");
 	addCase("Single timeline · no tabs", single, "review-single");
+	addCase("Direct createPlayer · no built-in controls", single, "review-headless", false, true);
 	addCase("Tabbed · includes an empty scenario", `${single}play "Empty scenario"\n`, "review-empty");
 }
 scheme.addEventListener("change", draw);
 loop.addEventListener("change", draw);
 hostScheme.addEventListener("change", () => { document.body.dataset.host = hostScheme.value; });
+accent.addEventListener("change", () => {
+	if (accent.value) document.body.style.setProperty("--ab-play", accent.value);
+	else document.body.style.removeProperty("--ab-play");
+});
+zeroGlow.addEventListener("change", () => {
+	if (zeroGlow.checked) document.body.style.setProperty("--ab-play-glow", "0");
+	else document.body.style.removeProperty("--ab-play-glow");
+});
 draw();
