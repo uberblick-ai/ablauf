@@ -2,6 +2,9 @@
 
 ## 0.2.1
 
+- Same-column edges into and out of decisions stay on the column centreline
+  across odd and even node widths, preserving inline-label clearance.
+  ([#82](https://github.com/uberblick-ai/ablauf/issues/82))
 - Fan-outs in both styles honour `fonts.mono` for typography, wrapping, ladder
   step sizing and dotted leaders. Omitting fonts preserves the default SVG bytes.
   ([#77](https://github.com/uberblick-ai/ablauf/issues/77))
