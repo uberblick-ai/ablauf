@@ -49,7 +49,7 @@ test("mount starts idle; source-order tabs, labelled panel, native actions and r
 	assert.equal(f.role("tabpanel")[0].getAttribute("aria-labelledby"), f.role("tab")[0].id);
 	assert.ok(f.role("tab").every(tab => tab.type === "button" && tab.getAttribute("aria-controls") === f.role("tabpanel")[0].id));
 	assert.deepEqual(f.role("tab").map(tab => tab.tabIndex), [0, -1, -1]);
-	assert.deepEqual(f.actions().map(button => button.textContent), ["Previous", "Play", "Next"]);
+	assert.deepEqual(f.actions().map(button => button.getAttribute("aria-label") ?? button.textContent), ["Previous", "Play", "Next"]);
 	assert.ok(f.actions().every(button => button.type === "button"));
 	assert.equal(f.range.parent?.tag, "label");
 	assert.ok(f.range.parent?.textContent.startsWith("Step"));

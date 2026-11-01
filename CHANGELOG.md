@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Give built-in playback controls underlined scrolling tabs, a reserved step
+  counter and actor/caption row, compact buttons and a seekable segmented bar.
+  Preserve native range access and honour `--ab-play-glow: 0` for control glows.
+  ([#116](https://github.com/uberblick-ai/ablauf/issues/116))
 - Glow current playback outlines and incoming strokes, with a heavier stroke
   and a `--ab-play-glow` size override (`6px`, or literal `0` for no glow).
   Add the `ab-playing` root hook for forward running edge dashes and 0.35s

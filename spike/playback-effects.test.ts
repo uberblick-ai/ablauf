@@ -58,7 +58,7 @@ function setup(t: TestContext, mode: "headless" | "mounted" | "controls", loop =
 	function action(name: "play" | "pause" | "next" | "previous") {
 		if (mode === "controls") {
 			const label = name === "play" ? player.state.status === "ended" ? "Replay" : "Play" : name === "pause" ? "Pause" : name === "next" ? "Next" : "Previous";
-			const button = container.all().find(el => el.tag === "button" && el.textContent === label);
+			const button = container.all().find(el => el.tag === "button" && (el.getAttribute("aria-label") ?? el.textContent) === label);
 			assert.ok(button, label);
 			button.click();
 		} else player[name]();

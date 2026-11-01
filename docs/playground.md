@@ -42,14 +42,26 @@ zero diagnostics. The playground-only `spike/playground/playback-crossings.flow`
 visibly exercises canvas and band knockouts; its two crossing warnings are
 intentional and shown on the page. It stays outside the rendered example set.
 The page also shows a single timeline without tabs, a direct `createPlayer`
-case without built-in controls, and a tabbed case with an empty scenario.
+case without built-in controls, a tabbed case with an empty scenario, and a
+**Compact controls** case with overflowing tabs, short captions, a long wrapping
+caption, an absent actor and an empty scenario at the end of the tab strip.
 Current-colour and zero-glow controls apply host overrides to every case,
 including the shadow root. Each document is 710px wide,
 with 16px side padding giving a 678px figure at full width.
 
 A maintainer checks these in a real browser before merging playback changes,
-including #112 and #113. Compare with the
-[scenario playback GIF](images/playback/scenario-tabs.gif):
+including #112, #113 and #116. Capture light and dark screenshots of
+`/playback-review` at the 678px figure width. Compare the controls with the
+[gallery controls reference](https://raw.githubusercontent.com/uberblick-ai/ablauf/9ba61d5485c89010c57ce6eb4c0111e7e6fac8de/spike/gallery/controls.png)
+and the figures with the [scenario playback GIF](images/playback/scenario-tabs.gif).
+The fixture supplies no host control CSS. Source inspection and DOM fakes do
+not satisfy this visual gate.
+
+The compact-controls captures from this fixture are [light](images/playback/controls-light.png)
+and [dark](images/playback/controls-dark.png); the overflowing-tab case with its
+long caption is captured in [light](images/playback/controls-overflow-light.png)
+and [dark](images/playback/controls-overflow-dark.png). They show 678px figures
+without host control CSS; the interactive checks below still need a maintainer.
 
 - Use the SVG/controls scheme selector for automatic, pinned light and pinned
   dark; choose a matching or contrasting host background separately. Automatic
@@ -57,7 +69,25 @@ including #112 and #113. Compare with the
 - Check the mint defaults and switch the Current colour host override: the
   current stroke, glow and built-in controls must follow it in both schemes.
   Toggle Zero glow (`--ab-play-glow: 0`): no glow, with the heavier current
-  outlines preserved. Toggle back without rerendering.
+  outlines preserved. Check every control glow too: selected tab text and the
+  current segment must lose their glow in both light DOM and shadow roots.
+  Toggle back without rerendering; all glows return in the chosen play colour.
+- Check the borderless monospace tabs on one rule with a 2px selected underline,
+  compact 30px buttons, and fixed Play/Pause/Replay minimum width. In **Compact
+  controls**, the tab strip must scroll horizontally within the figure without
+  wrapping or widening the document; scroll to the last empty scenario and back.
+- At initial idle and range `-1`, the counter is blank and visually hidden with
+  its space reserved; no segment is current or played. Step forward: the counter
+  reads `1/total`, then follows the one-based current step during playback and
+  navigation. Earlier segments are muted play colour, the current segment is
+  full play colour with glow, and future segments are subdued. Click a segment
+  while playing: it seeks to that step and pauses. Seek with range arrows and
+  switch scenarios: counter, segment count and highlights stay synchronized.
+- In **Compact controls**, compare idle, both short-caption steps, the scenario
+  without an actor, and empty: the step row reserves the same two-line minimum
+  and the action row stays at the same height. Select **Long caption wrapping**:
+  all text wraps visibly and the row grows, with no clipping or overlap. Repeat
+  in light and dark, including a narrower document.
 - Play and pause both the direct `createPlayer` case and built-in controls.
   Current node outlines/decision shapes and incoming strokes glow, including
   when paused or ended; played parts do not glow. Playing incoming dashes move
@@ -66,7 +96,8 @@ including #112 and #113. Compare with the
   playing; manual navigation and scenario changes are instant. Paused/ended
   figures are still. Gaps and crossing knockouts have no glow or running dashes.
 - Play two figures simultaneously, switch scenarios and navigate. Check that
-  each caption, actor, range and Play/Pause/Replay label follows only its player.
+  each counter, segment bar, caption, actor, range and Play/Pause/Replay label
+  follows only its player.
   Enable looping and watch the last step return to the first.
 - In light and dark at document width, play or manually step the **Fade · inline
   labels** figure. On the first Request step, later labels fade to 0.3; their
@@ -82,10 +113,15 @@ including #112 and #113. Compare with the
 - Use Tab to reach the single selected tab; Left/Right wrap and activate
   immediately. Enter/Space and click also activate. Check visible focus remains
   on the control during playback; use native range arrows, including `-1` for
-  the full figure. Check announcements with a screen reader: actor and remark
-  announce on step changes, while pause/end alone do not repeat them.
+  the full figure. The hidden native range must remain a tab stop with a visible
+  outline around the segment bar; segments must add no tab stops or announced
+  controls. Verify the three buttons' accessible names are Previous,
+  Play/Pause/Replay and Next. Check announcements with a screen reader: actor
+  and remark announce once on step changes, while pause/end alone do not repeat
+  them, and the counter/segments add no announcements. Repeat in the shadow root.
 - Select the empty scenario: “No playable steps”, disabled buttons/range and
-  usable tabs. Verify the single-timeline case has no tab row.
+  usable tabs, a blank reserved counter and no segments. Verify the single-timeline
+  case has no tab row.
 - Enable reduced motion before Play and during playback. The figure resets
   to full idle, manual stepping still works, and disabling the preference does
   not start playback. No running dashes or transitions remain; a manually
