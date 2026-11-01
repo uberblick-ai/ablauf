@@ -16,10 +16,55 @@ Open `#examples/neutral` for filled grey boxes and panels beside the
 surface-filled `ink` and `muted` variants, with matching neutral legend samples,
 pill dots and edges. Use the scheme toggle to review light and dark.
 
+Every render with timelines now mounts the built-in playback controls; editing
+source or switching examples destroys the previous mount. Open
+`#examples/loop-play` for three scenario tabs. Examples without timelines keep
+their static presentation.
+
 For the system-step comparison, open `#examples/system-steps` and select the
 710 px document column. Check both light and dark: “The loop” is a blue system
 box with explanatory text, beside a neutral note and connected to a label,
 an agent role and a person panel. The legend includes matching samples.
+
+## Playback browser review
+
+Run `mise run playground` and open
+[http://localhost:4620/playback-review](http://localhost:4620/playback-review),
+or follow **Playback browser review** from the playground. If port 4620 is busy,
+use the printed server URL with `/playback-review`. No build or setup script is
+needed beyond that command.
+
+The fixture shows two independently rendered copies of
+`spike/examples/loop-play.flow`, one in the light DOM and one inside a shadow
+root, using distinct `idPrefix` values. It also shows a single timeline without
+tabs and a tabbed case with an empty scenario. Each document is 710px wide,
+with 16px side padding giving a 678px figure at full width.
+
+A maintainer checks these in a real browser before merging #94:
+
+- Use the SVG/controls scheme selector for automatic, pinned light and pinned
+  dark; choose a matching or contrasting host background separately. Automatic
+  follows the browser/OS colour preference, including changes while mounted.
+- Play two figures simultaneously, switch scenarios and navigate. Check that
+  each caption, actor, range and Play/Pause/Replay label follows only its player.
+  Enable looping and watch the last step return to the first.
+- Use Tab to reach the single selected tab; Left/Right wrap and activate
+  immediately. Enter/Space and click also activate. Check visible focus remains
+  on the control during playback; use native range arrows, including `-1` for
+  the full figure. Check announcements with a screen reader: actor and remark
+  announce on step changes, while pause/end alone do not repeat them.
+- Select the empty scenario: “No playable steps”, disabled buttons/range and
+  usable tabs. Verify the single-timeline case has no tab row.
+- Enable reduced motion before Play and during playback. The figure resets
+  to full idle, manual stepping still works, and disabling the preference does
+  not start playback.
+- While playing, try both `mount.destroy()` and `player.destroy()` for each
+  case, including the shadow root. The figure and host content remain, controls
+  disappear, and other mounts continue. Remount repeatedly: one set of controls,
+  idle state and no old timers or announcements.
+
+DOM fakes, CSS selector checks and SVG source inspection do not satisfy this
+maintainer browser gate.
 
 ## What it is for
 

@@ -2,6 +2,7 @@
 // problems. Renders in the browser with the package's own code.
 
 import { DARK, LIGHT, render } from "../flow/index.ts";
+import { mountPlayback, type PlaybackMount } from "../flow/playback.ts";
 
 interface Group {
 	kind: string;
@@ -26,6 +27,7 @@ let current: Flow | null = null;
 let saved = "";
 let saving = false;
 let saveAgain: Flow | null = null;
+let playback: PlaybackMount | undefined;
 const SCRATCH = "flow v0\ncolumns main\n\nbox start col=main \"say what happens first\"\nend done \"Finished\"\n\nstart --> done : then\n";
 
 function setScheme(scheme: string) {
@@ -35,9 +37,12 @@ function setScheme(scheme: string) {
 }
 
 function draw() {
-	const { svg, diagnostics, layout } = render(editor.value, { idPrefix: "pg" });
+	playback?.destroy();
+	playback = undefined;
+	const { svg, diagnostics, layout, timelines } = render(editor.value, { idPrefix: "pg" });
 	target.innerHTML = svg;
 	const svgEl = target.querySelector("svg");
+	if (svgEl && timelines.length) playback = mountPlayback(target, svgEl, timelines);
 	if (grid.checked && svgEl) {
 		// Built as elements, so an id in the source is only ever text.
 		const NS = "http://www.w3.org/2000/svg";
@@ -94,6 +99,8 @@ async function open() {
 		return;
 	}
 	shown = location.hash;
+	playback?.destroy();
+	playback = undefined;
 	const load = ++loads;
 	const hash = decodeURIComponent(location.hash.slice(1));
 	const match = /^([a-z]+)\/([a-z0-9-]+)$/.exec(hash);
