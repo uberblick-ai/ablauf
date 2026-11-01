@@ -13,7 +13,6 @@ import { stripTypeScriptTypes } from "node:module";
 import { join, normalize, sep } from "node:path";
 import { catalog, FOLDERS } from "./catalog.ts";
 
-process.removeAllListeners("warning"); // stripTypeScriptTypes is marked experimental
 const ROOT = join(import.meta.dirname, "..");
 const NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const PORT = Number(process.env.PORT ?? 4620);
@@ -58,43 +57,54 @@ function write(file: string, text: string) {
   }
 }
 
-const server = createServer(async (req, res) => {
-  try {
-    const url = new URL(req.url ?? "/", "http://localhost");
-    const path = url.pathname;
-    if (req.method === "GET" && path === "/") return send(res, 200, "text/html; charset=utf-8", readFileSync(join(import.meta.dirname, "index.html"), "utf8"));
-    if (req.method === "GET" && path === "/playground.css") return send(res, 200, "text/css; charset=utf-8", readFileSync(join(import.meta.dirname, "playground.css"), "utf8"));
-    if (req.method === "GET" && path === "/api/catalog") return send(res, 200, "application/json", JSON.stringify(catalog(ROOT)));
-    if (req.method === "GET" && path === "/reference/loop.svg") return send(res, 200, "image/svg+xml", readFileSync(join(ROOT, "reference", "loop.svg"), "utf8"));
-    // The renderer and the page script, as JavaScript.
-    if (req.method === "GET" && /^\/(flow\/[a-z]+|playground\/app)\.ts$/.test(path)) {
-      const file = normalize(join(ROOT, path));
-      return send(res, 200, "text/javascript; charset=utf-8", stripTypeScriptTypes(readFileSync(file, "utf8")));
-    }
-    const m = /^\/api\/flow\/([a-z]+)\/([a-z0-9-]+)$/.exec(path);
-    const file = m ? flowPath(m[1], m[2]) : null;
-    if (m && !file) return send(res, 400, "text/plain", "bad name");
-    if (file && req.method === "GET") return send(res, 200, "text/plain; charset=utf-8", readFileSync(file, "utf8"));
-    if (file && req.method === "PUT") {
-      if (req.headers.origin !== `http://localhost:${port()}` && req.headers.origin !== `http://127.0.0.1:${port()}`) {
-        return send(res, 403, "text/plain", "writes must come from the playground page");
+export function createPlaygroundServer() {
+  const server = createServer(async (req, res) => {
+    try {
+      const url = new URL(req.url ?? "/", "http://localhost");
+      const path = url.pathname;
+      if (req.method === "GET" && path === "/") return send(res, 200, "text/html; charset=utf-8", readFileSync(join(import.meta.dirname, "index.html"), "utf8"));
+      if (req.method === "GET" && path === "/playback-review") return send(res, 200, "text/html; charset=utf-8", readFileSync(join(import.meta.dirname, "playback-review.html"), "utf8"));
+      if (req.method === "GET" && path === "/playground.css") return send(res, 200, "text/css; charset=utf-8", readFileSync(join(import.meta.dirname, "playground.css"), "utf8"));
+      if (req.method === "GET" && path === "/api/catalog") return send(res, 200, "application/json", JSON.stringify(catalog(ROOT)));
+      if (req.method === "GET" && path === "/reference/loop.svg") return send(res, 200, "image/svg+xml", readFileSync(join(ROOT, "reference", "loop.svg"), "utf8"));
+      // Only direct renderer modules and the two browser entry scripts.
+      if (req.method === "GET" && /^\/(flow\/[a-z]+(?:-[a-z]+)*|playground\/(?:app|playback-review))\.ts$/.test(path)) {
+        const file = normalize(join(ROOT, path));
+        return send(res, 200, "text/javascript; charset=utf-8", stripTypeScriptTypes(readFileSync(file, "utf8")));
       }
-      write(file, await body(req));
-      return send(res, 200, "text/plain", "saved");
+      const m = /^\/api\/flow\/([a-z]+)\/([a-z0-9-]+)$/.exec(path);
+      const file = m ? flowPath(m[1], m[2]) : null;
+      if (m && !file) return send(res, 400, "text/plain", "bad name");
+      if (file && req.method === "GET") return send(res, 200, "text/plain; charset=utf-8", readFileSync(file, "utf8"));
+      if (file && req.method === "PUT") {
+        if (req.headers.origin !== `http://localhost:${port()}` && req.headers.origin !== `http://127.0.0.1:${port()}`) {
+          return send(res, 403, "text/plain", "writes must come from the playground page");
+        }
+        write(file, await body(req));
+        return send(res, 200, "text/plain", "saved");
+      }
+      send(res, 404, "text/plain", "not found");
+    } catch (error) {
+      send(res, 500, "text/plain", error instanceof Error ? error.message : String(error));
     }
-    send(res, 404, "text/plain", "not found");
-  } catch (error) {
-    send(res, 500, "text/plain", error instanceof Error ? error.message : String(error));
-  }
-});
+  });
 
-const port = () => {
-  const address = server.address();
-  return typeof address === "object" && address ? address.port : PORT;
-};
+  const port = () => {
+    const address = server.address();
+    return typeof address === "object" && address ? address.port : PORT;
+  };
+  return server;
+}
 
-server.on("error", (error: NodeJS.ErrnoException) => {
-  if (error.code === "EADDRINUSE") server.listen(0, "127.0.0.1");
-  else throw error;
-});
-server.listen(PORT, "127.0.0.1", () => console.log(`ablauf playground: http://localhost:${port()}/`));
+if (import.meta.main) {
+  process.removeAllListeners("warning"); // stripTypeScriptTypes is marked experimental
+  const server = createPlaygroundServer();
+  server.on("error", (error: NodeJS.ErrnoException) => {
+    if (error.code === "EADDRINUSE") server.listen(0, "127.0.0.1");
+    else throw error;
+  });
+  server.listen(PORT, "127.0.0.1", () => {
+    const address = server.address();
+    if (typeof address === "object" && address) console.log(`ablauf playground: http://localhost:${address.port}/`);
+  });
+}

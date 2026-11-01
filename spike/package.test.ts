@@ -99,8 +99,10 @@ const core = await import("@uberblick/ablauf");
 const playback = await import("@uberblick/ablauf/playback");
 assert.equal(typeof core.render, "function");
 assert.equal(core.createPlayer, undefined);
-assert.deepEqual(Object.keys(playback), ["createPlayer"]);
+assert.deepEqual(Object.keys(playback), ["createPlayer", "mountPlayback"]);
 assert.equal(typeof playback.createPlayer, "function");
+assert.equal(typeof playback.mountPlayback, "function");
+assert.equal(core.mountPlayback, undefined);
 assert.match(core.render("flow v0\\nbox a\\n").svg, /^<svg /);
 `);
 	run(process.execPath, ["import-entries.mjs"]);
@@ -147,9 +149,19 @@ const ms: number = step.ms;
 	run(process.execPath, [join(root, "node_modules/typescript/bin/tsc"), "--noEmit", "--strict", "--module", "nodenext", "--target", "es2023", "--lib", "es2023", "core-types.mts"]);
 	writeFileSync(join(consumer, "playback-types.mts"), `
 import type { Timeline } from "@uberblick/ablauf";
-import { createPlayer, type Player, type PlayerState } from "@uberblick/ablauf/playback";
+import { createPlayer, mountPlayback, type PlaybackMount, type Player, type PlayerState } from "@uberblick/ablauf/playback";
 declare const svg: SVGSVGElement;
 declare const timelines: Timeline[];
+declare const element: HTMLElement;
+declare const shadow: ShadowRoot;
+const mount: PlaybackMount = mountPlayback(element, svg, timelines, { loop: true });
+const shadowMount: PlaybackMount = mountPlayback(shadow, svg, timelines);
+const mountedPlayer: Player = mount.player;
+mount.destroy(); mountedPlayer.destroy(); shadowMount.destroy();
+// @ts-expect-error The container must be an HTML element or shadow root.
+mountPlayback(svg, svg, timelines);
+// @ts-expect-error Mount options only configure looping.
+mountPlayback(element, svg, timelines, { onChange() {} });
 const player: Player = createPlayer(svg, timelines, { loop: true, onChange(state: PlayerState) {
   const scenario: number = state.scenario;
   const step: number = state.step;

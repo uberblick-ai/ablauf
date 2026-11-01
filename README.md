@@ -109,6 +109,32 @@ pass the rendered inline `SVGSVGElement` and its `timelines` to the headless
 player. Use a distinct `idPrefix` for each figure on the page, including figures
 in shadow roots.
 
+For built-in scenario tabs, buttons, a step range and captions, mount controls
+in an element or shadow root below the inline SVG:
+
+```ts
+import { mountPlayback } from "@uberblick/ablauf/playback";
+
+const mount = mountPlayback(controlsContainer, svgElement, result.timelines);
+// Starts idle; the user presses Play. The host can also call mount.player.
+// Before replacing the SVG or its timelines:
+mount.destroy();
+```
+
+The container can hold other host content. `mount.destroy()` and
+`mount.player.destroy()` perform the same idempotent cleanup: stop playback,
+clear highlighting, remove the mount's controls, style and listeners, and leave
+host content intact. Destroy the old mount before rendering changed source,
+then mount again. No timelines adds no controls or style. A single timeline
+has no tabs; an empty scenario stays selected and shows “No playable steps”.
+Tabs activate immediately on Left/Right (wrapping), click or Enter/Space;
+selection pauses on the first step. The range includes the full figure at `-1`.
+Controls follow the SVG's automatic or pinned scheme and accept host `--ab-*`
+colour overrides on their container. `PlaybackMount` is exported from the same
+entry. Both entries are safe to import without browser globals.
+
+For custom controls, use the headless player:
+
 ```ts
 import { createPlayer } from "@uberblick/ablauf/playback";
 import type { Timeline } from "@uberblick/ablauf";

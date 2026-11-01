@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Playback browser review · ablauf</title>
+<link rel="icon" href="data:,">
+<script type="module" src="/playground/playback-review.ts"></script>
+<style>
+body{margin:24px;font:15px/1.5 system-ui,sans-serif;background:#fff;color:#17202c}
+body[data-host="dark"]{background:#171c24;color:#e5e9ef;color-scheme:dark}
+@media(prefers-color-scheme:dark){body[data-host="auto"]{background:#171c24;color:#e5e9ef;color-scheme:dark}}
+header{max-width:710px}label{display:inline-block;margin:8px}button,select{font:inherit}
+.review-document{width:710px;max-width:100%;box-sizing:border-box;padding:16px;outline:1px solid #98a2b0;margin:24px 0}
+.review-figure svg{display:block;max-width:100%;height:auto}
+.review-note{font-size:13px}
+</style>
+</head>
+<body data-host="auto">
+<header>
+<a href="/">Playground</a>
+<h1>Playback browser review</h1>
+<p>Each document is 710px wide with a 678px figure. The two loop diagrams have independent players and distinct SVG IDs; the second lives inside a shadow root.</p>
+<label>SVG and controls scheme <select id="review-scheme"><option value="auto">Automatic (OS)</option><option value="light">Pinned light</option><option value="dark">Pinned dark</option></select></label>
+<label>Host background <select id="review-host"><option value="auto">Automatic (OS)</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
+<label><input id="review-loop" type="checkbox">Loop playback</label>
+<p>Use Tab, Left/Right, Enter/Space and the range arrows. Enable reduced motion in your browser or OS before and during play: the full figure should return, with manual stepping still available. Try both destroy buttons while playing, then remount. Other figures should keep playing.</p>
+</header>
+<main id="review-cases"></main>
+</body>
+</html>

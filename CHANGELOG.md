@@ -4,8 +4,16 @@
 
 - Resolve named flow `play` sections into `timelines`, with JSON strings,
   source-line diagnostics, and current/played SVG parts and theme tokens.
-  Static diagrams keep their exact SVG bytes. Browser playback and controls
-  remain planned. ([#67](https://github.com/uberblick-ai/ablauf/issues/67))
+  Static diagrams keep their exact SVG bytes.
+  ([#67](https://github.com/uberblick-ai/ablauf/issues/67))
+- Export the headless browser `createPlayer` with timed playback, scenario
+  selection, navigation, looping and reduced-motion handling.
+  ([#69](https://github.com/uberblick-ai/ablauf/issues/69))
+- Add `mountPlayback` with accessible scenario tabs, playback buttons, a native
+  step range, captions and announcements. Both mount and player teardown remove
+  the controls. Integrate playback in the playground and add a browser review
+  fixture for schemes, independent mounts, shadow roots and remounting.
+  ([#94](https://github.com/uberblick-ai/ablauf/issues/94))
 
 ## 0.2.1
 

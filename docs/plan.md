@@ -647,8 +647,8 @@ trials are references only. No spike code or dependency ships.
 ## Playback
 
 Flow play sections, resolved timelines, SVG state styles and the headless
-browser player (#69) are implemented. Built-in controls (#94) and
-sequence/fan-out target resolution are still planned. This design records the
+browser player (#69), and built-in controls (#94) are implemented.
+Sequence/fan-out target resolution is still planned. This design records the
 smallest package feature that lets a host show several scenarios of one
 diagram. It does not change the existing flow, sequence or fan-out syntax or
 static rendering rules.
@@ -726,10 +726,10 @@ interface TimelineStep {
 }
 ```
 
-The player and planned controls use only `parts`, never `kind`: a new diagram
+The player and controls use only `parts`, never `kind`: a new diagram
 kind needs a resolver, not a new player. The player lives in the browser entry
 `@uberblick/ablauf/playback`; the core stays DOM-free. The player owns playback
-and scenario selection; the planned built-in controls supply buttons, scenario
+and scenario selection; the built-in controls supply buttons, scenario
 tabs and the caption so hosts do not need to recreate them.
 
 Reuse the seams from [the playback spike (#65)](https://github.com/uberblick-ai/ablauf/pull/65):
@@ -766,7 +766,7 @@ their defaults. These tokens are separate from the existing exported palette.
 - States are idle (full figure), paused, playing and ended. Previous, next,
   seek and switching scenario pause. Play on ended replays. Stop on the last
   step after its full duration; `loop` is opt-in. Resuming restarts the current
-  step's full duration. Controls will offer Replay.
+  step's full duration. Controls offer Replay.
 - Play on click is the default. Nothing starts unless the host calls play;
   a host may do so when a gallery card scrolls into view. With reduced motion
   playback resets to idle at step `-1` and the full figure shows; manual
@@ -787,6 +787,49 @@ and SVG updates, with a stable snapshot. Destroy is silent and idempotent,
 clears highlighting, timers and listeners, preserves the scenario, and
 leaves idle at step `-1`; later methods do nothing. Both package entries are
 safe to import without browser globals, and core types need no DOM library.
+
+### Built-in controls and lifetime
+
+The browser entry also exports
+`mountPlayback(container, svg, timelines, { loop? }?)`, returning
+`PlaybackMount { player: Player; destroy(): void }`. The host supplies an
+`HTMLElement` or `ShadowRoot` for controls below its inline SVG. Mounting starts
+idle with the full figure, without autoplay. No timelines adds no DOM or style.
+The mount uses the existing player contract for timing, navigation, looping
+and reduced motion, including changes made through the returned `player`.
+
+Multiple timelines have a labelled scenario tablist first, in source order
+using `Timeline.name`; one timeline has no tabs. Tabs have selected state,
+one tab stop and an associated labelled panel. Left/Right wrap focus and
+immediately activate the focused scenario; click, Enter and Space activate
+too. Activation calls `select`, pausing on step `0` (or `-1` when empty).
+Playback updates never move focus or recreate controls.
+
+Below tabs are native Previous, Play/Pause/Replay and Next buttons and a
+labelled native range covering `-1..last`, including the full figure at `-1`.
+Navigation pauses. Below them, the current actor appears above the caption
+(remark), cleared at `-1`. One polite atomic status announces actor and remark
+when the scenario/step changes to a playable step; pause and end alone do not
+repeat it. All source strings are assigned with `textContent`. A selected
+empty scenario shows “No playable steps” and disables buttons and range while
+leaving tabs usable; it never selects another scenario automatically.
+
+Each mount appends its own scoped style and controls root inside the supplied
+container, leaving other host content intact. Its scheme comes from the SVG
+root's `ab-auto`, `ab-light` or `ab-dark` class at mounting. Controls resolve
+existing `--ab-*` host overrides with their own matching light/dark defaults:
+the SVG's internal variables cannot be inherited by sibling controls. Every
+selector is under `.ab-playback`, so document and shadow-root mounts do not
+style unrelated host elements. Focus is visible.
+
+Both `mount.destroy()` and `mount.player.destroy()` perform the same idempotent
+teardown: destroy the player and remove this mount's controls, style and
+listeners. The host destroys before replacing the SVG or changing timelines,
+then mounts again. Standalone `createPlayer` retains its silent teardown and
+adds no controls. No browser globals are touched at import time. The playground
+uses this mount on every render with timelines; the
+[browser review fixture](playground.md#playback-browser-review) exercises
+independent light DOM and shadow-root mounts, schemes and teardown.
 
 ### Release boundaries
 
