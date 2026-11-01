@@ -34,14 +34,34 @@ A `play` section after a flow walks the reader through it step by step, in
 one or more scenarios, with captions. It lives in the same text, so it fits in
 a Markdown code block.
 
-<img alt="A Dependabot flow played through four scenarios (clean merge, tests failing, fix fails, major release): the current step glows, the rest dims, and a caption names the actor and what happens." src="https://raw.githubusercontent.com/uberblick-ai/ablauf/main/docs/images/playback-showcase.gif">
+<img alt="A Dependabot flow played in two scenarios, a clean merge and then failing tests: the current step glows, the steps still to come dim, and a caption under the figure names the actor and what happens." src="https://raw.githubusercontent.com/uberblick-ai/ablauf/main/docs/images/playback-showcase.gif">
+
+The second scenario in the GIF, written under the Dependabot flow:
 
 ```
 play "Tests failing"
   step dependabot actor="Dependabot files" "Bump zod from 4.4.3 to 4.6.6"
-  step integrator 2.4s "A test fails, so it gets one fix round"
+  step dependencies
+  step integrator 2.4s actor="Integrator" "A test fails, so it gets one fix round"
   step needs-changes
+  step implementer actor="Implementer" "Fixes two assertions; a reviewer checks the fix"
+  step integrator actor="Integrator" "Tests pass now"
+  step merged
 ```
+
+In a page, one call adds the scenario tabs, the buttons, the step bar and the
+caption under the figure:
+
+```js
+import { render } from "@uberblick/ablauf";
+import { mountPlayback } from "@uberblick/ablauf/playback";
+
+const { svg, timelines } = render(source, { idPrefix: "dependabot" });
+figure.innerHTML = svg;
+mountPlayback(figure, figure.querySelector("svg"), timelines);
+```
+
+Playback works for flows today. Sequence diagrams and fan-outs follow.
 
 ## Install
 

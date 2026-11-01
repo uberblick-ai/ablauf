@@ -40,7 +40,7 @@ const mount = mountPlayback(controlsContainer, svgElement, result.timelines);
 mount.destroy();
 ```
 
-<summary><b>Playback details and the headless player</b></summary>
+### Playback details and the headless player
 
 The container can hold other host content. `mount.destroy()` and
 `mount.player.destroy()` perform the same idempotent cleanup: stop playback,
@@ -54,7 +54,6 @@ Controls follow the SVG's automatic or pinned scheme and accept host `--ab-*`
 colour overrides on their container. `PlaybackMount` is exported from the same
 entry. Both entries are safe to import without browser globals.
 
-For custom controls, use the headless player:
 For custom controls, use the headless player:
 
 ```ts
