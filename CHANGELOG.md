@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Fade unplayed flow parts to 0.3 while a playback step is shown, preserving
+  opaque inline label gaps and crossing knockouts. Add the `ab-in-progress`
+  root hook for hand-driven hosts and fade fixtures for browser review.
+  ([#112](https://github.com/uberblick-ai/ablauf/issues/112))
 - Resolve named flow `play` sections into `timelines`, with JSON strings,
   source-line diagnostics, and current/played SVG parts and theme tokens.
   Static diagrams keep their exact SVG bytes.

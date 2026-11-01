@@ -135,19 +135,24 @@ export const markerPrefix = (options: SvgOptions) =>
 		(c) => `.${c.charCodeAt(0).toString(16).padStart(4, "0")}`,
 	);
 
-// Playback styles never change geometry, opacity or the foreground draw order.
+// Playback fades unplayed parts, preserving opaque gaps and knockouts.
+// Geometry and foreground draw order never change; state changes are instant.
 function playStyle(mode: "auto" | "light" | "dark", id: string): string {
 	const colors = (dark: boolean) => `--play:var(--ab-play,${dark ? "#88baff" : "#2869b8"});--play-done:var(--ab-play-done,${dark ? "#8498ac" : "#62798e"});`;
 	const defaults = mode === "auto"
 		? `.ab.ab-auto{${colors(false)}}@media (prefers-color-scheme:dark){.ab.ab-auto{${colors(true)}}}`
 		: `.ab.ab-${mode}{${colors(mode === "dark")}}`;
+	const unplayed = `.ab[data-ab-play="${id}"].ab-in-progress [data-ab-part]:not(.ab-current):not(.ab-played)`;
+	// Group opacity composites nodes, strokes and marker heads as a whole.
+	// Inline labels contain a canvas/band gap: only their text may fade.
+	const fade = `${unplayed}:not(:has(.gap)){opacity:.3}${unplayed}:has(.gap) text{opacity:.3}`;
 	return defaults + ["played", "current"].map(state => {
 		const color = state === "current" ? "play" : "play-done";
 		// Marker URLs differ per figure; the selector must stay local when
 		// several playable SVGs share a document and cascade their styles.
 		const selector = `.ab[data-ab-play="${id}"] [data-ab-part].ab-${state}`;
 		return `${selector} :is(rect:not(.gap),path:not(.arrow),line){stroke:var(--${color})}${selector} :is(text,circle){fill:var(--${color})}${selector} .arrow{marker-end:url(#${id}-play-${state})}.ab .play-head-${state}{fill:var(--${color})}`;
-	}).join("");
+	}).join("") + fade;
 }
 
 export function toSvg(layout: Layout, options: SvgOptions = {}, playable = false): string {

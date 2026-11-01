@@ -39,6 +39,15 @@ test("playground and browser fixture serve complete module graphs inside the exi
 		const flow = await fetch(`${origin}/api/flow/examples/loop-play`);
 		assert.equal(flow.status, 200);
 		assert.equal(await flow.text(), readFileSync(new URL("./examples/loop-play.flow", import.meta.url), "utf8"));
+		for (const [path, file] of [
+			["/api/flow/examples/playback-fade", "./examples/playback-fade.flow"],
+			["/playground/playback-crossings.flow", "./playground/playback-crossings.flow"],
+		]) {
+			const response = await fetch(`${origin}${path}`);
+			assert.equal(response.status, 200, path);
+			assert.equal(await response.text(), readFileSync(new URL(file, import.meta.url), "utf8"));
+		}
+		assert.equal((await fetch(`${origin}/playground/playback-crossings.flow`, { method: "PUT", body: "no" })).status, 404);
 		for (const path of ["/playground.css", "/reference/loop.svg", "/api/catalog"]) assert.equal((await fetch(`${origin}${path}`)).status, 200, path);
 		for (const path of ["/playground/server.ts", "/playground/catalog.ts", "/controls.test.ts", "/flow/../../package.json", "/flow/%2e%2e/%2e%2e/package.json", "/flow/nested/module.ts", "/flow/.hidden.ts", "/flow/play-flow.ts/extra", "/package.json", "/api/flow/private/secret"]) {
 			assert.ok([400, 404].includes((await fetch(`${origin}${path}`)).status), path);

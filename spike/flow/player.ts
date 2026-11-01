@@ -30,6 +30,7 @@ export function createPlayer(
 	const steps = () => timelines[state.scenario]?.steps ?? [];
 
 	function paint() {
+		svg.classList.toggle("ab-in-progress", state.step >= 0);
 		const current = new Set(steps()[state.step]?.parts);
 		const played = new Set(steps().slice(0, Math.max(0, state.step)).flatMap(step => step.parts));
 		for (const wrapper of svg.querySelectorAll("[data-ab-part]")) {

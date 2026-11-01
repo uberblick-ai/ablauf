@@ -700,7 +700,8 @@ step's node in that scenario to it; parallel edges all light. The first
 successfully resolved step lights only its node. A repeated node needs no
 edge. An unknown target, or a step with no edge from the last successfully
 resolved step, is a diagnostic on that step's line and is skipped. A skipped
-step does not change that predecessor for later steps. Labels never fade.
+step does not change that predecessor for later steps. Current and played
+labels never fade.
 Sequence and fan-out define their own lighting rules when they arrive.
 
 ### Timeline and browser contract
@@ -751,9 +752,22 @@ ids. Distinct edges, including parallel edges, have distinct part identities.
 Use `querySelectorAll('[data-ab-part="' + part + '"]')` within the SVG to
 find **all** fragments of a part. Apply `ab-current` or `ab-played` to every
 matching wrapper; current takes precedence if both are present. Remove both
-classes for the full default figure. All six node kinds and edge strokes,
-heads and labels take state colours without opacity changes or reordering.
-Inline label gaps and crossing knockouts keep their background colour.
+classes and the root's `ab-in-progress` class for the full default figure.
+Hand-driven hosts set `ab-in-progress` on the SVG root exactly while a scenario
+step is shown (`step >= 0`), including paused and ended states. Remove it at
+idle (`step === -1`), for empty scenarios and after destruction.
+
+All six node kinds and every edge stroke, head and label fragment take state
+colours. While `ab-in-progress` is present, unplayed node, edge stroke and head
+wrappers fade as a whole to 0.3 opacity. Unplayed label text also fades to 0.3,
+but inline label backgrounds (`.gap` / `.gap-band`) stay fully opaque. Current
+and played parts keep their state colours at full opacity, with current taking
+precedence. Inline gaps and crossing knockouts retain fully opaque canvas or
+band backgrounds, so underlying edges never show through them. Knockouts stay
+unfaded. Geometry and draw order never change. The scoped styles are embedded
+in every playable SVG; hosts need no CSS. Navigation, scenario changes and
+looping recompute the faded parts. Idle, the reduced-motion reset, empty
+scenarios and destruction restore the full unfaded figure.
 
 Playable SVGs define internal `--play` and `--play-done` through the host's
 `--ab-play` and `--ab-play-done` overrides. Current defaults are `#2869b8`
