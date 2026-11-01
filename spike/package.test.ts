@@ -66,7 +66,7 @@ test("the packed package works for an isolated production consumer", (t) => {
 	writeFileSync(join(consumer, "public-api.mjs"), `
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { render, LIGHT, DARK } from "@uberblick/ablauf";
+import { render, LIGHT, DARK, TOKENS, checkPalette } from "@uberblick/ablauf";
 const source = readFileSync("valid.flow", "utf8");
 const expected = JSON.parse(readFileSync("expected.json", "utf8"));
 assert.equal(render(source).svg, expected.defaultSvg);
@@ -80,6 +80,11 @@ assert.match(result.svg, /^<svg /);
 assert.deepEqual(result.diagnostics, expected.diagnostics);
 assert.equal(result.diagnostics[0].line, 3);
 assert.notDeepEqual(LIGHT, DARK);
+assert.equal(TOKENS.length, 18);
+assert.deepEqual([...TOKENS].sort(), Object.keys(LIGHT).sort());
+assert.ok(checkPalette(DARK).minimum >= 4.5);
+assert.ok(Math.abs(checkPalette(LIGHT).minimum - 4.395772012043759) < 1e-10);
+assert.ok(checkPalette(LIGHT).pairs.every(p => typeof p.where === "string" && p.ratio >= 1));
 `);
 	run(process.execPath, ["public-api.mjs"]);
 
@@ -87,7 +92,7 @@ assert.notDeepEqual(LIGHT, DARK);
 	// the installed tarball, with no repository types or source imports.
 	writeFileSync(join(consumer, "types.mts"), `
 import { render, type RenderOptions, type Diagnostic, type FontsOptions,
-  type FontOptions, type TextStyle } from "@uberblick/ablauf";
+  type FontOptions, type TextStyle, TOKENS, type Token, type Palette, LIGHT, checkPalette } from "@uberblick/ablauf";
 const measureText = (text: string, { fontSize }: TextStyle) => text.length * fontSize;
 const font: FontOptions = { family: "Host Mono", measureText };
 const fonts: FontsOptions = { mono: font, text: font };
@@ -96,6 +101,20 @@ const result = render("flow v0\\nbox a\\n", options);
 const svg: string = result.svg;
 const diagnostics: Diagnostic[] = result.diagnostics;
 const line: number | undefined = diagnostics[0]?.line;
+const tokens: readonly Token[] = TOKENS;
+const palette: Palette = { ...LIGHT };
+const token: Token = TOKENS[0];
+const resultPalette: { minimum: number; pairs: { ink: Token; ground: Token[]; opacity?: number; ratio: number; where: string }[] } = checkPalette(palette);
+// @ts-expect-error TOKENS is a readonly tuple.
+TOKENS.push("ink");
+// @ts-expect-error Only supported public tokens are assignable.
+const unknownToken: Token = "unknown";
+// @ts-expect-error A complete palette is required.
+const incomplete: Palette = { bg: "#fff" };
 `);
-	run(process.execPath, [join(root, "node_modules/typescript/bin/tsc"), "--noEmit", "--strict", "--module", "nodenext", "--target", "es2023", "types.mts"]);
+	const guide = readFileSync(join(root, "site/pages/guides/testing.html"), "utf8");
+	const guideScript = guide.match(/<code class="language-ts">([\s\S]*?)<\/code>/)?.[1];
+	assert.ok(guideScript, "the integration guide has a complete TypeScript example");
+	writeFileSync(join(consumer, "guide.mts"), guideScript.replaceAll("&gt;", ">").replaceAll("&lt;", "<").replaceAll("&amp;", "&"));
+	run(process.execPath, [join(root, "node_modules/typescript/bin/tsc"), "--noEmit", "--strict", "--module", "nodenext", "--target", "es2023", "types.mts", "guide.mts"]);
 });

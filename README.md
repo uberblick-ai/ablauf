@@ -215,6 +215,8 @@ Inline SVGs can follow a page's `data-theme="light"` / `data-theme="dark"`
 switch through the existing `--ab-*` CSS properties, without rerendering.
 See [host page themes](https://github.com/uberblick-ai/ablauf/blob/main/docs/theming.md) for the complete base and tone palette,
 copyable host CSS and the difference between inline SVG and image embedding.
+Use the exported `TOKENS`, `Token`, `Palette` and `checkPalette` paint contract
+to [test your integration](https://ablauf.uberblick.ai/guides/testing).
 
 ## Start here
 

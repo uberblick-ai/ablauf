@@ -2,6 +2,11 @@
 
 ## 0.2.1
 
+- Export `TOKENS`, `Token`, `Palette` and DOM-free `checkPalette` for host text
+  contrast checks, with a [Test your integration](https://ablauf.uberblick.ai/guides/testing)
+  guide. Built-in colours and rendered SVG bytes are unchanged.
+  ([#76](https://github.com/uberblick-ai/ablauf/issues/76))
+
 - Fan-outs in both styles honour `fonts.mono` for typography, wrapping, ladder
   step sizing and dotted leaders. Omitting fonts preserves the default SVG bytes.
   ([#77](https://github.com/uberblick-ai/ablauf/issues/77))

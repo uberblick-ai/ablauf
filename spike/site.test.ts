@@ -16,7 +16,7 @@ test("the site builds every page, with a page per kind and clean examples", (t) 
 	const out = scratch(t);
 	const { pages, problems } = build({ out });
 	assert.deepEqual(problems, []);
-	assert.deepEqual(pages, ["/", "/404", "/fan-out", "/flow", "/guides/colours", "/guides/tiptap", "/motivation", "/uberblick"]);
+	assert.deepEqual(pages, ["/", "/404", "/fan-out", "/flow", "/guides/colours", "/guides/testing", "/guides/tiptap", "/motivation", "/uberblick"]);
 	for (const kind of kinds) {
 		const html = readFileSync(join(out, `${kind.id}.html`), "utf8");
 		assert.match(html, new RegExp(`<h1>${kind.name}</h1>`));
@@ -25,6 +25,8 @@ test("the site builds every page, with a page per kind and clean examples", (t) 
 	}
 	assert.match(readFileSync(join(out, "index.html"), "utf8"), /<link rel="canonical" href="https:\/\/ablauf\.uberblick\.ai\/">/);
 	const index = readFileSync(join(out, "index.html"), "utf8");
+	assert.equal([...index.matchAll(/href="\/guides\/testing"/g)].length, 2, "both navigation lists link the integration guide");
+	assert.match(readFileSync(join(out, "guides/testing.html"), "utf8"), /<h1>Test your integration<\/h1>/);
 	for (const column of ["Projects", "Learn", "GitHub"]) assert.match(index, new RegExp(`<footer class="foot">[\\s\\S]*<h3>${column}</h3>`));
 	const sitemap = readFileSync(join(out, "sitemap.xml"), "utf8");
 	assert.match(sitemap, /<loc>https:\/\/ablauf\.uberblick\.ai\/guides\/colours<\/loc>/);

@@ -12,7 +12,7 @@ const PRIMER = `${REPO}/blob/main/spike/PRIMER.md`;
 const SIDE: [string | null, [string, string][]][] = [
 	[null, [["/", "Overview"], ["/motivation", "Motivation"], ["/uberblick", "With Uberblick"]]],
 	["Kinds", kinds.map((k) => [`/${k.id}`, k.name])],
-	["Guides", [["/guides/colours", "Customise colours"], ["/guides/tiptap", "Tiptap editor"]]],
+	["Guides", [["/guides/colours", "Customise colours"], ["/guides/testing", "Test your integration"], ["/guides/tiptap", "Tiptap editor"]]],
 ];
 
 function sidebar(path: string) {
@@ -73,6 +73,7 @@ ${page.body}
     <li><a href="/motivation">Motivation</a></li>
     <li><a href="/uberblick">With Uberblick</a></li>
     <li><a href="/guides/colours">Customise colours</a></li>
+    <li><a href="/guides/testing">Test your integration</a></li>
     <li><a href="/guides/tiptap">Tiptap editor</a></li>
     <li><a href="${PRIMER}">Format primer</a></li>
   </ul></div>

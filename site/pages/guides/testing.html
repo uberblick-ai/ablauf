@@ -1,0 +1,79 @@
+<head>
+<title>Test your integration · ablauf</title>
+<meta name="description" content="Check host palettes, fonts and CSP when embedding an inline ablauf diagram, using the public text paint contract.">
+</head>
+<div class="hero sub">
+  <p class="crumb"><a href="/">ablauf</a> / Guides / Test your integration</p>
+  <h1>Test your integration</h1>
+  <p class="lede">Test the colours and fonts your host supplies. Ablauf exports its text paint contract so your checks need no renderer classes or glyph sampling.</p>
+</div>
+
+<section class="q" id="guarantees"><h2>What Ablauf already tests</h2>
+<p>The package tests deterministic SVG bytes, escaped labels, ids unique across renders with distinct <code>idPrefix</code> values, diagnostics with one-based source line numbers, and text fitting the supplied <code>fonts</code> metrics. It renders every example and the real playground catalogue for both kinds and checks their text paints against the contract. Hosts can focus on their integration.</p>
+<p>Give each inline render a distinct <code>idPrefix</code> and surface its diagnostics. A reported source problem still draws; resolve diagnostics before assessing a figure's appearance.</p>
+</section>
+
+<section class="q" id="overrides"><h2>Check your overrides</h2>
+<p><code>TOKENS</code> is a readonly tuple of all supported names without the <code>--ab-</code> prefix, in the order of the <a href="https://github.com/uberblick-ai/ablauf/blob/main/docs/theming.md">palette table</a>. <code>Token</code> is its name union and <code>Palette</code> is <code>Record&lt;Token, string&gt;</code>. Keep your host override map complete for each page theme, then install its entries as <code>--ab-*</code> properties. A partial map can mix your theme with the renderer's defaults.</p>
+<pre><code>import { TOKENS } from "@uberblick/ablauf";
+
+// Call for each of your host's theme maps before installing its CSS.
+function checkOverrides(overrides) {
+  const missing = TOKENS.filter(token =&gt; !overrides[token]?.trim());
+  if (missing.length) throw new Error(`Missing overrides: ${missing.join(", ")}`);
+}</code></pre>
+<p>Check that installed overrides reach the inline SVG under every combination of page theme and system scheme. Change the page theme without rerendering and repeat the palette check. Set <code>--ab-bg</code> to the actual opaque host canvas behind the transparent SVG, including the canvas inside a shadow root.</p>
+</section>
+
+<section class="q" id="palette"><h2>Resolve the effective palette</h2>
+<p>Read a colour-bearing property on a probe inside the rendered inline SVG. Reading a custom property alone can leave an unresolved expression. Pass the same pinned <code>scheme</code> you gave <code>render</code>, or omit it for an automatic SVG. Exported <code>LIGHT</code> and <code>DARK</code> supply effective defaults when host overrides are absent.</p>
+<pre><code class="language-ts">import {
+  TOKENS, LIGHT, DARK, checkPalette,
+  type Palette, type RenderOptions,
+} from "@uberblick/ablauf";
+
+function effectivePalette(svg: SVGSVGElement, scheme?: RenderOptions["scheme"]): Palette {
+  const view = svg.ownerDocument.defaultView;
+  if (!view || !svg.isConnected) throw new Error("Connect the SVG before testing it");
+  const dark = scheme ? scheme === "dark"
+    : view.matchMedia("(prefers-color-scheme: dark)").matches;
+  const defaults = dark ? DARK : LIGHT;
+  const palette = {} as Palette;
+  const probe = svg.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "rect");
+  probe.setAttribute("width", "0");
+  probe.setAttribute("height", "0");
+  probe.setAttribute("aria-hidden", "true");
+  svg.append(probe);
+  try {
+    for (const token of TOKENS) {
+      probe.style.setProperty("fill", `var(--ab-${token}, ${defaults[token]})`);
+      palette[token] = view.getComputedStyle(probe).fill;
+    }
+  } finally {
+    probe.remove();
+  }
+  return palette;
+}
+
+function checkDiagram(svg: SVGSVGElement, scheme?: RenderOptions["scheme"]) {
+  const result = checkPalette(effectivePalette(svg, scheme));
+  const failures = result.pairs.filter(pair =&gt; pair.ratio &lt; 4.5);
+  if (failures.length) throw new Error(JSON.stringify(failures, null, 2));
+  return result.minimum;
+}</code></pre>
+<p>Pass the actual SVG element to <code>checkDiagram</code>, whether it is in the document or in a shadow root. The probe is its child, so it sees inherited properties in that tree. After inserting a render made with <code>scheme: "dark"</code>, call <code>checkDiagram(svg, "dark")</code>. For an automatic render call <code>checkDiagram(svg)</code> after each system scheme change. The example reads only public <code>--ab-*</code> properties; renderer classes and internal unprefixed properties such as <code>--rework</code> are not an integration API.</p>
+<p>Test complete host palettes and renders with overrides removed, including a shadow-root fixture if you embed there. The defaults have known minima: DARK is about <code>4.707</code>; unchanged LIGHT is about <code>4.396</code>, from rework-toned edge labels on a band (including inline labels). A strict 4.5 test therefore reports LIGHT until you adjust the host palette. Palette correction with visual review is tracked separately in <a href="https://github.com/uberblick-ai/ablauf/issues/86">#86</a>.</p>
+</section>
+
+<section class="q" id="contract"><h2>Read the paint contract</h2>
+<p><code>checkPalette(palette)</code> runs without a DOM. It returns <code>{ minimum, pairs }</code>. Each pair has <code>ink</code>, <code>ground</code>, optional <code>opacity</code>, unrounded WCAG text contrast <code>ratio</code>, and a host-readable <code>where</code>. It covers both diagram kinds and both fan-out styles: captions, titles/subtitles, panel contents, pills, legend descriptions and samples, ordinary/inline edge labels, and visible diagnostic text. It checks the whole renderer contract regardless of which tones one diagram uses. It does not measure non-text strokes or infer the canvas from the page.</p>
+<p><code>ground</code> lists layers from back to front, starting with <code>bg</code>, the host canvas. For example, <code>["bg", "band", "agent-bg", "surface"]</code> with <code>opacity: 0.82</code> means a decision's surface label box over its tone diamond on a band. Opacity multiplies only the last layer's own alpha. The label box also extends beyond the diamond: a separate pair uses <code>["bg", "band", "surface"]</code>. Gaps repaint the canvas/band, and pills inside panels add a surface over the panel fill.</p>
+<p>Layers composite with alpha source-over in gamma-encoded sRGB, as browsers do. For an opaque accumulated ground, each channel is <code>source × alpha + ground × (1 − alpha)</code>. After all ground layers, the ink's alpha composites over that ground. Only then are channels linearized for WCAG luminance: <code>c / 12.92</code> for <code>c ≤ 0.04045</code>, otherwise <code>((c + 0.055) / 1.055) ** 2.4</code>. Luminance weights are <code>0.2126, 0.7152, 0.0722</code>, and contrast is <code>(lighter + 0.05) / (darker + 0.05)</code>. The minimum is the lowest unrounded ratio.</p>
+<p>Accepted colour forms are <code>#rgb</code>, <code>#rgba</code>, <code>#rrggbb</code>, <code>#rrggbbaa</code>, numeric or percentage <code>rgb()</code>/<code>rgba()</code> (comma-separated or space-separated, with optional alpha), <code>color(srgb r g b / a)</code> with numeric or percentage channels, and <code>transparent</code>. Forms are case-insensitive; surrounding whitespace is allowed. Channels and alpha must be finite and in range (RGB numbers 0–255, sRGB numbers and alpha 0–1, percentages 0–100%). <code>bg</code> must be opaque; other colours may have alpha.</p>
+<p>Every token, including non-text colours, must have its own string value. Missing keys, invalid syntax, out-of-range values and unsupported forms throw <code>TypeError</code>; none are skipped. Extra object keys are ignored. Named colours, <code>currentColor</code>, <code>var()</code>, HSL, Lab/OKLCH and other colour spaces are unsupported inputs. Browsers normally resolve ordinary CSS colours to RGB on the probe; if yours preserves another colour space, convert it to an accepted sRGB form before calling the checker, matching the host's actual displayed colour. The function never rounds a result into a passing score.</p>
+</section>
+
+<section class="q" id="fonts-csp"><h2>Fonts and CSP</h2>
+<p>Wait for host fonts to load before measuring them and supply matching families and synchronous <code>fonts</code> width metrics to <code>render</code>. Check that your browser loads those families without substitution. See <a href="https://github.com/uberblick-ai/ablauf/blob/main/docs/plan.md#host-fonts-and-width-metrics">host font metrics</a>. The package's fit tests rely on the metrics you provide; they cannot verify a host's font loading.</p>
+<p>Exercise the inline SVG under your production Content Security Policy. Its embedded style block must be permitted for palette and text rules to apply, and the probe example uses an inline style property. Test the same embedding and style policy you ship, along with any font sources your host needs. Keep the SVG inline for host CSS inheritance; an <code>&lt;img&gt;</code> has a separate document.</p>
+</section>
