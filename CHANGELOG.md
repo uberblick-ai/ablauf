@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Resolve named flow `play` sections into `timelines`, with JSON strings,
+  source-line diagnostics, and current/played SVG parts and theme tokens.
+  Static diagrams keep their exact SVG bytes. Browser playback and controls
+  remain planned. ([#67](https://github.com/uberblick-ai/ablauf/issues/67))
+
 ## 0.2.1
 
 - Draw `sequence v0` with ordered UML participants, lifelines, requests,

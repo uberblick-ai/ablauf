@@ -104,6 +104,16 @@ function inspect(svg: string) {
 		const declarations = Object.fromEntries(body.split(";").filter(Boolean).map((d) => d.split(":")));
 		assert.ok(!("opacity" in declarations), "inspector must handle new group/element opacity");
 		if (!("fill" in declarations) && !("fill-opacity" in declarations)) return [];
+		// checkPalette covers the static palette. Play states use separate host
+		// tokens and are inactive in these full-figure renders; playback.test.ts
+		// covers their SVG contract. Refuse active states rather than misreport
+		// their text as an ordinary static paint.
+		const state = /^\.ab \[data-ab-part\]\.ab-(played|current) :is\(text,circle\)$/.exec(selector.trim());
+		if (state) {
+			assert.doesNotMatch(svg, /class="[^"]*\bab-(?:current|played)\b/, "static paint inspector cannot inspect active playback states");
+			assert.deepEqual(declarations, { fill: `var(--${state[1] === "current" ? "play" : "play-done"})` });
+			return [];
+		}
 		assert.match(selector.trim(), /^\.ab (?:text|(?:\.[\w-]+)+)$/);
 		const classes = [...selector.matchAll(/\.([\w-]+)/g)].slice(1).map((m) => m[1]);
 		return [{ classes, text: selector.trim() === ".ab text", declarations, specificity: classes.length * 10 + (selector.trim() === ".ab text" ? 1 : 0), order }];

@@ -24,6 +24,7 @@ import {
 } from "./grid.ts";
 import type { Tone } from "./parse.ts";
 import type { Palette } from "./paint.ts";
+import { edgePart, nodePart } from "./play-flow.ts";
 
 export const LIGHT = {
 	bg: "#ffffff",
@@ -134,7 +135,20 @@ export const markerPrefix = (options: SvgOptions) =>
 		(c) => `.${c.charCodeAt(0).toString(16).padStart(4, "0")}`,
 	);
 
-export function toSvg(layout: Layout, options: SvgOptions = {}): string {
+// Playback styles never change geometry, opacity or the foreground draw order.
+function playStyle(mode: "auto" | "light" | "dark", id: string): string {
+	const colors = (dark: boolean) => `--play:var(--ab-play,${dark ? "#88baff" : "#2869b8"});--play-done:var(--ab-play-done,${dark ? "#8498ac" : "#62798e"});`;
+	const defaults = mode === "auto"
+		? `.ab.ab-auto{${colors(false)}}@media (prefers-color-scheme:dark){.ab.ab-auto{${colors(true)}}}`
+		: `.ab.ab-${mode}{${colors(mode === "dark")}}`;
+	return defaults + ["played", "current"].map(state => {
+		const color = state === "current" ? "play" : "play-done";
+		const selector = `.ab [data-ab-part].ab-${state}`;
+		return `${selector} :is(rect:not(.gap),path:not(.arrow),line){stroke:var(--${color})}${selector} :is(text,circle){fill:var(--${color})}${selector} .arrow{marker-end:url(#${id}-play-${state})}.ab .play-head-${state}{fill:var(--${color})}`;
+	}).join("");
+}
+
+export function toSvg(layout: Layout, options: SvgOptions = {}, playable = false): string {
 	const mode =
 		options.scheme === "light" || options.scheme === "dark"
 			? options.scheme
@@ -159,6 +173,7 @@ export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 	)
 		extra.push(DECISION_STYLE);
 	if (layout.routes.some((r) => r.label?.inline)) extra.push(GAP_STYLE);
+	if (playable) extra.push(playStyle(mode, id));
 	out.push(svgStyle(mode, layout.typography, extra));
 	out.push("<defs>");
 	for (const t of tones) {
@@ -166,19 +181,23 @@ export function toSvg(layout: Layout, options: SvgOptions = {}): string {
 			`<marker id="${id}-${t}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-${t}"/></marker>`,
 		);
 	}
+	if (playable) for (const state of ["played", "current"]) {
+		out.push(`<marker id="${id}-play-${state}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="play-head-${state}"/></marker>`);
+	}
 	out.push("</defs>");
+	const part = (name: string, svg: string) => playable ? `<g data-ab-part="${name}">${svg}</g>` : svg;
 	for (const b of layout.bands) out.push(band(b, layout.width));
 	for (let i = 0; i < layout.routes.length; i++) {
 		const r = layout.routes[i];
 		out.push(...knockouts(r, layout.routes.slice(0, i), layout.bands));
-		out.push(route(r));
+		out.push(part(edgePart(i), route(r)));
 	}
 	// Knockouts affect edge strokes only; all foreground content follows them.
-	for (const r of layout.routes) out.push(arrow(r, id));
+	for (const [i, r] of layout.routes.entries()) out.push(part(edgePart(i), arrow(r, id)));
 	for (const b of layout.bands)
 		out.push(`<text x="20" y="${b.y + 22}" class="cap">${esc(b.label.toUpperCase())}</text>`);
-	for (const p of layout.nodes) out.push(node(p, layout.typography));
-	for (const r of layout.routes) if (r.label) out.push(edgeLabel(r, layout.bands));
+	for (const [i, p] of layout.nodes.entries()) out.push(part(nodePart(i), node(p, layout.typography)));
+	for (const [i, r] of layout.routes.entries()) if (r.label) out.push(part(edgePart(i), edgeLabel(r, layout.bands)));
 	if (layout.legend) {
 		out.push(
 			`<line x1="8" y1="${layout.legend.y}" x2="${layout.width - 8}" y2="${layout.legend.y}" class="rule"/>`,
