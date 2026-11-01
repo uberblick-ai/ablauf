@@ -643,12 +643,13 @@ not satisfy visual review. The spike's bounded-lanes
 and [dark](https://github.com/uberblick-ai/ablauf/blob/a10e93ffa9640a38c187982b71ae7b6bf2a29056/spike/sequence-spike/evidence/mermaid-bounded-lanes-dark-doc710-fig678.png)
 trials are references only. No spike code or dependency ships.
 
-## Playback (planned)
+## Playback
 
-Playback is planned work; play sections do not render yet. This design records
-the smallest package feature that lets a host show several scenarios of one
-diagram without writing playback code of its own. It does not change the
-existing flow, sequence or fan-out syntax or static rendering rules.
+Flow play sections, resolved timelines and SVG state styles are implemented.
+The browser player (#69), built-in controls (#94), and sequence/fan-out target
+resolution are still planned. This design records the smallest package feature
+that lets a host show several scenarios of one diagram. It does not change
+the existing flow, sequence or fan-out syntax or static rendering rules.
 
 ### Vocabulary
 
@@ -723,8 +724,8 @@ interface TimelineStep {
 }
 ```
 
-The player and controls use only `parts`, never `kind`: a new diagram kind
-needs a resolver, not a new player. They live in the browser entry
+The planned player and controls use only `parts`, never `kind`: a new diagram kind
+needs a resolver, not a new player. They will live in the browser entry
 `@uberblick/ablauf/playback`; the core stays DOM-free. The player owns playback
 and scenario selection; the built-in controls supply buttons, scenario tabs
 and the caption so hosts do not need to recreate them.
@@ -737,7 +738,28 @@ styles only when a play section exists; otherwise its bytes are unchanged.
 Output remains deterministic and inert, with escaped source text and styles
 scoped under the SVG root class.
 
-### Behaviour and theming
+The implemented SVG contract for #69 adds `data-ab-play` to the root, using
+the encoded `idPrefix` to scope state marker references when several figures
+share a page. Use distinct `idPrefix` values as with static SVG markers.
+There is `data-ab-part="node-N"` on each
+node's wrapper and `data-ab-part="edge-N"` on separate wrappers for an edge's
+stroke, head and label (when present). Indices are zero-based layout order,
+local to this SVG; consumers must use timeline `parts` rather than construct
+ids. Distinct edges, including parallel edges, have distinct part identities.
+Use `querySelectorAll('[data-ab-part="' + part + '"]')` within the SVG to
+find **all** fragments of a part. Apply `ab-current` or `ab-played` to every
+matching wrapper; current takes precedence if both are present. Remove both
+classes for the full default figure. All six node kinds and edge strokes,
+heads and labels take state colours without opacity changes or reordering.
+Inline label gaps and crossing knockouts keep their background colour.
+
+Playable SVGs define internal `--play` and `--play-done` through the host's
+`--ab-play` and `--ab-play-done` overrides. Current defaults are `#2869b8`
+(light) and `#88baff` (dark); played defaults are `#62798e` (light) and
+`#8498ac` (dark). Auto follows `prefers-color-scheme`; pinned schemes keep
+their defaults. These tokens are separate from the existing exported palette.
+
+### Behaviour and theming (player behaviour planned)
 
 - States are idle (full figure), paused, playing and ended. Previous, next,
   seek and switching scenario pause. Play on ended replays. Stop on the last
@@ -753,7 +775,7 @@ scoped under the SVG root class.
 
 ### Release boundaries
 
-- **v0.3.0, flows:** play sections and timelines
+- **v0.3.0, flows:** implemented play sections, timelines and SVG states
   ([#67](https://github.com/uberblick-ai/ablauf/issues/67)), the player
   ([#69](https://github.com/uberblick-ai/ablauf/issues/69)), and built-in
   controls with scenario tabs
@@ -765,8 +787,8 @@ scoped under the SVG root class.
 
 Extras cut from v0.3.0 wait for real need. Frozen frames come later. Timelines
 from real ub-agents run logs and visual timeline editing are out of scope.
-Implementation belongs to those follow-up issues; this section only records
-the design from [#66](https://github.com/uberblick-ai/ablauf/issues/66) and the
+The remaining browser and diagram-kind work belongs to those follow-up issues.
+This section follows the design from [#66](https://github.com/uberblick-ai/ablauf/issues/66) and the
 [maintainer's prototype summary](https://github.com/uberblick-ai/ablauf/issues/66#issuecomment-6554358304).
 Uberblick integration is
 [uberblick-ai/uberblick-2#2007](https://github.com/uberblick-ai/uberblick-2/issues/2007)

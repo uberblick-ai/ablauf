@@ -3,8 +3,8 @@
 You choose placement; the renderer sizes and draws without moving nodes or
 rerouting edges. Save as `.flow`. [Renderer details](../docs/plan.md).
 
-[Playback is planned](../docs/plan.md#playback-planned); play sections do not
-render yet.
+[Flows support play sections and timelines](../docs/plan.md#playback).
+The browser player and controls are still planned.
 
 ## Flow syntax and nodes
 
@@ -130,6 +130,49 @@ increase `gap=` for cramped vertical labels; change sides, slots or placement
 for edges crossing nodes or edges. A visible crossing gap still needs fixing.
 
 Optional repository check: `mise run check FILE` writes SVG and lists problems.
+
+## Flow playback
+
+Append named `play` sections to a flow. Each step names a node id and lights
+that node plus all edges from the previous successful step. The first step
+lights only its node; repeating a node needs no edge. Unknown targets or
+missing connections diagnose and skip the step, preserving the predecessor.
+Scenarios are independent. This complete example can be copied as one block:
+
+```text
+flow v0
+columns main
+box work col=main title="Implement"
+decision review "Checks pass?"
+end merged "Merged"
+work --> review
+review --> work tone=rework from=left to=left : fix
+review --> merged : yes
+
+play "Clean merge"
+  tempo 1.8s
+  step work actor="Implementer" "Prepare the change"
+  step review 800ms
+  step merged
+
+play "One fix round"
+  step work
+  step review "One more pass is needed"
+  step work
+  step review
+  step merged
+```
+
+Grammar: `play ["Name"]`, optional `tempo DURATION` before steps, then
+`step TARGET [DURATION] [actor="..."] ["caption"]`. Here strings are JSON
+strings: escape quotes with `\"` and backslashes with `\\`; quoted targets
+are allowed too. Diagram strings above keep their original syntax. Durations
+use seconds or milliseconds (`2.4s`, `800ms`), from 100ms to 60s; default
+tempo is 1.6s. Invalid durations diagnose and use the tempo. Omitted actors
+use the node's title; omitted captions are empty. `render()` returns the
+resolved `timelines` and a full static SVG with parts a host can highlight.
+Sequence and fan-out playback are not supported yet and diagnose on each
+`play` line. See [loop-play.flow](examples/loop-play.flow) for three scenarios.
 
 ## Fan-out
 
