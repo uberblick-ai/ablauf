@@ -671,7 +671,10 @@ styles only when a play section exists; otherwise its bytes are unchanged.
 Output remains deterministic and inert, with escaped source text and styles
 scoped under the SVG root class.
 
-The implemented SVG contract for #69 is `data-ab-part="node-N"` on each
+The implemented SVG contract for #69 adds `data-ab-play` to the root, using
+the encoded `idPrefix` to scope state marker references when several figures
+share a page. Use distinct `idPrefix` values as with static SVG markers.
+There is `data-ab-part="node-N"` on each
 node's wrapper and `data-ab-part="edge-N"` on separate wrappers for an edge's
 stroke, head and label (when present). Indices are zero-based layout order,
 local to this SVG; consumers must use timeline `parts` rather than construct

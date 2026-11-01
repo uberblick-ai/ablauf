@@ -108,7 +108,7 @@ function inspect(svg: string) {
 		// tokens and are inactive in these full-figure renders; playback.test.ts
 		// covers their SVG contract. Refuse active states rather than misreport
 		// their text as an ordinary static paint.
-		const state = /^\.ab \[data-ab-part\]\.ab-(played|current) :is\(text,circle\)$/.exec(selector.trim());
+		const state = /^\.ab\[data-ab-play="[A-Za-z0-9_.-]+"\] \[data-ab-part\]\.ab-(played|current) :is\(text,circle\)$/.exec(selector.trim());
 		if (state) {
 			assert.doesNotMatch(svg, /class="[^"]*\bab-(?:current|played)\b/, "static paint inspector cannot inspect active playback states");
 			assert.deepEqual(declarations, { fill: `var(--${state[1] === "current" ? "play" : "play-done"})` });

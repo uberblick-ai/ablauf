@@ -143,7 +143,9 @@ function playStyle(mode: "auto" | "light" | "dark", id: string): string {
 		: `.ab.ab-${mode}{${colors(mode === "dark")}}`;
 	return defaults + ["played", "current"].map(state => {
 		const color = state === "current" ? "play" : "play-done";
-		const selector = `.ab [data-ab-part].ab-${state}`;
+		// Marker URLs differ per figure; the selector must stay local when
+		// several playable SVGs share a document and cascade their styles.
+		const selector = `.ab[data-ab-play="${id}"] [data-ab-part].ab-${state}`;
 		return `${selector} :is(rect:not(.gap),path:not(.arrow),line){stroke:var(--${color})}${selector} :is(text,circle){fill:var(--${color})}${selector} .arrow{marker-end:url(#${id}-play-${state})}.ab .play-head-${state}{fill:var(--${color})}`;
 	}).join("");
 }
@@ -164,7 +166,7 @@ export function toSvg(layout: Layout, options: SvgOptions = {}, playable = false
 	].sort();
 	const out: string[] = [];
 	out.push(
-		`<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-${mode}" viewBox="0 0 ${layout.width} ${layout.height}" width="${layout.width}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? describe(layout))}">`,
+		`<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-${mode}"${playable ? ` data-ab-play="${id}"` : ""} viewBox="0 0 ${layout.width} ${layout.height}" width="${layout.width}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? describe(layout))}">`,
 	);
 	const extra: string[] = [];
 	if (

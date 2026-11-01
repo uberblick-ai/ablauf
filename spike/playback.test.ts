@@ -186,8 +186,8 @@ test("playable SVG preserves drawing order and all labels, with scoped state col
 		assert.equal(svg, render(`${flow}play\n step start\n`, { scheme, idPrefix: 'host:<unsafe>' }).svg);
 		assert.match(svg, /--play:var\(--ab-play,#[0-9a-f]+\)/);
 		assert.match(svg, /--play-done:var\(--ab-play-done,#[0-9a-f]+\)/);
-		assert.match(svg, /\.ab \[data-ab-part\]\.ab-current/);
-		assert.match(svg, /\.ab \[data-ab-part\]\.ab-played/);
+		assert.match(svg, /\.ab\[data-ab-play="host\.003a\.003cunsafe\.003e"\] \[data-ab-part\]\.ab-current/);
+		assert.match(svg, /\.ab\[data-ab-play="host\.003a\.003cunsafe\.003e"\] \[data-ab-part\]\.ab-played/);
 		assert.match(svg, /marker-end:url\(#host\.003a\.003cunsafe\.003e-play-current\)/);
 		assert.match(svg, /class="play-head-played"/);
 		assert.equal(svg.match(/data-ab-part="edge-3"/g)?.length, 3, "stroke, head and label share a part");
@@ -200,6 +200,18 @@ test("playable SVG preserves drawing order and all labels, with scoped state col
 	assert.doesNotMatch(staticSvg, /data-ab-part|ab-current|ab-played|--ab-play/);
 	assert.equal(Object.keys(LIGHT).length, 18);
 	assert.equal(Object.keys(DARK).length, 18);
+});
+
+test("two playable SVGs scope state marker references to their own root", () => {
+	for (const idPrefix of ["first", "second"]) {
+		const svg = render(`${flow}play\n step start\n`, { idPrefix }).svg;
+		assert.match(svg, new RegExp(`<svg[^>]+data-ab-play="${idPrefix}"`));
+		for (const state of ["current", "played"]) {
+			const expected = `.ab[data-ab-play="${idPrefix}"] [data-ab-part].ab-${state} .arrow{marker-end:url(#${idPrefix}-play-${state})}`;
+			assert.ok(svg.includes(expected));
+		}
+		assert.doesNotMatch(svg, /\.ab \[data-ab-part\]/);
+	}
 });
 
 test("play strings stay inert and malformed sections still render", () => {
