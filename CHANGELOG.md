@@ -1,68 +1,49 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 — 2026-11-02
 
-- Give built-in playback controls underlined scrolling tabs, a reserved step
-  counter and actor/caption row, compact buttons and a seekable segmented bar.
-  Preserve native range access and honour `--ab-play-glow: 0` for control glows.
-  ([#116](https://github.com/uberblick-ai/ablauf/issues/116))
-- Glow current playback outlines and incoming strokes, with a heavier stroke
-  and a `--ab-play-glow` size override (`6px`, or literal `0` for no glow).
-  Add the `ab-playing` root hook for forward running edge dashes and 0.35s
-  fade/colour easing only while playing; reduced motion disables motion and
-  transitions. Switch SVG and control defaults to mint: current `#0a7a60` /
-  `#6ff0cf`, played `#596e81` / `#5f9e8a` (light/dark), each above 4.5:1 on
-  its canvas and band. Static palettes and SVG bytes stay unchanged.
-  ([#113](https://github.com/uberblick-ai/ablauf/issues/113))
-- Fade unplayed flow parts to 0.3 while a playback step is shown, preserving
-  opaque inline label gaps and crossing knockouts. Add the `ab-in-progress`
-  root hook for hand-driven hosts and fade fixtures for browser review.
-  ([#112](https://github.com/uberblick-ai/ablauf/issues/112))
-- Resolve named flow `play` sections into `timelines`, with JSON strings,
-  source-line diagnostics, and current/played SVG parts and theme tokens.
-  Static diagrams keep their exact SVG bytes.
-  ([#67](https://github.com/uberblick-ai/ablauf/issues/67))
-- Export the headless browser `createPlayer` with timed playback, scenario
-  selection, navigation, looping and reduced-motion handling.
-  ([#69](https://github.com/uberblick-ai/ablauf/issues/69))
-- Add `mountPlayback` with accessible scenario tabs, playback buttons, a native
-  step range, captions and announcements. Both mount and player teardown remove
-  the controls. Integrate playback in the playground and add a browser review
-  fixture for schemes, independent mounts, shadow roots and remounting.
-  ([#94](https://github.com/uberblick-ai/ablauf/issues/94))
+### Playback
 
-## 0.2.1
+- Resolve named flow `play` sections into `timelines`, with JSON strings, line-numbered diagnostics,
+  current/played SVG parts and theme tokens; diagrams without playback retain their SVG bytes. ([#67](https://github.com/uberblick-ai/ablauf/issues/67))
+- Ship `@uberblick/ablauf/playback` with JavaScript and TypeScript declarations. Its headless `createPlayer`
+  supports timing, scenarios, navigation, looping and reduced motion; importing either entry is DOM-free. ([#69](https://github.com/uberblick-ai/ablauf/issues/69))
+- Add `mountPlayback` with accessible scenario tabs, buttons, a native step range, captions, announcements
+  and teardown, plus playground integration and browser fixtures for schemes, shadow roots and remounts. ([#94](https://github.com/uberblick-ai/ablauf/issues/94))
+- Fade unplayed flow parts to 0.3, preserving opaque label gaps and crossing knockouts; expose
+  `ab-in-progress` for hosts and add browser fade fixtures. ([#112](https://github.com/uberblick-ai/ablauf/issues/112))
+- Add mint current/played colours, heavier glowing current strokes and `--ab-play-glow` (`6px`, or `0` to disable).
+  `ab-playing` enables forward edge dashes and 0.35s easing; reduced motion disables both. ([#113](https://github.com/uberblick-ai/ablauf/issues/113))
+- Make controls compact, with underlined scrolling tabs, reserved counter and actor/caption space,
+  and a seekable segmented bar; preserve native range access and the glow override. ([#116](https://github.com/uberblick-ai/ablauf/issues/116))
 
-- Add sequence groups (`alt`, `opt`, `loop`, `group`), notes over lifelines
-  and sections, with wrapping, recovery and per-layer `groundOpacities` in
-  the host paint contract. ([#79](https://github.com/uberblick-ai/ablauf/issues/79))
+### Diagrams and host themes
 
-- Draw `sequence v0` with ordered UML participants, lifelines, requests,
-  responses and self-messages in bounded 678px lanes. Includes mono font
-  metrics, source-line diagnostics, paint coverage and the claim example.
-  Sequence appears alongside Flow and Fan-out on the site and in the playground,
-  with a short claim example and light/dark README images.
-  ([#74](https://github.com/uberblick-ai/ablauf/issues/74),
-  [#80](https://github.com/uberblick-ai/ablauf/issues/80))
+- Draw `sequence v0` with ordered UML participants, lifelines, requests, responses and self-messages
+  in bounded 678px lanes, with host mono fonts and line-numbered diagnostics. ([#74](https://github.com/uberblick-ai/ablauf/issues/74))
+- Add sequence groups (`alt`, `opt`, `loop`, `group`), notes over lifelines and sections, with wrapping,
+  recovery and per-layer `groundOpacities` in the host paint contract. ([#79](https://github.com/uberblick-ai/ablauf/issues/79))
+- Show Sequence on the site and in the playground and README, with a short claim example;
+  tighten sequence spacing and size single-lifeline notes to their text. ([#80](https://github.com/uberblick-ai/ablauf/issues/80))
+- Export the text paint contract (`TOKENS`, `Token`, `Palette`) and DOM-free `checkPalette` for host contrast
+  checks, with a [Test your integration](https://ablauf.uberblick.ai/guides/testing) guide; the checker does not alter rendering. ([#76](https://github.com/uberblick-ai/ablauf/issues/76))
+- Darken LIGHT rework from `#826954` to `#806752` so every built-in text pair reaches 4.5:1,
+  including labels on bands and inline gaps; DARK and geometry stay unchanged. ([#86](https://github.com/uberblick-ai/ablauf/issues/86))
+- Keep same-column decision edges on the column centreline across odd and even widths,
+  preserving inline-label clearance. ([#82](https://github.com/uberblick-ai/ablauf/issues/82))
+- Honour `fonts.mono` in both fan-out styles for typography, wrapping, ladder sizing and dotted leaders;
+  omitting fonts preserves default SVG bytes. ([#77](https://github.com/uberblick-ai/ablauf/issues/77))
 
-- Export `TOKENS`, `Token`, `Palette` and DOM-free `checkPalette` for host text
-  contrast checks, with a [Test your integration](https://ablauf.uberblick.ai/guides/testing)
-  guide. The checker does not alter rendering; the LIGHT palette correction
-  below changes its rework default and the corresponding SVG bytes.
-  ([#76](https://github.com/uberblick-ai/ablauf/issues/76))
+### Docs and development
 
-- Darken LIGHT rework from `#826954` to `#806752` so every built-in text pair
-  reaches 4.5:1, including edge labels on bands and inline labels on gap bands.
-  The LIGHT minimum is now 4.526146877943026; DARK remains unchanged at
-  4.706637464097893. Geometry and all other palette values stay unchanged.
-  ([#86](https://github.com/uberblick-ai/ablauf/issues/86))
-
-- Same-column edges into and out of decisions stay on the column centreline
-  across odd and even node widths, preserving inline-label clearance.
-  ([#82](https://github.com/uberblick-ai/ablauf/issues/82))
-- Fan-outs in both styles honour `fonts.mono` for typography, wrapping, ladder
-  step sizing and dotted leaders. Omitting fonts preserves the default SVG bytes.
-  ([#77](https://github.com/uberblick-ai/ablauf/issues/77))
+- Separate the authoring primer from renderer internals and add explicit editing guidance and authoring trials. ([#71](https://github.com/uberblick-ai/ablauf/pull/71))
+- Give the site a three-column Projects, Learn and GitHub footer and update Uberblick links. ([#72](https://github.com/uberblick-ai/ablauf/pull/72))
+- Add a security policy with private reporting, response times, supported versions and vulnerability scope. ([#73](https://github.com/uberblick-ai/ablauf/pull/73))
+- Record the shared playback design and release boundaries; sequence and fan-out playback remain follow-up work. ([#104](https://github.com/uberblick-ai/ablauf/pull/104))
+- Shorten the README into a product page with light/dark PNGs and playback GIFs; move API details to `docs/api.md`
+  and add `mise run media` for captures. ([#93](https://github.com/uberblick-ai/ablauf/pull/93), [#114](https://github.com/uberblick-ai/ablauf/pull/114))
+- Bind the ablauf corpus and register both project corpora for MCP, including Codex and Claude access. ([#90](https://github.com/uberblick-ai/ablauf/pull/90), [559775a](https://github.com/uberblick-ai/ablauf/commit/559775a))
+- Refresh the pre-playback SVG test baseline to include sequence annotations. ([#107](https://github.com/uberblick-ai/ablauf/pull/107))
 
 ## 0.2.0 — 2026-10-20
 
