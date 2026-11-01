@@ -86,7 +86,7 @@ Run it with a flow file and the desired output path:
 node render-flow.mjs diagram.flow diagram.svg
 ```
 
-`render(source, options?)` returns `{ svg, diagnostics, layout }`. Source
+`render(source, options?)` returns `{ svg, diagnostics, layout, timelines }`. Source
 problems return diagnostics with one-based `line`, `severity` and `message`
 fields while still producing SVG. Invalid caller options can throw.
 `idPrefix` defaults to `"ab"`; supply distinct prefixes for diagrams sharing
@@ -98,6 +98,53 @@ the default SVG bytes. See [host fonts and width metrics](https://github.com/ube
 TypeScript consumers can import `RenderOptions`, `Diagnostic`, `FontOptions`,
 `FontsOptions` and `TextStyle` from the same entry point. `LIGHT` and `DARK`
 export the default palettes.
+
+## Play an inline SVG
+
+For diagrams with [play sections](https://github.com/uberblick-ai/ablauf/blob/main/docs/plan.md#playback),
+pass the rendered inline `SVGSVGElement` and its `timelines` to the headless
+player. Use a distinct `idPrefix` for each figure on the page, including figures
+in shadow roots.
+
+```ts
+import { createPlayer } from "@uberblick/ablauf/playback";
+import type { Timeline } from "@uberblick/ablauf";
+
+export function attachPlayback(svg: SVGSVGElement, timelines: Timeline[]) {
+  const player = createPlayer(svg, timelines, {
+    onChange(state) {
+      // The SVG and player.state already match this stable snapshot.
+      console.log(state.scenario, state.step, state.status);
+    },
+  });
+  return player;
+}
+```
+
+Creation shows the full figure at `{ scenario: 0, step: -1, status: "idle" }`
+without a timer or callback. Call `play()` from a host interaction to start;
+`pause()` keeps the frame, and resuming restarts its full dwell. Each step,
+including the last, stays current for its `ms`. Playback ends on the last
+frame; `play()` replays it, or `{ loop: true }` loops the selected scenario.
+Repeated `play()` during playback leaves the timer alone.
+
+`next()`, `previous()` and `seek(step)` pause and clamp integer steps to
+`-1..last`; `-1` clears highlighting. `select(scenario)` pauses on that
+scenario's first step, including when reselecting it. Invalid scenario indices
+and non-integer indices are ignored. Empty scenarios stay at step `-1`;
+playing them stays idle. The player never chooses another scenario for you.
+
+Reduced motion is checked through the SVG's window on every `play()` and
+observed during playback. Enabling it resets to the full idle figure without
+a timer. Disabling it never starts playback. Manual navigation still works.
+The player adds no animations, transitions, controls or layout changes.
+
+`onChange` fires once per changed scenario/step/status tuple, after the SVG
+and `player.state` update. Call `destroy()` when removing a figure: it clears
+timers, preference listeners and highlighting, silently returns to idle at
+step `-1`, and makes later methods inert. Both package entries can be imported
+in Node; only creating and using a player needs an SVG. `Player` and
+`PlayerState` types are exported from the playback entry.
 
 ## Examples
 
