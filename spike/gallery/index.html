@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Workflows · ub-agents (prototype)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--page:#090c11;--card:#10151c;--edge:#1f2832;--fg:#e7ecf2;--mute:#8d98a7;--glow:#6ff0cf;--amber:#f2b45a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--fg);font:15px/1.5 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  background-image:radial-gradient(1200px 500px at 20% -10%,rgba(111,240,207,.13),transparent 60%),radial-gradient(900px 500px at 95% 0%,rgba(242,180,90,.10),transparent 60%),radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px);
+  background-size:auto,auto,22px 22px;min-height:100vh}
+header{display:flex;align-items:center;gap:22px;max-width:1240px;margin:0 auto;padding:18px 24px}
+.brand{font:600 15px/1 "IBM Plex Mono",ui-monospace,Menlo,monospace;letter-spacing:.02em}
+.brand b{color:var(--glow)}
+header nav{display:flex;gap:18px;color:var(--mute);font-size:14px}
+header nav span.on{color:var(--fg)}
+.hero{max-width:1240px;margin:0 auto;padding:56px 24px 24px}
+.hero .kick{font:500 12px/1 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--glow)}
+.hero h1{font-size:clamp(34px,5vw,60px);line-height:1.05;margin:14px 0 14px;letter-spacing:-.02em;max-width:16ch}
+.hero h1 em{font-style:normal;background:linear-gradient(90deg,var(--glow),var(--amber));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--mute);font-size:18px;max-width:58ch;margin:0}
+main{max-width:1240px;margin:0 auto;padding:8px 24px 80px}
+h2{font:500 12px/1 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);margin:44px 0 14px;display:flex;align-items:center;gap:12px}
+h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--edge),transparent)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:18px}
+.card{position:relative;background:linear-gradient(180deg,#121921,#0e1319);border:1px solid var(--edge);border-radius:16px;overflow:hidden;cursor:pointer;
+  transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease;outline:none}
+.card:hover,.card:focus-visible{transform:translateY(-4px);border-color:rgba(111,240,207,.45);box-shadow:0 18px 50px -18px rgba(111,240,207,.35),0 0 0 1px rgba(111,240,207,.15) inset}
+.card.text{cursor:default}
+.card.text:hover{transform:none;border-color:var(--edge);box-shadow:none}
+.stage{height:260px;display:flex;align-items:center;justify-content:center;padding:14px;background:radial-gradient(400px 200px at 50% 40%,rgba(111,240,207,.05),transparent 70%);border-bottom:1px solid var(--edge)}
+.stage svg{max-width:100%;max-height:100%;width:auto;height:auto}
+.soon{font:12px "IBM Plex Mono",ui-monospace,monospace;color:#4b5563;border:1px dashed #263040;border-radius:10px;padding:10px 14px}
+.meta{padding:16px 18px 18px}
+.for{margin:0;font:500 11px/1 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--amber)}
+.card h3{margin:8px 0 4px;font-size:19px;letter-spacing:-.01em}
+.intent{margin:0;color:var(--mute)}
+.tick{margin:12px 0 0;font:12px/1.4 "IBM Plex Mono",ui-monospace,monospace;color:#6b7686;display:flex;gap:8px;align-items:center;min-height:17px}
+.tick .dot{width:7px;height:7px;border-radius:50%;background:#3a4452;flex:none}
+.card.plays .tick .dot{background:var(--glow);box-shadow:0 0 10px var(--glow);animation:pulse 1.4s ease-in-out infinite}
+.card.plays .tick{color:#b9c4d0}
+@keyframes pulse{50%{opacity:.35}}
+/* ablauf: transparent ground, a glowing current step */
+.ab{--ab-bg:transparent;--ab-play:var(--glow)}
+.ab .ab-on rect:not(.gap),.ab .ab-on path.e{filter:drop-shadow(0 0 6px rgba(111,240,207,.75))}
+.ab.ab-playing [data-ab-part]:not(.ab-on):not(.ab-done){opacity:.22!important}
+.ab [data-ab-part]{transition:opacity .35s ease}
+.ab .ab-done rect:not(.gap){stroke:rgba(111,240,207,.45)}
+/* entry view */
+#entry{position:fixed;inset:0;z-index:5;background:rgba(6,8,12,.86);backdrop-filter:blur(8px);display:none;overflow:auto}
+#entry.open{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0}}
+.sheet{max-width:1000px;margin:22px auto;padding:0 32px 80px}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.top h1{margin:4px 0 4px;font-size:clamp(22px,2.6vw,28px);letter-spacing:-.015em}
+.top>div:first-child{flex:1;min-width:0}
+.top p{margin:0;color:var(--mute);font-size:14.5px}
+.close{font:inherit;color:var(--fg);background:#151c25;border:1px solid var(--edge);border-radius:999px;height:36px;padding:0 14px;cursor:pointer}
+.theatre{display:grid;grid-template-columns:1fr;gap:10px;margin-top:16px}
+@media (max-width:980px){.theatre{grid-template-columns:1fr}}
+.big{background:#0c1117;border:1px solid var(--edge);border-radius:12px;padding:20px 28px;display:flex;align-items:center;justify-content:center}
+.big svg{max-width:100%;height:auto}
+.log{background:#0a0d12;border:1px solid var(--edge);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.logbar{display:flex;align-items:center;gap:6px;padding:10px 12px;border-bottom:1px solid var(--edge);font:12px "IBM Plex Mono",ui-monospace,monospace;color:var(--mute)}
+.logbar i{width:10px;height:10px;border-radius:50%;background:#252d38;display:inline-block}
+.logbar span{margin-left:8px}
+.lines{list-style:none;margin:0;padding:10px 28px 18px;font:12.5px/1.5 "IBM Plex Mono",ui-monospace,monospace;flex:1}
+.lines li{display:grid;grid-template-columns:170px 1fr;gap:16px;padding:9px 0;border-bottom:1px solid #141a22;color:#aeb8c5;animation:slide .3s ease}
+.lines li b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lines li .msg{color:#aeb8c5}
+@media (max-width:640px){.lines li{grid-template-columns:1fr;gap:2px}}
+.lhead{display:grid;grid-template-columns:118px 1fr;gap:12px;padding:10px 14px 6px;border-bottom:1px solid var(--edge);font:500 10.5px/1 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:#4f5a68}
+.lines .head{color:#4f5a68;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;padding:0 0 6px;animation:none}
+.lines li .t{color:#4f5a68}
+.lines li b{color:var(--glow);font-weight:500}
+.lines li.cur .msg::after{content:"▍";color:var(--glow);animation:pulse 1s steps(1) infinite;margin-left:2px}
+@keyframes slide{from{opacity:0;transform:translateY(4px)}}
+.controls{display:flex;gap:8px;align-items:center;padding:6px 24px 12px}
+.controls button{font:12px "IBM Plex Mono",ui-monospace,monospace;color:var(--fg);background:#121821;border:1px solid var(--edge);border-radius:8px;height:30px;padding:0 10px;cursor:pointer}
+.controls button.main{min-width:68px}
+.controls button:disabled{opacity:.35;cursor:default}
+.segs b{cursor:pointer}
+.segs{flex:1;display:flex;gap:3px}
+.segs b{flex:1;height:4px;border-radius:2px;background:#202833}
+.segs b.done{background:rgba(111,240,207,.45)}
+.segs b.on{background:var(--glow);box-shadow:0 0 8px var(--glow)}
+.note{margin-top:26px;color:var(--mute);font-size:13px}
+.group{margin-top:8px}
+h2 .repo{order:3;font-size:11px;letter-spacing:.06em;text-transform:none;color:#5d6876;border:1px solid var(--edge);border-radius:999px;padding:4px 9px}
+h2{font-size:13px;color:var(--fg)}
+.blurb{margin:-4px 0 16px;color:var(--mute);max-width:70ch}
+.card.hero{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(260px,1fr);border-color:rgba(111,240,207,.22)}
+.card.hero .stage{height:520px;border-bottom:0;border-right:1px solid var(--edge)}
+.card.hero .meta{display:flex;flex-direction:column;justify-content:center;padding:28px}
+.card.hero h3{font-size:28px}
+.card.hero .intent{font-size:17px}
+.card.hero .tick{font-size:13px;min-height:60px;align-items:flex-start}
+@media (max-width:900px){.card.hero{grid-template-columns:1fr}.card.hero .stage{height:380px;border-right:0;border-bottom:1px solid var(--edge)}}
+.also{margin:10px 0 0;font:11px/1.4 "IBM Plex Mono",ui-monospace,monospace;color:#7f8a99}
+.hero p code{font:15px "IBM Plex Mono",ui-monospace,monospace;color:var(--fg);background:#141b24;border:1px solid var(--edge);border-radius:6px;padding:1px 6px}
+.card.text .stage{height:150px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 0}
+.tabs button{font:500 11.5px/1 "IBM Plex Mono",ui-monospace,monospace;color:var(--mute);background:#0d1218;border:1px solid var(--edge);border-radius:999px;padding:7px 11px;cursor:pointer;transition:all .2s}
+.tabs button:hover{color:var(--fg);border-color:#334050}
+.tabs button.on{color:#06110e;background:var(--glow);border-color:var(--glow);box-shadow:0 0 14px rgba(111,240,207,.45)}
+.logtabs{display:flex;gap:0;border-bottom:1px solid var(--edge);overflow-x:auto}
+.logtabs button{font:500 12px/1 "IBM Plex Mono",ui-monospace,monospace;color:var(--mute);background:none;border:0;border-bottom:2px solid transparent;padding:11px 16px;cursor:pointer;white-space:nowrap}
+.logtabs button:hover{color:var(--fg)}
+.logtabs button.on{color:var(--glow);border-bottom-color:var(--glow);text-shadow:0 0 10px rgba(111,240,207,.5)}
+.url{display:inline-block;margin-top:10px;font:12px "IBM Plex Mono",ui-monospace,monospace;color:#7f8a99;background:#0d1218;border:1px solid var(--edge);border-radius:6px;padding:4px 8px;cursor:pointer}
+.url:hover{color:var(--fg)}
+.story{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:48px;margin-top:52px}
+@media (max-width:980px){.story{grid-template-columns:1fr}}
+.prose h3{font:500 12px/1 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);margin:0 0 14px}
+.prose h3:not(:first-child){margin-top:28px}
+.prose p{margin:0 0 14px;font-size:15.5px;line-height:1.65;color:#c9d2dc;max-width:66ch}
+.prose code{font:14px "IBM Plex Mono",ui-monospace,monospace;background:#141b24;border:1px solid var(--edge);border-radius:5px;padding:1px 5px;color:var(--fg)}
+.prose ul{margin:0 0 22px;padding:0;list-style:none}
+.prose li{position:relative;padding-left:22px;margin:0 0 8px;color:#c9d2dc;font-size:15px}
+.prose li::before{content:"";position:absolute;left:4px;top:.6em;width:7px;height:7px;border-radius:50%;background:var(--glow);box-shadow:0 0 8px var(--glow)}
+.prose .person{border-left:2px solid var(--amber);padding:4px 0 4px 14px;color:#d8c7a6}
+.adopt{align-self:start;position:sticky;top:20px;background:#0c1117;border:1px solid var(--edge);border-radius:12px;padding:24px}
+.cta{display:flex;justify-content:space-between;align-items:center;text-decoration:none;font-weight:600;font-size:15px;color:#06110e;background:var(--glow);border-radius:9px;padding:11px 14px;box-shadow:0 8px 24px -14px rgba(111,240,207,.6);transition:transform .2s,box-shadow .2s}
+.cta:hover{transform:translateY(-2px);box-shadow:0 16px 40px -12px rgba(111,240,207,.8)}
+.cta span{transition:transform .2s}.cta:hover span{transform:translateX(4px)}
+.adopthead{margin:0 0 12px;font:500 11px/1 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.cta.alt{margin-top:8px;background:#141c25;color:var(--fg);border:1px solid #2a3542;box-shadow:none}
+.cta.alt:hover{border-color:var(--glow);box-shadow:0 10px 30px -14px rgba(111,240,207,.5)}
+.footnote{margin:40px 0 0;padding-top:16px;border-top:1px solid var(--edge);font-size:12.5px;color:#6b7686}
+.footnote a{color:var(--mute);text-decoration:underline;text-decoration-color:#334050}
+.footnote a:hover{color:var(--fg)}
+.whatis{margin:0 0 14px;font-size:12.5px;color:#7f8a99;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.whatis b{color:var(--fg);font-weight:600}
+.whatis a{color:var(--glow);text-decoration:none;white-space:nowrap}
+.whatis a:hover{text-decoration:underline}
+.now{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:14px;row-gap:2px;padding:12px 24px 4px;min-height:64px;align-content:start}
+.now .nstep{grid-row:1/3;align-self:start;font:500 11px/20px "IBM Plex Mono",ui-monospace,monospace;color:#5d6876;border:1px solid var(--edge);border-radius:999px;padding:0 8px;min-width:38px;text-align:center}
+.now .nstep:empty{visibility:hidden}
+.now b{font:500 13px/20px "IBM Plex Mono",ui-monospace,monospace;color:var(--glow)}
+.now span:last-child{font-size:16px;line-height:1.45;color:var(--fg)}
+.all{border-top:1px solid var(--edge)}
+.all summary{cursor:pointer;padding:12px 28px;font:500 11px/1 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);list-style:none}
+.all summary::-webkit-details-marker{display:none}
+.all summary::before{content:"▸ ";color:#5d6876}
+.all[open] summary::before{content:"▾ "}
+.big svg{max-height:max(240px,calc(100vh - 420px))}
+.tabrow{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--edge);padding-right:14px}
+.tabrow .logtabs{border-bottom:0}
+.tabrow .url{margin:0;white-space:nowrap;font-size:11px}
+@media (max-width:760px){.tabrow .url{display:none}}
+.alt-line{margin:10px 2px 0;font-size:12.5px;color:var(--mute);white-space:nowrap}
+.alt-line a,.linkish{color:var(--glow);text-decoration:none;background:none;border:0;padding:0;font:inherit;cursor:pointer}
+.alt-line a:hover,.linkish:hover{text-decoration:underline}
+.hint{margin:12px 0;color:var(--mute);font-size:13px;line-height:1.5}
+.copy{margin-top:14px;width:100%;font:12px "IBM Plex Mono",ui-monospace,monospace;color:var(--fg);background:#0d1218;border:1px solid var(--edge);border-radius:10px;height:36px;cursor:pointer}
+.copy:hover{border-color:#334050}
+.article{display:block;margin-top:16px;padding-top:14px;border-top:1px solid var(--edge);color:var(--amber);text-decoration:none;font-size:14px}
+.article:hover{text-decoration:underline}
+.article::before{content:"Read the story";display:block;font:500 11px/1 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:#6b7686;margin-bottom:6px}
+.runs{margin:14px 0 0;font:12px/1.5 "IBM Plex Mono",ui-monospace,monospace;color:#7f8a99}
+footer{max-width:1240px;margin:0 auto;padding:0 24px 40px;color:#5d6876;font-size:13px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.topbtns{display:flex;gap:8px;flex:none}
+.iconbtn{width:36px;height:36px;display:grid;place-items:center;color:var(--mute);background:#151c25;border:1px solid var(--edge);border-radius:999px;cursor:pointer;position:relative}
+.iconbtn:hover{color:var(--fg);border-color:#334050}
+.iconbtn.ok{color:var(--glow);border-color:rgba(111,240,207,.5)}
+.iconbtn.ok::after{content:"Link copied";position:absolute;top:42px;right:0;white-space:nowrap;font:11px "IBM Plex Mono",ui-monospace,monospace;color:var(--glow)}
+.top .via{color:#6b7686}
+.top .via a{color:var(--fg);text-decoration:underline;text-decoration-color:#334050}
+.top .via a:hover{text-decoration-color:var(--glow)}
+/* calmer wall */
+.hero{padding:40px 24px 8px}
+.hero h1{font-size:clamp(28px,3.6vw,42px);max-width:none;white-space:nowrap}
+.hero p{font-size:16px}
+.grid{grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:22px}
+.stage{height:170px;padding:16px 18px}
+.meta{padding:14px 16px 16px}
+.card h3{font-size:16px;margin:0 0 4px}
+.intent{font-size:13.5px;line-height:1.45}
+.also{margin:8px 0 0;font-size:12px;color:#5d6876}
+.card:hover,.card:focus-visible{transform:translateY(-2px)}
+.card.hero{grid-template-columns:minmax(0,1.4fr) minmax(240px,1fr)}
+.card.hero .stage{height:320px;padding:20px}
+.card.hero .meta{padding:24px 28px}
+.card.hero h3{font-size:22px}
+.card.hero .intent{font-size:15px}
+h2{margin:52px 0 12px}
+.grid{align-items:start}
+.card.text .meta{padding:16px}
+.card.text h3::before{content:"diagram to come";display:block;margin-bottom:8px;font:500 10px/1 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:#4b5563}
+.blurb{font-size:14px}
+</style>
+</head>
+<body>
+<header><span class="brand"><b>●</b> ub-agents</span><nav><span>Docs</span><span class="on">Workflows</span><span>GitHub</span></nav></header>
+<section class="hero">
+  <div class="kick">Workflow gallery · prototype</div>
+  <h1>Loops we <em>actually run</em></h1>
+  <p>One loop from <code>ub-agents init</code>, and the changes we make to it on Uberblick and CampfireFM. Each one plays its runs and ends with a prompt to adopt it.</p>
+</section>
+<main>
+<section class="group"><h2>Default after ub-agents init<span class="repo">one command, any repository</span></h2><p class="blurb">The one full loop on this page: five roles, the labels, and a person at every hard decision. Every workflow below is a change to it.</p><div class="grid">
+<article class="card hero plays" data-slug="default" tabindex="0">
+  <div class="stage"><svg xmlns="http://www.w3.org/2000/svg" class="ab ab-dark" viewBox="0 0 786 780" width="786" height="780" role="img" aria-label="Flow: A maintainer adds the first label, needs-preparation, issue-preparer, ready, implementer, needs-review, human, reviewer, needs-changes, ready-to-merge, integrator, Merged · issue closed. Legend: ready: GitHub label, agent role, a person decides, set by the launcher">
+<style>.ab.ab-dark{--bg:var(--ab-bg,#171c24);--ink:var(--ab-ink,#e5e9ef);--muted:var(--ab-muted,#98a2b0);--line:var(--ab-line,#2c3440);--band:var(--ab-band,#151b23);--surface:var(--ab-surface,#1d232d);--neutral:var(--ab-neutral,#b6bbc3);--neutral-bg:var(--ab-neutral-bg,#303640);--agent:var(--ab-agent,#85aaa5);--agent-bg:var(--ab-agent-bg,#232d2b);--system:var(--ab-system,#98a5bf);--system-bg:var(--ab-system-bg,#262a31);--rework:var(--ab-rework,#b29d87);--rework-bg:var(--ab-rework-bg,#2c2720);--stop:var(--ab-stop,#ac8c88);--stop-bg:var(--ab-stop-bg,#2b2221);--done:var(--ab-done,#95b09c);--done-bg:var(--ab-done-bg,#222a24);}
+.ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
+.ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.ab .s11{font-size:11px}.ab .s12{font-size:12px}.ab .s13{font-size:13px}
+.ab .muted{fill:var(--muted)}.ab .b{font-weight:600}
+.ab .cap{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.08em;fill:var(--muted)}
+.ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
+.ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
+.ab .knockout{fill:none;stroke:var(--bg);stroke-width:5.6}.ab .knockout-band{stroke:var(--band)}
+.ab .arrow{fill:none;stroke:none}
+.ab .t-ink{fill:var(--muted)}.ab .e-ink{stroke:var(--muted)}.ab .k-ink{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-muted{fill:var(--muted)}.ab .e-muted{stroke:var(--muted)}.ab .k-muted{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-neutral{fill:var(--neutral)}.ab .e-neutral{stroke:var(--neutral)}.ab .k-neutral{fill:var(--neutral-bg);stroke:var(--neutral);stroke-width:1.5}.ab .t-agent{fill:var(--agent)}.ab .e-agent{stroke:var(--agent)}.ab .k-agent{fill:var(--agent-bg);stroke:var(--agent);stroke-width:1.5}.ab .t-system{fill:var(--system)}.ab .e-system{stroke:var(--system)}.ab .k-system{fill:var(--system-bg);stroke:var(--system);stroke-width:1.5}.ab .t-done{fill:var(--done)}.ab .e-done{stroke:var(--done)}.ab .k-done{fill:var(--done-bg);stroke:var(--done);stroke-width:1.5}.ab .t-rework{fill:var(--rework)}.ab .e-rework{stroke:var(--rework)}.ab .k-rework{fill:var(--rework-bg);stroke:var(--rework);stroke-width:1.5}.ab .t-stop{fill:var(--stop)}.ab .e-stop{stroke:var(--stop)}.ab .k-stop{fill:var(--stop-bg);stroke:var(--stop);stroke-width:1.5}
+.ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}
+.ab [data-ab-part]{transition:opacity .3s}
+.ab.ab-playing [data-ab-part]:not(.ab-on):not(.ab-done){opacity:.3}
+.ab .ab-on rect:not(.gap),.ab .ab-on path.decision{stroke:var(--ab-play,var(--ink));stroke-width:2.4}
+.ab path.e.ab-on,.ab .ab-on path.e{stroke:var(--ab-play,var(--ink));stroke-width:2.4;stroke-dasharray:6 5;animation:ab-run .6s linear infinite}
+@keyframes ab-run{to{stroke-dashoffset:-11}}
+@media (prefers-reduced-motion:reduce){.ab path.e.ab-on,.ab .ab-on path.e{animation:none}}</style>
+<defs>
+<marker id="c-default-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker>
+<marker id="c-default-rework" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-rework"/></marker>
+<marker id="c-default-stop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-stop"/></marker>
+</defs>
+
+<rect x="8" y="278" width="770" height="448" class="band"/>
+<line x1="8" y1="278" x2="778" y2="278" class="rule"/>
+<path data-ab-part="edge:start&gt;needs-preparation" d="M378,32 L378,62" class="e e-ink"/>
+<path data-ab-part="edge:needs-preparation&gt;issue-preparer" d="M378,96 L378,134" class="e e-ink"/>
+<path data-ab-part="edge:issue-preparer&gt;ready" d="M378,180 L378,218" class="e e-ink"/>
+<path data-ab-part="edge:ready&gt;implementer" d="M378,252 L378,304" class="e e-ink"/>
+<path data-ab-part="edge:implementer&gt;needs-review" d="M378,350 L378,388" class="e e-ink"/>
+<path data-ab-part="edge:needs-review&gt;reviewer" d="M378,422 L378,452" class="e e-ink"/>
+<path data-ab-part="edge:reviewer&gt;ready-to-merge" d="M378,498 L378,536" class="e e-ink"/>
+<path data-ab-part="edge:ready-to-merge&gt;integrator" d="M378,570 L378,600" class="e e-ink"/>
+<path data-ab-part="edge:integrator&gt;merged" d="M378,646 L378,684" class="e e-ink"/>
+<path data-ab-part="edge:reviewer&gt;needs-changes" d="M278,475 L146,475" class="e e-rework"/>
+<path data-ab-part="edge:ready-to-merge&gt;needs-changes" d="M309,553 L103,553 L103,492" class="e e-rework dash"/>
+<path data-ab-part="edge:integrator&gt;needs-changes" d="M278,623 L59,623 L59,492" class="e e-rework"/>
+<path data-ab-part="edge:needs-changes&gt;implementer" d="M81,458 L81,327 L278,327" class="e e-rework"/>
+<path data-ab-part="edge:issue-preparer&gt;human" d="M477,157 L698,157 L698,388" class="e e-stop"/>
+<path data-ab-part="edge:implementer&gt;human" d="M477,327 L626,327 L626,388" class="e e-stop"/>
+<path data-ab-part="edge:reviewer&gt;human" d="M477,475 L554,475" class="e e-stop"/>
+<path data-ab-part="edge:integrator&gt;human" d="M477,623 L662,623 L662,570" class="e e-stop"/>
+<path data-ab-part="edge:start&gt;needs-preparation" d="M378,32 L378,62" class="arrow" marker-end="url(#c-default-ink)"/>
+<path data-ab-part="edge:needs-preparation&gt;issue-preparer" d="M378,96 L378,134" class="arrow" marker-end="url(#c-default-ink)"/>
+<path data-ab-part="edge:issue-preparer&gt;ready" d="M378,180 L378,218" class="arrow" marker-end="url(#c-default-ink)"/>
+<path data-ab-part="edge:ready&gt;implementer" d="M378,252 L378,304" class="arrow" marker-end="url(#c-default-ink)"/>
+<path data-ab-part="edge:implementer&gt;needs-review" d="M378,350 L378,388" class="arrow" marker-end="url(#c-default-ink)"/>
+<path data-ab-part="edge:needs-review&gt;reviewer" d="M378,422 L378,452" class="arrow" marker-end="url(#c-default-ink)"/>
+<path data-ab-part="edge:reviewer&gt;ready-to-merge" d="M378,498 L378,536" class="arrow" marker-end="url(#c-default-ink)"/>
+<path data-ab-part="edge:ready-to-merge&gt;integrator" d="M378,570 L378,600" class="arrow" marker-end="url(#c-default-ink)"/>
+<path data-ab-part="edge:integrator&gt;merged" d="M378,646 L378,684" class="arrow" marker-end="url(#c-default-ink)"/>
+<path data-ab-part="edge:reviewer&gt;needs-changes" d="M278,475 L146,475" class="arrow" marker-end="url(#c-default-rework)"/>
+<path data-ab-part="edge:ready-to-merge&gt;needs-changes" d="M103,553 L103,492" class="arrow" marker-end="url(#c-default-rework)"/>
+<path data-ab-part="edge:integrator&gt;needs-changes" d="M59,623 L59,492" class="arrow" marker-end="url(#c-default-rework)"/>
+<path data-ab-part="edge:needs-changes&gt;implementer" d="M81,327 L278,327" class="arrow" marker-end="url(#c-default-rework)"/>
+<path data-ab-part="edge:issue-preparer&gt;human" d="M698,157 L698,388" class="arrow" marker-end="url(#c-default-stop)"/>
+<path data-ab-part="edge:implementer&gt;human" d="M626,327 L626,388" class="arrow" marker-end="url(#c-default-stop)"/>
+<path data-ab-part="edge:reviewer&gt;human" d="M477,475 L554,475" class="arrow" marker-end="url(#c-default-stop)"/>
+<path data-ab-part="edge:integrator&gt;human" d="M662,623 L662,570" class="arrow" marker-end="url(#c-default-stop)"/>
+<text x="20" y="22" class="cap">ISSUE</text>
+<text x="20" y="300" class="cap">PULL REQUEST</text>
+<g data-ab-part="node:start"><text x="378" y="28" text-anchor="middle" class="s12 muted">A maintainer adds the first label</text></g>
+<g data-ab-part="node:needs-preparation"><g><rect x="299" y="62" width="158" height="34" rx="17" class="pill"/>
+<circle cx="313" cy="79" r="5" class="t-muted"/>
+<text x="325" y="83" class="m s12">needs-preparation</text></g></g>
+<g data-ab-part="node:issue-preparer"><g>
+<rect x="278" y="134" width="199" height="46" rx="8" class="k-agent"/>
+<text x="378" y="153" text-anchor="middle" class="m s13 b t-agent">issue-preparer</text>
+<text x="378" y="170" text-anchor="middle" class="s11 muted">writes scope and criteria</text>
+</g></g>
+<g data-ab-part="node:ready"><g><rect x="342" y="218" width="72" height="34" rx="17" class="pill"/>
+<circle cx="356" cy="235" r="5" class="t-done"/>
+<text x="368" y="239" class="m s12">ready</text></g></g>
+<g data-ab-part="node:implementer"><g>
+<rect x="278" y="304" width="199" height="46" rx="8" class="k-agent"/>
+<text x="378" y="323" text-anchor="middle" class="m s13 b t-agent">implementer</text>
+<text x="378" y="340" text-anchor="middle" class="s11 muted">codes, checks, opens the PR</text>
+</g></g>
+<g data-ab-part="node:needs-review"><g><rect x="317" y="388" width="122" height="34" rx="17" class="pill"/>
+<circle cx="331" cy="405" r="5" class="t-agent"/>
+<text x="343" y="409" class="m s12">needs-review</text></g></g>
+<g data-ab-part="node:reviewer"><g>
+<rect x="278" y="452" width="199" height="46" rx="8" class="k-agent"/>
+<text x="378" y="471" text-anchor="middle" class="m s13 b t-agent">reviewer</text>
+<text x="378" y="488" text-anchor="middle" class="s11 muted">reviews the exact head SHA</text>
+</g></g>
+<g data-ab-part="node:ready-to-merge"><g><rect x="309" y="536" width="137" height="34" rx="17" class="pill"/>
+<circle cx="323" cy="553" r="5" class="t-done"/>
+<text x="335" y="557" class="m s12">ready-to-merge</text></g></g>
+<g data-ab-part="node:integrator"><g>
+<rect x="278" y="600" width="199" height="46" rx="8" class="k-agent"/>
+<text x="378" y="619" text-anchor="middle" class="m s13 b t-agent">integrator</text>
+<text x="378" y="636" text-anchor="middle" class="s11 muted">updates base, checks, merges</text>
+</g></g>
+<g data-ab-part="node:merged"><rect x="287" y="684" width="181" height="34" rx="17" class="k-done"/>
+<text x="378" y="705" text-anchor="middle" class="s12 b t-done">Merged · issue closed</text></g>
+<g data-ab-part="node:needs-changes"><g><rect x="16" y="458" width="130" height="34" rx="17" class="pill"/>
+<circle cx="30" cy="475" r="5" class="t-rework"/>
+<text x="42" y="479" class="m s12">needs-changes</text></g></g>
+<g data-ab-part="node:human"><g><rect x="554" y="388" width="216" height="182" rx="10" class="k-stop panel"/>
+<rect x="605" y="420" width="115" height="30" rx="15" class="pill"/>
+<circle cx="619" cy="435" r="5" class="t-stop"/>
+<text x="631" y="439" class="m s12">needs-human</text>
+<text x="662" y="469" text-anchor="middle" class="s11 muted">or an Action needed comment</text>
+<line x1="570" y1="481" x2="754" y2="481" class="rule"/>
+<text x="662" y="501" text-anchor="middle" class="s12 b">A person decides</text>
+<text x="662" y="519" text-anchor="middle" class="s11">adds the trigger of any role</text>
+<text x="662" y="537" text-anchor="middle" class="s11 muted">blocked, same role: retry</text></g></g>
+<text data-ab-part="edge:needs-preparation&gt;issue-preparer" x="388" y="119" class="m s11">trigger</text>
+<text data-ab-part="edge:issue-preparer&gt;ready" x="388" y="203" class="m s11">prepared</text>
+<text data-ab-part="edge:implementer&gt;needs-review" x="388" y="373" class="m s11">handed-off</text>
+<text data-ab-part="edge:reviewer&gt;ready-to-merge" x="388" y="521" class="m s11">approved</text>
+<text data-ab-part="edge:integrator&gt;merged" x="388" y="669" class="m s11">merged</text>
+<text data-ab-part="edge:reviewer&gt;needs-changes" x="268" y="468" text-anchor="end" class="m s11 t-rework">changes-requested</text>
+<text data-ab-part="edge:ready-to-merge&gt;needs-changes" x="299" y="546" text-anchor="end" class="m s11 t-rework">on-conflict · launcher</text>
+<text data-ab-part="edge:integrator&gt;needs-changes" x="268" y="616" text-anchor="end" class="m s11 t-rework">changes-requested</text>
+<text data-ab-part="edge:needs-changes&gt;implementer" x="268" y="320" text-anchor="end" class="m s11 t-rework">revise the same PR</text>
+<text data-ab-part="edge:issue-preparer&gt;human" x="487" y="150" class="m s11 t-stop">needs-human</text>
+<text data-ab-part="edge:implementer&gt;human" x="487" y="320" class="m s11 t-stop">blocked</text>
+<text data-ab-part="edge:reviewer&gt;human" x="487" y="468" class="m s11 t-stop">blocked</text>
+<text data-ab-part="edge:integrator&gt;human" x="487" y="616" class="m s11 t-stop">maintainer-merge, blocked</text>
+<line x1="8" y1="734" x2="778" y2="734" class="rule"/>
+<g><rect x="16" y="748" width="57" height="20" rx="10" class="pill"/><circle cx="23" cy="758" r="3" class="t-done"/><text x="31" y="762" class="m s11">ready</text><text x="79" y="762" class="s11 muted">GitHub label</text></g>
+<g><rect x="172" y="752" width="24" height="12" rx="3" class="k-agent"/><text x="202" y="762" class="s11 muted">agent role</text></g>
+<g><rect x="283" y="752" width="24" height="12" rx="3" class="k-stop panel"/><text x="313" y="762" class="s11 muted">a person decides</text></g>
+<g><path d="M431,758 L455,758" class="e e-rework dash" marker-end="url(#c-default-rework)"/><text x="461" y="762" class="s11 muted">set by the launcher</text></g>
+</svg>
+</div>
+  <div class="meta">
+    <h3>The default ub-agents loop</h3>
+    <p class="intent">Label an issue. Get back a reviewed, merged pull request.</p>
+    
+  </div>
+</article>
+<article class="card text" data-slug="split" tabindex="0">
+  
+  <div class="meta">
+    <h3>Split a big issue</h3>
+    <p class="intent">Work that won't fit one reviewable PR becomes sub-issues before anyone codes.</p>
+    <p class="also">Also in: Uberblick, Studio</p>
+  </div>
+</article>
+<article class="card" data-slug="second-opinion" tabindex="0">
+  <div class="stage"><svg xmlns="http://www.w3.org/2000/svg" class="ab ab-dark" viewBox="0 0 557 415" width="557" height="415" role="img" aria-label="Flow: issue-preparer, needs-review, issue-reviewer, needs-preparation, ready, Delivery picks it up. Legend: GitHub label, like ready">
+<style>.ab.ab-dark{--bg:var(--ab-bg,#171c24);--ink:var(--ab-ink,#e5e9ef);--muted:var(--ab-muted,#98a2b0);--line:var(--ab-line,#2c3440);--band:var(--ab-band,#151b23);--surface:var(--ab-surface,#1d232d);--neutral:var(--ab-neutral,#b6bbc3);--neutral-bg:var(--ab-neutral-bg,#303640);--agent:var(--ab-agent,#85aaa5);--agent-bg:var(--ab-agent-bg,#232d2b);--system:var(--ab-system,#98a5bf);--system-bg:var(--ab-system-bg,#262a31);--rework:var(--ab-rework,#b29d87);--rework-bg:var(--ab-rework-bg,#2c2720);--stop:var(--ab-stop,#ac8c88);--stop-bg:var(--ab-stop-bg,#2b2221);--done:var(--ab-done,#95b09c);--done-bg:var(--ab-done-bg,#222a24);}
+.ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
+.ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.ab .s11{font-size:11px}.ab .s12{font-size:12px}.ab .s13{font-size:13px}
+.ab .muted{fill:var(--muted)}.ab .b{font-weight:600}
+.ab .cap{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.08em;fill:var(--muted)}
+.ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
+.ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
+.ab .knockout{fill:none;stroke:var(--bg);stroke-width:5.6}.ab .knockout-band{stroke:var(--band)}
+.ab .arrow{fill:none;stroke:none}
+.ab .t-ink{fill:var(--muted)}.ab .e-ink{stroke:var(--muted)}.ab .k-ink{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-muted{fill:var(--muted)}.ab .e-muted{stroke:var(--muted)}.ab .k-muted{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-neutral{fill:var(--neutral)}.ab .e-neutral{stroke:var(--neutral)}.ab .k-neutral{fill:var(--neutral-bg);stroke:var(--neutral);stroke-width:1.5}.ab .t-agent{fill:var(--agent)}.ab .e-agent{stroke:var(--agent)}.ab .k-agent{fill:var(--agent-bg);stroke:var(--agent);stroke-width:1.5}.ab .t-system{fill:var(--system)}.ab .e-system{stroke:var(--system)}.ab .k-system{fill:var(--system-bg);stroke:var(--system);stroke-width:1.5}.ab .t-done{fill:var(--done)}.ab .e-done{stroke:var(--done)}.ab .k-done{fill:var(--done-bg);stroke:var(--done);stroke-width:1.5}.ab .t-rework{fill:var(--rework)}.ab .e-rework{stroke:var(--rework)}.ab .k-rework{fill:var(--rework-bg);stroke:var(--rework);stroke-width:1.5}.ab .t-stop{fill:var(--stop)}.ab .e-stop{stroke:var(--stop)}.ab .k-stop{fill:var(--stop-bg);stroke:var(--stop);stroke-width:1.5}
+.ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}</style>
+<defs>
+<marker id="c-second-opinion-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker>
+<marker id="c-second-opinion-rework" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-rework"/></marker>
+</defs>
+<path d="M424,62 L424,100" class="e e-ink"/>
+<path d="M424,134 L424,164" class="e e-ink"/>
+<path d="M424,225 L424,263" class="e e-ink"/>
+<path d="M424,297 L424,327" class="e e-ink"/>
+<path d="M306,195 L174,195" class="e e-rework"/>
+<path d="M95,178 L95,39 L306,39" class="e e-rework"/>
+<path d="M424,62 L424,100" class="arrow" marker-end="url(#c-second-opinion-ink)"/>
+<path d="M424,134 L424,164" class="arrow" marker-end="url(#c-second-opinion-ink)"/>
+<path d="M424,225 L424,263" class="arrow" marker-end="url(#c-second-opinion-ink)"/>
+<path d="M424,297 L424,327" class="arrow" marker-end="url(#c-second-opinion-ink)"/>
+<path d="M306,195 L174,195" class="arrow" marker-end="url(#c-second-opinion-rework)"/>
+<path d="M95,39 L306,39" class="arrow" marker-end="url(#c-second-opinion-rework)"/>
+<g>
+<rect x="306" y="16" width="235" height="46" rx="8" class="k-agent"/>
+<text x="424" y="35" text-anchor="middle" class="m s13 b t-agent">issue-preparer</text>
+<text x="424" y="52" text-anchor="middle" class="s11 muted">grounds the issue, writes criteria</text>
+</g>
+<g><rect x="363" y="100" width="122" height="34" rx="17" class="pill"/>
+<circle cx="377" cy="117" r="5" class="t-agent"/>
+<text x="389" y="121" class="m s12">needs-review</text></g>
+<g>
+<rect x="306" y="164" width="235" height="61" rx="8" class="k-agent"/>
+<text x="424" y="183" text-anchor="middle" class="m s13 b t-agent">issue-reviewer</text>
+<text x="424" y="200" text-anchor="middle" class="s11 muted">second opinion, ideally on another</text>
+<text x="424" y="215" text-anchor="middle" class="s11 muted">model</text>
+</g>
+<g><rect x="388" y="263" width="72" height="34" rx="17" class="pill"/>
+<circle cx="402" cy="280" r="5" class="t-done"/>
+<text x="414" y="284" class="m s12">ready</text></g>
+<rect x="337" y="327" width="174" height="34" rx="17" class="k-done"/>
+<text x="424" y="348" text-anchor="middle" class="s12 b t-done">Delivery picks it up</text>
+<g><rect x="16" y="178" width="158" height="34" rx="17" class="pill"/>
+<circle cx="30" cy="195" r="5" class="t-rework"/>
+<text x="42" y="199" class="m s12">needs-preparation</text></g>
+<text x="434" y="85" class="m s11">review</text>
+<text x="434" y="248" class="m s11">approved</text>
+<text x="296" y="188" text-anchor="end" class="m s11 t-rework">changes-requested</text>
+<text x="296" y="32" text-anchor="end" class="m s11 t-rework">apply the findings</text>
+<line x1="8" y1="377" x2="549" y2="377" class="rule"/>
+<g><rect x="16" y="391" width="24" height="12" rx="6" class="pill"/><circle cx="23" cy="397" r="3" class="t-done"/><text x="46" y="401" class="s11 muted">GitHub label, like ready</text></g>
+</svg>
+</div>
+  <div class="meta">
+    <h3>Second opinion on the plan</h3>
+    <p class="intent">Another model checks the issue before anyone writes code. Mistakes are cheapest here.</p>
+    <p class="also">Also in: Uberblick, Studio</p>
+  </div>
+</article>
+<article class="card" data-slug="cap" tabindex="0">
+  <div class="stage"><svg xmlns="http://www.w3.org/2000/svg" class="ab ab-dark" viewBox="0 0 808 366" width="808" height="366" role="img" aria-label="Flow: implementer, needs-review, human, reviewer, needs-changes, ready-to-merge, The integrator picks it up. Legend: GitHub label, like ready, human involved">
+<style>.ab.ab-dark{--bg:var(--ab-bg,#171c24);--ink:var(--ab-ink,#e5e9ef);--muted:var(--ab-muted,#98a2b0);--line:var(--ab-line,#2c3440);--band:var(--ab-band,#151b23);--surface:var(--ab-surface,#1d232d);--neutral:var(--ab-neutral,#b6bbc3);--neutral-bg:var(--ab-neutral-bg,#303640);--agent:var(--ab-agent,#85aaa5);--agent-bg:var(--ab-agent-bg,#232d2b);--system:var(--ab-system,#98a5bf);--system-bg:var(--ab-system-bg,#262a31);--rework:var(--ab-rework,#b29d87);--rework-bg:var(--ab-rework-bg,#2c2720);--stop:var(--ab-stop,#ac8c88);--stop-bg:var(--ab-stop-bg,#2b2221);--done:var(--ab-done,#95b09c);--done-bg:var(--ab-done-bg,#222a24);}
+.ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
+.ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.ab .s11{font-size:11px}.ab .s12{font-size:12px}.ab .s13{font-size:13px}
+.ab .muted{fill:var(--muted)}.ab .b{font-weight:600}
+.ab .cap{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.08em;fill:var(--muted)}
+.ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
+.ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
+.ab .knockout{fill:none;stroke:var(--bg);stroke-width:5.6}.ab .knockout-band{stroke:var(--band)}
+.ab .arrow{fill:none;stroke:none}
+.ab .t-ink{fill:var(--muted)}.ab .e-ink{stroke:var(--muted)}.ab .k-ink{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-muted{fill:var(--muted)}.ab .e-muted{stroke:var(--muted)}.ab .k-muted{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-neutral{fill:var(--neutral)}.ab .e-neutral{stroke:var(--neutral)}.ab .k-neutral{fill:var(--neutral-bg);stroke:var(--neutral);stroke-width:1.5}.ab .t-agent{fill:var(--agent)}.ab .e-agent{stroke:var(--agent)}.ab .k-agent{fill:var(--agent-bg);stroke:var(--agent);stroke-width:1.5}.ab .t-system{fill:var(--system)}.ab .e-system{stroke:var(--system)}.ab .k-system{fill:var(--system-bg);stroke:var(--system);stroke-width:1.5}.ab .t-done{fill:var(--done)}.ab .e-done{stroke:var(--done)}.ab .k-done{fill:var(--done-bg);stroke:var(--done);stroke-width:1.5}.ab .t-rework{fill:var(--rework)}.ab .e-rework{stroke:var(--rework)}.ab .k-rework{fill:var(--rework-bg);stroke:var(--rework);stroke-width:1.5}.ab .t-stop{fill:var(--stop)}.ab .e-stop{stroke:var(--stop)}.ab .k-stop{fill:var(--stop-bg);stroke:var(--stop);stroke-width:1.5}
+.ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}</style>
+<defs>
+<marker id="c-cap-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker>
+<marker id="c-cap-rework" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-rework"/></marker>
+<marker id="c-cap-stop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-stop"/></marker>
+</defs>
+<path d="M380,56 L380,115" class="e e-ink"/>
+<path d="M380,161 L380,214" class="e e-ink"/>
+<path d="M380,248 L380,278" class="e e-ink"/>
+<path d="M278,138 L171,138" class="e e-rework"/>
+<path d="M106,121 L106,62" class="e e-rework"/>
+<path d="M196,39 L319,39" class="e e-rework"/>
+<path d="M483,138 L549,138" class="e e-stop"/>
+<path d="M380,56 L380,115" class="arrow" marker-end="url(#c-cap-ink)"/>
+<path d="M380,161 L380,214" class="arrow" marker-end="url(#c-cap-ink)"/>
+<path d="M380,248 L380,278" class="arrow" marker-end="url(#c-cap-ink)"/>
+<path d="M278,138 L171,138" class="arrow" marker-end="url(#c-cap-rework)"/>
+<path d="M106,121 L106,62" class="arrow" marker-end="url(#c-cap-rework)"/>
+<path d="M196,39 L319,39" class="arrow" marker-end="url(#c-cap-rework)"/>
+<path d="M483,138 L549,138" class="arrow" marker-end="url(#c-cap-stop)"/>
+<g><rect x="319" y="22" width="122" height="34" rx="17" class="pill"/>
+<circle cx="333" cy="39" r="5" class="t-agent"/>
+<text x="345" y="43" class="m s12">needs-review</text></g>
+<g>
+<rect x="278" y="115" width="205" height="46" rx="8" class="k-agent"/>
+<text x="381" y="134" text-anchor="middle" class="m s13 b t-agent">reviewer</text>
+<text x="381" y="151" text-anchor="middle" class="s11 muted">reviews the exact head commit</text>
+</g>
+<g><rect x="312" y="214" width="137" height="34" rx="17" class="pill"/>
+<circle cx="326" cy="231" r="5" class="t-done"/>
+<text x="338" y="235" class="m s12">ready-to-merge</text></g>
+<rect x="273" y="278" width="214" height="34" rx="17" class="k-done"/>
+<text x="380" y="299" text-anchor="middle" class="s12 b t-done">The integrator picks it up</text>
+<g>
+<rect x="16" y="16" width="180" height="46" rx="8" class="k-agent"/>
+<text x="106" y="35" text-anchor="middle" class="m s13 b t-agent">implementer</text>
+<text x="106" y="52" text-anchor="middle" class="s11 muted">revises the same PR</text>
+</g>
+<g><rect x="41" y="121" width="130" height="34" rx="17" class="pill"/>
+<circle cx="55" cy="138" r="5" class="t-rework"/>
+<text x="67" y="142" class="m s12">needs-changes</text></g>
+<g><rect x="549" y="92" width="243" height="92" rx="10" class="k-stop panel"/>
+<rect x="614" y="104" width="115" height="30" rx="15" class="pill"/>
+<circle cx="628" cy="119" r="5" class="t-stop"/>
+<text x="640" y="123" class="m s12">needs-human</text>
+<text x="671" y="153" text-anchor="middle" class="s12 b">A person decides</text>
+<text x="671" y="171" text-anchor="middle" class="s11 muted">ub-agents retry resets the count</text></g>
+<text x="390" y="192" class="m s11">approved, any round</text>
+<text x="268" y="131" text-anchor="end" class="m s11 t-rework">rounds 1 to 3</text>
+<text x="493" y="131" class="m s11 t-stop">round 4</text>
+<line x1="8" y1="328" x2="800" y2="328" class="rule"/>
+<g><rect x="16" y="342" width="24" height="12" rx="6" class="pill"/><circle cx="23" cy="348" r="3" class="t-done"/><text x="46" y="352" class="s11 muted">GitHub label, like ready</text></g>
+<g><rect x="212" y="342" width="24" height="12" rx="3" class="k-stop panel"/><text x="242" y="352" class="s11 muted">human involved</text></g>
+</svg>
+</div>
+  <div class="meta">
+    <h3>Review rounds with a cap</h3>
+    <p class="intent">Three rounds of back and forth, then a person settles it.</p>
+    <p class="also">Also in: Studio</p>
+  </div>
+</article>
+<article class="card" data-slug="ask" tabindex="0">
+  <div class="stage"><svg xmlns="http://www.w3.org/2000/svg" class="ab ab-dark" viewBox="0 0 501 429" width="501" height="429" role="img" aria-label="Flow: agent, stopped, blocked, answer, retry, The agent runs again. Legend: GitHub label, human involved">
+<style>.ab.ab-dark{--bg:var(--ab-bg,#171c24);--ink:var(--ab-ink,#e5e9ef);--muted:var(--ab-muted,#98a2b0);--line:var(--ab-line,#2c3440);--band:var(--ab-band,#151b23);--surface:var(--ab-surface,#1d232d);--neutral:var(--ab-neutral,#b6bbc3);--neutral-bg:var(--ab-neutral-bg,#303640);--agent:var(--ab-agent,#85aaa5);--agent-bg:var(--ab-agent-bg,#232d2b);--system:var(--ab-system,#98a5bf);--system-bg:var(--ab-system-bg,#262a31);--rework:var(--ab-rework,#b29d87);--rework-bg:var(--ab-rework-bg,#2c2720);--stop:var(--ab-stop,#ac8c88);--stop-bg:var(--ab-stop-bg,#2b2221);--done:var(--ab-done,#95b09c);--done-bg:var(--ab-done-bg,#222a24);}
+.ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
+.ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.ab .s11{font-size:11px}.ab .s12{font-size:12px}.ab .s13{font-size:13px}
+.ab .muted{fill:var(--muted)}.ab .b{font-weight:600}
+.ab .cap{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.08em;fill:var(--muted)}
+.ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
+.ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
+.ab .knockout{fill:none;stroke:var(--bg);stroke-width:5.6}.ab .knockout-band{stroke:var(--band)}
+.ab .arrow{fill:none;stroke:none}
+.ab .t-ink{fill:var(--muted)}.ab .e-ink{stroke:var(--muted)}.ab .k-ink{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-muted{fill:var(--muted)}.ab .e-muted{stroke:var(--muted)}.ab .k-muted{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-neutral{fill:var(--neutral)}.ab .e-neutral{stroke:var(--neutral)}.ab .k-neutral{fill:var(--neutral-bg);stroke:var(--neutral);stroke-width:1.5}.ab .t-agent{fill:var(--agent)}.ab .e-agent{stroke:var(--agent)}.ab .k-agent{fill:var(--agent-bg);stroke:var(--agent);stroke-width:1.5}.ab .t-system{fill:var(--system)}.ab .e-system{stroke:var(--system)}.ab .k-system{fill:var(--system-bg);stroke:var(--system);stroke-width:1.5}.ab .t-done{fill:var(--done)}.ab .e-done{stroke:var(--done)}.ab .k-done{fill:var(--done-bg);stroke:var(--done);stroke-width:1.5}.ab .t-rework{fill:var(--rework)}.ab .e-rework{stroke:var(--rework)}.ab .k-rework{fill:var(--rework-bg);stroke:var(--rework);stroke-width:1.5}.ab .t-stop{fill:var(--stop)}.ab .e-stop{stroke:var(--stop)}.ab .k-stop{fill:var(--stop-bg);stroke:var(--stop);stroke-width:1.5}
+.ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}</style>
+<defs>
+<marker id="c-ask-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker>
+<marker id="c-ask-stop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-stop"/></marker>
+</defs>
+<path d="M374,77 L374,115" class="e e-stop"/>
+<path d="M374,207 L374,237" class="e e-stop"/>
+<path d="M374,311 L374,341" class="e e-ink"/>
+<path d="M262,47 L111,47 L111,133" class="e e-ink"/>
+<path d="M111,189 L111,246" class="e e-stop"/>
+<path d="M111,302 L111,358 L287,358" class="e e-ink"/>
+<path d="M374,77 L374,115" class="arrow" marker-end="url(#c-ask-stop)"/>
+<path d="M374,207 L374,237" class="arrow" marker-end="url(#c-ask-stop)"/>
+<path d="M374,311 L374,341" class="arrow" marker-end="url(#c-ask-ink)"/>
+<path d="M111,47 L111,133" class="arrow" marker-end="url(#c-ask-ink)"/>
+<path d="M111,189 L111,246" class="arrow" marker-end="url(#c-ask-stop)"/>
+<path d="M111,358 L287,358" class="arrow" marker-end="url(#c-ask-ink)"/>
+<g>
+<rect x="262" y="16" width="223" height="61" rx="8" class="k-agent"/>
+<text x="374" y="35" text-anchor="middle" class="m s13 b t-agent">agent</text>
+<text x="374" y="52" text-anchor="middle" class="s11 muted">reports needs-human with one ask</text>
+<text x="374" y="67" text-anchor="middle" class="s11 muted">per decision</text>
+</g>
+<g><rect x="279" y="115" width="190" height="92" rx="10" class="k-stop panel"/>
+<rect x="317" y="127" width="115" height="30" rx="15" class="pill"/>
+<circle cx="331" cy="142" r="5" class="t-stop"/>
+<text x="343" y="146" class="m s12">needs-human</text>
+<text x="374" y="176" text-anchor="middle" class="s12 b">Action needed comment</text>
+<text x="374" y="194" text-anchor="middle" class="s11 muted">one line per ask</text></g>
+<g><rect x="272" y="237" width="203" height="74" rx="10" class="k-stop panel"/>
+<text x="374" y="262" text-anchor="middle" class="s12 b">A person answers on GitHub</text>
+<text x="374" y="280" text-anchor="middle" class="s11 muted">removes needs-human</text>
+<text x="374" y="298" text-anchor="middle" class="s11 muted">re-adds the trigger label</text></g>
+<rect x="287" y="341" width="174" height="34" rx="17" class="k-done"/>
+<text x="374" y="362" text-anchor="middle" class="s12 b t-done">The agent runs again</text>
+<g><rect x="16" y="133" width="190" height="56" rx="10" class="k-muted panel"/>
+<text x="111" y="158" text-anchor="middle" class="s12 b">Blocked run</text>
+<text x="111" y="176" text-anchor="middle" class="s11 muted">same ask, no label</text></g>
+<g><rect x="16" y="246" width="190" height="56" rx="10" class="k-stop panel"/>
+<text x="111" y="271" text-anchor="middle" class="s12 b">ub-agents retry N</text>
+<text x="111" y="289" text-anchor="middle" class="s11 muted">with a reason</text></g>
+<text x="384" y="100" class="m s11 t-stop">needs-human</text>
+<text x="252" y="40" text-anchor="end" class="m s11">blocked</text>
+<line x1="8" y1="391" x2="493" y2="391" class="rule"/>
+<g><rect x="16" y="405" width="24" height="12" rx="6" class="pill"/><circle cx="23" cy="411" r="3" class="t-stop"/><text x="46" y="415" class="s11 muted">GitHub label</text></g>
+<g><rect x="139" y="405" width="24" height="12" rx="3" class="k-stop panel"/><text x="169" y="415" class="s11 muted">human involved</text></g>
+</svg>
+</div>
+  <div class="meta">
+    <h3>Ask a person, then carry on</h3>
+    <p class="intent">An agent stops on a real decision, asks one clear question, and resumes when you answer.</p>
+    <p class="also">Also in: all four</p>
+  </div>
+</article>
+<article class="card plays" data-slug="outside" tabindex="0">
+  <div class="stage"><svg xmlns="http://www.w3.org/2000/svg" class="ab ab-dark" viewBox="0 0 678 251" width="678" height="251" role="img" aria-label="Fan-out: Check whether approval permits the run. Approved: A maintainer started it and the input is unchanged; destination: Start the run. Outside input: The input has not been cleared by a maintainer; destination: Ask a maintainer. Edited since: The input changed after the maintainer started it; destination: Ask a maintainer">
+<style>.ab.ab-dark{--bg:var(--ab-bg,#171c24);--ink:var(--ab-ink,#e5e9ef);--muted:var(--ab-muted,#98a2b0);--line:var(--ab-line,#2c3440);--band:var(--ab-band,#151b23);--surface:var(--ab-surface,#1d232d);--neutral:var(--ab-neutral,#b6bbc3);--neutral-bg:var(--ab-neutral-bg,#303640);--agent:var(--ab-agent,#85aaa5);--agent-bg:var(--ab-agent-bg,#232d2b);--system:var(--ab-system,#98a5bf);--system-bg:var(--ab-system-bg,#262a31);--rework:var(--ab-rework,#b29d87);--rework-bg:var(--ab-rework-bg,#2c2720);--stop:var(--ab-stop,#ac8c88);--stop-bg:var(--ab-stop-bg,#2b2221);--done:var(--ab-done,#95b09c);--done-bg:var(--ab-done-bg,#222a24);}
+.ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
+.ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.ab .s11{font-size:11px}.ab .s12{font-size:12px}.ab .s13{font-size:13px}
+.ab .muted{fill:var(--muted)}.ab .b{font-weight:600}
+.ab .cap{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.08em;fill:var(--muted)}
+.ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
+.ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
+.ab .knockout{fill:none;stroke:var(--bg);stroke-width:5.6}.ab .knockout-band{stroke:var(--band)}
+.ab .arrow{fill:none;stroke:none}
+.ab .t-ink{fill:var(--muted)}.ab .e-ink{stroke:var(--muted)}.ab .k-ink{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-muted{fill:var(--muted)}.ab .e-muted{stroke:var(--muted)}.ab .k-muted{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-neutral{fill:var(--neutral)}.ab .e-neutral{stroke:var(--neutral)}.ab .k-neutral{fill:var(--neutral-bg);stroke:var(--neutral);stroke-width:1.5}.ab .t-agent{fill:var(--agent)}.ab .e-agent{stroke:var(--agent)}.ab .k-agent{fill:var(--agent-bg);stroke:var(--agent);stroke-width:1.5}.ab .t-system{fill:var(--system)}.ab .e-system{stroke:var(--system)}.ab .k-system{fill:var(--system-bg);stroke:var(--system);stroke-width:1.5}.ab .t-done{fill:var(--done)}.ab .e-done{stroke:var(--done)}.ab .k-done{fill:var(--done-bg);stroke:var(--done);stroke-width:1.5}.ab .t-rework{fill:var(--rework)}.ab .e-rework{stroke:var(--rework)}.ab .k-rework{fill:var(--rework-bg);stroke:var(--rework);stroke-width:1.5}.ab .t-stop{fill:var(--stop)}.ab .e-stop{stroke:var(--stop)}.ab .k-stop{fill:var(--stop-bg);stroke:var(--stop);stroke-width:1.5}
+.ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}
+.ab [data-ab-part]{transition:opacity .3s}
+.ab.ab-playing [data-ab-part]:not(.ab-on):not(.ab-done){opacity:.3}
+.ab .ab-on rect:not(.gap),.ab .ab-on path.decision{stroke:var(--ab-play,var(--ink));stroke-width:2.4}
+.ab path.e.ab-on,.ab .ab-on path.e{stroke:var(--ab-play,var(--ink));stroke-width:2.4;stroke-dasharray:6 5;animation:ab-run .6s linear infinite}
+@keyframes ab-run{to{stroke-dashoffset:-11}}
+@media (prefers-reduced-motion:reduce){.ab path.e.ab-on,.ab .ab-on path.e{animation:none}}</style>
+<defs><marker id="c-outside-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker></defs>
+<g data-ab-part="step">
+<rect x="16" y="86.5" width="150" height="78" rx="8" class="k-agent"/>
+<text x="32" y="112.5" class="m s13 b t-agent">Check whether</text>
+<text x="32" y="130.5" class="m s13 b t-agent">approval</text>
+<text x="32" y="148.5" class="m s13 b t-agent">permits the run</text>
+</g>
+<g data-line="4" data-ab-part="outcome:1">
+<path d="M166,125.5 C183,125.5 183,33 200,33 L214,33" class="e e-ink" marker-end="url(#c-outside-ink)"/>
+<rect x="216" y="16" width="170" height="34" rx="8" class="k-done"/>
+<text x="230" y="38" class="m s12 b">Approved</text>
+<path d="M386,33 L414,33" class="e e-ink" marker-end="url(#c-outside-ink)"/>
+<text x="426" y="37" class="m s12 b">Start the run</text>
+<text x="426" y="55" class="m s12 muted">A maintainer started it and the</text>
+<text x="426" y="73" class="m s12 muted">input is unchanged</text>
+</g>
+<g data-line="5" data-ab-part="outcome:2">
+<path d="M166,125.5 C183,125.5 183,112 200,112 L214,112" class="e e-ink" marker-end="url(#c-outside-ink)"/>
+<rect x="216" y="95" width="170" height="34" rx="8" class="k-stop panel"/>
+<text x="230" y="117" class="m s12 b">Outside input</text>
+<path d="M386,112 L414,112" class="e e-ink" marker-end="url(#c-outside-ink)"/>
+<text x="426" y="116" class="m s12 b">Ask a maintainer</text>
+<text x="426" y="134" class="m s12 muted">The input has not been cleared</text>
+<text x="426" y="152" class="m s12 muted">by a maintainer</text>
+</g>
+<g data-line="6" data-ab-part="outcome:3">
+<path d="M166,125.5 C183,125.5 183,191 200,191 L214,191" class="e e-ink" marker-end="url(#c-outside-ink)"/>
+<rect x="216" y="174" width="170" height="34" rx="8" class="k-stop panel"/>
+<text x="230" y="196" class="m s12 b">Edited since</text>
+<path d="M386,191 L414,191" class="e e-ink" marker-end="url(#c-outside-ink)"/>
+<text x="426" y="195" class="m s12 b">Ask a maintainer</text>
+<text x="426" y="213" class="m s12 muted">The input changed after the</text>
+<text x="426" y="231" class="m s12 muted">maintainer started it</text>
+</g>
+</svg>
+</div>
+  <div class="meta">
+    <h3>Outside contributions, safely</h3>
+    <p class="intent">Strangers' issues reach your agents only after a maintainer says go.</p>
+    <p class="also">Also in: on for public repositories</p>
+  </div>
+</article></div></section>
+<section class="group"><h2>Uberblick<span class="repo">uberblick-ai/uberblick-2 · public</span></h2><p class="blurb">How we build Uberblick itself. Every issue starts from the product pages in our workspace, Codex writes the code, and a different model reviews it.</p><div class="grid">
+<article class="card plays" data-slug="dependabot" tabindex="0">
+  <div class="stage"><svg xmlns="http://www.w3.org/2000/svg" class="ab ab-dark" viewBox="0 0 900 427" width="900" height="427" role="img" aria-label="Flow: Dependabot, dependencies, integrator, human, needs-changes, implementer, Merged · minor or patch. Legend: dependencies: GitHub label, agent role, a person decides">
+<style>.ab.ab-dark{--bg:var(--ab-bg,#171c24);--ink:var(--ab-ink,#e5e9ef);--muted:var(--ab-muted,#98a2b0);--line:var(--ab-line,#2c3440);--band:var(--ab-band,#151b23);--surface:var(--ab-surface,#1d232d);--neutral:var(--ab-neutral,#b6bbc3);--neutral-bg:var(--ab-neutral-bg,#303640);--agent:var(--ab-agent,#85aaa5);--agent-bg:var(--ab-agent-bg,#232d2b);--system:var(--ab-system,#98a5bf);--system-bg:var(--ab-system-bg,#262a31);--rework:var(--ab-rework,#b29d87);--rework-bg:var(--ab-rework-bg,#2c2720);--stop:var(--ab-stop,#ac8c88);--stop-bg:var(--ab-stop-bg,#2b2221);--done:var(--ab-done,#95b09c);--done-bg:var(--ab-done-bg,#222a24);}
+.ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
+.ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.ab .s11{font-size:11px}.ab .s12{font-size:12px}.ab .s13{font-size:13px}
+.ab .muted{fill:var(--muted)}.ab .b{font-weight:600}
+.ab .cap{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.08em;fill:var(--muted)}
+.ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
+.ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
+.ab .knockout{fill:none;stroke:var(--bg);stroke-width:5.6}.ab .knockout-band{stroke:var(--band)}
+.ab .arrow{fill:none;stroke:none}
+.ab .t-ink{fill:var(--muted)}.ab .e-ink{stroke:var(--muted)}.ab .k-ink{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-muted{fill:var(--muted)}.ab .e-muted{stroke:var(--muted)}.ab .k-muted{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-neutral{fill:var(--neutral)}.ab .e-neutral{stroke:var(--neutral)}.ab .k-neutral{fill:var(--neutral-bg);stroke:var(--neutral);stroke-width:1.5}.ab .t-agent{fill:var(--agent)}.ab .e-agent{stroke:var(--agent)}.ab .k-agent{fill:var(--agent-bg);stroke:var(--agent);stroke-width:1.5}.ab .t-system{fill:var(--system)}.ab .e-system{stroke:var(--system)}.ab .k-system{fill:var(--system-bg);stroke:var(--system);stroke-width:1.5}.ab .t-done{fill:var(--done)}.ab .e-done{stroke:var(--done)}.ab .k-done{fill:var(--done-bg);stroke:var(--done);stroke-width:1.5}.ab .t-rework{fill:var(--rework)}.ab .e-rework{stroke:var(--rework)}.ab .k-rework{fill:var(--rework-bg);stroke:var(--rework);stroke-width:1.5}.ab .t-stop{fill:var(--stop)}.ab .e-stop{stroke:var(--stop)}.ab .k-stop{fill:var(--stop-bg);stroke:var(--stop);stroke-width:1.5}
+.ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}
+.ab [data-ab-part]{transition:opacity .3s}
+.ab.ab-playing [data-ab-part]:not(.ab-on):not(.ab-done){opacity:.3}
+.ab .ab-on rect:not(.gap),.ab .ab-on path.decision{stroke:var(--ab-play,var(--ink));stroke-width:2.4}
+.ab path.e.ab-on,.ab .ab-on path.e{stroke:var(--ab-play,var(--ink));stroke-width:2.4;stroke-dasharray:6 5;animation:ab-run .6s linear infinite}
+@keyframes ab-run{to{stroke-dashoffset:-11}}
+@media (prefers-reduced-motion:reduce){.ab path.e.ab-on,.ab .ab-on path.e{animation:none}}</style>
+<defs>
+<marker id="c-dependabot-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker>
+<marker id="c-dependabot-rework" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-rework"/></marker>
+<marker id="c-dependabot-stop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-stop"/></marker>
+</defs>
+<path data-ab-part="edge:dependabot&gt;dependencies" d="M405,62 L405,92" class="e e-ink"/>
+<path data-ab-part="edge:dependencies&gt;integrator" d="M405,126 L405,164" class="e e-ink"/>
+<path data-ab-part="edge:integrator&gt;merged" d="M405,225 L405,331" class="e e-ink"/>
+<path data-ab-part="edge:integrator&gt;needs-changes" d="M287,195 L181,195" class="e e-rework"/>
+<path data-ab-part="edge:needs-changes&gt;implementer" d="M116,212 L116,255" class="e e-rework"/>
+<path data-ab-part="edge:implementer&gt;integrator" d="M215,278 L251,278 L251,205 L287,205" class="e e-rework"/>
+<path data-ab-part="edge:integrator&gt;human" d="M522,195 L694,195" class="e e-stop"/>
+<path data-ab-part="edge:dependabot&gt;dependencies" d="M405,62 L405,92" class="arrow" marker-end="url(#c-dependabot-ink)"/>
+<path data-ab-part="edge:dependencies&gt;integrator" d="M405,126 L405,164" class="arrow" marker-end="url(#c-dependabot-ink)"/>
+<path data-ab-part="edge:integrator&gt;merged" d="M405,225 L405,331" class="arrow" marker-end="url(#c-dependabot-ink)"/>
+<path data-ab-part="edge:integrator&gt;needs-changes" d="M287,195 L181,195" class="arrow" marker-end="url(#c-dependabot-rework)"/>
+<path data-ab-part="edge:needs-changes&gt;implementer" d="M116,212 L116,255" class="arrow" marker-end="url(#c-dependabot-rework)"/>
+<path data-ab-part="edge:implementer&gt;integrator" d="M251,205 L287,205" class="arrow" marker-end="url(#c-dependabot-rework)"/>
+<path data-ab-part="edge:integrator&gt;human" d="M522,195 L694,195" class="arrow" marker-end="url(#c-dependabot-stop)"/>
+<g data-ab-part="node:dependabot"><g>
+<rect x="287" y="16" width="235" height="46" rx="8" class="k-agent"/>
+<text x="405" y="35" text-anchor="middle" class="m s13 b t-agent">Dependabot</text>
+<text x="405" y="52" text-anchor="middle" class="s11 muted">opens a pull request</text>
+</g></g>
+<g data-ab-part="node:dependencies"><g><rect x="344" y="92" width="122" height="34" rx="17" class="pill"/>
+<circle cx="358" cy="109" r="5" class="t-agent"/>
+<text x="370" y="113" class="m s12">dependencies</text></g></g>
+<g data-ab-part="node:integrator"><g>
+<rect x="287" y="164" width="235" height="61" rx="8" class="k-agent"/>
+<text x="405" y="183" text-anchor="middle" class="m s13 b t-agent">integrator</text>
+<text x="405" y="200" text-anchor="middle" class="s11 muted">reads the title and the diff, runs</text>
+<text x="405" y="215" text-anchor="middle" class="s11 muted">the gates</text>
+</g></g>
+<g data-ab-part="node:needs-changes"><g><rect x="51" y="178" width="130" height="34" rx="17" class="pill"/>
+<circle cx="65" cy="195" r="5" class="t-rework"/>
+<text x="77" y="199" class="m s12">needs-changes</text></g></g>
+<g data-ab-part="node:implementer"><g>
+<rect x="16" y="255" width="199" height="46" rx="8" class="k-agent"/>
+<text x="116" y="274" text-anchor="middle" class="m s13 b t-agent">implementer</text>
+<text x="116" y="291" text-anchor="middle" class="s11 muted">one fix round, then a review</text>
+</g></g>
+<g data-ab-part="node:merged"><rect x="308" y="331" width="194" height="34" rx="17" class="k-done"/>
+<text x="405" y="352" text-anchor="middle" class="s12 b t-done">Merged · minor or patch</text></g>
+<g data-ab-part="node:human"><g><rect x="694" y="164" width="190" height="137" rx="10" class="k-stop panel"/>
+<rect x="732" y="208" width="115" height="30" rx="15" class="pill"/>
+<circle cx="746" cy="223" r="5" class="t-stop"/>
+<text x="758" y="227" class="m s12">needs-human</text>
+<text x="789" y="257" text-anchor="middle" class="s12 b">A person decides</text></g></g>
+<text data-ab-part="edge:dependencies&gt;integrator" x="415" y="149" class="m s11">trigger</text>
+<text data-ab-part="edge:integrator&gt;merged" x="415" y="282" class="m s11">gates green</text>
+<text data-ab-part="edge:integrator&gt;needs-changes" x="277" y="188" text-anchor="end" class="m s11 t-rework">a gate failed</text>
+<text data-ab-part="edge:integrator&gt;human" x="532" y="188" class="m s11 t-stop">major, or still failing</text>
+<line x1="8" y1="381" x2="892" y2="381" class="rule"/>
+<g><rect x="16" y="395" width="104" height="20" rx="10" class="pill"/><circle cx="23" cy="405" r="3" class="t-done"/><text x="31" y="409" class="m s11">dependencies</text><text x="126" y="409" class="s11 muted">GitHub label</text></g>
+<g><rect x="219" y="399" width="24" height="12" rx="3" class="k-agent"/><text x="249" y="409" class="s11 muted">agent role</text></g>
+<g><rect x="330" y="399" width="24" height="12" rx="3" class="k-stop panel"/><text x="360" y="409" class="s11 muted">a person decides</text></g>
+</svg>
+</div>
+  <div class="meta">
+    <h3>Dependabot on autopilot</h3>
+    <p class="intent">Patch and minor bumps merge on their own once the tests pass, without anyone opening the PR. Majors, and failures one fix round can't settle, wait for you.</p>
+    <p class="also">Also in: CampfireFM backend, Studio</p>
+  </div>
+</article>
+<article class="card text" data-slug="cross-model" tabindex="0">
+  
+  <div class="meta">
+    <h3>Reviewer on a different model</h3>
+    <p class="intent">Whoever wrote the code, the other model reviews it. Blind spots rarely overlap.</p>
+    
+  </div>
+</article>
+<article class="card text" data-slug="intent" tabindex="0">
+  
+  <div class="meta">
+    <h3>Start from the product pages</h3>
+    <p class="intent">Agents read what the product should do from the workspace, not from a stale docs folder.</p>
+    
+  </div>
+</article>
+<article class="card text" data-slug="shortcut" tabindex="0">
+  
+  <div class="meta">
+    <h3>Skip review, or hand it back</h3>
+    <p class="intent">A trivial change goes straight to merge checks; an unclear issue goes back to preparation.</p>
+    <p class="also">Also in: CampfireFM backend</p>
+  </div>
+</article></div></section>
+<section class="group"><h2>CampfireFM backend<span class="repo">Django API in production · private</span></h2><p class="blurb">Issues start from production data, Copilot is a second pair of eyes, and anything risky waits for a person to press merge.</p><div class="grid">
+<article class="card text" data-slug="production" tabindex="0">
+  
+  <div class="meta">
+    <h3>Grounded in production data</h3>
+    <p class="intent">Before scoping a bug, the preparer checks monitoring, so the issue names the real cause.</p>
+    
+  </div>
+</article>
+<article class="card text" data-slug="copilot" tabindex="0">
+  
+  <div class="meta">
+    <h3>Copilot as a second reviewer</h3>
+    <p class="intent">On a serious finding the reviewer asks Copilot too, and nothing merges until both are answered.</p>
+    
+  </div>
+</article>
+<article class="card text" data-slug="maintainer-merge" tabindex="0">
+  
+  <div class="meta">
+    <h3>Agents get it green, you press merge</h3>
+    <p class="intent">Schema changes and other risky diffs arrive fully checked, one click away from merged.</p>
+    <p class="also">Also in: Studio</p>
+  </div>
+</article></div></section>
+<section class="group"><h2>CampfireFM Studio<span class="repo">Next.js editor · private</span></h2><p class="blurb">Work lands on milestone branches, the preview deploy is a gate, and the loop reports every step in Slack.</p><div class="grid">
+<article class="card text" data-slug="milestones" tabindex="0">
+  
+  <div class="meta">
+    <h3>Milestone branches</h3>
+    <p class="intent">Each milestone collects its PRs on its own branch; main only moves when the team merges the milestone.</p>
+    
+  </div>
+</article>
+<article class="card text" data-slug="preview" tabindex="0">
+  
+  <div class="meta">
+    <h3>The preview deploy is a gate</h3>
+    <p class="intent">Playwright and the preview deploy must pass at the exact head that merges.</p>
+    
+  </div>
+</article>
+<article class="card text" data-slug="slack" tabindex="0">
+  
+  <div class="meta">
+    <h3>The loop tells the team</h3>
+    <p class="intent">Every start and every outcome lands in a Slack channel, so nobody polls GitHub.</p>
+    
+  </div>
+</article></div></section>
+<p class="note">Prototype: diagrams are drawn by the ablauf playback spike (ablauf PR #65); run captions are illustrative. Cards without a diagram get one before launch.</p>
+</main>
+<footer>agents.uberblick.ai/workflows · prototype, not live</footer>
+<div id="entry" role="dialog" aria-modal="true" aria-labelledby="etitle">
+  <div class="sheet">
+    <div class="top"><div><h1 id="etitle"></h1><p><span id="eintent"></span> <span class="via">Built on <a href="https://agents.uberblick.ai" target="_blank" rel="noopener">ub-agents</a>, a minimal agent loop for experienced developers: plain GitHub labels, your own coding agents, nothing to host.</span></p></div><div class="topbtns"><button class="iconbtn" id="eurl" type="button" title="Copy link to this run" aria-label="Copy link to this run"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></button><button class="close" id="eclose" type="button">Close</button></div></div>
+    <div class="theatre">
+      <div class="big" id="ebig"></div>
+      <div class="log">
+        <div class="tabrow"><div class="logtabs" id="etabs" role="tablist"></div></div>
+        <div class="now" aria-live="polite"><span class="nstep" id="nowstep"></span><b id="nowwho"></b><span id="nowsay"></span></div>
+        <div class="controls"><button id="eprev" type="button" aria-label="Previous step">&lt;</button><button id="eplay" type="button" class="main">Pause</button><button id="enext" type="button" aria-label="Next step">&gt;</button><div class="segs" id="esegs"></div></div>
+        <details class="all"><summary>All steps</summary><ol class="lines" id="elines"></ol></details>
+      </div>
+    </div>
+    <div class="story">
+      <div class="prose" id="eprose"></div>
+      <aside class="adopt">
+        <p class="adopthead">Adopt it with Claude</p>
+        <a class="cta" id="eadopt" href="#">Open in Claude Code <span>→</span></a>
+        <p class="alt-line">No desktop app? <a id="eadoptweb" href="#" target="_blank" rel="noopener">Use claude.ai</a></p>
+        <button class="copy" id="ecopy" type="button">Copy the prompt</button>
+        <a class="article" id="earticle" href="#" target="_blank" rel="noopener" hidden></a>
+        <p class="runs" id="eruns" hidden></p>
+      </aside>
+    </div>
+    <p class="footnote">Generated with the <a href="https://skills.uberblick.ai/skills/ub-agents-flow.html" target="_blank" rel="noopener">ub-agents-flow skill</a>, which can keep your own loop's version in your <a href="https://uberblick.ai" target="_blank" rel="noopener">Uberblick</a> knowledge base. Requires <a href="https://agents.uberblick.ai" target="_blank" rel="noopener">ub-agents</a> and <a href="https://ablauf.uberblick.ai" target="_blank" rel="noopener">ablauf</a>.</p>
+  </div>
+</div>
+
+<template id="t-default"><svg xmlns="http://www.w3.org/2000/svg" class="ab ab-dark" viewBox="0 0 786 780" width="786" height="780" role="img" aria-label="Flow: A maintainer adds the first label, needs-preparation, issue-preparer, ready, implementer, needs-review, human, reviewer, needs-changes, ready-to-merge, integrator, Merged · issue closed. Legend: ready: GitHub label, agent role, a person decides, set by the launcher">
+<style>.ab.ab-dark{--bg:var(--ab-bg,#171c24);--ink:var(--ab-ink,#e5e9ef);--muted:var(--ab-muted,#98a2b0);--line:var(--ab-line,#2c3440);--band:var(--ab-band,#151b23);--surface:var(--ab-surface,#1d232d);--neutral:var(--ab-neutral,#b6bbc3);--neutral-bg:var(--ab-neutral-bg,#303640);--agent:var(--ab-agent,#85aaa5);--agent-bg:var(--ab-agent-bg,#232d2b);--system:var(--ab-system,#98a5bf);--system-bg:var(--ab-system-bg,#262a31);--rework:var(--ab-rework,#b29d87);--rework-bg:var(--ab-rework-bg,#2c2720);--stop:var(--ab-stop,#ac8c88);--stop-bg:var(--ab-stop-bg,#2b2221);--done:var(--ab-done,#95b09c);--done-bg:var(--ab-done-bg,#222a24);}
+.ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
+.ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.ab .s11{font-size:11px}.ab .s12{font-size:12px}.ab .s13{font-size:13px}
+.ab .muted{fill:var(--muted)}.ab .b{font-weight:600}
+.ab .cap{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.08em;fill:var(--muted)}
+.ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
+.ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
+.ab .knockout{fill:none;stroke:var(--bg);stroke-width:5.6}.ab .knockout-band{stroke:var(--band)}
+.ab .arrow{fill:none;stroke:none}
+.ab .t-ink{fill:var(--muted)}.ab .e-ink{stroke:var(--muted)}.ab .k-ink{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-muted{fill:var(--muted)}.ab .e-muted{stroke:var(--muted)}.ab .k-muted{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-neutral{fill:var(--neutral)}.ab .e-neutral{stroke:var(--neutral)}.ab .k-neutral{fill:var(--neutral-bg);stroke:var(--neutral);stroke-width:1.5}.ab .t-agent{fill:var(--agent)}.ab .e-agent{stroke:var(--agent)}.ab .k-agent{fill:var(--agent-bg);stroke:var(--agent);stroke-width:1.5}.ab .t-system{fill:var(--system)}.ab .e-system{stroke:var(--system)}.ab .k-system{fill:var(--system-bg);stroke:var(--system);stroke-width:1.5}.ab .t-done{fill:var(--done)}.ab .e-done{stroke:var(--done)}.ab .k-done{fill:var(--done-bg);stroke:var(--done);stroke-width:1.5}.ab .t-rework{fill:var(--rework)}.ab .e-rework{stroke:var(--rework)}.ab .k-rework{fill:var(--rework-bg);stroke:var(--rework);stroke-width:1.5}.ab .t-stop{fill:var(--stop)}.ab .e-stop{stroke:var(--stop)}.ab .k-stop{fill:var(--stop-bg);stroke:var(--stop);stroke-width:1.5}
+.ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}
+.ab [data-ab-part]{transition:opacity .3s}
+.ab.ab-playing [data-ab-part]:not(.ab-on):not(.ab-done){opacity:.3}
+.ab .ab-on rect:not(.gap),.ab .ab-on path.decision{stroke:var(--ab-play,var(--ink));stroke-width:2.4}
+.ab path.e.ab-on,.ab .ab-on path.e{stroke:var(--ab-play,var(--ink));stroke-width:2.4;stroke-dasharray:6 5;animation:ab-run .6s linear infinite}
+@keyframes ab-run{to{stroke-dashoffset:-11}}
+@media (prefers-reduced-motion:reduce){.ab path.e.ab-on,.ab .ab-on path.e{animation:none}}</style>
+<defs>
+<marker id="b-default-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker>
+<marker id="b-default-rework" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-rework"/></marker>
+<marker id="b-default-stop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-stop"/></marker>
+</defs>
+
+<rect x="8" y="278" width="770" height="448" class="band"/>
+<line x1="8" y1="278" x2="778" y2="278" class="rule"/>
+<path data-ab-part="edge:start&gt;needs-preparation" d="M378,32 L378,62" class="e e-ink"/>
+<path data-ab-part="edge:needs-preparation&gt;issue-preparer" d="M378,96 L378,134" class="e e-ink"/>
+<path data-ab-part="edge:issue-preparer&gt;ready" d="M378,180 L378,218" class="e e-ink"/>
+<path data-ab-part="edge:ready&gt;implementer" d="M378,252 L378,304" class="e e-ink"/>
+<path data-ab-part="edge:implementer&gt;needs-review" d="M378,350 L378,388" class="e e-ink"/>
+<path data-ab-part="edge:needs-review&gt;reviewer" d="M378,422 L378,452" class="e e-ink"/>
+<path data-ab-part="edge:reviewer&gt;ready-to-merge" d="M378,498 L378,536" class="e e-ink"/>
+<path data-ab-part="edge:ready-to-merge&gt;integrator" d="M378,570 L378,600" class="e e-ink"/>
+<path data-ab-part="edge:integrator&gt;merged" d="M378,646 L378,684" class="e e-ink"/>
+<path data-ab-part="edge:reviewer&gt;needs-changes" d="M278,475 L146,475" class="e e-rework"/>
+<path data-ab-part="edge:ready-to-merge&gt;needs-changes" d="M309,553 L103,553 L103,492" class="e e-rework dash"/>
+<path data-ab-part="edge:integrator&gt;needs-changes" d="M278,623 L59,623 L59,492" class="e e-rework"/>
+<path data-ab-part="edge:needs-changes&gt;implementer" d="M81,458 L81,327 L278,327" class="e e-rework"/>
+<path data-ab-part="edge:issue-preparer&gt;human" d="M477,157 L698,157 L698,388" class="e e-stop"/>
+<path data-ab-part="edge:implementer&gt;human" d="M477,327 L626,327 L626,388" class="e e-stop"/>
+<path data-ab-part="edge:reviewer&gt;human" d="M477,475 L554,475" class="e e-stop"/>
+<path data-ab-part="edge:integrator&gt;human" d="M477,623 L662,623 L662,570" class="e e-stop"/>
+<path data-ab-part="edge:start&gt;needs-preparation" d="M378,32 L378,62" class="arrow" marker-end="url(#b-default-ink)"/>
+<path data-ab-part="edge:needs-preparation&gt;issue-preparer" d="M378,96 L378,134" class="arrow" marker-end="url(#b-default-ink)"/>
+<path data-ab-part="edge:issue-preparer&gt;ready" d="M378,180 L378,218" class="arrow" marker-end="url(#b-default-ink)"/>
+<path data-ab-part="edge:ready&gt;implementer" d="M378,252 L378,304" class="arrow" marker-end="url(#b-default-ink)"/>
+<path data-ab-part="edge:implementer&gt;needs-review" d="M378,350 L378,388" class="arrow" marker-end="url(#b-default-ink)"/>
+<path data-ab-part="edge:needs-review&gt;reviewer" d="M378,422 L378,452" class="arrow" marker-end="url(#b-default-ink)"/>
+<path data-ab-part="edge:reviewer&gt;ready-to-merge" d="M378,498 L378,536" class="arrow" marker-end="url(#b-default-ink)"/>
+<path data-ab-part="edge:ready-to-merge&gt;integrator" d="M378,570 L378,600" class="arrow" marker-end="url(#b-default-ink)"/>
+<path data-ab-part="edge:integrator&gt;merged" d="M378,646 L378,684" class="arrow" marker-end="url(#b-default-ink)"/>
+<path data-ab-part="edge:reviewer&gt;needs-changes" d="M278,475 L146,475" class="arrow" marker-end="url(#b-default-rework)"/>
+<path data-ab-part="edge:ready-to-merge&gt;needs-changes" d="M103,553 L103,492" class="arrow" marker-end="url(#b-default-rework)"/>
+<path data-ab-part="edge:integrator&gt;needs-changes" d="M59,623 L59,492" class="arrow" marker-end="url(#b-default-rework)"/>
+<path data-ab-part="edge:needs-changes&gt;implementer" d="M81,327 L278,327" class="arrow" marker-end="url(#b-default-rework)"/>
+<path data-ab-part="edge:issue-preparer&gt;human" d="M698,157 L698,388" class="arrow" marker-end="url(#b-default-stop)"/>
+<path data-ab-part="edge:implementer&gt;human" d="M626,327 L626,388" class="arrow" marker-end="url(#b-default-stop)"/>
+<path data-ab-part="edge:reviewer&gt;human" d="M477,475 L554,475" class="arrow" marker-end="url(#b-default-stop)"/>
+<path data-ab-part="edge:integrator&gt;human" d="M662,623 L662,570" class="arrow" marker-end="url(#b-default-stop)"/>
+<text x="20" y="22" class="cap">ISSUE</text>
+<text x="20" y="300" class="cap">PULL REQUEST</text>
+<g data-ab-part="node:start"><text x="378" y="28" text-anchor="middle" class="s12 muted">A maintainer adds the first label</text></g>
+<g data-ab-part="node:needs-preparation"><g><rect x="299" y="62" width="158" height="34" rx="17" class="pill"/>
+<circle cx="313" cy="79" r="5" class="t-muted"/>
+<text x="325" y="83" class="m s12">needs-preparation</text></g></g>
+<g data-ab-part="node:issue-preparer"><g>
+<rect x="278" y="134" width="199" height="46" rx="8" class="k-agent"/>
+<text x="378" y="153" text-anchor="middle" class="m s13 b t-agent">issue-preparer</text>
+<text x="378" y="170" text-anchor="middle" class="s11 muted">writes scope and criteria</text>
+</g></g>
+<g data-ab-part="node:ready"><g><rect x="342" y="218" width="72" height="34" rx="17" class="pill"/>
+<circle cx="356" cy="235" r="5" class="t-done"/>
+<text x="368" y="239" class="m s12">ready</text></g></g>
+<g data-ab-part="node:implementer"><g>
+<rect x="278" y="304" width="199" height="46" rx="8" class="k-agent"/>
+<text x="378" y="323" text-anchor="middle" class="m s13 b t-agent">implementer</text>
+<text x="378" y="340" text-anchor="middle" class="s11 muted">codes, checks, opens the PR</text>
+</g></g>
+<g data-ab-part="node:needs-review"><g><rect x="317" y="388" width="122" height="34" rx="17" class="pill"/>
+<circle cx="331" cy="405" r="5" class="t-agent"/>
+<text x="343" y="409" class="m s12">needs-review</text></g></g>
+<g data-ab-part="node:reviewer"><g>
+<rect x="278" y="452" width="199" height="46" rx="8" class="k-agent"/>
+<text x="378" y="471" text-anchor="middle" class="m s13 b t-agent">reviewer</text>
+<text x="378" y="488" text-anchor="middle" class="s11 muted">reviews the exact head SHA</text>
+</g></g>
+<g data-ab-part="node:ready-to-merge"><g><rect x="309" y="536" width="137" height="34" rx="17" class="pill"/>
+<circle cx="323" cy="553" r="5" class="t-done"/>
+<text x="335" y="557" class="m s12">ready-to-merge</text></g></g>
+<g data-ab-part="node:integrator"><g>
+<rect x="278" y="600" width="199" height="46" rx="8" class="k-agent"/>
+<text x="378" y="619" text-anchor="middle" class="m s13 b t-agent">integrator</text>
+<text x="378" y="636" text-anchor="middle" class="s11 muted">updates base, checks, merges</text>
+</g></g>
+<g data-ab-part="node:merged"><rect x="287" y="684" width="181" height="34" rx="17" class="k-done"/>
+<text x="378" y="705" text-anchor="middle" class="s12 b t-done">Merged · issue closed</text></g>
+<g data-ab-part="node:needs-changes"><g><rect x="16" y="458" width="130" height="34" rx="17" class="pill"/>
+<circle cx="30" cy="475" r="5" class="t-rework"/>
+<text x="42" y="479" class="m s12">needs-changes</text></g></g>
+<g data-ab-part="node:human"><g><rect x="554" y="388" width="216" height="182" rx="10" class="k-stop panel"/>
+<rect x="605" y="420" width="115" height="30" rx="15" class="pill"/>
+<circle cx="619" cy="435" r="5" class="t-stop"/>
+<text x="631" y="439" class="m s12">needs-human</text>
+<text x="662" y="469" text-anchor="middle" class="s11 muted">or an Action needed comment</text>
+<line x1="570" y1="481" x2="754" y2="481" class="rule"/>
+<text x="662" y="501" text-anchor="middle" class="s12 b">A person decides</text>
+<text x="662" y="519" text-anchor="middle" class="s11">adds the trigger of any role</text>
+<text x="662" y="537" text-anchor="middle" class="s11 muted">blocked, same role: retry</text></g></g>
+<text data-ab-part="edge:needs-preparation&gt;issue-preparer" x="388" y="119" class="m s11">trigger</text>
+<text data-ab-part="edge:issue-preparer&gt;ready" x="388" y="203" class="m s11">prepared</text>
+<text data-ab-part="edge:implementer&gt;needs-review" x="388" y="373" class="m s11">handed-off</text>
+<text data-ab-part="edge:reviewer&gt;ready-to-merge" x="388" y="521" class="m s11">approved</text>
+<text data-ab-part="edge:integrator&gt;merged" x="388" y="669" class="m s11">merged</text>
+<text data-ab-part="edge:reviewer&gt;needs-changes" x="268" y="468" text-anchor="end" class="m s11 t-rework">changes-requested</text>
+<text data-ab-part="edge:ready-to-merge&gt;needs-changes" x="299" y="546" text-anchor="end" class="m s11 t-rework">on-conflict · launcher</text>
+<text data-ab-part="edge:integrator&gt;needs-changes" x="268" y="616" text-anchor="end" class="m s11 t-rework">changes-requested</text>
+<text data-ab-part="edge:needs-changes&gt;implementer" x="268" y="320" text-anchor="end" class="m s11 t-rework">revise the same PR</text>
+<text data-ab-part="edge:issue-preparer&gt;human" x="487" y="150" class="m s11 t-stop">needs-human</text>
+<text data-ab-part="edge:implementer&gt;human" x="487" y="320" class="m s11 t-stop">blocked</text>
+<text data-ab-part="edge:reviewer&gt;human" x="487" y="468" class="m s11 t-stop">blocked</text>
+<text data-ab-part="edge:integrator&gt;human" x="487" y="616" class="m s11 t-stop">maintainer-merge, blocked</text>
+<line x1="8" y1="734" x2="778" y2="734" class="rule"/>
+<g><rect x="16" y="748" width="57" height="20" rx="10" class="pill"/><circle cx="23" cy="758" r="3" class="t-done"/><text x="31" y="762" class="m s11">ready</text><text x="79" y="762" class="s11 muted">GitHub label</text></g>
+<g><rect x="172" y="752" width="24" height="12" rx="3" class="k-agent"/><text x="202" y="762" class="s11 muted">agent role</text></g>
+<g><rect x="283" y="752" width="24" height="12" rx="3" class="k-stop panel"/><text x="313" y="762" class="s11 muted">a person decides</text></g>
+<g><path d="M431,758 L455,758" class="e e-rework dash" marker-end="url(#b-default-rework)"/><text x="461" y="762" class="s11 muted">set by the launcher</text></g>
+</svg>
+</template>
+<template id="t-second-opinion"><svg xmlns="http://www.w3.org/2000/svg" class="ab ab-dark" viewBox="0 0 557 415" width="557" height="415" role="img" aria-label="Flow: issue-preparer, needs-review, issue-reviewer, needs-preparation, ready, Delivery picks it up. Legend: GitHub label, like ready">
+<style>.ab.ab-dark{--bg:var(--ab-bg,#171c24);--ink:var(--ab-ink,#e5e9ef);--muted:var(--ab-muted,#98a2b0);--line:var(--ab-line,#2c3440);--band:var(--ab-band,#151b23);--surface:var(--ab-surface,#1d232d);--neutral:var(--ab-neutral,#b6bbc3);--neutral-bg:var(--ab-neutral-bg,#303640);--agent:var(--ab-agent,#85aaa5);--agent-bg:var(--ab-agent-bg,#232d2b);--system:var(--ab-system,#98a5bf);--system-bg:var(--ab-system-bg,#262a31);--rework:var(--ab-rework,#b29d87);--rework-bg:var(--ab-rework-bg,#2c2720);--stop:var(--ab-stop,#ac8c88);--stop-bg:var(--ab-stop-bg,#2b2221);--done:var(--ab-done,#95b09c);--done-bg:var(--ab-done-bg,#222a24);}
+.ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
+.ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.ab .s11{font-size:11px}.ab .s12{font-size:12px}.ab .s13{font-size:13px}
+.ab .muted{fill:var(--muted)}.ab .b{font-weight:600}
+.ab .cap{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.08em;fill:var(--muted)}
+.ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
+.ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
+.ab .knockout{fill:none;stroke:var(--bg);stroke-width:5.6}.ab .knockout-band{stroke:var(--band)}
+.ab .arrow{fill:none;stroke:none}
+.ab .t-ink{fill:var(--muted)}.ab .e-ink{stroke:var(--muted)}.ab .k-ink{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-muted{fill:var(--muted)}.ab .e-muted{stroke:var(--muted)}.ab .k-muted{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-neutral{fill:var(--neutral)}.ab .e-neutral{stroke:var(--neutral)}.ab .k-neutral{fill:var(--neutral-bg);stroke:var(--neutral);stroke-width:1.5}.ab .t-agent{fill:var(--agent)}.ab .e-agent{stroke:var(--agent)}.ab .k-agent{fill:var(--agent-bg);stroke:var(--agent);stroke-width:1.5}.ab .t-system{fill:var(--system)}.ab .e-system{stroke:var(--system)}.ab .k-system{fill:var(--system-bg);stroke:var(--system);stroke-width:1.5}.ab .t-done{fill:var(--done)}.ab .e-done{stroke:var(--done)}.ab .k-done{fill:var(--done-bg);stroke:var(--done);stroke-width:1.5}.ab .t-rework{fill:var(--rework)}.ab .e-rework{stroke:var(--rework)}.ab .k-rework{fill:var(--rework-bg);stroke:var(--rework);stroke-width:1.5}.ab .t-stop{fill:var(--stop)}.ab .e-stop{stroke:var(--stop)}.ab .k-stop{fill:var(--stop-bg);stroke:var(--stop);stroke-width:1.5}
+.ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}</style>
+<defs>
+<marker id="b-second-opinion-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker>
+<marker id="b-second-opinion-rework" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-rework"/></marker>
+</defs>
+<path d="M424,62 L424,100" class="e e-ink"/>
+<path d="M424,134 L424,164" class="e e-ink"/>
+<path d="M424,225 L424,263" class="e e-ink"/>
+<path d="M424,297 L424,327" class="e e-ink"/>
+<path d="M306,195 L174,195" class="e e-rework"/>
+<path d="M95,178 L95,39 L306,39" class="e e-rework"/>
+<path d="M424,62 L424,100" class="arrow" marker-end="url(#b-second-opinion-ink)"/>
+<path d="M424,134 L424,164" class="arrow" marker-end="url(#b-second-opinion-ink)"/>
+<path d="M424,225 L424,263" class="arrow" marker-end="url(#b-second-opinion-ink)"/>
+<path d="M424,297 L424,327" class="arrow" marker-end="url(#b-second-opinion-ink)"/>
+<path d="M306,195 L174,195" class="arrow" marker-end="url(#b-second-opinion-rework)"/>
+<path d="M95,39 L306,39" class="arrow" marker-end="url(#b-second-opinion-rework)"/>
+<g>
+<rect x="306" y="16" width="235" height="46" rx="8" class="k-agent"/>
+<text x="424" y="35" text-anchor="middle" class="m s13 b t-agent">issue-preparer</text>
+<text x="424" y="52" text-anchor="middle" class="s11 muted">grounds the issue, writes criteria</text>
+</g>
+<g><rect x="363" y="100" width="122" height="34" rx="17" class="pill"/>
+<circle cx="377" cy="117" r="5" class="t-agent"/>
+<text x="389" y="121" class="m s12">needs-review</text></g>
+<g>
+<rect x="306" y="164" width="235" height="61" rx="8" class="k-agent"/>
+<text x="424" y="183" text-anchor="middle" class="m s13 b t-agent">issue-reviewer</text>
+<text x="424" y="200" text-anchor="middle" class="s11 muted">second opinion, ideally on another</text>
+<text x="424" y="215" text-anchor="middle" class="s11 muted">model</text>
+</g>
+<g><rect x="388" y="263" width="72" height="34" rx="17" class="pill"/>
+<circle cx="402" cy="280" r="5" class="t-done"/>
+<text x="414" y="284" class="m s12">ready</text></g>
+<rect x="337" y="327" width="174" height="34" rx="17" class="k-done"/>
+<text x="424" y="348" text-anchor="middle" class="s12 b t-done">Delivery picks it up</text>
+<g><rect x="16" y="178" width="158" height="34" rx="17" class="pill"/>
+<circle cx="30" cy="195" r="5" class="t-rework"/>
+<text x="42" y="199" class="m s12">needs-preparation</text></g>
+<text x="434" y="85" class="m s11">review</text>
+<text x="434" y="248" class="m s11">approved</text>
+<text x="296" y="188" text-anchor="end" class="m s11 t-rework">changes-requested</text>
+<text x="296" y="32" text-anchor="end" class="m s11 t-rework">apply the findings</text>
+<line x1="8" y1="377" x2="549" y2="377" class="rule"/>
+<g><rect x="16" y="391" width="24" height="12" rx="6" class="pill"/><circle cx="23" cy="397" r="3" class="t-done"/><text x="46" y="401" class="s11 muted">GitHub label, like ready</text></g>
+</svg>
+</template>
+<template id="t-cap"><svg xmlns="http://www.w3.org/2000/svg" class="ab ab-dark" viewBox="0 0 808 366" width="808" height="366" role="img" aria-label="Flow: implementer, needs-review, human, reviewer, needs-changes, ready-to-merge, The integrator picks it up. Legend: GitHub label, like ready, human involved">
+<style>.ab.ab-dark{--bg:var(--ab-bg,#171c24);--ink:var(--ab-ink,#e5e9ef);--muted:var(--ab-muted,#98a2b0);--line:var(--ab-line,#2c3440);--band:var(--ab-band,#151b23);--surface:var(--ab-surface,#1d232d);--neutral:var(--ab-neutral,#b6bbc3);--neutral-bg:var(--ab-neutral-bg,#303640);--agent:var(--ab-agent,#85aaa5);--agent-bg:var(--ab-agent-bg,#232d2b);--system:var(--ab-system,#98a5bf);--system-bg:var(--ab-system-bg,#262a31);--rework:var(--ab-rework,#b29d87);--rework-bg:var(--ab-rework-bg,#2c2720);--stop:var(--ab-stop,#ac8c88);--stop-bg:var(--ab-stop-bg,#2b2221);--done:var(--ab-done,#95b09c);--done-bg:var(--ab-done-bg,#222a24);}
+.ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
+.ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.ab .s11{font-size:11px}.ab .s12{font-size:12px}.ab .s13{font-size:13px}
+.ab .muted{fill:var(--muted)}.ab .b{font-weight:600}
+.ab .cap{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.08em;fill:var(--muted)}
+.ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
+.ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
+.ab .knockout{fill:none;stroke:var(--bg);stroke-width:5.6}.ab .knockout-band{stroke:var(--band)}
+.ab .arrow{fill:none;stroke:none}
+.ab .t-ink{fill:var(--muted)}.ab .e-ink{stroke:var(--muted)}.ab .k-ink{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-muted{fill:var(--muted)}.ab .e-muted{stroke:var(--muted)}.ab .k-muted{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-neutral{fill:var(--neutral)}.ab .e-neutral{stroke:var(--neutral)}.ab .k-neutral{fill:var(--neutral-bg);stroke:var(--neutral);stroke-width:1.5}.ab .t-agent{fill:var(--agent)}.ab .e-agent{stroke:var(--agent)}.ab .k-agent{fill:var(--agent-bg);stroke:var(--agent);stroke-width:1.5}.ab .t-system{fill:var(--system)}.ab .e-system{stroke:var(--system)}.ab .k-system{fill:var(--system-bg);stroke:var(--system);stroke-width:1.5}.ab .t-done{fill:var(--done)}.ab .e-done{stroke:var(--done)}.ab .k-done{fill:var(--done-bg);stroke:var(--done);stroke-width:1.5}.ab .t-rework{fill:var(--rework)}.ab .e-rework{stroke:var(--rework)}.ab .k-rework{fill:var(--rework-bg);stroke:var(--rework);stroke-width:1.5}.ab .t-stop{fill:var(--stop)}.ab .e-stop{stroke:var(--stop)}.ab .k-stop{fill:var(--stop-bg);stroke:var(--stop);stroke-width:1.5}
+.ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}</style>
+<defs>
+<marker id="b-cap-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker>
+<marker id="b-cap-rework" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-rework"/></marker>
+<marker id="b-cap-stop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-stop"/></marker>
+</defs>
+<path d="M380,56 L380,115" class="e e-ink"/>
+<path d="M380,161 L380,214" class="e e-ink"/>
+<path d="M380,248 L380,278" class="e e-ink"/>
+<path d="M278,138 L171,138" class="e e-rework"/>
+<path d="M106,121 L106,62" class="e e-rework"/>
+<path d="M196,39 L319,39" class="e e-rework"/>
+<path d="M483,138 L549,138" class="e e-stop"/>
+<path d="M380,56 L380,115" class="arrow" marker-end="url(#b-cap-ink)"/>
+<path d="M380,161 L380,214" class="arrow" marker-end="url(#b-cap-ink)"/>
+<path d="M380,248 L380,278" class="arrow" marker-end="url(#b-cap-ink)"/>
+<path d="M278,138 L171,138" class="arrow" marker-end="url(#b-cap-rework)"/>
+<path d="M106,121 L106,62" class="arrow" marker-end="url(#b-cap-rework)"/>
+<path d="M196,39 L319,39" class="arrow" marker-end="url(#b-cap-rework)"/>
+<path d="M483,138 L549,138" class="arrow" marker-end="url(#b-cap-stop)"/>
+<g><rect x="319" y="22" width="122" height="34" rx="17" class="pill"/>
+<circle cx="333" cy="39" r="5" class="t-agent"/>
+<text x="345" y="43" class="m s12">needs-review</text></g>
+<g>
+<rect x="278" y="115" width="205" height="46" rx="8" class="k-agent"/>
+<text x="381" y="134" text-anchor="middle" class="m s13 b t-agent">reviewer</text>
+<text x="381" y="151" text-anchor="middle" class="s11 muted">reviews the exact head commit</text>
+</g>
+<g><rect x="312" y="214" width="137" height="34" rx="17" class="pill"/>
+<circle cx="326" cy="231" r="5" class="t-done"/>
+<text x="338" y="235" class="m s12">ready-to-merge</text></g>
+<rect x="273" y="278" width="214" height="34" rx="17" class="k-done"/>
+<text x="380" y="299" text-anchor="middle" class="s12 b t-done">The integrator picks it up</text>
+<g>
+<rect x="16" y="16" width="180" height="46" rx="8" class="k-agent"/>
+<text x="106" y="35" text-anchor="middle" class="m s13 b t-agent">implementer</text>
+<text x="106" y="52" text-anchor="middle" class="s11 muted">revises the same PR</text>
+</g>
+<g><rect x="41" y="121" width="130" height="34" rx="17" class="pill"/>
+<circle cx="55" cy="138" r="5" class="t-rework"/>
+<text x="67" y="142" class="m s12">needs-changes</text></g>
+<g><rect x="549" y="92" width="243" height="92" rx="10" class="k-stop panel"/>
+<rect x="614" y="104" width="115" height="30" rx="15" class="pill"/>
+<circle cx="628" cy="119" r="5" class="t-stop"/>
+<text x="640" y="123" class="m s12">needs-human</text>
+<text x="671" y="153" text-anchor="middle" class="s12 b">A person decides</text>
+<text x="671" y="171" text-anchor="middle" class="s11 muted">ub-agents retry resets the count</text></g>
+<text x="390" y="192" class="m s11">approved, any round</text>
+<text x="268" y="131" text-anchor="end" class="m s11 t-rework">rounds 1 to 3</text>
+<text x="493" y="131" class="m s11 t-stop">round 4</text>
+<line x1="8" y1="328" x2="800" y2="328" class="rule"/>
+<g><rect x="16" y="342" width="24" height="12" rx="6" class="pill"/><circle cx="23" cy="348" r="3" class="t-done"/><text x="46" y="352" class="s11 muted">GitHub label, like ready</text></g>
+<g><rect x="212" y="342" width="24" height="12" rx="3" class="k-stop panel"/><text x="242" y="352" class="s11 muted">human involved</text></g>
+</svg>
+</template>
+<template id="t-ask"><svg xmlns="http://www.w3.org/2000/svg" class="ab ab-dark" viewBox="0 0 501 429" width="501" height="429" role="img" aria-label="Flow: agent, stopped, blocked, answer, retry, The agent runs again. Legend: GitHub label, human involved">
+<style>.ab.ab-dark{--bg:var(--ab-bg,#171c24);--ink:var(--ab-ink,#e5e9ef);--muted:var(--ab-muted,#98a2b0);--line:var(--ab-line,#2c3440);--band:var(--ab-band,#151b23);--surface:var(--ab-surface,#1d232d);--neutral:var(--ab-neutral,#b6bbc3);--neutral-bg:var(--ab-neutral-bg,#303640);--agent:var(--ab-agent,#85aaa5);--agent-bg:var(--ab-agent-bg,#232d2b);--system:var(--ab-system,#98a5bf);--system-bg:var(--ab-system-bg,#262a31);--rework:var(--ab-rework,#b29d87);--rework-bg:var(--ab-rework-bg,#2c2720);--stop:var(--ab-stop,#ac8c88);--stop-bg:var(--ab-stop-bg,#2b2221);--done:var(--ab-done,#95b09c);--done-bg:var(--ab-done-bg,#222a24);}
+.ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
+.ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.ab .s11{font-size:11px}.ab .s12{font-size:12px}.ab .s13{font-size:13px}
+.ab .muted{fill:var(--muted)}.ab .b{font-weight:600}
+.ab .cap{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.08em;fill:var(--muted)}
+.ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
+.ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
+.ab .knockout{fill:none;stroke:var(--bg);stroke-width:5.6}.ab .knockout-band{stroke:var(--band)}
+.ab .arrow{fill:none;stroke:none}
+.ab .t-ink{fill:var(--muted)}.ab .e-ink{stroke:var(--muted)}.ab .k-ink{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-muted{fill:var(--muted)}.ab .e-muted{stroke:var(--muted)}.ab .k-muted{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-neutral{fill:var(--neutral)}.ab .e-neutral{stroke:var(--neutral)}.ab .k-neutral{fill:var(--neutral-bg);stroke:var(--neutral);stroke-width:1.5}.ab .t-agent{fill:var(--agent)}.ab .e-agent{stroke:var(--agent)}.ab .k-agent{fill:var(--agent-bg);stroke:var(--agent);stroke-width:1.5}.ab .t-system{fill:var(--system)}.ab .e-system{stroke:var(--system)}.ab .k-system{fill:var(--system-bg);stroke:var(--system);stroke-width:1.5}.ab .t-done{fill:var(--done)}.ab .e-done{stroke:var(--done)}.ab .k-done{fill:var(--done-bg);stroke:var(--done);stroke-width:1.5}.ab .t-rework{fill:var(--rework)}.ab .e-rework{stroke:var(--rework)}.ab .k-rework{fill:var(--rework-bg);stroke:var(--rework);stroke-width:1.5}.ab .t-stop{fill:var(--stop)}.ab .e-stop{stroke:var(--stop)}.ab .k-stop{fill:var(--stop-bg);stroke:var(--stop);stroke-width:1.5}
+.ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}</style>
+<defs>
+<marker id="b-ask-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker>
+<marker id="b-ask-stop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-stop"/></marker>
+</defs>
+<path d="M374,77 L374,115" class="e e-stop"/>
+<path d="M374,207 L374,237" class="e e-stop"/>
+<path d="M374,311 L374,341" class="e e-ink"/>
+<path d="M262,47 L111,47 L111,133" class="e e-ink"/>
+<path d="M111,189 L111,246" class="e e-stop"/>
+<path d="M111,302 L111,358 L287,358" class="e e-ink"/>
+<path d="M374,77 L374,115" class="arrow" marker-end="url(#b-ask-stop)"/>
+<path d="M374,207 L374,237" class="arrow" marker-end="url(#b-ask-stop)"/>
+<path d="M374,311 L374,341" class="arrow" marker-end="url(#b-ask-ink)"/>
+<path d="M111,47 L111,133" class="arrow" marker-end="url(#b-ask-ink)"/>
+<path d="M111,189 L111,246" class="arrow" marker-end="url(#b-ask-stop)"/>
+<path d="M111,358 L287,358" class="arrow" marker-end="url(#b-ask-ink)"/>
+<g>
+<rect x="262" y="16" width="223" height="61" rx="8" class="k-agent"/>
+<text x="374" y="35" text-anchor="middle" class="m s13 b t-agent">agent</text>
+<text x="374" y="52" text-anchor="middle" class="s11 muted">reports needs-human with one ask</text>
+<text x="374" y="67" text-anchor="middle" class="s11 muted">per decision</text>
+</g>
+<g><rect x="279" y="115" width="190" height="92" rx="10" class="k-stop panel"/>
+<rect x="317" y="127" width="115" height="30" rx="15" class="pill"/>
+<circle cx="331" cy="142" r="5" class="t-stop"/>
+<text x="343" y="146" class="m s12">needs-human</text>
+<text x="374" y="176" text-anchor="middle" class="s12 b">Action needed comment</text>
+<text x="374" y="194" text-anchor="middle" class="s11 muted">one line per ask</text></g>
+<g><rect x="272" y="237" width="203" height="74" rx="10" class="k-stop panel"/>
+<text x="374" y="262" text-anchor="middle" class="s12 b">A person answers on GitHub</text>
+<text x="374" y="280" text-anchor="middle" class="s11 muted">removes needs-human</text>
+<text x="374" y="298" text-anchor="middle" class="s11 muted">re-adds the trigger label</text></g>
+<rect x="287" y="341" width="174" height="34" rx="17" class="k-done"/>
+<text x="374" y="362" text-anchor="middle" class="s12 b t-done">The agent runs again</text>
+<g><rect x="16" y="133" width="190" height="56" rx="10" class="k-muted panel"/>
+<text x="111" y="158" text-anchor="middle" class="s12 b">Blocked run</text>
+<text x="111" y="176" text-anchor="middle" class="s11 muted">same ask, no label</text></g>
+<g><rect x="16" y="246" width="190" height="56" rx="10" class="k-stop panel"/>
+<text x="111" y="271" text-anchor="middle" class="s12 b">ub-agents retry N</text>
+<text x="111" y="289" text-anchor="middle" class="s11 muted">with a reason</text></g>
+<text x="384" y="100" class="m s11 t-stop">needs-human</text>
+<text x="252" y="40" text-anchor="end" class="m s11">blocked</text>
+<line x1="8" y1="391" x2="493" y2="391" class="rule"/>
+<g><rect x="16" y="405" width="24" height="12" rx="6" class="pill"/><circle cx="23" cy="411" r="3" class="t-stop"/><text x="46" y="415" class="s11 muted">GitHub label</text></g>
+<g><rect x="139" y="405" width="24" height="12" rx="3" class="k-stop panel"/><text x="169" y="415" class="s11 muted">human involved</text></g>
+</svg>
+</template>
+<template id="t-outside"><svg xmlns="http://www.w3.org/2000/svg" class="ab ab-dark" viewBox="0 0 678 251" width="678" height="251" role="img" aria-label="Fan-out: Check whether approval permits the run. Approved: A maintainer started it and the input is unchanged; destination: Start the run. Outside input: The input has not been cleared by a maintainer; destination: Ask a maintainer. Edited since: The input changed after the maintainer started it; destination: Ask a maintainer">
+<style>.ab.ab-dark{--bg:var(--ab-bg,#171c24);--ink:var(--ab-ink,#e5e9ef);--muted:var(--ab-muted,#98a2b0);--line:var(--ab-line,#2c3440);--band:var(--ab-band,#151b23);--surface:var(--ab-surface,#1d232d);--neutral:var(--ab-neutral,#b6bbc3);--neutral-bg:var(--ab-neutral-bg,#303640);--agent:var(--ab-agent,#85aaa5);--agent-bg:var(--ab-agent-bg,#232d2b);--system:var(--ab-system,#98a5bf);--system-bg:var(--ab-system-bg,#262a31);--rework:var(--ab-rework,#b29d87);--rework-bg:var(--ab-rework-bg,#2c2720);--stop:var(--ab-stop,#ac8c88);--stop-bg:var(--ab-stop-bg,#2b2221);--done:var(--ab-done,#95b09c);--done-bg:var(--ab-done-bg,#222a24);}
+.ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
+.ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.ab .s11{font-size:11px}.ab .s12{font-size:12px}.ab .s13{font-size:13px}
+.ab .muted{fill:var(--muted)}.ab .b{font-weight:600}
+.ab .cap{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.08em;fill:var(--muted)}
+.ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
+.ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
+.ab .knockout{fill:none;stroke:var(--bg);stroke-width:5.6}.ab .knockout-band{stroke:var(--band)}
+.ab .arrow{fill:none;stroke:none}
+.ab .t-ink{fill:var(--muted)}.ab .e-ink{stroke:var(--muted)}.ab .k-ink{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-muted{fill:var(--muted)}.ab .e-muted{stroke:var(--muted)}.ab .k-muted{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-neutral{fill:var(--neutral)}.ab .e-neutral{stroke:var(--neutral)}.ab .k-neutral{fill:var(--neutral-bg);stroke:var(--neutral);stroke-width:1.5}.ab .t-agent{fill:var(--agent)}.ab .e-agent{stroke:var(--agent)}.ab .k-agent{fill:var(--agent-bg);stroke:var(--agent);stroke-width:1.5}.ab .t-system{fill:var(--system)}.ab .e-system{stroke:var(--system)}.ab .k-system{fill:var(--system-bg);stroke:var(--system);stroke-width:1.5}.ab .t-done{fill:var(--done)}.ab .e-done{stroke:var(--done)}.ab .k-done{fill:var(--done-bg);stroke:var(--done);stroke-width:1.5}.ab .t-rework{fill:var(--rework)}.ab .e-rework{stroke:var(--rework)}.ab .k-rework{fill:var(--rework-bg);stroke:var(--rework);stroke-width:1.5}.ab .t-stop{fill:var(--stop)}.ab .e-stop{stroke:var(--stop)}.ab .k-stop{fill:var(--stop-bg);stroke:var(--stop);stroke-width:1.5}
+.ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}
+.ab [data-ab-part]{transition:opacity .3s}
+.ab.ab-playing [data-ab-part]:not(.ab-on):not(.ab-done){opacity:.3}
+.ab .ab-on rect:not(.gap),.ab .ab-on path.decision{stroke:var(--ab-play,var(--ink));stroke-width:2.4}
+.ab path.e.ab-on,.ab .ab-on path.e{stroke:var(--ab-play,var(--ink));stroke-width:2.4;stroke-dasharray:6 5;animation:ab-run .6s linear infinite}
+@keyframes ab-run{to{stroke-dashoffset:-11}}
+@media (prefers-reduced-motion:reduce){.ab path.e.ab-on,.ab .ab-on path.e{animation:none}}</style>
+<defs><marker id="b-outside-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker></defs>
+<g data-ab-part="step">
+<rect x="16" y="86.5" width="150" height="78" rx="8" class="k-agent"/>
+<text x="32" y="112.5" class="m s13 b t-agent">Check whether</text>
+<text x="32" y="130.5" class="m s13 b t-agent">approval</text>
+<text x="32" y="148.5" class="m s13 b t-agent">permits the run</text>
+</g>
+<g data-line="4" data-ab-part="outcome:1">
+<path d="M166,125.5 C183,125.5 183,33 200,33 L214,33" class="e e-ink" marker-end="url(#b-outside-ink)"/>
+<rect x="216" y="16" width="170" height="34" rx="8" class="k-done"/>
+<text x="230" y="38" class="m s12 b">Approved</text>
+<path d="M386,33 L414,33" class="e e-ink" marker-end="url(#b-outside-ink)"/>
+<text x="426" y="37" class="m s12 b">Start the run</text>
+<text x="426" y="55" class="m s12 muted">A maintainer started it and the</text>
+<text x="426" y="73" class="m s12 muted">input is unchanged</text>
+</g>
+<g data-line="5" data-ab-part="outcome:2">
+<path d="M166,125.5 C183,125.5 183,112 200,112 L214,112" class="e e-ink" marker-end="url(#b-outside-ink)"/>
+<rect x="216" y="95" width="170" height="34" rx="8" class="k-stop panel"/>
+<text x="230" y="117" class="m s12 b">Outside input</text>
+<path d="M386,112 L414,112" class="e e-ink" marker-end="url(#b-outside-ink)"/>
+<text x="426" y="116" class="m s12 b">Ask a maintainer</text>
+<text x="426" y="134" class="m s12 muted">The input has not been cleared</text>
+<text x="426" y="152" class="m s12 muted">by a maintainer</text>
+</g>
+<g data-line="6" data-ab-part="outcome:3">
+<path d="M166,125.5 C183,125.5 183,191 200,191 L214,191" class="e e-ink" marker-end="url(#b-outside-ink)"/>
+<rect x="216" y="174" width="170" height="34" rx="8" class="k-stop panel"/>
+<text x="230" y="196" class="m s12 b">Edited since</text>
+<path d="M386,191 L414,191" class="e e-ink" marker-end="url(#b-outside-ink)"/>
+<text x="426" y="195" class="m s12 b">Ask a maintainer</text>
+<text x="426" y="213" class="m s12 muted">The input changed after the</text>
+<text x="426" y="231" class="m s12 muted">maintainer started it</text>
+</g>
+</svg>
+</template>
+<template id="t-dependabot"><svg xmlns="http://www.w3.org/2000/svg" class="ab ab-dark" viewBox="0 0 900 427" width="900" height="427" role="img" aria-label="Flow: Dependabot, dependencies, integrator, human, needs-changes, implementer, Merged · minor or patch. Legend: dependencies: GitHub label, agent role, a person decides">
+<style>.ab.ab-dark{--bg:var(--ab-bg,#171c24);--ink:var(--ab-ink,#e5e9ef);--muted:var(--ab-muted,#98a2b0);--line:var(--ab-line,#2c3440);--band:var(--ab-band,#151b23);--surface:var(--ab-surface,#1d232d);--neutral:var(--ab-neutral,#b6bbc3);--neutral-bg:var(--ab-neutral-bg,#303640);--agent:var(--ab-agent,#85aaa5);--agent-bg:var(--ab-agent-bg,#232d2b);--system:var(--ab-system,#98a5bf);--system-bg:var(--ab-system-bg,#262a31);--rework:var(--ab-rework,#b29d87);--rework-bg:var(--ab-rework-bg,#2c2720);--stop:var(--ab-stop,#ac8c88);--stop-bg:var(--ab-stop-bg,#2b2221);--done:var(--ab-done,#95b09c);--done-bg:var(--ab-done-bg,#222a24);}
+.ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
+.ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.ab .s11{font-size:11px}.ab .s12{font-size:12px}.ab .s13{font-size:13px}
+.ab .muted{fill:var(--muted)}.ab .b{font-weight:600}
+.ab .cap{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.08em;fill:var(--muted)}
+.ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
+.ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
+.ab .knockout{fill:none;stroke:var(--bg);stroke-width:5.6}.ab .knockout-band{stroke:var(--band)}
+.ab .arrow{fill:none;stroke:none}
+.ab .t-ink{fill:var(--muted)}.ab .e-ink{stroke:var(--muted)}.ab .k-ink{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-muted{fill:var(--muted)}.ab .e-muted{stroke:var(--muted)}.ab .k-muted{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-neutral{fill:var(--neutral)}.ab .e-neutral{stroke:var(--neutral)}.ab .k-neutral{fill:var(--neutral-bg);stroke:var(--neutral);stroke-width:1.5}.ab .t-agent{fill:var(--agent)}.ab .e-agent{stroke:var(--agent)}.ab .k-agent{fill:var(--agent-bg);stroke:var(--agent);stroke-width:1.5}.ab .t-system{fill:var(--system)}.ab .e-system{stroke:var(--system)}.ab .k-system{fill:var(--system-bg);stroke:var(--system);stroke-width:1.5}.ab .t-done{fill:var(--done)}.ab .e-done{stroke:var(--done)}.ab .k-done{fill:var(--done-bg);stroke:var(--done);stroke-width:1.5}.ab .t-rework{fill:var(--rework)}.ab .e-rework{stroke:var(--rework)}.ab .k-rework{fill:var(--rework-bg);stroke:var(--rework);stroke-width:1.5}.ab .t-stop{fill:var(--stop)}.ab .e-stop{stroke:var(--stop)}.ab .k-stop{fill:var(--stop-bg);stroke:var(--stop);stroke-width:1.5}
+.ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}
+.ab [data-ab-part]{transition:opacity .3s}
+.ab.ab-playing [data-ab-part]:not(.ab-on):not(.ab-done){opacity:.3}
+.ab .ab-on rect:not(.gap),.ab .ab-on path.decision{stroke:var(--ab-play,var(--ink));stroke-width:2.4}
+.ab path.e.ab-on,.ab .ab-on path.e{stroke:var(--ab-play,var(--ink));stroke-width:2.4;stroke-dasharray:6 5;animation:ab-run .6s linear infinite}
+@keyframes ab-run{to{stroke-dashoffset:-11}}
+@media (prefers-reduced-motion:reduce){.ab path.e.ab-on,.ab .ab-on path.e{animation:none}}</style>
+<defs>
+<marker id="b-dependabot-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker>
+<marker id="b-dependabot-rework" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-rework"/></marker>
+<marker id="b-dependabot-stop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-stop"/></marker>
+</defs>
+<path data-ab-part="edge:dependabot&gt;dependencies" d="M405,62 L405,92" class="e e-ink"/>
+<path data-ab-part="edge:dependencies&gt;integrator" d="M405,126 L405,164" class="e e-ink"/>
+<path data-ab-part="edge:integrator&gt;merged" d="M405,225 L405,331" class="e e-ink"/>
+<path data-ab-part="edge:integrator&gt;needs-changes" d="M287,195 L181,195" class="e e-rework"/>
+<path data-ab-part="edge:needs-changes&gt;implementer" d="M116,212 L116,255" class="e e-rework"/>
+<path data-ab-part="edge:implementer&gt;integrator" d="M215,278 L251,278 L251,205 L287,205" class="e e-rework"/>
+<path data-ab-part="edge:integrator&gt;human" d="M522,195 L694,195" class="e e-stop"/>
+<path data-ab-part="edge:dependabot&gt;dependencies" d="M405,62 L405,92" class="arrow" marker-end="url(#b-dependabot-ink)"/>
+<path data-ab-part="edge:dependencies&gt;integrator" d="M405,126 L405,164" class="arrow" marker-end="url(#b-dependabot-ink)"/>
+<path data-ab-part="edge:integrator&gt;merged" d="M405,225 L405,331" class="arrow" marker-end="url(#b-dependabot-ink)"/>
+<path data-ab-part="edge:integrator&gt;needs-changes" d="M287,195 L181,195" class="arrow" marker-end="url(#b-dependabot-rework)"/>
+<path data-ab-part="edge:needs-changes&gt;implementer" d="M116,212 L116,255" class="arrow" marker-end="url(#b-dependabot-rework)"/>
+<path data-ab-part="edge:implementer&gt;integrator" d="M251,205 L287,205" class="arrow" marker-end="url(#b-dependabot-rework)"/>
+<path data-ab-part="edge:integrator&gt;human" d="M522,195 L694,195" class="arrow" marker-end="url(#b-dependabot-stop)"/>
+<g data-ab-part="node:dependabot"><g>
+<rect x="287" y="16" width="235" height="46" rx="8" class="k-agent"/>
+<text x="405" y="35" text-anchor="middle" class="m s13 b t-agent">Dependabot</text>
+<text x="405" y="52" text-anchor="middle" class="s11 muted">opens a pull request</text>
+</g></g>
+<g data-ab-part="node:dependencies"><g><rect x="344" y="92" width="122" height="34" rx="17" class="pill"/>
+<circle cx="358" cy="109" r="5" class="t-agent"/>
+<text x="370" y="113" class="m s12">dependencies</text></g></g>
+<g data-ab-part="node:integrator"><g>
+<rect x="287" y="164" width="235" height="61" rx="8" class="k-agent"/>
+<text x="405" y="183" text-anchor="middle" class="m s13 b t-agent">integrator</text>
+<text x="405" y="200" text-anchor="middle" class="s11 muted">reads the title and the diff, runs</text>
+<text x="405" y="215" text-anchor="middle" class="s11 muted">the gates</text>
+</g></g>
+<g data-ab-part="node:needs-changes"><g><rect x="51" y="178" width="130" height="34" rx="17" class="pill"/>
+<circle cx="65" cy="195" r="5" class="t-rework"/>
+<text x="77" y="199" class="m s12">needs-changes</text></g></g>
+<g data-ab-part="node:implementer"><g>
+<rect x="16" y="255" width="199" height="46" rx="8" class="k-agent"/>
+<text x="116" y="274" text-anchor="middle" class="m s13 b t-agent">implementer</text>
+<text x="116" y="291" text-anchor="middle" class="s11 muted">one fix round, then a review</text>
+</g></g>
+<g data-ab-part="node:merged"><rect x="308" y="331" width="194" height="34" rx="17" class="k-done"/>
+<text x="405" y="352" text-anchor="middle" class="s12 b t-done">Merged · minor or patch</text></g>
+<g data-ab-part="node:human"><g><rect x="694" y="164" width="190" height="137" rx="10" class="k-stop panel"/>
+<rect x="732" y="208" width="115" height="30" rx="15" class="pill"/>
+<circle cx="746" cy="223" r="5" class="t-stop"/>
+<text x="758" y="227" class="m s12">needs-human</text>
+<text x="789" y="257" text-anchor="middle" class="s12 b">A person decides</text></g></g>
+<text data-ab-part="edge:dependencies&gt;integrator" x="415" y="149" class="m s11">trigger</text>
+<text data-ab-part="edge:integrator&gt;merged" x="415" y="282" class="m s11">gates green</text>
+<text data-ab-part="edge:integrator&gt;needs-changes" x="277" y="188" text-anchor="end" class="m s11 t-rework">a gate failed</text>
+<text data-ab-part="edge:integrator&gt;human" x="532" y="188" class="m s11 t-stop">major, or still failing</text>
+<line x1="8" y1="381" x2="892" y2="381" class="rule"/>
+<g><rect x="16" y="395" width="104" height="20" rx="10" class="pill"/><circle cx="23" cy="405" r="3" class="t-done"/><text x="31" y="409" class="m s11">dependencies</text><text x="126" y="409" class="s11 muted">GitHub label</text></g>
+<g><rect x="219" y="399" width="24" height="12" rx="3" class="k-agent"/><text x="249" y="409" class="s11 muted">agent role</text></g>
+<g><rect x="330" y="399" width="24" height="12" rx="3" class="k-stop panel"/><text x="360" y="409" class="s11 muted">a person decides</text></g>
+</svg>
+</template>
+<script>
+// Plays a timeline on a rendered SVG by setting classes on its parts: the
+// current step's parts are `ab-on`, earlier ones `ab-done`, and the SVG is
+// `ab-playing` so later parts fade. It draws no controls; the host does.
+
+                                              
+
+                         
+	                                                
+	                       
+	                          
+	             
+	              
+	                                                               
+	                          
+	             
+	                 
+	                                                            
+	              
+	                
+ 
+
+                                
+	                                                       
+	                                    
+	                                                                  
+	               
+ 
+
+function createPlayer(svg         , timeline                , options                = {})         {
+	const parts = new Map                   ();
+	for (const el of svg.querySelectorAll("[data-ab-part]")) {
+		const name = el.getAttribute("data-ab-part") ?? "";
+		parts.set(name, [...(parts.get(name) ?? []), el]);
+	}
+	let index = -1;
+	let playing = false;
+	let timer                                           ;
+
+	const paint = () => {
+		for (const list of parts.values()) for (const el of list) el.classList.remove("ab-on", "ab-done");
+		svg.classList.toggle("ab-playing", index >= 0);
+		for (let k = 0; k <= index; k++) {
+			for (const name of timeline[k].parts) {
+				for (const el of parts.get(name) ?? []) {
+					el.classList.toggle("ab-on", k === index);
+					el.classList.toggle("ab-done", k < index);
+				}
+			}
+		}
+	};
+	const schedule = () => {
+		clearTimeout(timer);
+		if (!playing || index < 0) return;
+		timer = setTimeout(() => {
+			if (index + 1 < timeline.length) show(index + 1);
+			else if (options.loop) show(0);
+			else {
+				playing = false;
+				options.onChange?.(player);
+			}
+		}, timeline[index].ms);
+	};
+	const show = (i        ) => {
+		index = Math.max(-1, Math.min(i, timeline.length - 1));
+		paint();
+		schedule();
+		options.onChange?.(player);
+	};
+	const player         = {
+		get index() {
+			return index;
+		},
+		get playing() {
+			return playing;
+		},
+		play() {
+			if (!timeline.length) return;
+			playing = true;
+			// Playing from the end starts over.
+			show(index < 0 || index >= timeline.length - 1 ? 0 : index);
+		},
+		pause() {
+			playing = false;
+			clearTimeout(timer);
+			options.onChange?.(player);
+		},
+		seek: show,
+		next: () => show(index + 1),
+		previous: () => show(Math.max(index - 1, 0)),
+		reset() {
+			playing = false;
+			show(-1);
+		},
+		destroy() {
+			clearTimeout(timer);
+			playing = false;
+		},
+	};
+	return player;
+}
+
+const DATA = {"default":[{"name":"Clean run","id":"clean-run","steps":[{"parts":["node:start"],"ms":1500,"caption":"A maintainer adds the first label","who":"Maintainer"},{"parts":["node:needs-preparation","edge:start>needs-preparation"],"ms":1500,"caption":"labels it needs-preparation","who":"Loop"},{"parts":["node:issue-preparer","edge:needs-preparation>issue-preparer"],"ms":1500,"caption":"Small and clear: scope and criteria written, marked ready","who":"Issue preparer"},{"parts":["node:ready","edge:issue-preparer>ready"],"ms":1500,"caption":"labels it ready","who":"Loop"},{"parts":["node:implementer","edge:ready>implementer"],"ms":2400,"caption":"Changed 4 files, ran the tests, opened the PR","who":"Implementer"},{"parts":["node:needs-review","edge:implementer>needs-review"],"ms":1500,"caption":"labels it needs-review","who":"Loop"},{"parts":["node:reviewer","edge:needs-review>reviewer"],"ms":2200,"caption":"Approved against the acceptance criteria","who":"Reviewer"},{"parts":["node:ready-to-merge","edge:reviewer>ready-to-merge"],"ms":1500,"caption":"labels it ready-to-merge","who":"Loop"},{"parts":["node:integrator","edge:ready-to-merge>integrator"],"ms":2000,"caption":"Confirmed CI and the merge policy","who":"Integrator"},{"parts":["node:merged","edge:integrator>merged"],"ms":3000,"caption":"Merged, issue closed","who":"Merged"}]},{"name":"Changes requested","id":"changes-requested","steps":[{"parts":["node:start"],"ms":1500,"caption":"A maintainer adds the first label","who":"Maintainer"},{"parts":["node:needs-preparation","edge:start>needs-preparation"],"ms":1500,"caption":"labels it needs-preparation","who":"Loop"},{"parts":["node:issue-preparer","edge:needs-preparation>issue-preparer"],"ms":1500,"caption":"Scope and criteria written, marked ready","who":"Issue preparer"},{"parts":["node:ready","edge:issue-preparer>ready"],"ms":1500,"caption":"labels it ready","who":"Loop"},{"parts":["node:implementer","edge:ready>implementer"],"ms":2400,"caption":"Changed 7 files, ran 2,109 tests, opened the PR","who":"Implementer"},{"parts":["node:needs-review","edge:implementer>needs-review"],"ms":1500,"caption":"labels it needs-review","who":"Loop"},{"parts":["node:reviewer","edge:needs-review>reviewer"],"ms":2400,"caption":"Changes requested: P1 in the parser","who":"Reviewer"},{"parts":["node:needs-changes","edge:reviewer>needs-changes"],"ms":1500,"caption":"labels it needs-changes","who":"Loop"},{"parts":["node:implementer","edge:needs-changes>implementer"],"ms":2400,"caption":"Revised the same PR, fixed the P1","who":"Implementer"},{"parts":["node:needs-review","edge:implementer>needs-review"],"ms":1500,"caption":"labels it needs-review","who":"Loop"},{"parts":["node:reviewer","edge:needs-review>reviewer"],"ms":1500,"caption":"Approved","who":"Reviewer"},{"parts":["node:ready-to-merge","edge:reviewer>ready-to-merge"],"ms":1500,"caption":"labels it ready-to-merge","who":"Loop"},{"parts":["node:integrator","edge:ready-to-merge>integrator"],"ms":2000,"caption":"Confirmed CI and the merge policy","who":"Integrator"},{"parts":["node:merged","edge:integrator>merged"],"ms":3000,"caption":"Merged, issue closed","who":"Merged"}]},{"name":"Needs a person","id":"needs-a-person","steps":[{"parts":["node:start"],"ms":1600,"caption":"A maintainer adds the first label","who":"Maintainer"},{"parts":["node:needs-preparation","edge:start>needs-preparation"],"ms":1600,"caption":"labels it needs-preparation","who":"Loop"},{"parts":["node:issue-preparer","edge:needs-preparation>issue-preparer"],"ms":2600,"caption":"Two ways to build it, and the choice is a product call","who":"Issue preparer"},{"parts":["node:human","edge:issue-preparer>human"],"ms":3200,"caption":"needs-human: one question with options and a recommendation. Answer it, relabel, and the loop carries on","who":"Human"}]}],"second-opinion":[],"cap":[],"ask":[],"outside":[{"name":"A run","id":"a-run","steps":[{"parts":["step","outcome:1"],"ms":2000,"caption":"labels it Approved","who":"Loop"},{"parts":["step","outcome:2"],"ms":2000,"caption":"labels it Outside input","who":"Loop"},{"parts":["step","outcome:3"],"ms":2000,"caption":"labels it Edited since","who":"Loop"}]}],"dependabot":[{"name":"Clean merge","id":"clean-merge","steps":[{"parts":["node:dependabot"],"ms":1800,"caption":"Bump vite from 7.1.2 to 7.1.5","who":"Dependabot files"},{"parts":["node:dependencies","edge:dependabot>dependencies"],"ms":1800,"caption":"Trusted bot, fast path to the integrator","who":"Loop picks"},{"parts":["node:integrator","edge:dependencies>integrator"],"ms":2600,"caption":"No conflicts, tests pass, no gate prevents merging","who":"Integrator"},{"parts":["node:merged","edge:integrator>merged"],"ms":3000,"caption":"PR merged, no human bothered 🥳","who":"Merged"}]},{"name":"Tests failing","id":"tests-failing","steps":[{"parts":["node:dependabot"],"ms":1800,"caption":"Bump zod from 4.4.3 to 4.6.6","who":"Dependabot files"},{"parts":["node:dependencies","edge:dependabot>dependencies"],"ms":1800,"caption":"Trusted bot, fast path to the integrator","who":"Loop picks"},{"parts":["node:integrator","edge:dependencies>integrator"],"ms":2400,"caption":"A test fails on the new version, so it gets one fix round","who":"Integrator"},{"parts":["node:needs-changes","edge:integrator>needs-changes"],"ms":1800,"caption":"Labels it needs-changes","who":"Loop hands back"},{"parts":["node:implementer","edge:needs-changes>implementer"],"ms":2800,"caption":"Fixes two assertions; a reviewer checks the fix","who":"Implementer"},{"parts":["node:integrator","edge:implementer>integrator"],"ms":2200,"caption":"Tests pass now, no gate prevents merging","who":"Integrator"},{"parts":["node:merged","edge:integrator>merged"],"ms":3000,"caption":"PR merged after one fix round, still no human bothered 🛠️","who":"Merged"}]},{"name":"Fix fails","id":"fix-fails","steps":[{"parts":["node:dependabot"],"ms":1800,"caption":"Bump zod from 4.4.3 to 4.6.6","who":"Dependabot files"},{"parts":["node:dependencies","edge:dependabot>dependencies"],"ms":1800,"caption":"Trusted bot, fast path to the integrator","who":"Loop picks"},{"parts":["node:integrator","edge:dependencies>integrator"],"ms":2400,"caption":"A test fails on the new version, so it gets one fix round","who":"Integrator"},{"parts":["node:needs-changes","edge:integrator>needs-changes"],"ms":1800,"caption":"Labels it needs-changes","who":"Loop hands back"},{"parts":["node:implementer","edge:needs-changes>implementer"],"ms":2600,"caption":"Adapts the code; a reviewer checks the fix","who":"Implementer"},{"parts":["node:integrator","edge:implementer>integrator"],"ms":2400,"caption":"Still failing after the one round, so no second try","who":"Integrator"},{"parts":["node:human","edge:integrator>human"],"ms":3000,"caption":"A person decides: fix by hand, pin the old version or close it","who":"Needs a human"}]},{"name":"Major release","id":"major-release","steps":[{"parts":["node:dependabot"],"ms":1800,"caption":"Bump a package to a new major version","who":"Dependabot files"},{"parts":["node:dependencies","edge:dependabot>dependencies"],"ms":1800,"caption":"Trusted bot, fast path to the integrator","who":"Loop picks"},{"parts":["node:integrator","edge:dependencies>integrator"],"ms":2600,"caption":"Tests pass, but a major can change behaviour","who":"Integrator"},{"parts":["node:human","edge:integrator>human"],"ms":3000,"caption":"A person reads the changelog and approves the merge","who":"Needs a human"}]}]};
+const META = {"default":{"name":"The default ub-agents loop","intent":"Label an issue. Get back a reviewed, merged pull request.","for":"Every new repository","about":null,"prompt":"I want to adopt the \"The default ub-agents loop\" workflow from the ub-agents gallery.\n\nWorkflow: https://agents.uberblick.ai/workflows/default/\n\nPlease:\n1. Read the workflow page and explain the flow in a few lines. If this session isn't inside the repository that runs ub-agents, ask me which one first.\n2. Compare it with my ub-agents.yaml and the loop policy under .agents/, and list what is missing.\n3. Propose the smallest change that adopts it, show me the diff before writing anything, and don't push."},"split":{"name":"Split a big issue","intent":"Work that won't fit one reviewable PR becomes sub-issues before anyone codes.","for":"Teams with fuzzy tickets","about":null,"prompt":"I want to adopt the \"Split a big issue\" workflow from the ub-agents gallery.\n\nWorkflow: https://agents.uberblick.ai/workflows/split/\n\nPlease:\n1. Read the workflow page and explain the flow in a few lines. If this session isn't inside the repository that runs ub-agents, ask me which one first.\n2. Compare it with my ub-agents.yaml and the loop policy under .agents/, and list what is missing.\n3. Propose the smallest change that adopts it, show me the diff before writing anything, and don't push."},"second-opinion":{"name":"Second opinion on the plan","intent":"Another model checks the issue before anyone writes code. Mistakes are cheapest here.","for":"Teams mixing Claude and Codex","about":null,"prompt":"I want to adopt the \"Second opinion on the plan\" workflow from the ub-agents gallery.\n\nWorkflow: https://agents.uberblick.ai/workflows/second-opinion/\n\nPlease:\n1. Read the workflow page and explain the flow in a few lines. If this session isn't inside the repository that runs ub-agents, ask me which one first.\n2. Compare it with my ub-agents.yaml and the loop policy under .agents/, and list what is missing.\n3. Propose the smallest change that adopts it, show me the diff before writing anything, and don't push."},"cap":{"name":"Review rounds with a cap","intent":"Three rounds of back and forth, then a person settles it.","for":"Everyone running reviewers","about":null,"prompt":"I want to adopt the \"Review rounds with a cap\" workflow from the ub-agents gallery.\n\nWorkflow: https://agents.uberblick.ai/workflows/cap/\n\nPlease:\n1. Read the workflow page and explain the flow in a few lines. If this session isn't inside the repository that runs ub-agents, ask me which one first.\n2. Compare it with my ub-agents.yaml and the loop policy under .agents/, and list what is missing.\n3. Propose the smallest change that adopts it, show me the diff before writing anything, and don't push."},"ask":{"name":"Ask a person, then carry on","intent":"An agent stops on a real decision, asks one clear question, and resumes when you answer.","for":"Everyone","about":null,"prompt":"I want to adopt the \"Ask a person, then carry on\" workflow from the ub-agents gallery.\n\nWorkflow: https://agents.uberblick.ai/workflows/ask/\n\nPlease:\n1. Read the workflow page and explain the flow in a few lines. If this session isn't inside the repository that runs ub-agents, ask me which one first.\n2. Compare it with my ub-agents.yaml and the loop policy under .agents/, and list what is missing.\n3. Propose the smallest change that adopts it, show me the diff before writing anything, and don't push."},"outside":{"name":"Outside contributions, safely","intent":"Strangers' issues reach your agents only after a maintainer says go.","for":"Open-source maintainers","about":null,"prompt":"I want to adopt the \"Outside contributions, safely\" workflow from the ub-agents gallery.\n\nWorkflow: https://agents.uberblick.ai/workflows/outside/\n\nPlease:\n1. Read the workflow page and explain the flow in a few lines. If this session isn't inside the repository that runs ub-agents, ask me which one first.\n2. Compare it with my ub-agents.yaml and the loop policy under .agents/, and list what is missing.\n3. Propose the smallest change that adopts it, show me the diff before writing anything, and don't push."},"dependabot":{"name":"Dependabot on autopilot","intent":"Patch and minor bumps merge on their own once the tests pass, without anyone opening the PR. Majors, and failures one fix round can't settle, wait for you.","for":"Maintainers buried in bump PRs","about":{"article":{"title":"Letting agents auto-merge Dependabot pull requests","url":"https://uberblick.ai/blog/2026/agents-auto-merge-dependabot"},"runs":"Uberblick, CampfireFM backend, CampfireFM Studio","why":["Dependabot is good at noticing updates and bad at finishing them, so its pull requests pile up. Here its own `dependencies` label sends each one straight to the integrator, which works from the title and the diff and never reads the release notes in the body. Clean bumps merge, a failing test gets one fix round, and majors wait for a person."],"gains":["Security fixes land the day they are published, not when someone finds a quiet hour.","Nobody reads release notes for a patch bump again.","Majors still get a human eye, with every gate already green."],"person":"Major updates, and anything one fix round can't settle.","prompt":"I want to adopt the \"Dependabot on autopilot\" workflow from the ub-agents gallery.\n\nWorkflow: https://agents.uberblick.ai/workflows/dependabot/\nArticle: https://uberblick.ai/blog/2026/agents-auto-merge-dependabot\nDocs: https://agents.uberblick.ai/docs/configuration/approvals.html#trusted-pr-authors\n\nHow it works: Dependabot labels its pull requests `dependencies`, and that label starts the integrator directly, with no issue and no preparation. Agents work from the title and the diff; the PR body (third-party release notes) is withheld. With every gate green, a patch or minor update merges. A failing test or a conflict gets one fix round from the implementer plus a review. A major update, or a second failure, goes to a person with needs-human.\n\nPlease:\n1. Explain this flow in a few lines. If this session isn't inside the repository that runs ub-agents, ask me which one first.\n2. Check my setup: the ub-agents version (needs 0.3.5 or later), ub-agents.yaml, .github/dependabot.yml and the loop policy under .agents/.\n3. Propose the changes: `trusted-pr-authors: [dependabot]`, `dependencies` added to the integrator's trigger, and a \"Dependabot pull requests\" section in the shared loop policy (merge tiers, one fix round, majors to a person, never read the body).\n4. Show me the diff before writing anything, and don't push."},"prompt":"I want to adopt the \"Dependabot on autopilot\" workflow from the ub-agents gallery.\n\nWorkflow: https://agents.uberblick.ai/workflows/dependabot/\nArticle: https://uberblick.ai/blog/2026/agents-auto-merge-dependabot\nDocs: https://agents.uberblick.ai/docs/configuration/approvals.html#trusted-pr-authors\n\nHow it works: Dependabot labels its pull requests `dependencies`, and that label starts the integrator directly, with no issue and no preparation. Agents work from the title and the diff; the PR body (third-party release notes) is withheld. With every gate green, a patch or minor update merges. A failing test or a conflict gets one fix round from the implementer plus a review. A major update, or a second failure, goes to a person with needs-human.\n\nPlease:\n1. Explain this flow in a few lines. If this session isn't inside the repository that runs ub-agents, ask me which one first.\n2. Check my setup: the ub-agents version (needs 0.3.5 or later), ub-agents.yaml, .github/dependabot.yml and the loop policy under .agents/.\n3. Propose the changes: `trusted-pr-authors: [dependabot]`, `dependencies` added to the integrator's trigger, and a \"Dependabot pull requests\" section in the shared loop policy (merge tiers, one fix round, majors to a person, never read the body).\n4. Show me the diff before writing anything, and don't push."},"cross-model":{"name":"Reviewer on a different model","intent":"Whoever wrote the code, the other model reviews it. Blind spots rarely overlap.","for":"Teams with Claude and Codex","about":null,"prompt":"I want to adopt the \"Reviewer on a different model\" workflow from the ub-agents gallery.\n\nWorkflow: https://agents.uberblick.ai/workflows/cross-model/\n\nPlease:\n1. Read the workflow page and explain the flow in a few lines. If this session isn't inside the repository that runs ub-agents, ask me which one first.\n2. Compare it with my ub-agents.yaml and the loop policy under .agents/, and list what is missing.\n3. Propose the smallest change that adopts it, show me the diff before writing anything, and don't push."},"intent":{"name":"Start from the product pages","intent":"Agents read what the product should do from the workspace, not from a stale docs folder.","for":"Teams using Uberblick","about":null,"prompt":"I want to adopt the \"Start from the product pages\" workflow from the ub-agents gallery.\n\nWorkflow: https://agents.uberblick.ai/workflows/intent/\n\nPlease:\n1. Read the workflow page and explain the flow in a few lines. If this session isn't inside the repository that runs ub-agents, ask me which one first.\n2. Compare it with my ub-agents.yaml and the loop policy under .agents/, and list what is missing.\n3. Propose the smallest change that adopts it, show me the diff before writing anything, and don't push."},"shortcut":{"name":"Skip review, or hand it back","intent":"A trivial change goes straight to merge checks; an unclear issue goes back to preparation.","for":"Teams tired of ceremony","about":null,"prompt":"I want to adopt the \"Skip review, or hand it back\" workflow from the ub-agents gallery.\n\nWorkflow: https://agents.uberblick.ai/workflows/shortcut/\n\nPlease:\n1. Read the workflow page and explain the flow in a few lines. If this session isn't inside the repository that runs ub-agents, ask me which one first.\n2. Compare it with my ub-agents.yaml and the loop policy under .agents/, and list what is missing.\n3. Propose the smallest change that adopts it, show me the diff before writing anything, and don't push."},"production":{"name":"Grounded in production data","intent":"Before scoping a bug, the preparer checks monitoring, so the issue names the real cause.","for":"Teams on call for their own code","about":null,"prompt":"I want to adopt the \"Grounded in production data\" workflow from the ub-agents gallery.\n\nWorkflow: https://agents.uberblick.ai/workflows/production/\n\nPlease:\n1. Read the workflow page and explain the flow in a few lines. If this session isn't inside the repository that runs ub-agents, ask me which one first.\n2. Compare it with my ub-agents.yaml and the loop policy under .agents/, and list what is missing.\n3. Propose the smallest change that adopts it, show me the diff before writing anything, and don't push."},"copilot":{"name":"Copilot as a second reviewer","intent":"On a serious finding the reviewer asks Copilot too, and nothing merges until both are answered.","for":"Teams who want another pair of eyes","about":null,"prompt":"I want to adopt the \"Copilot as a second reviewer\" workflow from the ub-agents gallery.\n\nWorkflow: https://agents.uberblick.ai/workflows/copilot/\n\nPlease:\n1. Read the workflow page and explain the flow in a few lines. If this session isn't inside the repository that runs ub-agents, ask me which one first.\n2. Compare it with my ub-agents.yaml and the loop policy under .agents/, and list what is missing.\n3. Propose the smallest change that adopts it, show me the diff before writing anything, and don't push."},"maintainer-merge":{"name":"Agents get it green, you press merge","intent":"Schema changes and other risky diffs arrive fully checked, one click away from merged.","for":"Teams with a production database","about":null,"prompt":"I want to adopt the \"Agents get it green, you press merge\" workflow from the ub-agents gallery.\n\nWorkflow: https://agents.uberblick.ai/workflows/maintainer-merge/\n\nPlease:\n1. Read the workflow page and explain the flow in a few lines. If this session isn't inside the repository that runs ub-agents, ask me which one first.\n2. Compare it with my ub-agents.yaml and the loop policy under .agents/, and list what is missing.\n3. Propose the smallest change that adopts it, show me the diff before writing anything, and don't push."},"milestones":{"name":"Milestone branches","intent":"Each milestone collects its PRs on its own branch; main only moves when the team merges the milestone.","for":"Teams releasing in chunks","about":null,"prompt":"I want to adopt the \"Milestone branches\" workflow from the ub-agents gallery.\n\nWorkflow: https://agents.uberblick.ai/workflows/milestones/\n\nPlease:\n1. Read the workflow page and explain the flow in a few lines. If this session isn't inside the repository that runs ub-agents, ask me which one first.\n2. Compare it with my ub-agents.yaml and the loop policy under .agents/, and list what is missing.\n3. Propose the smallest change that adopts it, show me the diff before writing anything, and don't push."},"preview":{"name":"The preview deploy is a gate","intent":"Playwright and the preview deploy must pass at the exact head that merges.","for":"Teams with preview deploys","about":null,"prompt":"I want to adopt the \"The preview deploy is a gate\" workflow from the ub-agents gallery.\n\nWorkflow: https://agents.uberblick.ai/workflows/preview/\n\nPlease:\n1. Read the workflow page and explain the flow in a few lines. If this session isn't inside the repository that runs ub-agents, ask me which one first.\n2. Compare it with my ub-agents.yaml and the loop policy under .agents/, and list what is missing.\n3. Propose the smallest change that adopts it, show me the diff before writing anything, and don't push."},"slack":{"name":"The loop tells the team","intent":"Every start and every outcome lands in a Slack channel, so nobody polls GitHub.","for":"Teams who live in Slack","about":null,"prompt":"I want to adopt the \"The loop tells the team\" workflow from the ub-agents gallery.\n\nWorkflow: https://agents.uberblick.ai/workflows/slack/\n\nPlease:\n1. Read the workflow page and explain the flow in a few lines. If this session isn't inside the repository that runs ub-agents, ask me which one first.\n2. Compare it with my ub-agents.yaml and the loop policy under .agents/, and list what is missing.\n3. Propose the smallest change that adopts it, show me the diff before writing anything, and don't push."}};
+const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const SITE = 'agents.uberblick.ai/workflows/';
+const entry = document.getElementById('entry');
+const cards = new Map();
+// Cards: play one scenario, then move to the next tab, unless a person picked a tab.
+for (const el of document.querySelectorAll('.card.plays')) {
+  const slug = el.dataset.slug, list = DATA[slug], svg = el.querySelector('svg.ab');
+  const tabs = [...el.querySelectorAll('.tabs button')];
+  const c = { i: 0, pinned: false, p: null, visible: false, timer: 0 };
+  const load = (i) => {
+    c.i = i; c.p?.destroy(); clearTimeout(c.timer);
+    tabs.forEach((t, k) => { t.classList.toggle('on', k === i); t.setAttribute('aria-selected', k === i); });
+    const steps = list[i].steps;
+    c.p = createPlayer(svg, steps, { loop: c.pinned || list.length === 1, onChange(p) {
+      if (!p.playing && p.index === steps.length - 1 && !c.pinned && list.length > 1) c.timer = setTimeout(() => { load((c.i + 1) % list.length); if (c.visible) c.p.play(); }, 1600);
+    }});
+  };
+  tabs.forEach((t, k) => t.onclick = (e) => { e.stopPropagation(); c.pinned = true; load(k); if (!still) c.p.play(); });
+  load(0);
+  cards.set(el, c);
+}
+const pauseCards = () => cards.forEach((c) => { clearTimeout(c.timer); c.p.pause(); });
+if (!still) {
+  const io = new IntersectionObserver((es) => es.forEach((e) => {
+    const c = cards.get(e.target); c.visible = e.isIntersecting;
+    if (e.isIntersecting && !entry.classList.contains('open')) { if (!c.p.playing) c.p.play(); } else if (!e.isIntersecting) { clearTimeout(c.timer); c.p.pause(); }
+  }), { threshold: .45 });
+  cards.forEach((_, el) => io.observe(el));
+}
+// Entry view: one tab per scenario; every flow and scenario has its own address.
+let ep, current = null;
+function show(slug, si, fromHash) {
+  const list = DATA[slug]; if (!list?.length) return;
+  si = Math.max(0, Math.min(si, list.length - 1));
+  pauseCards();
+  const sc = list[si], steps = sc.steps;
+  if (current !== slug) {
+    document.getElementById('etitle').textContent = META[slug].name;
+    document.getElementById('eintent').textContent = META[slug].intent;
+    const big = document.getElementById('ebig'); big.replaceChildren(document.getElementById('t-' + slug).content.cloneNode(true));
+    const bsvg = big.querySelector('svg'); const vb = bsvg?.viewBox?.baseVal; if (vb?.width) bsvg.style.width = 'min(100%, ' + Math.round(vb.width * 0.78) + 'px)';
+    current = slug;
+    const m = META[slug], prose = document.getElementById('eprose');
+    const inline = (t) => { const f = document.createDocumentFragment(); t.split(/`([^`]+)`/).forEach((part, k) => f.append(k % 2 ? Object.assign(document.createElement('code'), { textContent: part }) : part)); return f; };
+    prose.replaceChildren();
+    if (m.about) {
+      const h = (t) => Object.assign(document.createElement('h3'), { textContent: t });
+      prose.append(h('Why it exists'));
+      m.about.why.forEach((t) => { const p = document.createElement('p'); p.append(inline(t)); prose.append(p); });
+      prose.append(h('What you gain'));
+      const ul = document.createElement('ul'); m.about.gains.forEach((t) => { const li = document.createElement('li'); li.append(inline(t)); ul.append(li); }); prose.append(ul);
+      prose.append(h('Where a person steps in'));
+      const pp = Object.assign(document.createElement('p'), { className: 'person', textContent: m.about.person }); prose.append(pp);
+    } else {
+      const p = document.createElement('p'); p.textContent = m.intent + ' The full story for this workflow is still to be written.'; prose.append(p);
+    }
+    const link = 'claude-cli://open?q=' + encodeURIComponent(m.prompt);
+    document.getElementById('eadopt').href = link;
+    document.getElementById('eadoptweb').href = 'https://claude.ai/new?q=' + encodeURIComponent(m.prompt);
+    const copy = document.getElementById('ecopy');
+    copy.textContent = 'Copy the prompt';
+    copy.onclick = () => { try { navigator.clipboard.writeText(m.prompt).then(() => { copy.textContent = 'Copied'; }, () => {}); } catch (e) {} };
+    const art = document.getElementById('earticle'), runs = document.getElementById('eruns');
+    art.hidden = !m.about?.article; if (m.about?.article) { art.href = m.about.article.url; art.textContent = m.about.article.title + ' →'; }
+    runs.hidden = !m.about?.runs; if (m.about?.runs) runs.textContent = 'We run it on: ' + m.about.runs;
+  }
+  const hash = list.length > 1 ? slug + '-' + sc.id : slug;
+  const url = SITE + slug + '/' + (list.length > 1 ? sc.id + '/' : '');
+  const u = document.getElementById('eurl'); u.title = 'Copy link: ' + url;
+  u.onclick = () => { try { navigator.clipboard.writeText('https://' + url).then(() => { u.classList.add('ok'); setTimeout(() => u.classList.remove('ok'), 1200); }, () => {}); } catch (e) {} };
+  if (!fromHash && location.hash !== '#' + hash) history.replaceState(null, '', '#' + hash);
+  const tabs = document.getElementById('etabs');
+  tabs.hidden = list.length < 2;
+  tabs.replaceChildren(...list.map((x, k) => { const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'tab'); b.textContent = x.name; b.className = k === si ? 'on' : ''; b.setAttribute('aria-selected', k === si); b.onclick = () => show(slug, k); return b; }));
+  const lines = document.getElementById('elines'), segs = document.getElementById('esegs'), btn = document.getElementById('eplay');
+  lines.replaceChildren(); segs.replaceChildren(...steps.map(() => document.createElement('b')));
+  const prev = document.getElementById('eprev'), next = document.getElementById('enext');
+  ep?.destroy();
+  ep = createPlayer(document.querySelector('#ebig svg.ab'), steps, { onChange(p) {
+    const end = p.index === steps.length - 1;
+    btn.textContent = p.playing ? 'Pause' : end ? 'Replay' : 'Play';
+    prev.disabled = p.index <= 0; next.disabled = end;
+    [...segs.children].forEach((b, k) => b.className = k === p.index ? 'on' : k < p.index ? 'done' : '');
+    while (lines.children.length > p.index + 1) lines.lastChild.remove();
+    for (let k = lines.children.length; k <= p.index; k++) {
+      const s = steps[k], li = document.createElement('li');
+      li.innerHTML = '<b></b><span class="msg"></span>';
+      li.querySelector('b').textContent = s.who;
+      li.querySelector('.msg').textContent = s.caption;
+      lines.append(li);
+    }
+    lines.querySelector('.cur')?.classList.remove('cur'); lines.lastChild?.classList.add('cur');
+    const st = steps[p.index];
+    document.getElementById('nowstep').textContent = p.index >= 0 ? (p.index + 1) + '/' + steps.length : '';
+    document.getElementById('nowwho').textContent = st ? st.who : '';
+    document.getElementById('nowsay').textContent = st ? st.caption : 'Press play to watch this run';
+    lines.scrollTop = lines.scrollHeight;
+  }});
+  const replay = () => { ep.reset(); ep.play(); };
+  btn.onclick = () => ep.playing ? ep.pause() : (ep.index === steps.length - 1 ? replay() : ep.play());
+  prev.onclick = () => { ep.pause(); ep.previous(); };
+  next.onclick = () => { ep.pause(); ep.next(); };
+  [...segs.children].forEach((b, k) => b.onclick = () => { ep.pause(); ep.seek(k); });
+  entry.classList.add('open'); document.body.style.overflow = 'hidden';
+  if (!still) ep.play(); else ep.seek(steps.length - 1);
+}
+function close(fromHash) {
+  entry.classList.remove('open'); document.body.style.overflow = ''; ep?.pause(); current = null;
+  if (!fromHash && location.hash) history.replaceState(null, '', location.pathname + location.search);
+  if (!still) cards.forEach((c, el) => { const r = el.getBoundingClientRect(); if (r.top < innerHeight && r.bottom > 0) c.p.play(); });
+}
+function route() {
+  const h = location.hash.slice(1);
+  if (!h) { if (entry.classList.contains('open')) close(true); return; }
+  const slug = Object.keys(DATA).filter((s) => h === s || h.startsWith(s + '-')).sort((a, b) => b.length - a.length)[0];
+  if (!slug || !DATA[slug].length) return;
+  const rest = h.slice(slug.length + 1);
+  const si = Math.max(0, DATA[slug].findIndex((x) => x.id === rest));
+  show(slug, si, true);
+}
+document.querySelectorAll('.card').forEach((el) => {
+  if (!DATA[el.dataset.slug]?.length) return;
+  const go = () => { const c = cards.get(el); show(el.dataset.slug, c ? c.i : 0); };
+  el.onclick = go;
+  el.onkeydown = (e) => { if (e.target === el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); go(); } };
+});
+document.getElementById('eclose').onclick = () => close();
+addEventListener('keydown', (e) => {
+  if (!entry.classList.contains('open')) return;
+  if (e.key === 'Escape') close();
+  else if (e.key === 'ArrowLeft') document.getElementById('eprev').click();
+  else if (e.key === 'ArrowRight') document.getElementById('enext').click();
+});
+addEventListener('hashchange', route);
+route();
+</script>
+</body>
+</html>
