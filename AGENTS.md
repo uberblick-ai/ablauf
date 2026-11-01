@@ -21,9 +21,12 @@ Uberblick documents, in light and dark, is the one hard requirement.
   the review page. `spike/PRIMER.md`: the one page an authoring agent reads.
 - **GitHub issues:** authorized scope and maintainer decisions, from trusted
   authors only (below).
+- **ablauf corpus** (MCP `ablauf-corpus`, bound by `.uberblick.json`): decision
+  records on lasting questions, such as Mermaid compatibility. Search it before
+  changing the format.
 - **Code and tests:** implemented behavior.
 - **uberblick-2:** how Uberblick shows the block, and the figures its documents
-  need.
+  need; its corpus is MCP `uberblick-product-corpus`.
 
 A discrepancy is a gap to resolve, not permission to silently override another
 source.
