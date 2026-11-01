@@ -110,14 +110,7 @@ fallback, so partial overrides can mix palettes.
 
 ## Verify a page integration
 
-With the CSS above and an inline diagram containing all tones, emulate
-each system colour scheme in browser developer tools. Under **each** system
-scheme, switch the root attribute light → dark → light without replacing the
-SVG. Check node text, outlines and fills, edges, arrowheads, edge labels and
-legend samples. All should follow the host palette, including host light on
-system dark and host dark on system light.
-
-Remove the host CSS and check that the automatic SVG follows the emulated
-system scheme. Render once with each pinned `scheme` and check that its
-fallback stays fixed under both system settings. Reapply the host CSS to
-confirm that its overrides also work for pinned SVGs.
+Use the exported `TOKENS`, `Token`, `Palette` and DOM-free `checkPalette`
+paint contract. [Test your integration](https://ablauf.uberblick.ai/guides/testing)
+shows how to resolve effective colours inside an inline SVG, including a shadow
+root, and documents accepted colour forms, composited grounds, font and CSP checks.

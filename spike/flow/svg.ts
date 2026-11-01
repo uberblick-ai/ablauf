@@ -23,6 +23,7 @@ import {
 	wrap,
 } from "./grid.ts";
 import type { Tone } from "./parse.ts";
+import type { Palette } from "./paint.ts";
 
 export const LIGHT = {
 	bg: "#ffffff",
@@ -43,7 +44,7 @@ export const LIGHT = {
 	"stop-bg": "#ede6e5",
 	done: "#536e5a",
 	"done-bg": "#e8ede9",
-};
+} satisfies Palette;
 export const DARK: typeof LIGHT = {
 	bg: "#171c24",
 	ink: "#e5e9ef",

@@ -2,6 +2,11 @@
 
 ## 0.2.1
 
+- Export `TOKENS`, `Token`, `Palette` and DOM-free `checkPalette` for host text
+  contrast checks, with a [Test your integration](https://ablauf.uberblick.ai/guides/testing)
+  guide. Built-in colours and rendered SVG bytes are unchanged.
+  ([#76](https://github.com/uberblick-ai/ablauf/issues/76))
+
 - Same-column edges into and out of decisions stay on the column centreline
   across odd and even node widths, preserving inline-label clearance.
   ([#82](https://github.com/uberblick-ai/ablauf/issues/82))

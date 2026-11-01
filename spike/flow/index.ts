@@ -7,6 +7,7 @@ import { type SvgOptions, toSvg } from "./svg.ts";
 export type { Diagnostic } from "./parse.ts";
 export type { FontOptions, FontsOptions, TextStyle } from "./fonts.ts";
 export { DARK, LIGHT } from "./svg.ts";
+export { TOKENS, checkPalette, type Token, type Palette } from "./paint.ts";
 
 export interface RenderOptions extends SvgOptions {
 	fonts?: FontsOptions;
