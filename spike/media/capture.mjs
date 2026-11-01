@@ -1,12 +1,10 @@
-// Captures the README's PNG and GIF figures from the current build, in light
+// Captures the README's PNG figures from the current build, in light
 // and dark: `pnpm build && node spike/media/capture.mjs`. Needs Playwright with
-// Chromium, ImageMagick, and IBM Plex Sans and Mono installed as system fonts. None
+// Chromium and IBM Plex Sans and Mono installed as system fonts. None
 // of these enter the package or CI; the figures are committed.
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { createRequire } from "node:module";
-import { tmpdir } from "node:os";
 import { extname, join, normalize } from "node:path";
 
 const root = join(import.meta.dirname, "..", "..");
@@ -46,7 +44,6 @@ const css = (scheme) => {
 	return `
 		html,body{margin:0;background:${c.bg};color:${c.ink};font-family:"IBM Plex Sans",sans-serif}
 		#stage{display:inline-block;padding:28px 32px}
-		#stage button{font:inherit}
 		.fig svg{display:block;height:auto}
 		.row{display:flex;gap:28px;align-items:flex-start}
 		.src{margin:0;padding:18px 20px;background:${c.panel};border:1px solid ${c.line};border-radius:10px;
@@ -62,61 +59,12 @@ const css = (scheme) => {
 async function open(scheme, scale = 2) {
 	const context = await browser.newContext({ deviceScaleFactor: scale, colorScheme: scheme, viewport: { width: 1800, height: 1200 } });
 	const tab = await context.newPage();
-	await tab.clock.install({ time: 0 });
 	await tab.goto(origin);
 	await tab.addStyleTag({ content: css(scheme) });
 	return { context, tab };
 }
 
 const flowSource = (name) => readFileSync(join(root, "spike", "examples", `${name}.flow`), "utf8");
-
-// A played flow with the package's own controls: one GIF per scheme.
-async function playback(scheme, name, file, width) {
-	const { context, tab } = await open(scheme, 1.5);
-	const timelines = await tab.evaluate(
-		async ({ source, scheme, width }) => {
-			const { render } = await import("/dist/index.js");
-			const { mountPlayback } = await import("/dist/playback.js");
-			const stage = document.createElement("div");
-			stage.id = "stage";
-			const fig = document.createElement("div");
-			fig.className = "fig";
-			fig.style.width = `${width}px`;
-			const result = render(source, { idPrefix: "readme", scheme });
-			fig.innerHTML = result.svg;
-			fig.querySelector("svg").style.width = "100%";
-			stage.append(fig);
-			document.body.append(stage);
-			window.mount = mountPlayback(fig, fig.querySelector("svg"), result.timelines);
-			return result.timelines;
-		},
-		{ source: flowSource(name), scheme, width },
-	);
-	await tab.evaluate(() => document.fonts.ready);
-	const dir = mkdtempSync(join(tmpdir(), "ablauf-gif-"));
-	const frames = [];
-	const shot = async (ms) => {
-		const path = join(dir, `${String(frames.length).padStart(3, "0")}.png`);
-		await tab.locator("#stage").screenshot({ path });
-		frames.push({ path, ms });
-	};
-	await shot(1600);
-	for (let scenario = 0; scenario < timelines.length; scenario++) {
-		const tabs = tab.getByRole("tab");
-		if (scenario > 0) await tabs.nth(scenario).click();
-		await tab.getByRole("button", { name: /Play|Replay/ }).click();
-		for (const step of timelines[scenario].steps) {
-			await shot(step.ms);
-			await tab.clock.runFor(step.ms);
-		}
-		await shot(1400);
-	}
-	// ImageMagick keeps every frame with its own delay, in hundredths of a second.
-	const args = frames.flatMap((f) => ["-delay", String(Math.round(f.ms / 10)), f.path]);
-	execFileSync("convert", [...args, "-dither", "None", "-colors", "128", "-layers", "Optimize", join(out, file)]);
-	rmSync(dir, { recursive: true });
-	await context.close();
-}
 
 // Source beside its figure: what an author writes and what a reader sees.
 async function sourceAndFigure(scheme, name, file, width, lines) {
@@ -184,7 +132,6 @@ async function kinds(scheme, file) {
 }
 
 for (const scheme of ["light", "dark"]) {
-	await playback(scheme, "loop-play", `playback-${scheme}.gif`, 720);
 	await sourceAndFigure(scheme, "deploy", `source-${scheme}.png`, 560);
 	await kinds(scheme, `kinds-${scheme}.png`);
 	console.log(`${scheme}: done`);

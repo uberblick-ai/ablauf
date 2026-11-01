@@ -54,7 +54,7 @@ description = "Show what moved between the loop and the loop with a role inserte
 run = "pnpm -s measure"
 
 [tasks.media]
-description = "Capture the README's PNG and GIF figures (needs Playwright, ImageMagick, IBM Plex)"
+description = "Capture the README's PNG figures (needs Playwright and IBM Plex)"
 run = ["pnpm -s build", "node spike/media/capture.mjs"]
 
 [tasks.site]
