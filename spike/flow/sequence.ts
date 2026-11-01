@@ -7,11 +7,20 @@ import { esc, markerPrefix, svgStyle } from "./svg.ts";
 
 interface Participant { id: string; title: string; tone: Tone; line: number }
 interface Message { from: Participant; to: Participant; response: boolean; label: string; line: number }
+type GroupKind = "alt" | "opt" | "loop" | "group";
+interface Group {
+	kind: GroupKind; label: string; line: number; parent?: Group; depth: number;
+	first: number; last: number; self: number; left: number; right: number; top: number; bottom: number;
+}
+type Row = { type: "message"; message: Message } | { [K in "open" | "else" | "end"]: { type: K; group: Group; label: string; line: number } }["open" | "else" | "end"]
+	| { type: "note"; participants: Participant[]; label: string; line: number }
+	| { type: "section"; label: string; line: number };
+const RESERVED = new Set(["alt", "opt", "loop", "group", "else", "end", "note", "section"]);
 const WIDTH = 678;
 const GUTTER = 22;
 const RIGHT = WIDTH - 8;
 const LEADING = 18;
-const STYLE = ".ab .seq-lane{fill:var(--neutral-bg)}.ab .seq-life{stroke:var(--line);stroke-width:1;stroke-opacity:.5}.ab .seq-response{stroke-width:1.2}";
+const STYLE = ".ab .seq-lane{fill:var(--neutral-bg)}.ab .seq-life{stroke:var(--line);stroke-width:1;stroke-opacity:.5}.ab .seq-response{stroke-width:1.2}.ab .seq-group{fill:var(--neutral-bg)}.ab .seq-kind{fill:var(--ink)}.ab .seq-note{fill:var(--rework-bg)}.ab .seq-note-text{fill:var(--rework)}.ab .seq-divider{stroke:var(--line);stroke-width:1;stroke-dasharray:2 4}.ab .seq-rule{stroke:var(--line);stroke-width:1}";
 
 // Fixed bounds apply to words and unbroken tokens alike. Use the same mono
 // metrics as the emitted face, and always consume a glyph to make progress.
@@ -42,6 +51,17 @@ export function renderSequence(source: string, options: RenderOptions = {}) {
 	const participants: Participant[] = [];
 	const byId = new Map<string, Participant>();
 	const messages: Message[] = [];
+	const rows: Row[] = [];
+	const groups: Group[] = [];
+	const stack: Group[] = [];
+	const touch = (people: Participant[]) => {
+		const group = stack.at(-1);
+		if (group) for (const p of people) {
+			const index = participants.indexOf(p);
+			group.first = Math.min(group.first, index);
+			group.last = Math.max(group.last, index);
+		}
+	};
 	const invalid: { line: number; text: string }[] = [];
 	let sawHeader = false;
 	let sawMessage = false;
@@ -64,6 +84,7 @@ export function renderSequence(source: string, options: RenderOptions = {}) {
 			const id = /^([^\s"]+)/.exec(rest)?.[1];
 			if (!id) error(line, "participant needs an id");
 			else {
+				if (RESERVED.has(id)) error(line, `reserved annotation id \`${id}\`; choose another participant id`);
 				rest = rest.slice(id.length);
 				if (rest && !/^\s/.test(rest)) error(line, "expected whitespace after participant id");
 				rest = rest.trimStart();
@@ -98,6 +119,47 @@ export function renderSequence(source: string, options: RenderOptions = {}) {
 					byId.set(id, participant);
 				}
 			}
+		} else if (/^(alt|opt|loop|group|else|end|note|section)(?:\s|$)/.test(text)) {
+			const keyword = /^\S+/.exec(text)?.[0] as string;
+			const label = text.slice(keyword.length).trim();
+			if (["alt", "opt", "loop", "group"].includes(keyword)) {
+				if (!label) error(line, `${keyword} needs a label`);
+				else {
+					const group: Group = { kind: keyword as GroupKind, label, line, parent: stack.at(-1), depth: stack.length,
+						first: Infinity, last: -1, self: -1, left: 0, right: 0, top: 0, bottom: 0 };
+					groups.push(group); stack.push(group);
+					rows.push({ type: "open", group, label, line });
+				}
+			} else if (keyword === "else") {
+				const group = stack.at(-1);
+				if (!label) error(line, "else needs a label");
+				if (group?.kind !== "alt") error(line, "else requires the current group to be alt");
+				if (diagnostics.length === before && group) rows.push({ type: "else", group, label, line });
+			} else if (keyword === "end") {
+				if (label) error(line, "end must have no trailing text");
+				if (!stack.length) error(line, "end without an open group");
+				if (diagnostics.length === before) rows.push({ type: "end", group: stack.pop() as Group, label, line });
+			} else if (keyword === "section") {
+				const title = /^"([^"]*)"$/.exec(label)?.[1];
+				if (!title?.trim()) error(line, "section needs a non-empty flow-quoted title and no trailing text");
+				if (stack.length) error(line, "section cannot occur inside a group");
+				if (diagnostics.length === before && title) rows.push({ type: "section", label: title, line });
+			} else {
+				const colon = label.indexOf(":");
+				const head = colon < 0 ? label : label.slice(0, colon);
+				// Literal splitting and trimming keep long malformed whitespace
+				// linear, without competing whitespace repetitions in regexes.
+				const ids = /^over(?:\s|$)/.test(head) ? head.slice(4).trim().split(",").map((id) => id.trim()) : undefined;
+				const noteText = colon < 0 ? "" : label.slice(colon + 1).trim();
+				if (!ids || ids.length < 1 || ids.length > 2 || ids.some((id) => !id || /\s/.test(id)) || new Set(ids).size !== ids.length || !noteText)
+					error(line, "note needs over, one or two distinct participant ids, a colon and non-empty text");
+				else for (const id of ids) if (!byId.has(id)) error(line, `unknown note participant \`${id}\``);
+				if (diagnostics.length === before && ids) {
+					const people = ids.map((id) => byId.get(id) as Participant);
+					touch(people);
+					rows.push({ type: "note", participants: people, label: noteText, line });
+				}
+			}
 		} else {
 			const colon = text.indexOf(":");
 			if (colon < 0) error(line, "message needs a colon before its label");
@@ -118,10 +180,28 @@ export function renderSequence(source: string, options: RenderOptions = {}) {
 				const to = byId.get(toId);
 				for (const id of new Set([fromId, toId]))
 					if (!byId.has(id)) error(line, `unknown message participant \`${id}\``);
-				if (from && to && colon >= 0) messages.push({ from, to, response: arrow === "-.->", label: text.slice(colon + 1).trim(), line });
+				if (from && to && colon >= 0) {
+					const message = { from, to, response: arrow === "-.->", label: text.slice(colon + 1).trim(), line };
+					messages.push(message); rows.push({ type: "message", message }); touch([from, to]);
+					const group = stack.at(-1);
+					if (group && from === to) group.self = Math.max(group.self, participants.indexOf(from));
+				}
 			}
 		}
 		if (diagnostics.length > before) invalid.push({ line, text });
+	}
+	for (const group of [...stack].reverse()) {
+		error(group.line, `unclosed ${group.kind} group; closing at EOF`);
+		rows.push({ type: "end", group, label: "", line: group.line });
+	}
+	// Propagate touched lanes bottom-up without recursion or a syntax depth cap.
+	for (const group of [...groups].reverse()) {
+		if (group.last < 0) { group.first = 0; group.last = Math.max(0, participants.length - 1); }
+		if (group.parent) {
+			group.parent.first = Math.min(group.parent.first, group.first);
+			group.parent.last = Math.max(group.parent.last, group.last);
+			group.parent.self = Math.max(group.parent.self, group.self);
+		}
 	}
 
 	const mode = options.scheme === "light" ? "light" : options.scheme === "dark" ? "dark" : "auto";
@@ -132,6 +212,21 @@ export function renderSequence(source: string, options: RenderOptions = {}) {
 	const textLines = (lines: string[], x: number, y: number, classes: string, anchor = "") => lines.map((text, i) => `<text x="${x}" y="${y + i * LEADING}"${anchor ? ` text-anchor="${anchor}"` : ""} class="m ${classes}">${esc(text)}</text>`);
 	const titles = participants.map((p) => wrapped(p.title, laneWidth - 16, 12, 600));
 	const headerBottom = 36 + Math.max(1, ...titles.map((t) => t.length)) * LEADING;
+	for (const group of groups) {
+		const first = group.last < 0 ? 0 : group.first;
+		const last = group.last < 0 ? Math.max(0, participants.length - 1) : group.last;
+		const inset = Math.min(group.depth, 6) * Math.min(4, laneWidth / 48);
+		group.left = Math.max(GUTTER + 2 + inset, GUTTER + first * laneWidth + 2 + inset);
+		group.right = Math.min(RIGHT - inset, GUTTER + (last + 1) * laneWidth - 2 - inset);
+		if (group.self >= 0) {
+			const from = centre(participants[group.self]);
+			group.right = Math.min(RIGHT, Math.max(group.right, from + Math.min(24, (RIGHT - from) / 2) + 4));
+		}
+		if (group.parent) {
+			group.left = Math.max(group.left, group.parent.left);
+			group.right = Math.min(group.right, group.parent.right);
+		}
+	}
 	const body: string[] = [];
 	const defs: string[] = [];
 	const prefix = `${markerPrefix(options)}-seq`;
@@ -139,7 +234,56 @@ export function renderSequence(source: string, options: RenderOptions = {}) {
 		defs.push(`<marker id="${prefix}-${tone}" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-${tone}"/></marker>`);
 	if (messages.some((m) => m.response)) defs.push(`<marker id="${prefix}-response" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10" class="e e-muted seq-response"/></marker>`);
 	let y = headerBottom;
-	for (const [i, message] of messages.entries()) {
+	let step = 0;
+	const drawing: Group[] = [];
+	for (const row of rows) {
+		if (row.type === "end") { row.group.bottom = y; drawing.pop(); y += 8; continue; }
+		if (row.type === "open" || row.type === "else") {
+			const group = row.group;
+			if (row.type === "open") { group.top = y; drawing.push(group); }
+			else {
+				body.push(`<line x1="${group.left + 8}" y1="${y}" x2="${group.right - 8}" y2="${y}" class="seq-divider"/>`);
+				y += 8;
+			}
+			// Separate kind and label runs keep the weight/paint explicit. The
+			// first label line follows the kind when it fits; continuations wrap.
+			const kind = (row.type === "open" ? group.kind : "else").toUpperCase();
+			const x = group.left + 10, width = group.right - x - 10;
+			const kindLines = wrapped(kind, width, 11, 600);
+			body.push(`<g data-line="${row.line}" data-annotation="${row.type}">`, ...textLines(kindLines, x, y + 14, "s11 b seq-kind"));
+			const kindWidth = typography.width(kindLines.at(-1) as string, "mono", 11, 600) + 12;
+			const label = row.label.toUpperCase();
+			const inline = typography.width(label, "mono", 11) <= width - kindWidth;
+			const labels = wrapped(label, width, 11);
+			const labelY = y + 14 + (kindLines.length - (inline ? 1 : 0)) * LEADING;
+			body.push(...textLines(labels, inline ? x + kindWidth : x, labelY, `s11 muted seq-${row.type === "open" ? "group" : "else"}-label`), "</g>");
+			y = labelY + labels.length * LEADING + 8;
+			continue;
+		}
+		if (row.type === "section") {
+			const labels = wrapped(row.label.toUpperCase(), RIGHT - GUTTER - 16, 11);
+			body.push(`<g data-line="${row.line}" data-annotation="section">`, ...textLines(labels, GUTTER + 8, y + 16, "s11 muted seq-section"));
+			const end = GUTTER + 8 + typography.width(labels.at(-1) as string, "mono", 11) + 12;
+			const ruleY = y + 12 + (labels.length - 1) * LEADING;
+			if (end < RIGHT) body.push(`<line x1="${end}" y1="${ruleY}" x2="${RIGHT}" y2="${ruleY}" class="seq-rule"/>`);
+			body.push("</g>"); y += labels.length * LEADING + 24;
+			continue;
+		}
+		if (row.type === "note") {
+			const positions = row.participants.map(centre).sort((a, b) => a - b);
+			const group = drawing.at(-1);
+			const left = group ? group.left + 8 : GUTTER + 4, right = group ? group.right - 8 : RIGHT;
+			const width = Math.min(right - left, positions.length === 1 ? 220 : positions[1] - positions[0]);
+			const x = Math.max(left, Math.min(right - width, (positions[0] + positions[positions.length - 1]) / 2 - width / 2));
+			const labels = wrapped(row.label, width - 24);
+			const height = labels.length * LEADING + 18;
+			body.push(`<g data-line="${row.line}" data-annotation="note">`, `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="6" class="seq-note"/>`,
+				`<rect x="${x}" y="${y + 5}" width="3" height="${height - 10}" rx="1.5" class="t-rework"/>`,
+				...textLines(labels, x + 12, y + 19, "s12 seq-note-text"), "</g>");
+			y += height + 16; continue;
+		}
+		const message = row.message;
+		const i = step++;
 		const from = centre(message.from), to = centre(message.to);
 		const self = from === to;
 		const loop = Math.min(24, (RIGHT - from) / 2);
@@ -166,10 +310,11 @@ export function renderSequence(source: string, options: RenderOptions = {}) {
 	}
 	const height = y + 12;
 	const background: string[] = [];
-	for (const [i, p] of participants.entries()) {
+	for (const i of participants.keys()) {
 		if (i % 2 === 1) background.push(`<rect x="${GUTTER + i * laneWidth}" y="8" width="${laneWidth}" height="${height - 16}" rx="8" class="seq-lane" fill-opacity="0.15"/>`);
-		background.push(`<line x1="${centre(p)}" y1="${headerBottom - 8}" x2="${centre(p)}" y2="${height - 8}" class="seq-life"/>`);
 	}
+	for (const group of groups) if (group.depth < 2) background.push(`<rect x="${group.left}" y="${group.top}" width="${group.right - group.left}" height="${group.bottom - group.top}" rx="8" class="seq-group" fill-opacity="0.5"/>`);
+	for (const p of participants) background.push(`<line x1="${centre(p)}" y1="${headerBottom - 8}" x2="${centre(p)}" y2="${height - 8}" class="seq-life"/>`);
 	for (const [i, p] of participants.entries()) {
 		background.push(`<g data-line="${p.line}">`, `<circle cx="${centre(p)}" cy="20" r="3" class="t-${p.tone}"/>`, ...textLines(titles[i], centre(p), 40, `s12 b t-${p.tone} seq-title`, "middle"), "</g>");
 	}

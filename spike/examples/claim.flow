@@ -5,6 +5,7 @@ participant Backend tone=system
 participant RSSFeed "RSS feed" tone=system
 participant OwnerInbox "Owner's inbox"
 
+section "Claim"
 Creator --> Studio: Sign in, no show yet
 Studio -.-> Creator: Claim existing, Add via RSS, Start from scratch
 Creator --> Studio: Claim existing show
@@ -13,12 +14,16 @@ Backend --> RSSFeed: Fetch feed live
 RSSFeed -.-> Backend: itunes owner email
 # Messages 7–15 illustrate handshake details, not an agreed product protocol.
 Backend --> OwnerInbox: Send 6-digit code
+note over Backend: The code expires after 15 minutes
 OwnerInbox -.-> Creator: Email with the code
+section "Verify"
 Creator --> Studio: Enter code
 Studio --> Backend: POST verify code
 Backend --> Backend: Check code and expiry
-# Messages 12–15 are sequential until #79 supplies the alternative branches.
+alt Code matches
 Backend -.-> Studio: Claim confirmed
 Studio -.-> Creator: The show is yours
+else Wrong or expired code
 Backend -.-> Studio: Rejected, attempts left
 Studio -.-> Creator: Try again or resend the code
+end

@@ -3,6 +3,9 @@
 You choose placement; the renderer sizes and draws without moving nodes or
 rerouting edges. Save as `.flow`. [Renderer details](../docs/plan.md).
 
+[Flows support play sections and timelines](../docs/plan.md#playback).
+The browser player and controls are still planned.
+
 ## Flow syntax and nodes
 
 Start with `flow v0`, then `columns` naming columns left to right, once,
@@ -128,6 +131,49 @@ for edges crossing nodes or edges. A visible crossing gap still needs fixing.
 
 Optional repository check: `mise run check FILE` writes SVG and lists problems.
 
+## Flow playback
+
+Append named `play` sections to a flow. Each step names a node id and lights
+that node plus all edges from the previous successful step. The first step
+lights only its node; repeating a node needs no edge. Unknown targets or
+missing connections diagnose and skip the step, preserving the predecessor.
+Scenarios are independent. This complete example can be copied as one block:
+
+```text
+flow v0
+columns main
+box work col=main title="Implement"
+decision review "Checks pass?"
+end merged "Merged"
+work --> review
+review --> work tone=rework from=left to=left : fix
+review --> merged : yes
+
+play "Clean merge"
+  tempo 1.8s
+  step work actor="Implementer" "Prepare the change"
+  step review 800ms
+  step merged
+
+play "One fix round"
+  step work
+  step review "One more pass is needed"
+  step work
+  step review
+  step merged
+```
+
+Grammar: `play ["Name"]`, optional `tempo DURATION` before steps, then
+`step TARGET [DURATION] [actor="..."] ["caption"]`. Here strings are JSON
+strings: escape quotes with `\"` and backslashes with `\\`; quoted targets
+are allowed too. Diagram strings above keep their original syntax. Durations
+use seconds or milliseconds (`2.4s`, `800ms`), from 100ms to 60s; default
+tempo is 1.6s. Invalid durations diagnose and use the tempo. Omitted actors
+use the node's title; omitted captions are empty. `render()` returns the
+resolved `timelines` and a full static SVG with parts a host can highlight.
+Sequence and fan-out playback are not supported yet and diagnose on each
+`play` line. See [loop-play.flow](examples/loop-play.flow) for three scenarios.
+
 ## Fan-out
 
 ```
@@ -157,9 +203,15 @@ sequence v0
 participant Creator
 participant Studio tone=system
 participant RSSFeed "RSS feed" tone=system
+section "Sign in"
 Creator --> Studio: Sign in, no show yet
 Studio -.-> Creator: Claim existing, Add via RSS, Start from scratch
+note over Studio: Session expires after 15 minutes
+alt Session exists
 Studio --> Studio: Check session
+else New session
+Studio -.-> Creator: Sign in again
+end
 ```
 
 Declare participants before messages, in column order, with unique one-token
@@ -168,7 +220,31 @@ optional flow tones, defaulting to `ink`. Requests use `-->` (solid, filled
 head); responses use `-.->` (dashed, open head). These match flow line styles;
 Mermaid's `->>` and `-->>` are errors. Labels are everything after the first
 colon, including quotes. Matching endpoints make a self-message. Indentation,
-blank lines and whole-line comments are allowed. Annotations are not supported
-yet. Messages keep source order and are numbered automatically. The 678px
+blank lines and whole-line comments are allowed. Messages keep source order
+and are numbered automatically; annotations occupy rows without numbers. The 678px
 figure has evenly shared lanes; labels wrap at its right edge, including long
 tokens. Narrow hosts scroll horizontally. All sequence text uses `fonts.mono`.
+
+Use UML groups `alt LABEL`, `opt LABEL`, `loop LABEL` or `group LABEL`, closed
+by bare `end`; they nest without a depth limit. Only the current `alt` accepts
+`else LABEL`. Labels require text and take the unquoted remainder literally,
+including arrows, colons, quotes and backslashes. Groups span touched lanes
+(all lanes when empty); only the outermost two depths add soft half-opacity
+fills. Headings and branch labels wrap.
+
+Use `note over A: text` or `note over A, B: text` for lifeline placement. Ids
+must be distinct and already declared; spaces around commas and either order
+are fine. The first colon separates ids from non-blank literal note text.
+Notes wrap in their own rounded, accented row. Use `section "Title"` for a
+phase until the next section or EOF, consistent with flow. Titles are non-blank
+flow strings with no trailing text. Sections cannot occur inside groups.
+
+These terms retain clear UML meanings and flow's phase name without aliases.
+The eight exact ids `alt`, `opt`, `loop`, `group`, `else`, `end`, `note` and
+`section` are reserved. At line start, these keywords followed by whitespace
+or EOL take precedence over messages; `loopWorker` is still a valid id.
+Invalid annotations diagnose on their lines, remain visible as rejected
+source and leave the group/phase state unchanged. Unclosed groups draw to EOF
+and diagnose their opening lines. The claim example demonstrates Claim and
+Verify phases, an expiry note and the two verification branches; its messages
+7–15 remain illustrative handshake details.
