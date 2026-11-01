@@ -90,6 +90,8 @@ groups. See [all three kinds on the website](https://ablauf.uberblick.ai).
 
 ## Play it step by step
 
+<img alt="A Dependabot flow played through four scenarios (clean merge, tests failing, fix fails, major release): the current step glows, the rest of the figure dims, and a caption names the actor and what happens." src="https://raw.githubusercontent.com/uberblick-ai/ablauf/main/docs/images/playback-showcase.gif">
+
 Add one or more `play` sections after a flow. Each step names a node and
 lights it, together with the edges from the previous step's node.
 
