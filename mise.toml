@@ -53,6 +53,10 @@ run = "pnpm -s render"
 description = "Show what moved between the loop and the loop with a role inserted"
 run = "pnpm -s measure"
 
+[tasks.media]
+description = "Capture the README's PNG and GIF figures (needs Playwright, ImageMagick, IBM Plex)"
+run = ["pnpm -s build", "node spike/media/capture.mjs"]
+
 [tasks.site]
 description = "Build ablauf.uberblick.ai into site/out"
 run = "node site/build.ts"
