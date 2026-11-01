@@ -55,7 +55,13 @@ including #112, #113 and #116. Capture light and dark screenshots of
 [gallery controls reference](https://raw.githubusercontent.com/uberblick-ai/ablauf/9ba61d5485c89010c57ce6eb4c0111e7e6fac8de/spike/gallery/controls.png)
 and the figures with the [scenario playback GIF](images/playback/scenario-tabs.gif).
 The fixture supplies no host control CSS. Source inspection and DOM fakes do
-not satisfy this visual gate:
+not satisfy this visual gate.
+
+The compact-controls captures from this fixture are [light](images/playback/controls-light.png)
+and [dark](images/playback/controls-dark.png); the overflowing-tab case with its
+long caption is captured in [light](images/playback/controls-overflow-light.png)
+and [dark](images/playback/controls-overflow-dark.png). They show 678px figures
+without host control CSS; the interactive checks below still need a maintainer.
 
 - Use the SVG/controls scheme selector for automatic, pinned light and pinned
   dark; choose a matching or contrasting host background separately. Automatic
