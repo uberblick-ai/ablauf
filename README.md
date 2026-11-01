@@ -217,14 +217,15 @@ outcome "Edited since" reason="The input changed after the maintainer started it
 Sequence (`sequence v0`) puts participants on ordered lifelines and messages
 in source order. It uses flow's `-->` requests and `-.->` responses with
 `: label` text. The
-annotated [claim example](https://github.com/uberblick-ai/ablauf/blob/main/spike/examples/claim.flow)
+[claim example](https://github.com/uberblick-ai/ablauf/blob/main/spike/examples/claim-short.flow)
 has Claim and Verify sections, a note about code expiry and an `alt`/`else`
-group for the two verification outcomes. Messages 7–15 illustrate handshake
-details, not an agreed product protocol.
+group for the two verification outcomes. A longer
+[annotated version](https://github.com/uberblick-ai/ablauf/blob/main/spike/examples/claim.flow)
+adds an RSS feed and the full handshake.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/uberblick-ai/ablauf/main/docs/images/claim-dark.svg">
-  <img alt="Claim your podcast: Creator, Studio, Backend, RSS feed and Owner's inbox exchange messages to claim a show and verify an emailed code, with a code-expiry note and alternative verification outcomes." src="https://raw.githubusercontent.com/uberblick-ai/ablauf/main/docs/images/claim-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/uberblick-ai/ablauf/main/docs/images/claim-short-dark.svg">
+  <img alt="Claim your podcast: Creator, Studio, Backend and Owner's inbox exchange messages to claim a show and verify an emailed code, with a code-expiry note and two verification outcomes." src="https://raw.githubusercontent.com/uberblick-ai/ablauf/main/docs/images/claim-short-light.svg">
 </picture>
 
 ## Host page themes

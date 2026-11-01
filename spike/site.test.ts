@@ -34,7 +34,7 @@ test("the site builds every page, with a page per kind and clean examples", (t) 
 	assert.match(readFileSync(join(out, "robots.txt"), "utf8"), /Sitemap: https:\/\/ablauf\.uberblick\.ai\/sitemap\.xml/);
 });
 
-test("Sequence shows the annotated claim once, with navigation and discovery alongside the other kinds", (t) => {
+test("Sequence shows the short claim once, with navigation and discovery alongside the other kinds", (t) => {
 	const out = scratch(t);
 	const { pages, problems } = build({ out });
 	assert.deepEqual(problems, []);
@@ -43,9 +43,9 @@ test("Sequence shows the annotated claim once, with navigation and discovery alo
 		["fan-out", "Fan-out", "fan-out v0"],
 		["sequence", "Sequence", "sequence v0"],
 	]);
-	assert.deepEqual(kinds.flatMap((k) => k.examples.filter((e) => e.name === "claim").map(() => k.id)), ["sequence"]);
+	assert.deepEqual(kinds.flatMap((k) => k.examples.filter((e) => e.name === "claim-short").map(() => k.id)), ["sequence"]);
 	const sequence = readFileSync(join(out, "sequence.html"), "utf8");
-	assert.equal([...sequence.matchAll(/<section class="q ex-item" id="claim">/g)].length, 1);
+	assert.equal([...sequence.matchAll(/<section class="q ex-item" id="claim-short">/g)].length, 1);
 	assert.match(sequence, /<div class="ex-pic"><svg /);
 	assert.match(sequence, /<pre><code>sequence v0\nparticipant Creator/);
 	for (const annotation of ['section "Claim"', 'section "Verify"', "note over Backend:", "alt Code matches", "else Wrong or expired code"])

@@ -17,7 +17,7 @@
   responses and self-messages in bounded 678px lanes. Includes mono font
   metrics, source-line diagnostics, paint coverage and the claim example.
   Sequence appears alongside Flow and Fan-out on the site and in the playground,
-  with the annotated claim example and light/dark README images.
+  with a short claim example and light/dark README images.
   ([#74](https://github.com/uberblick-ai/ablauf/issues/74),
   [#80](https://github.com/uberblick-ai/ablauf/issues/80))
 

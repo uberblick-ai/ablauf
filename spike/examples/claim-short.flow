@@ -1,0 +1,19 @@
+sequence v0
+participant Creator
+participant Studio tone=system
+participant Backend tone=system
+participant OwnerInbox "Owner's inbox"
+
+section "Claim"
+Creator --> Studio: Claim existing show
+Studio --> Backend: POST claim for show
+Backend --> OwnerInbox: Send 6-digit code
+note over Backend: The code expires after 15 minutes
+section "Verify"
+Creator --> Studio: Enter code
+Studio --> Backend: POST verify code
+alt Code matches
+Backend -.-> Creator: The show is yours
+else Wrong or expired code
+Backend -.-> Creator: Try again or resend the code
+end
