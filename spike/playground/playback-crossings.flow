@@ -1,0 +1,37 @@
+flow v0
+# Playground only: two intentional crossings, on canvas and band backgrounds.
+columns left main right
+
+section "Canvas crossing"
+box north col=main "From above"
+box west col=left "From left"
+box east col=right row=west "To right"
+box south col=main "To below"
+
+section "Band crossing"
+box band-north col=main "From above"
+box band-west col=left "From left"
+box band-east col=right row=band-west "To right"
+box band-south col=main "To below"
+
+north --> south
+west --> east
+band-north --> band-south
+band-west --> band-east
+
+play "Vertical paths"
+  tempo 2s
+  step north "Canvas knockout stays opaque across the faded horizontal edge"
+  step south
+
+play "Horizontal paths"
+  step west
+  step east
+
+play "Band vertical"
+  step band-north "Band knockout stays opaque across the faded horizontal edge"
+  step band-south
+
+play "Band horizontal"
+  step band-west
+  step band-east

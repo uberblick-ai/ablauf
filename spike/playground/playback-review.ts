@@ -50,12 +50,25 @@ function addCase(title: string, source: string, idPrefix: string, shadow = false
 			mounts.push(mount);
 			note.textContent = "Remounted, idle. No duplicate controls.";
 		}), note);
+	if (result.diagnostics.length) {
+		const diagnostics = document.createElement("p");
+		diagnostics.className = "review-note";
+		diagnostics.textContent = result.diagnostics.map(d => `Line ${d.line}: ${d.message}`).join("; ");
+		section.append(diagnostics);
+	}
 	cases.append(section);
 }
 
-const response = await fetch("/api/flow/examples/loop-play");
-if (!response.ok) throw new Error(`Cannot load loop-play: ${response.status}`);
-const source = await response.text();
+async function load(path: string) {
+	const response = await fetch(path);
+	if (!response.ok) throw new Error(`Cannot load ${path}: ${response.status}`);
+	return response.text();
+}
+const [source, fade, crossings] = await Promise.all([
+	load("/api/flow/examples/loop-play"),
+	load("/api/flow/examples/playback-fade"),
+	load("/playground/playback-crossings.flow"),
+]);
 const single = 'flow v0\nbox a "Start"\nbox b "Finish"\na --> b\nplay "One scenario"\n step a actor="Author" "Start here"\n step b "Finish here"\n';
 
 function draw() {
@@ -64,6 +77,8 @@ function draw() {
 	cases.replaceChildren();
 	addCase("Loop · light DOM", source, "review-light-dom");
 	addCase("Loop · shadow root", source, "review-shadow", true);
+	addCase("Fade · inline labels on canvas and band", fade, "review-fade");
+	addCase("Fade · crossing knockouts (two expected warnings)", crossings, "review-crossings");
 	addCase("Single timeline · no tabs", single, "review-single");
 	addCase("Tabbed · includes an empty scenario", `${single}play "Empty scenario"\n`, "review-empty");
 }

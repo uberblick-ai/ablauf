@@ -36,11 +36,17 @@ needed beyond that command.
 
 The fixture shows two independently rendered copies of
 `spike/examples/loop-play.flow`, one in the light DOM and one inside a shadow
-root, using distinct `idPrefix` values. It also shows a single timeline without
-tabs and a tabbed case with an empty scenario. Each document is 710px wide,
+root, using distinct `idPrefix` values. `spike/examples/playback-fade.flow` adds
+all six node kinds and inline label gaps on canvas and band backgrounds, with
+zero diagnostics. The playground-only `spike/playground/playback-crossings.flow`
+visibly exercises canvas and band knockouts; its two crossing warnings are
+intentional and shown on the page. It stays outside the rendered example set.
+The page also shows a single timeline without tabs and a tabbed case with an
+empty scenario. Each document is 710px wide,
 with 16px side padding giving a 678px figure at full width.
 
-A maintainer checks these in a real browser before merging #94:
+A maintainer checks these in a real browser before merging playback changes,
+including #112:
 
 - Use the SVG/controls scheme selector for automatic, pinned light and pinned
   dark; choose a matching or contrasting host background separately. Automatic
@@ -48,6 +54,17 @@ A maintainer checks these in a real browser before merging #94:
 - Play two figures simultaneously, switch scenarios and navigate. Check that
   each caption, actor, range and Play/Pause/Replay label follows only its player.
   Enable looping and watch the last step return to the first.
+- In light and dark at document width, play or manually step the **Fade · inline
+  labels** figure. On the first Request step, later labels fade to 0.3; their
+  gaps must keep opaque canvas and band backgrounds. The unplayed parts remain
+  readable while the active path stands out. Pause, seek forward/backward,
+  switch to Review only and loop: current/played parts stay fully opaque and
+  the other parts fade. At range `-1` or Empty, the entire figure is unfaded.
+- In **Fade · crossing knockouts**, select each vertical and horizontal path.
+  Both canvas and band crossing breaks must remain fully opaque, with no
+  underlying edge showing through even when either path fades. Its two crossing
+  diagnostics remain visible. Drive another figure independently to check
+  isolation between distinct `idPrefix` values.
 - Use Tab to reach the single selected tab; Left/Right wrap and activate
   immediately. Enter/Space and click also activate. Check visible focus remains
   on the control during playback; use native range arrows, including `-1` for
@@ -60,7 +77,9 @@ A maintainer checks these in a real browser before merging #94:
   not start playback.
 - While playing, try both `mount.destroy()` and `player.destroy()` for each
   case, including the shadow root. The figure and host content remain, controls
-  disappear, and other mounts continue. Remount repeatedly: one set of controls,
+  disappear, the full unfaded figure returns, and other mounts continue.
+  Exercise both entry points on the loop and both fade fixtures in light and
+  dark. Remount repeatedly: one set of controls,
   idle state and no old timers or announcements.
 
 DOM fakes, CSS selector checks and SVG source inspection do not satisfy this

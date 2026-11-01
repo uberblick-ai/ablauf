@@ -131,6 +131,14 @@ function inspect(svg: string) {
 	assert.ok(css);
 	const rules = [...css.matchAll(/([^{}]+)\{([^{}]+)\}/g)].flatMap(([, selector, body], order) => {
 		const declarations = Object.fromEntries(body.split(";").filter(Boolean).map((d) => d.split(":")));
+		// Fade rules affect only a shown step. Refuse active roots rather than
+		// treating dimmed text as a static palette paint; playback-fade.test.ts
+		// checks these rules, their opaque backgrounds and the root lifecycle.
+		if (/^\.ab\[data-ab-play="[A-Za-z0-9_.-]+"\]\.ab-in-progress \[data-ab-part\]:not\(\.ab-current\):not\(\.ab-played\)(?::not\(:has\(\.gap\)\)|:has\(\.gap\) text)$/.test(selector.trim())) {
+			assert.doesNotMatch(svg, /class="[^"]*\bab-in-progress\b/, "static paint inspector cannot inspect active playback fading");
+			assert.deepEqual(declarations, { opacity: ".3" });
+			return [];
+		}
 		assert.ok(!("opacity" in declarations), "inspector must handle new group/element opacity");
 		if (!("fill" in declarations) && !("fill-opacity" in declarations)) return [];
 		// checkPalette covers the static palette. Play states use separate host
@@ -267,6 +275,10 @@ test("coverage detects new text and ground paints from SVG CSS", () => {
 	const svg = render('flow v0\nbox a\n').svg;
 	assert.throws(() => covered(svg.replace("fill:var(--agent)", "fill:var(--line)"), "changed text paint"), /absent from contract/);
 	assert.throws(() => covered(svg.replace("fill:var(--agent-bg)", "fill:var(--line)"), "changed ground paint"), /absent from contract/);
+	const playable = render('flow v0\nbox a\nplay\n step a\n').svg;
+	assert.throws(() => covered(playable.replace('class="ab ab-auto"', 'class="ab ab-auto ab-in-progress"'), "active fade"), /cannot inspect active playback fading/);
+	assert.throws(() => covered(playable.replaceAll("opacity:.3", "opacity:.4"), "unknown fade opacity"), /AssertionError/);
+	assert.throws(() => covered(svg.replace(".ab text{", ".ab text{opacity:.3;"), "unconditional text opacity"), /must handle new group\/element opacity/);
 });
 
 test("sequence annotation witnesses cover each actual layered role and both message kinds across boundaries", () => {

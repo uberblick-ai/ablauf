@@ -1,0 +1,37 @@
+flow v0
+# Inline gaps on canvas and band backgrounds, with all six node kinds.
+columns aside main
+
+section "Canvas"
+box start col=main "A request arrives"
+pill queued tone=muted "queued"
+text work "Check the request"
+
+section "Band"
+decision choice "Ready?"
+panel review tone=stop
+  strong "Review"
+  muted "A person checks the request"
+end finish "Complete"
+
+start --> queued label=inline : queue
+queued --> work label=inline : check
+work --> choice label=inline : decide
+choice --> review label=inline : inspect
+review --> finish label=inline : accept
+
+play "Request"
+  tempo 1.8s
+  step start "Unplayed labels fade; their gaps stay opaque"
+  step queued
+  step work
+  step choice "The band-backed labels keep opaque backgrounds too"
+  step review
+  step finish
+
+play "Review only"
+  step choice
+  step review
+  step finish
+
+play "Empty"

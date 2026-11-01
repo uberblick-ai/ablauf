@@ -64,6 +64,7 @@ export function createPlaygroundServer() {
       const path = url.pathname;
       if (req.method === "GET" && path === "/") return send(res, 200, "text/html; charset=utf-8", readFileSync(join(import.meta.dirname, "index.html"), "utf8"));
       if (req.method === "GET" && path === "/playback-review") return send(res, 200, "text/html; charset=utf-8", readFileSync(join(import.meta.dirname, "playback-review.html"), "utf8"));
+      if (req.method === "GET" && path === "/playground/playback-crossings.flow") return send(res, 200, "text/plain; charset=utf-8", readFileSync(join(import.meta.dirname, "playback-crossings.flow"), "utf8"));
       if (req.method === "GET" && path === "/playground.css") return send(res, 200, "text/css; charset=utf-8", readFileSync(join(import.meta.dirname, "playground.css"), "utf8"));
       if (req.method === "GET" && path === "/api/catalog") return send(res, 200, "application/json", JSON.stringify(catalog(ROOT)));
       if (req.method === "GET" && path === "/reference/loop.svg") return send(res, 200, "image/svg+xml", readFileSync(join(ROOT, "reference", "loop.svg"), "utf8"));
