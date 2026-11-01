@@ -17,7 +17,7 @@ const STYLE = `
 .ab-playback button[aria-selected="true"]{border-color:var(--abp-play);box-shadow:inset 0 -2px var(--abp-play)}
 .ab-playback .abp-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
 .ab-playback .abp-toggle{min-width:5em}
-.ab-playback .abp-range{display:flex;align-items:center;gap:8px;flex:1;min-width:140px}
+.ab-playback .abp-range{display:flex;align-items:center;gap:8px;flex:1;min-width:140px;white-space:nowrap}
 .ab-playback input{accent-color:var(--abp-play);min-width:0;width:100%}
 .ab-playback button:disabled{color:var(--abp-muted);cursor:default}
 .ab-playback button:focus-visible,.ab-playback input:focus-visible,.ab-playback .abp-panel:focus-visible{outline:2px solid var(--abp-play);outline-offset:3px}
