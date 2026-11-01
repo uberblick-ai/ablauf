@@ -25,7 +25,7 @@ with your own colours through `--ab-*` custom properties.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/uberblick-ai/ablauf/main/docs/images/kinds-dark.png">
-  <img alt="A deploy pipeline as a flow, an approval check as a fan-out with three outcomes, and a podcast claim as a sequence between Creator, Studio, Backend and Owner's inbox." src="https://raw.githubusercontent.com/uberblick-ai/ablauf/main/docs/images/kinds-light.png">
+  <img alt="An online order as a flow, an approval check as a fan-out with three outcomes, and a podcast claim as a sequence between Creator, Studio, Backend and Owner's inbox." src="https://raw.githubusercontent.com/uberblick-ai/ablauf/main/docs/images/kinds-light.png">
 </picture>
 
 ## Playback

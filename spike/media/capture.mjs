@@ -98,7 +98,7 @@ async function sourceAndFigure(scheme, name, file, width, lines) {
 async function kinds(scheme, file) {
 	const { context, tab } = await open(scheme);
 	const items = [
-		["flow", "deploy", 480],
+		["flow", "checkout", 480],
 		["fan-out", "approvals", 560],
 		["sequence", "claim-short", 560],
 	].map(([kind, name, width]) => ({ kind, width, source: flowSource(name) }));
