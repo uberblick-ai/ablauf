@@ -1,0 +1,10 @@
+sequence v0
+participant Creator
+participant Studio
+participant Backend
+participant RSSFeed "RSS feed"
+participant OwnerInbox "Owner's inbox"
+
+Creator ->> Studio: This deliberately long label explains that a verification code may arrive after a delay and the creator can ask for another email without starting a new claim
+Backend ->> Backend: This deliberately long self-message verifies the code, expiry, attempt count and the pending claim before changing ownership
+Backend ->> OwnerInbox: abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789

@@ -1,0 +1,6 @@
+sequence v0 strings=json
+# JSON titles can contain ASCII double quotes. Backslashes must be doubled.
+participant Studio "Studio \"claims\" C:\\feeds"
+participant Backend
+Studio ->> Backend: "Save \"verified\" under C:\\feeds\\claim"
+note over Backend: "Backslashes are decoded: C:\\feeds"

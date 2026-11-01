@@ -1,0 +1,14 @@
+sequence v0
+participant Studio tone=agent
+participant Backend tone=system
+participant Inbox "Owner's inbox" tone=rework
+
+loop At most three attempts
+  Studio ->> Backend: Verify code
+  alt Code matches
+    Backend -->> Studio: Claim confirmed
+  else Wrong code
+    Backend ->> Inbox: Send a replacement code
+    Inbox ->> Inbox: Queue email
+  end
+end

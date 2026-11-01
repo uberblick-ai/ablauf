@@ -1,0 +1,8 @@
+sequence v0
+participant Studio tone=agent
+participant Backend tone=system
+
+loop At most three attempts
+  Studio ->> Backend: Verify code
+  Backend -->> Studio: Result and attempts left
+end

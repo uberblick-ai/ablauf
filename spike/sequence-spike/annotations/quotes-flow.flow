@@ -1,0 +1,7 @@
+sequence v0
+# Flow titles cannot contain ASCII double quotes: use typographic quotes.
+# Backslashes stay literal. Unquoted message labels CAN contain ASCII quotes.
+participant Studio "Studio “claims” C:\feeds"
+participant Backend
+Studio ->> Backend: Save "verified" under C:\feeds\claim
+note over Backend: Backslashes are literal: C:\feeds

@@ -1,84 +1,132 @@
-// Renders the spike variants and screenshots them for review.
+// Throwaway comparison evidence for #75, separate from the package renderer.
+// Generates evidence; it does not declare a visual winner or visual acceptance.
+import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import { join } from "node:path";
-import { renderBars, renderLadder } from "./bold.ts";
-import { type LayoutMode, parse, renderSequence } from "./sequence.ts";
+import { chromium } from "playwright";
+import { esc } from "../flow/svg.ts";
+import { type LayoutMode, type Model, parse, renderSequence } from "./sequence.ts";
 
 const here = import.meta.dirname;
-const out = process.argv[2] ?? join(here, "out");
+const out = process.argv[2] ?? join(here, "evidence");
 mkdirSync(out, { recursive: true });
-const { chromium } = createRequire(import.meta.url)("playwright");
+const read = (name: string) => readFileSync(join(here, name), "utf8");
+const candidates = ["mermaid", "ablauf", "json"] as const;
+const sources = candidates.map((candidate) => read(`claim-${candidate}.flow`));
+const models = sources.map(parse);
+// Preserve meaning across spellings, including the note and branch boundaries.
+// Participant ids and implicit person/system tones are intentionally compared separately.
+const meaning = (model: Model) => ({
+	participants: model.participants.map((p) => p.title),
+	items: model.items.map(({ line: _line, ...item }) => item),
+});
+for (const model of models) {
+	if (model.diagnostics.length || JSON.stringify(meaning(model)) !== JSON.stringify(meaning(models[0])))
+		throw new Error("Candidate differs from the full reference fixture");
+}
+if (models[0].participants.length !== 5 || models[0].items.filter((i) => i.t === "msg").length !== 15)
+	throw new Error("Expected five participants and fifteen messages");
+writeFileSync(join(out, "fixture.json"), `${JSON.stringify({
+	reference: "872fb5c53ecf041a3d5828a59cd970441fc4a66b:spike/sequence-spike/claim-mermaid.flow",
+	sha256: createHash("sha256").update(sources[0]).digest("hex"),
+	...meaning(models[0]),
+	branches: { success: [12, 13], failure: [14, 15] },
+	illustrativeMessages: "7–15 are spike handshake details, not a product protocol decision",
+}, null, 2)}\n`);
 
-const MODES: Record<string, LayoutMode> = {
-	"sized-to-labels": { labels: "center", footer: true },
-	"fixed-678": { width: 678, labels: "center" },
-	"fixed-678-from-source": { width: 678, labels: "source" },
-	"phone-360-wrapped": { width: 360, labels: "center" },
-	"phone-360-from-source": { width: 360, labels: "source" },
+// Hold colours constant when comparing syntax: the flow spelling implies tones,
+// but that should not change the picture used to compare source spellings.
+for (const model of models) for (const [i, p] of model.participants.entries())
+	p.tone = (["ink", "agent", "system", "neutral", "rework"] as const)[i];
+
+const frames = [
+	{ document: 710, figure: 710 },
+	{ document: 710, figure: 678 },
+	{ document: 678, figure: 678 },
+	{ document: 360, figure: 360 },
+];
+const modes: Record<string, (width: number) => LayoutMode> = {
+	"bounded-lanes": (width) => ({ width, labels: "source", style: "lanes", bounded: true }),
+	"label-sized-scroll": () => ({ labels: "center", footer: true }),
+	"span-wrap": (width) => ({ width, labels: "center", style: "plain" }),
+	"original-lanes": (width) => ({ width, labels: "source", style: "lanes" }),
+	"cards-repeated-headers": (width) => ({ width, labels: "source", style: "cards", footer: true, bounded: true }),
+	"minimal-annotations": (width) => ({ width, labels: "source", annotations: "minimal", bounded: true }),
+	"fixed678-scroll": () => ({ width: 678, labels: "source", style: "lanes", bounded: true }),
+	"fixed678-shrink": () => ({ width: 678, labels: "source", style: "lanes", bounded: true }),
 };
-const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
-const page = (title: string, cells: string) => `<!doctype html><meta charset="utf-8"><style>
-body{margin:0;padding:24px;background:#f4f5f7;font:13px "IBM Plex Sans",system-ui,sans-serif;color:#17202c;width:max-content}
-h1{font-size:16px;margin:0 0 14px}.row{display:flex;gap:20px;align-items:flex-start}
-.cell{background:#fff;border:1px solid #d3d9e2;border-radius:10px;padding:14px}.cell.dark{background:#171c24;border-color:#2c3440}
-.cap{font:11px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#5a6575;margin-bottom:8px;text-transform:uppercase}
-pre{margin:0;font:12px/1.5 ui-monospace,Menlo,monospace;white-space:pre}</style><h1>${title}</h1><div class="row">${cells}</div>`;
 
 const browser = await chromium.launch();
-const tab = await browser.newPage({ deviceScaleFactor: 2 });
-const shot = async (name: string, html: string) => {
-	await tab.setContent(html);
-	await tab.locator("body").screenshot({ path: join(out, `${name}.png`) });
-	console.log(`${name}.png`);
-};
-for (const syntax of ["mermaid", "ablauf"]) {
-	const source = readFileSync(join(here, `claim-${syntax}.flow`), "utf8");
-	const model = parse(source);
-	for (const d of model.diagnostics) console.log(`  ${syntax}:${d.line} ${d.message}`);
-	const sized = renderSequence(model, MODES["sized-to-labels"], "light");
-	writeFileSync(join(out, `${syntax}.svg`), sized.svg);
-	// Syntax sheet: source beside the default render, light and dark.
-	const fixed = (s: "light" | "dark") => renderSequence(model, MODES["fixed-678"], s).svg;
-	await shot(`syntax-${syntax}`, page(`Syntax: ${syntax === "mermaid" ? "Mermaid spelling" : "ablauf spelling"} — fixed 678 px`,
-		`<div class="cell"><div class="cap">source</div><pre>${esc(source)}</pre></div><div class="cell"><div class="cap">light</div>${fixed("light")}</div><div class="cell dark"><div class="cap" style="color:#98a2b0">dark</div>${fixed("dark")}</div>`));
-	// Layout sheet: every mode in light.
-	await shot(`layouts-${syntax}`, page(`Layouts (${syntax} source)`,
-		Object.entries(MODES).map(([name, mode]) => `<div class="cell"><div class="cap">${name}</div>${renderSequence(model, mode, "light").svg}</div>`).join("")));
-	await shot(`phone-dark-${syntax}`, page(`Phone widths, dark (${syntax} source)`,
-		["phone-360-wrapped", "phone-360-from-source"].map((name) => `<div class="cell dark"><div class="cap" style="color:#98a2b0">${name}</div>${renderSequence(model, MODES[name], "dark").svg}</div>`).join("")));
-}
-await browser.close();
+try {
+	const page = await browser.newPage({ deviceScaleFactor: 1 });
+	const results: object[] = [];
+	const links: string[] = [];
+	const capture = async (candidate: string, source: string, model: Model, layout: string,
+		frame: { document: number; figure: number }, theme: "light" | "dark", showSource = false) => {
+		if (model.diagnostics.length) throw new Error(JSON.stringify(model.diagnostics));
+		const name = `${candidate}-${layout}-${theme}-doc${frame.document}-fig${frame.figure}`;
+		const mode = modes[layout](frame.figure);
+		const rendered = renderSequence(model, mode, theme);
+		const scale = layout === "fixed678-shrink" ? Math.min(1, frame.figure / rendered.width) : 1;
+		const html = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(name)}</title><style>
+*{box-sizing:border-box}body{margin:0;width:${frame.document}px;background:${theme === "dark" ? "#171c24" : "#fff"};color:${theme === "dark" ? "#e0e5ed" : "#17202c"};font:12px/1.5 Arial,sans-serif}
+header,details{padding:8px 12px}h1{font-size:13px;margin:0}p{margin:4px 0}pre{font:12px/1.5 monospace;white-space:pre;overflow-x:auto}
+.figure{width:${frame.figure}px;margin:auto;overflow-x:auto}.figure svg{display:block;max-width:none}${layout === "fixed678-shrink" ? `.figure svg{width:${rendered.width * scale}px;height:${rendered.height * scale}px}` : ""}
+</style><header><h1>${esc(candidate)} · ${esc(layout)} · ${theme}</h1><p>Document column ${frame.document} px · figure viewport ${frame.figure} px · SVG ${rendered.width} px</p><p>Claim messages 7–15 are illustrative. ALT 12–13 and ELSE 14–15 are alternatives.</p></header>${showSource ? `<details open><summary>Candidate source</summary><pre>${esc(source)}</pre></details>` : ""}<div class="figure">${rendered.svg}</div></html>`;
+		await page.setViewportSize({ width: frame.document, height: 800 });
+		await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
+		await page.setContent(html);
+		await page.evaluate(() => document.fonts.ready);
+		const measurements = await page.evaluate(() => {
+			const svg = document.querySelector("svg");
+			const figure = document.querySelector(".figure");
+			if (!svg || !figure) throw new Error("Missing figure");
+			const box = svg.getBoundingClientRect();
+			const texts = [...svg.querySelectorAll("text")].map((node) => {
+				const b = node.getBoundingClientRect();
+				return { text: node.textContent, x: b.x - box.x, right: b.right - box.x,
+					font: getComputedStyle(node).fontFamily, fontPx: Number.parseFloat(getComputedStyle(node).fontSize) };
+			});
+			return { renderedWidth: box.width, renderedHeight: box.height,
+				viewportWidth: figure.clientWidth, scrollWidth: figure.scrollWidth,
+				textOutsideSvg: texts.filter((b) => b.x < -0.5 || b.right > box.width + 0.5),
+				minFontPxBeforeScaling: Math.min(...texts.map((b) => b.fontPx)),
+				fonts: [...new Set(texts.map((b) => b.font))],
+				textElementCount: texts.length };
+		});
+		await page.screenshot({ path: join(out, `${name}.png`), fullPage: true });
+		// A second phone view exposes the far endpoints of a scrolling trial.
+		if (frame.document === 360 && measurements.scrollWidth > frame.figure) {
+			await page.locator(".figure").evaluate((node) => { node.scrollLeft = node.scrollWidth; });
+			await page.screenshot({ path: join(out, `${name}-right.png`), fullPage: true });
+			links.push(`<li><a href="${name}-right.png">${name} · scrolled right</a></li>`);
+		}
+		writeFileSync(join(out, `${name}.html`), html);
+		writeFileSync(join(out, `${name}.svg`), rendered.svg);
+		results.push({ candidate, layout, theme, documentColumnPx: frame.document, figureViewportPx: frame.figure,
+			svgWidth: rendered.width, svgHeight: rendered.height, scale,
+			minimumDisplayedFontPx: measurements.minFontPxBeforeScaling * scale, ...measurements });
+		links.push(`<li><a href="${name}.png">${name}</a> · <a href="${name}.html">interactive scroll / source</a></li>`);
+		console.log(name);
+	};
 
-// Style sheet: the same source in each style, light and dark, at 678 and 360.
-{
-	const source = readFileSync(join(here, "claim-styled.flow"), "utf8");
-	const model = parse(source);
-	for (const d of model.diagnostics) console.log(`  styled:${d.line} ${d.message}`);
-	const b2 = await chromium.launch();
-	const t2 = await b2.newPage({ deviceScaleFactor: 2 });
-	for (const style of ["plain", "lanes", "cards"] as const) {
-		const cell = (scheme: "light" | "dark", width: number) =>
-			`<div class="cell${scheme === "dark" ? " dark" : ""}"><div class="cap"${scheme === "dark" ? ' style="color:#98a2b0"' : ""}>${scheme} · ${width}px</div>${renderSequence(model, { width, labels: "source", style }, scheme).svg}</div>`;
-		await t2.setContent(page(`Style: ${style}`, [cell("light", 678), cell("dark", 678), cell("light", 360)].join("")));
-		await t2.locator("body").screenshot({ path: join(out, `style-${style}.png`) });
-		console.log(`style-${style}.png`);
+	for (const [i, candidate] of candidates.entries()) for (const frame of frames) for (const theme of ["light", "dark"] as const)
+		await capture(candidate, sources[i], models[i], "bounded-lanes", frame, theme, true);
+	for (const layout of Object.keys(modes).filter((name) => name !== "bounded-lanes"))
+		for (const frame of frames) for (const theme of ["light", "dark"] as const)
+			await capture("mermaid", sources[0], models[0], layout, frame, theme);
+	for (const name of ["alternatives", "loop", "phases", "nesting", "notes", "long-label", "quotes-flow", "quotes-json"]) {
+		const source = read(`annotations/${name}.flow`);
+		const model = parse(source);
+		for (const frame of frames.filter((f) => f.document !== 678)) for (const theme of ["light", "dark"] as const)
+			await capture(name, source, model, "bounded-lanes", frame, theme, true);
+		if (name === "long-label") for (const theme of ["light", "dark"] as const)
+			await capture(name, source, model, "original-lanes", frames[3], theme, true);
 	}
-	await b2.close();
-}
-
-// Bold departures: bars and ladder, light and dark at 678, light at 360.
-{
-	const model = parse(readFileSync(join(here, "claim-styled.flow"), "utf8"));
-	const b3 = await chromium.launch();
-	const t3 = await b3.newPage({ deviceScaleFactor: 2 });
-	const kinds = { bars: renderBars, ladder: renderLadder };
-	for (const [name, draw] of Object.entries(kinds)) {
-		const cell = (scheme: "light" | "dark", width: number) =>
-			`<div class="cell${scheme === "dark" ? " dark" : ""}"><div class="cap"${scheme === "dark" ? ' style="color:#98a2b0"' : ""}>${scheme} · ${width}px</div>${draw(model, width, scheme)}</div>`;
-		await t3.setContent(page(`Style: ${name}`, [cell("light", 678), cell("dark", 678), cell("light", 360)].join("")));
-		await t3.locator("body").screenshot({ path: join(out, `style-${name}.png`) });
-		console.log(`style-${name}.png`);
-	}
-	await b3.close();
+	writeFileSync(join(out, "measurements.json"), `${JSON.stringify({ browser: browser.version(), deviceScaleFactor: 1,
+		visualAcceptance: "Pending maintainer browser review; measurements do not judge appearance", results }, null, 2)}\n`);
+	writeFileSync(join(out, "index.html"), `<!doctype html><html lang="en"><meta charset="utf-8"><title>Sequence spike #75 evidence</title><h1>Sequence spike #75</h1><p>Pending maintainer visual review. Filenames distinguish document-column and figure widths. PNGs show initial scroll position unless marked right. HTML provides scrolling. Shared sources retain the note and ALT/ELSE. Messages 7–15 are illustrative.</p><p><a href="measurements.json">Browser measurements</a> · <a href="fixture.json">Fixture equivalence record</a></p><ul>${links.join("\n")}</ul></html>\n`);
+	console.log(`Wrote ${results.length} comparisons to ${out}`);
+} finally {
+	await browser.close();
 }

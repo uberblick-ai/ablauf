@@ -29,6 +29,8 @@ export function parse(source: string): Model {
 		return i;
 	};
 	let header = false;
+	let jsonStrings = false;
+	const stringValue = (value: string) => jsonStrings ? JSON.parse(value) as string : unquote(value);
 	let depth = 0;
 	for (const [n, raw] of source.split("\n").entries()) {
 		const line = n + 1;
@@ -36,7 +38,8 @@ export function parse(source: string): Model {
 		if (!text || text.startsWith("#")) continue;
 		if (!header) {
 			header = true;
-			if (!/^sequence\s+v0$/.test(text)) error(line, "first line should be `sequence v0`");
+			jsonStrings = text === "sequence v0 strings=json";
+			if (!jsonStrings && !/^sequence\s+v0$/.test(text)) error(line, "first line should be `sequence v0` (optionally `strings=json`)");
 			continue;
 		}
 		let m: RegExpExecArray = [] as unknown as RegExpExecArray;
@@ -45,24 +48,26 @@ export function parse(source: string): Model {
 			if (found) m = found;
 			return found !== null;
 		};
-		if (hit(/^(participant|person|system)\s+(\S+)\s*("[^"]*")?\s*(?:tone=(\S+))?$/)) {
+		if (hit(jsonStrings
+			? /^(participant|person|system)\s+(\S+)\s*("(?:[^"\\]|\\.)*")?\s*(?:tone=(\S+))?$/
+			: /^(participant|person|system)\s+(\S+)\s*("[^"]*")?\s*(?:tone=(\S+))?$/)) {
 			if (items.some((i) => i.t === "msg")) error(line, "declare every participant before the first message");
 			const tone = (m[4] ?? (m[1] === "person" ? "neutral" : m[1] === "system" ? "system" : undefined)) as Tone | undefined;
-			participants.push({ id: m[2], title: m[3] ? unquote(m[3]) : m[2], tone, line });
+			participants.push({ id: m[2], title: m[3] ? stringValue(m[3]) : m[2], tone, line });
 		} else if (hit(ARROW)) {
 			const from = index(m[1], line);
 			const to = index(m[3], line);
 			if (from >= 0 && to >= 0)
-				items.push({ t: "msg", from, to, label: m[4].trim(), dashed: m[2] === "-->>" || m[2] === "-.->", line });
+				items.push({ t: "msg", from, to, label: jsonStrings ? stringValue(m[4].trim()) : m[4].trim(), dashed: m[2] === "-->>" || m[2] === "-.->", line });
 		} else if (hit(/^note\s+over\s+([^:]+):\s*(.*)$/) || hit(/^note\s+(\S+)\s+("[^"]*")$/)) {
 			const over = m[1].split(",").map((s) => index(s.trim(), line)).filter((i) => i >= 0);
-			if (over.length) items.push({ t: "note", over, text: unquote(m[2]), line });
+			if (over.length) items.push({ t: "note", over, text: stringValue(m[2]), line });
 		} else if (hit(/^(alt|opt|loop|group)\s+(.*)$/)) {
 			depth++;
-			items.push({ t: "open", kind: m[1], label: unquote(m[2]), line });
+			items.push({ t: "open", kind: m[1], label: stringValue(m[2]), line });
 		} else if (hit(/^else\s*(.*)$/)) {
 			if (!depth) error(line, "`else` outside a group");
-			else items.push({ t: "else", label: unquote(m[1]), line });
+			else items.push({ t: "else", label: stringValue(m[1]), line });
 		} else if (text === "end") {
 			if (!depth) error(line, "`end` without a group");
 			else { depth--; items.push({ t: "end", line }); }
@@ -83,6 +88,10 @@ export interface LayoutMode {
 	footer?: boolean;
 	/** plain: the first spike look. lanes: tinted lanes, no boxes. cards: tone cards and hairlines. */
 	style?: "plain" | "lanes" | "cards";
+	/** Unstyled annotations still print ALT / ELSE / END and the note. */
+	annotations?: "minimal";
+	/** Bounded trial: split oversized tokens and give self labels the remaining width. */
+	bounded?: boolean;
 }
 
 const LEAD = 15;
@@ -92,11 +101,16 @@ const SANS = CHAR.sans12;
 const MONO = CHAR.mono12;
 export const tw = (s: string, c = SANS) => [...s].length * c;
 
-export function wrap(text: string, width: number, c = SANS): string[] {
+export function wrap(text: string, width: number, c = SANS, breakWords = false): string[] {
 	const limit = Math.max(4, Math.floor(width / c));
 	const lines: string[] = [];
 	let line = "";
-	for (const word of text.split(/\s+/).filter(Boolean)) {
+	const words = text.split(/\s+/).filter(Boolean).flatMap((word) => {
+		if (!breakWords || [...word].length <= limit) return [word];
+		const letters = [...word];
+		return Array.from({ length: Math.ceil(letters.length / limit) }, (_, i) => letters.slice(i * limit, (i + 1) * limit).join(""));
+	});
+	for (const word of words) {
 		if (line && [...line].length + 1 + [...word].length > limit) { lines.push(line); line = ""; }
 		line = line ? `${line} ${word}` : word;
 	}
@@ -134,6 +148,7 @@ function columns(model: Model, mode: LayoutMode): { xs: number[]; width: number 
 }
 
 export function renderSequence(model: Model, mode: LayoutMode, scheme: "light" | "dark") {
+	const fit = (s: string, w: number, c = SANS) => wrap(s, w, c, mode.bounded);
 	const { participants: ps, items } = model;
 	const { xs, width } = columns(model, mode);
 	const n = ps.length;
@@ -150,7 +165,7 @@ export function renderSequence(model: Model, mode: LayoutMode, scheme: "light" |
 		lines.map((t, i) => `<text x="${x}" y="${y + i * LEAD}"${anchor ? ` text-anchor="${anchor}"` : ""} class="${cls}">${esc(t)}</text>`).join("");
 
 	// Headers: wrapped to their column in fixed modes, one line otherwise.
-	const heads = ps.map((p) => wrap(p.title, mode.width ? colW - 20 : 999, MONO));
+	const heads = ps.map((p) => fit(p.title, mode.width ? colW - 20 : 999, MONO));
 	const headH = 16 + Math.max(...heads.map((h) => h.length)) * LEAD;
 	const drawHeads = (y: number) =>
 		ps.forEach((p, i) => {
@@ -192,6 +207,15 @@ export function renderSequence(model: Model, mode: LayoutMode, scheme: "light" |
 	};
 
 	items.forEach((it, k) => {
+		if (mode.annotations === "minimal" && ["open", "else", "end", "note"].includes(it.t)) {
+			const label = it.t === "open" ? `${it.kind.toUpperCase()}: ${it.label}`
+				: it.t === "else" ? `ELSE: ${it.label}`
+				: it.t === "note" ? `NOTE over ${it.over.map((i) => ps[i].title).join(", ")}: ${it.text}` : "END";
+			const lines = fit(label, width - PAD * 2 - GUTTER);
+			front.push(text(lines, PAD + GUTTER, y + 12, "s12 b"));
+			y += lines.length * LEAD + 16;
+			return;
+		}
 		if (it.t === "section") {
 			closeSection();
 			if (fancy) {
@@ -250,7 +274,7 @@ export function renderSequence(model: Model, mode: LayoutMode, scheme: "light" |
 			const hi = Math.max(...it.over);
 			const cx = (xs[lo] + xs[hi]) / 2;
 			const maxW = lo === hi ? (mode.width ? Math.min(colW * 1.8, 220) : 220) : xs[hi] - xs[lo] + 60;
-			const lines = wrap(it.text, maxW - 20);
+			const lines = fit(it.text, maxW - 20);
 			const w = Math.min(maxW, Math.max(...lines.map((l) => tw(l))) + 20);
 			const h = lines.length * LEAD + 12;
 			const x = Math.max(4, Math.min(width - 4 - w, cx - w / 2));
@@ -280,8 +304,8 @@ export function renderSequence(model: Model, mode: LayoutMode, scheme: "light" |
 				if (fancy && !it.dashed) body.push(`<circle cx="${ax}" cy="${ay}" r="3" class="t-${tone === "ink" ? "muted" : tone}"/>`);
 			};
 			if (self) {
-				const room = mode.width ? Math.min(colW - 46, width - a - 50) : 999;
-				const lines = wrap(it.label, room);
+				const room = mode.width ? mode.bounded ? width - a - 36 - PAD : Math.min(colW - 46, width - a - 50) : 999;
+				const lines = fit(it.label, room);
 				const top = y + 2;
 				if (fancy) body.push(`<path d="M${a},${top} L${a + 18},${top} Q${a + 30},${top} ${a + 30},${top + 12} Q${a + 30},${top + 24} ${a + 18},${top + 24} L${a + 3},${top + 24}" class="${cls}" marker-end="${marker}"/>`);
 				else body.push(`<path d="M${a},${top} L${a + 28},${top} L${a + 28},${top + 24} L${a + 3},${top + 24}" class="${cls}" marker-end="${marker}"/>`);
@@ -296,11 +320,11 @@ export function renderSequence(model: Model, mode: LayoutMode, scheme: "light" |
 			let lx: number;
 			let anchor: string;
 			if (mode.labels === "center") {
-				lines = wrap(it.label, hi - lo - 16);
+				lines = fit(it.label, hi - lo - 16);
 				lx = (lo + hi) / 2;
 				anchor = "middle";
 			} else {
-				lines = wrap(it.label, width - PAD - lo - 8);
+				lines = fit(it.label, width - PAD - lo - 8);
 				lx = lo + 8;
 				anchor = "start";
 			}

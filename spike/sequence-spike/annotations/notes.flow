@@ -1,0 +1,11 @@
+sequence v0
+participant Creator
+participant Studio tone=agent
+participant Backend tone=system
+participant RSSFeed "RSS feed" tone=neutral
+participant OwnerInbox "Owner's inbox" tone=rework
+
+note over Backend: The code expires after 15 minutes
+note over Creator, Backend: One claim can be pending at a time
+note over OwnerInbox: Delivery can be delayed
+Backend ->> OwnerInbox: Send code

@@ -1,0 +1,148 @@
+{
+  "reference": "872fb5c53ecf041a3d5828a59cd970441fc4a66b:spike/sequence-spike/claim-mermaid.flow",
+  "sha256": "406dca57431e4208d4926a546f26caaf0e5d569cfbee9d7df00c652922ffc58c",
+  "participants": [
+    "Creator",
+    "Studio",
+    "Backend",
+    "RSS feed",
+    "Owner's inbox"
+  ],
+  "items": [
+    {
+      "t": "msg",
+      "from": 0,
+      "to": 1,
+      "label": "Sign in, no show yet",
+      "dashed": false
+    },
+    {
+      "t": "msg",
+      "from": 1,
+      "to": 0,
+      "label": "Claim existing, Add via RSS, Start from scratch",
+      "dashed": true
+    },
+    {
+      "t": "msg",
+      "from": 0,
+      "to": 1,
+      "label": "Claim existing show",
+      "dashed": false
+    },
+    {
+      "t": "msg",
+      "from": 1,
+      "to": 2,
+      "label": "POST claim for show",
+      "dashed": false
+    },
+    {
+      "t": "msg",
+      "from": 2,
+      "to": 3,
+      "label": "Fetch feed live",
+      "dashed": false
+    },
+    {
+      "t": "msg",
+      "from": 3,
+      "to": 2,
+      "label": "itunes owner email",
+      "dashed": true
+    },
+    {
+      "t": "msg",
+      "from": 2,
+      "to": 4,
+      "label": "Send 6-digit code",
+      "dashed": false
+    },
+    {
+      "t": "note",
+      "over": [
+        2
+      ],
+      "text": "The code expires after 15 minutes"
+    },
+    {
+      "t": "msg",
+      "from": 4,
+      "to": 0,
+      "label": "Email with the code",
+      "dashed": true
+    },
+    {
+      "t": "msg",
+      "from": 0,
+      "to": 1,
+      "label": "Enter code",
+      "dashed": false
+    },
+    {
+      "t": "msg",
+      "from": 1,
+      "to": 2,
+      "label": "POST verify code",
+      "dashed": false
+    },
+    {
+      "t": "msg",
+      "from": 2,
+      "to": 2,
+      "label": "Check code and expiry",
+      "dashed": false
+    },
+    {
+      "t": "open",
+      "kind": "alt",
+      "label": "Code matches"
+    },
+    {
+      "t": "msg",
+      "from": 2,
+      "to": 1,
+      "label": "Claim confirmed",
+      "dashed": true
+    },
+    {
+      "t": "msg",
+      "from": 1,
+      "to": 0,
+      "label": "The show is yours",
+      "dashed": true
+    },
+    {
+      "t": "else",
+      "label": "Wrong or expired code"
+    },
+    {
+      "t": "msg",
+      "from": 2,
+      "to": 1,
+      "label": "Rejected, attempts left",
+      "dashed": true
+    },
+    {
+      "t": "msg",
+      "from": 1,
+      "to": 0,
+      "label": "Try again or resend the code",
+      "dashed": true
+    },
+    {
+      "t": "end"
+    }
+  ],
+  "branches": {
+    "success": [
+      12,
+      13
+    ],
+    "failure": [
+      14,
+      15
+    ]
+  },
+  "illustrativeMessages": "7–15 are spike handshake details, not a product protocol decision"
+}

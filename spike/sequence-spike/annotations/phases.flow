@@ -1,0 +1,8 @@
+sequence v0
+participant Studio tone=agent
+participant Backend tone=system
+
+section "Claim"
+Studio ->> Backend: Start claim
+section "Verify"
+Studio ->> Backend: Verify code
