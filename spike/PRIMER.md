@@ -149,3 +149,26 @@ matching destinations. Before the step, choose `style branches` (default:
 step left, branches to outcomes, arrows to destinations with reasons below)
 or `style ladder` (step above, rail of dots, reasons below outcomes,
 destinations right-aligned, no arrows).
+
+## Sequence
+
+```text
+sequence v0
+participant Creator
+participant Studio tone=system
+participant RSSFeed "RSS feed" tone=system
+Creator --> Studio: Sign in, no show yet
+Studio -.-> Creator: Claim existing, Add via RSS, Start from scratch
+Studio --> Studio: Check session
+```
+
+Declare participants before messages, in column order, with unique one-token
+ids, optional flow-quoted titles (no escapes; backslashes are literal) and
+optional flow tones, defaulting to `ink`. Requests use `-->` (solid, filled
+head); responses use `-.->` (dashed, open head). These match flow line styles;
+Mermaid's `->>` and `-->>` are errors. Labels are everything after the first
+colon, including quotes. Matching endpoints make a self-message. Indentation,
+blank lines and whole-line comments are allowed. Annotations are not supported
+yet. Messages keep source order and are numbered automatically. The 678px
+figure has evenly shared lanes; labels wrap at its right edge, including long
+tokens. Narrow hosts scroll horizontally. All sequence text uses `fonts.mono`.

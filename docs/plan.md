@@ -333,9 +333,10 @@ in one small diagram for light/dark review in the playground's document column.
 
 `render(source, { fonts })` accepts two independent roles: `fonts.mono` for
 box titles, pills, edge labels, section captions, legend sample text and all
-fan-out text, and
+fan-out and sequence text, and
 `fonts.text` for standalone text, end labels, box subtitles, panel text and
-legend descriptions in flows. Fan-outs use no text-role metrics or face.
+legend descriptions in flows. Fan-outs and sequences use no text-role metrics
+or face. For sequences, `fonts.text` does not affect the SVG or layout.
 Each configured role requires both `family` and `measureText`; an omitted role
 keeps its existing font stack and estimates. Omitting `fonts` (or passing `{}`)
 preserves the existing geometry and SVG bytes, including the historical panel
@@ -377,7 +378,9 @@ text use 12px/400; other flow text uses 11px/400. In both fan-out styles,
 steps use 13px/600, outcomes and destinations use 12px/600, and reasons and
 line-numbered source text use 12px/400. Fan-out wrapping, ladder step sizing
 and dotted leaders use those same metrics. Changing CSS fonts after rendering
-requires rerendering with matching metrics.
+requires rerendering with matching metrics. Sequence participant titles use
+12px/600; message labels and visible rejected source use 12px/400; step
+numbers use 11px/400. Every sequence text role uses mono metrics for wrapping.
 
 For example, to use IBM Plex Mono throughout, after making its regular and
 semibold faces available to the SVG (its glyph advance is 0.6em):
@@ -470,6 +473,109 @@ See [approvals](../spike/examples/approvals.flow) and
 [run endings](../spike/examples/run-endings.flow) for the review examples, and
 [run endings as a ladder](../spike/examples/run-endings-ladder.flow).
 
+## Sequence v0
+
+```text
+sequence v0
+participant Creator
+participant Studio tone=system
+participant RSSFeed "RSS feed" tone=system
+
+Creator --> Studio: Sign in, no show yet
+Studio -.-> Creator: Claim existing, Add via RSS, Start from scratch
+Studio --> Studio: Check session
+```
+
+Sequence covers UML participants, lifelines and messages. `participant` stays
+because it is the clear UML term. Arrows use flow's `-->` for a solid request
+and `-.->` for a dashed response: one arrow means one line style in every
+ablauf kind. There are no Mermaid aliases; `->>` and `-->>` are malformed.
+Annotations are reserved for #79; activation bars, async/lost messages,
+participant creation/destruction, autonumber and playback are outside v0.
+
+### Syntax and recovery
+
+- `render()` selects sequence when the first non-blank, non-comment line
+  starts with `sequence` followed by whitespace or end of line. Other sources
+  keep the existing flow/fan-out dispatch. Indentation is ignored; blank lines
+  and whole-line `#` comments are allowed.
+- The header is `sequence v0`. A newer `vN` warns on its line and draws as v0.
+  A sequence header without a valid `vN`, such as `sequence` or `sequence x`,
+  is diagnosed on its line, remains visible as rejected source, and draws as v0.
+- Declare `participant ID ["Title"] [tone=TONE]` before messages. The id is
+  one token; the optional title replaces it for display. Declaration order is
+  column order. Titles use flow strings: double quotes, no escapes, literal
+  backslashes. They cannot contain a straight ASCII double quote. There is
+  no JSON string mode. `tone=` accepts the flow tones, defaulting to `ink`.
+- Messages are `FROM --> TO: label` or `FROM -.-> TO: label`. Spaces around
+  the arrow are optional; the colon is required. Everything after the first
+  colon is label text, including quotes and backslashes. Equal endpoints
+  make a self-message. Messages keep source order.
+- Unknown message participants, malformed arrows and missing colons produce
+  diagnostics on their source lines. Unparseable lines are shown below the
+  messages as line-numbered source, in `--ab-stop`.
+- Missing participant ids, unclosed titles, unknown tones, unknown/repeated
+  participant keys and unexpected text after a title are diagnosed and the
+  whole declaration is rejected visibly. Duplicate ids leave the first
+  declaration in effect. Late declarations create no lane. Duplicate and late
+  declarations also remain visible as line-numbered source. The rest draws;
+  no source is silently discarded.
+
+### Bounded lanes and paint
+
+- The canvas is fixed at 678px, with no width option. A 22px left gutter
+  holds message numbers; participants share the remaining width evenly.
+  Narrow hosts provide horizontal scrolling, including at 360px. The renderer
+  never scales or shrinks the figure.
+- Alternate lanes have a rounded `--ab-neutral-bg` tint from top to bottom
+  with `fill-opacity="0.15"`, composited over the canvas. There are no header
+  boxes. A small tone dot sits above each bold mono title, wrapped to its
+  lane. Thin `--ab-line` lifelines use 0.5 stroke opacity down lane centres.
+- Each message owns one row. The label starts just inside the arrow's left
+  end above its line, may cross other lanes, and wraps only at the right edge.
+  Unbreakable tokens split to stay within the SVG. Rows grow for wrapped
+  labels. There are no label knockouts; lifelines stay faint behind them.
+- Requests use the sender's tone, a solid 1.6px line, filled head and small
+  sender-end dot. For participant titles, dots, request lines and filled
+  heads, `ink` and `muted` both resolve to `--ab-muted`, as in flow. Other tones
+  use their matching `--ab-TONE`. Responses use a 1.2px dashed `--ab-muted`
+  line and open head, without a dot. Both kinds of message label use
+  `--ab-ink`, independently of tone.
+- Self-messages make a short rounded loop to the right of the lifeline.
+  Their labels use all remaining width to the right of that loop.
+- Message numbers are `01`, `02`, … in `--ab-muted` mono, level with the
+  arrows in the gutter. Rejected source is not a message and is not numbered.
+  Future annotation rows will not be numbered; message numbers will serve
+  as playback steps later.
+- All text uses `fonts.mono`, including measured wrapping; `fonts.text` has
+  no effect. The host-font contract above applies. As with fan-out, a glyph
+  wider than its entire available slot is consumed alone to ensure progress;
+  hosts must supply metrics/fonts that fit the fixed lane and gutter widths.
+- Sequence adds its text/ground pairs to `checkPalette`: every participant
+  tone, both message-label kinds, step numbers and rejected source on canvas
+  and lane tint. Ground opacity is part of that contract; text stays opaque.
+  `TOKENS`, `LIGHT`, `DARK` and the unchanged-built-ins contrast regression
+  remain unchanged. The LIGHT minimum stays 4.395772012043759 (rework edge
+  labels on band); DARK stays 4.706637464097893, above 4.5.
+- Sequence shares scoped SVG styles, `--ab-*` palettes and the `title`,
+  `scheme`, `idPrefix` and `fonts` render options. Its layout includes canvas
+  dimensions and diagnostics with empty nodes, routes and bands and no legend,
+  so the playground grid overlay still works. Existing flow and fan-out
+  rendering bytes are unchanged. Save sequence sources as `.flow` files for
+  the existing check and render tools; presentation belongs to #80, so they
+  currently stay in the playground's Flow group.
+
+[Claim your podcast](../spike/examples/claim.flow) preserves the spike fixture's
+five participant titles and all 15 directed messages, translating its arrows
+and omitting annotations. Messages 7–15 illustrate handshake details, not an
+agreed product protocol. Messages 12–15 are temporarily sequential until #79
+adds alternative branches. A maintainer reviews the figure in a browser in
+light and dark at 678px at this PR's maintainer merge; source inspection does
+not satisfy visual review. The spike's bounded-lanes
+[light](https://github.com/uberblick-ai/ablauf/blob/a10e93ffa9640a38c187982b71ae7b6bf2a29056/spike/sequence-spike/evidence/mermaid-bounded-lanes-light-doc710-fig678.png)
+and [dark](https://github.com/uberblick-ai/ablauf/blob/a10e93ffa9640a38c187982b71ae7b6bf2a29056/spike/sequence-spike/evidence/mermaid-bounded-lanes-dark-doc710-fig678.png)
+trials are references only. No spike code or dependency ships.
+
 ## The spike (now)
 
 In the fresh `uberblick-ai/ablauf` repository, on a branch, with no
@@ -493,8 +599,8 @@ as the hand-drawn figure, and when most trial agents reach zero diagnostics.
    MCP help topic pointing at the primer, and Markdown export as the fenced
    source. Nothing goes into uberblick-2 before the spike passes.
 3. Turn the ub-agents loop explainer into the first corpus doc that uses it.
-4. Add further kinds on the same grid, sequence (UML) first: lifelines are
-   columns and messages are rows. Then architecture (boxes in groups), and
+4. Add further kinds after sequence (UML), implemented above with lifelines as
+   columns and messages as rows: architecture (boxes in groups), and
    data model with class as one kind until they need to differ. Standalone fan-out v0 is implemented above; other kinds
    without edges remain: decision ladder, steps, timeline, tree and grid.
 
