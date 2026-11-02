@@ -64,6 +64,18 @@ test("play colours share palette syntax/alpha, and failing host text counts towa
 	assert.ok(svgFailures.pairs.some(p => p.ratio < 4.5 && /SVG unplayed agent box\/end/.test(p.where)));
 });
 
+test("palette and playback colour parsing handles long whitespace runs without delimiter backtracking", () => {
+	const spaces = " ".repeat(50_000);
+	for (const play of [`rgb(0${spaces}0 0)`, `rgb(0 0 0${spaces}/${spaces}1)`, `color(srgb 0${spaces}0 0 / 1)`]) {
+		assert.deepEqual(checkPalette(LIGHT, { play, unreachedOpacity: 0.3 }), checkPalette(LIGHT, { play: "#000", unreachedOpacity: 0.3 }));
+		assert.deepEqual(checkPalette({ ...LIGHT, agent: play }), checkPalette({ ...LIGHT, agent: "#000" }));
+	}
+	for (const play of [`rgb(0${spaces}0 0 / / 1)`, `rgb(0 0 0 /${spaces}1 0)`]) {
+		assert.throws(() => checkPalette(LIGHT, { play, unreachedOpacity: 0.3 }), TypeError);
+		assert.throws(() => checkPalette({ ...LIGHT, agent: play }), TypeError);
+	}
+});
+
 test("built-in playback text meets 4.5 at boundaries, low fades and intermediate values", () => {
 	for (const [palette, play] of defaults) for (const unreachedOpacity of [0, 0.001, 0.01, ...Array.from({ length: 101 }, (_, i) => i / 100)]) {
 		const result = checkPalette(palette, { play, unreachedOpacity });

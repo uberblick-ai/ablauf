@@ -146,7 +146,9 @@ function colour(value: string, token: Token | "play"): Colour {
 	}
 	const comma = body.includes(",");
 	if (comma && (srgb || body.includes("/"))) return fail();
-	const parts = comma ? body.split(",").map((p) => p.trim()) : body.split(/\s*\/\s*/);
+	// Split the literal delimiter before trimming: an unanchored whitespace
+	// regex can retry an entire whitespace run at each position without a slash.
+	const parts = body.split(comma ? "," : "/").map((p) => p.trim());
 	let channels: string[];
 	let alpha: string;
 	if (comma) {
