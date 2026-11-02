@@ -135,6 +135,7 @@ export function createPlayerBinding(
 		observer = new Observer(entries => {
 			if (destroyed || version !== bindingVersion) return;
 			for (const entry of entries) {
+				if (destroyed || version !== bindingVersion) return;
 				if (entry.target !== svg) continue;
 				offscreen = !entry.isIntersecting;
 				if (!lifecycleReady()) { lifecyclePause(); continue; }

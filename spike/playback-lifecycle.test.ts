@@ -296,3 +296,45 @@ test("single panel shortcuts and independent shadow/document focus stay local", 
 	assert.ok(otherPanel.fire("keydown", "ArrowRight")); assert.equal(other.player.state.status, "paused");
 	assert.equal(f.player.state.status, "playing"); assert.equal(new El("button", f.doc).fire("keydown", " "), false);
 });
+
+test("shadow-root rebinding finds focused tabs through the local activeElement", t => {
+	const f = setup(t); f.host.tag = "#shadow-root";
+	const tab = f.tabs()[1]; tab.focus();
+	assert.equal(f.doc.activeElement, f.host); assert.equal(f.host.activeElement, tab);
+	f.mount.update(asSvg(f.image), [data[1], data[0], data[2]]);
+	assert.equal(f.host.activeElement, tab); assert.equal(f.tabs()[0], tab);
+	f.mount.update(asSvg(f.image), [data[0]]);
+	assert.equal(f.host.activeElement, f.cls("abp-panel"));
+});
+
+test("queued timers and reduced-motion callbacks cannot affect a replacement binding", t => {
+	const f = setup(t);
+	const timeout = t.mock.method(globalThis, "setTimeout");
+	f.player.play();
+	const oldTimer = timeout.mock.calls[0].arguments[0];
+	const oldMotion = [...f.doc.motion.listeners][0];
+	const next = svg(f.doc); f.host.append(next); f.mount.update(asSvg(next), data);
+	f.player.play(); const snapshot = f.player.state;
+	oldTimer(); oldMotion({ matches: true } as MediaQueryListEvent);
+	assert.equal(f.player.state, snapshot);
+	t.mock.timers.tick(100); assert.equal(f.player.state.step, 1);
+	const currentTimer = timeout.mock.calls.at(-1)?.arguments[0]; assert.ok(currentTimer);
+	const currentMotion = [...f.doc.motion.listeners][0];
+	f.player.destroy(); const destroyed = f.player.state;
+	currentTimer(); currentMotion({ matches: true } as MediaQueryListEvent);
+	assert.equal(f.player.state, destroyed);
+});
+
+test("listeners can unsubscribe or navigate during notification without duplicate or unstable snapshots", t => {
+	const f = setup(t); const one: PlayerState[] = []; const two: PlayerState[] = [];
+	const off = f.player.subscribe(state => {
+		one.push(state);
+		if (state.status === "playing") { off(); f.player.pause(); }
+	});
+	f.player.subscribe(state => two.push(state));
+	f.player.play();
+	assert.deepEqual(one.map(state => state.status), ["playing"]);
+	assert.deepEqual(two.map(state => state.status), ["playing", "paused"]);
+	assert.ok(two.every(state => Object.isFrozen(state)));
+	t.mock.timers.tick(1000); assert.equal(f.player.state.step, 0);
+});

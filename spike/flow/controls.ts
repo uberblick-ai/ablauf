@@ -86,7 +86,6 @@ export function mountPlayback(
 	return { player, update, destroy };
 
 	function buildControls() {
-
 		const make = <K extends keyof HTMLElementTagNameMap>(tag: K, className = "", text = "") => {
 			const el = doc.createElement(tag);
 			el.className = className;

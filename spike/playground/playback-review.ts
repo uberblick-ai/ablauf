@@ -10,7 +10,8 @@ const cases = document.getElementById("review-cases") as HTMLElement;
 const mounts: { destroy(): void }[] = [];
 const figureCSS = ".review-figure svg{display:block;max-width:100%;height:auto}";
 
-function addCase(title: string, source: string, idPrefix: string, shadow = false, headless = false) {
+function addCase(title: string, source: string, idPrefix: string, shadow = false, headless = false,
+	playbackOptions: { autoplay?: boolean; pauseWhenOffscreen?: boolean } = {}) {
 	const section = document.createElement("section");
 	section.className = "review-document";
 	const heading = document.createElement("h2");
@@ -24,22 +25,32 @@ function addCase(title: string, source: string, idPrefix: string, shadow = false
 	const selectedScheme = scheme.value === "dark" ? "dark" : scheme.value === "light" ? "light" : undefined;
 	const result = render(source, { idPrefix, scheme: selectedScheme });
 	figure.innerHTML = result.svg;
-	const svg = figure.querySelector("svg");
-	if (!svg) throw new Error("Missing rendered SVG");
+	const initialSvg = figure.querySelector("svg");
+	if (!initialSvg) throw new Error("Missing rendered SVG");
+	let svg = initialSvg;
+	let timelines = result.timelines;
 	const retained = document.createElement("p");
 	retained.className = "review-note";
 	retained.textContent = "Host content remains after either teardown entry point.";
 	container.append(style, figure, retained);
 	function makeMount(): Pick<PlaybackMount, "player" | "destroy"> & Partial<Pick<PlaybackMount, "update">> {
-		if (!headless) return mountPlayback(figure, svg as SVGSVGElement, result.timelines, { loop: loop.checked });
-		const player = createPlayer(svg as SVGSVGElement, result.timelines, { loop: loop.checked });
+		if (!headless) return mountPlayback(figure, svg, timelines, { loop: loop.checked, ...playbackOptions });
+		const player = createPlayer(svg, timelines, { loop: loop.checked, pauseWhenOffscreen: playbackOptions.pauseWhenOffscreen });
 		return { player, destroy: () => player.destroy() };
 	}
 	let mount = makeMount();
-	mounts.push(mount);
+	let pending: ReturnType<typeof setTimeout> | undefined;
+	const cleanup = { destroy() { clearTimeout(pending); mount.destroy(); } };
+	mounts.push(cleanup);
 	const note = document.createElement("p");
 	note.className = "review-note";
-	note.textContent = "Mounted, idle. No autoplay.";
+	note.textContent = playbackOptions.autoplay ? "Autoplay: waits for half visibility." : "Mounted, idle. No autoplay.";
+	const stateLine = document.createElement("p");
+	stateLine.className = "review-note";
+	const watch = () => mount.player.subscribe(state => {
+		stateLine.textContent = `Scenario ${state.scenario}, step ${state.step}, ${state.status}; connected: ${svg.isConnected}; document: ${document.visibilityState}`;
+	});
+	let unsubscribe = watch();
 	function button(label: string, action: () => void) {
 		const el = document.createElement("button");
 		el.type = "button";
@@ -48,15 +59,56 @@ function addCase(title: string, source: string, idPrefix: string, shadow = false
 		return el;
 	}
 	section.append(heading, surface,
-		button("mount.destroy()", () => { mount.destroy(); note.textContent = "Destroyed through mount."; }),
-		button("player.destroy()", () => { mount.player.destroy(); note.textContent = "Destroyed through player."; }),
+		button("mount.destroy()", () => { cleanup.destroy(); note.textContent = "Destroyed through mount."; }),
+		button("player.destroy()", () => { clearTimeout(pending); mount.player.destroy(); note.textContent = "Destroyed through player."; }),
 		button("Remount", () => {
-			mount.destroy();
-			mounts.splice(mounts.indexOf(mount), 1);
+			cleanup.destroy(); unsubscribe();
 			mount = makeMount();
-			mounts.push(mount);
+			unsubscribe = watch();
 			note.textContent = "Remounted, idle. No duplicate controls.";
-		}), note);
+		}),
+		button("Remove SVG", () => { svg.remove(); note.textContent = "SVG removed. Wait beyond the current dwell before reinserting."; }),
+		button("Reinsert SVG", () => { figure.prepend(svg); note.textContent = "SVG reinserted. A lifecycle pause must wait for explicit Play."; }),
+		note, stateLine);
+	if (!headless) {
+		const mode = document.createElement("select");
+		mode.setAttribute("aria-label", `Replacement data for ${title}`);
+		for (const [value, text] of [
+			["reorder", "Reorder scenarios"], ["remove", "Remove selected scenario"],
+			["single", "Keep selected scenario only"], ["empty", "Empty selected scenario"],
+			["none", "No timelines"], ["refresh", "Refresh labels, counts and scheme"], ["restore", "Restore original data"],
+		]) {
+			const option = document.createElement("option"); option.value = value; option.textContent = text; mode.append(option);
+		}
+		let revision = 0;
+		const rebind = () => {
+			const fresh = render(source, { idPrefix, scheme: selectedScheme });
+			const selected = timelines[mount.player.state.scenario];
+			let next = [...timelines];
+			if (mode.value === "reorder") next.reverse();
+			else if (mode.value === "remove") next = next.filter(timeline => timeline.slug !== selected?.slug);
+			else if (mode.value === "single") next = selected ? [selected] : [];
+			else if (mode.value === "empty") next = next.map(timeline => timeline === selected ? { ...timeline, steps: [] } : timeline);
+			else if (mode.value === "none") next = [];
+			else if (mode.value === "refresh") next = next.map(timeline => ({ ...timeline, name: `${timeline.name} · refreshed`,
+				steps: timeline.steps.slice(0, 1).map(step => ({ ...step, actor: "Refreshed actor", caption: "Refreshed caption" })) }));
+			else next = fresh.timelines;
+			const holder = document.createElement("div"); holder.innerHTML = fresh.svg;
+			const replacement = holder.querySelector("svg");
+			if (!replacement) throw new Error("Missing replacement SVG");
+			if (mode.value === "refresh") {
+				replacement.classList.remove("ab-auto", "ab-light", "ab-dark");
+				replacement.classList.add(++revision % 2 ? "ab-dark" : "ab-light");
+			}
+			svg.remove(); figure.prepend(replacement); svg = replacement; timelines = next;
+			mount.update?.(svg, timelines);
+			note.textContent = `Rebound: ${mode.selectedOptions[0].textContent}. Paused until explicit Play or scenario activation, including with autoplay.`;
+		};
+		section.append(mode, button("Rebind now", rebind), button("Rebind in 2 seconds (focus a control)", () => {
+			clearTimeout(pending); pending = setTimeout(rebind, 2000);
+			note.textContent = "Rebinding in two seconds: focus a tab, panel, button or range now.";
+		}));
+	}
 	if (headless) section.append(
 		button("Direct Play / Replay", () => mount.player.play()),
 		button("Direct Pause", () => mount.player.pause()),
@@ -105,6 +157,10 @@ function draw() {
 	addCase("Single timeline · no tabs", single, "review-single");
 	addCase("Direct createPlayer · no built-in controls", single, "review-headless", false, true);
 	addCase("Tabbed · includes an empty scenario", `${single}play "Empty scenario"\n`, "review-empty");
+	addCase("Viewport pause only · manual start", compact, "review-viewport", false, false, { pauseWhenOffscreen: true });
+	addCase("Autoplay · half visibility", compact, "review-autoplay", false, false, { autoplay: true });
+	addCase("Autoplay and viewport pause · shadow root", compact, "review-both", true, false, { autoplay: true, pauseWhenOffscreen: true });
+	addCase("Direct createPlayer · viewport pause only", single, "review-direct-viewport", false, true, { pauseWhenOffscreen: true });
 }
 scheme.addEventListener("change", draw);
 loop.addEventListener("change", draw);

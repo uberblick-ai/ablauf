@@ -66,7 +66,15 @@ export class El {
 	contentEditable = "inherit";
 	get isConnected(): boolean { return this.connected && (this.parent?.isConnected ?? true); }
 	get isContentEditable(): boolean { return this.contentEditable === "true" || (this.contentEditable === "inherit" && (this.parent?.isContentEditable ?? false)); }
-	getRootNode(): Doc { return this.ownerDocument; }
+	activeElement: El | null = null;
+	getRootNode(): Doc | El {
+		let el: El | null = this;
+		while (el) {
+			if (el.tag === "#shadow-root") return el;
+			el = el.parent;
+		}
+		return this.ownerDocument;
+	}
 	id = "";
 	type = "";
 	disabled = false;
@@ -96,7 +104,14 @@ export class El {
 		},
 	};
 	append(...els: El[]) { for (const el of els) { el.remove(); el.parent = this; this.children.push(el); } }
-	remove() { if (this.parent) this.parent.children.splice(this.parent.children.indexOf(this), 1); this.parent = null; }
+	remove() {
+		if (this.parent) {
+			const root = this.getRootNode();
+			if (root.activeElement && this.all().includes(root.activeElement)) root.activeElement = null;
+			this.parent.children.splice(this.parent.children.indexOf(this), 1);
+		}
+		this.parent = null;
+	}
 	insertBefore(el: El, before: El) { el.remove(); el.parent = this; this.children.splice(this.children.indexOf(before), 0, el); }
 	removeAttribute(name: string) { this.attrs.delete(name); }
 	setAttribute(name: string, value: string) { this.attrs.set(name, value); }
@@ -117,11 +132,14 @@ export class El {
 		return prevented;
 	}
 	click() { if (!this.disabled) this.fire("click"); }
-	focus() { this.ownerDocument.activeElement = this; }
+	focus() {
+		const root = this.getRootNode();
+		root.activeElement = this;
+		if (root instanceof El) this.ownerDocument.activeElement = root;
+	}
 	all(): El[] { return [this, ...this.children.flatMap(el => el.all())]; }
 	querySelectorAll(selector: string) {
 		assert.equal(selector, "[data-ab-part]");
 		return this.all().filter(el => el.attrs.has("data-ab-part"));
 	}
 }
-
