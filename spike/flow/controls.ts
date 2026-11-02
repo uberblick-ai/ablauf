@@ -35,6 +35,27 @@ const STYLE = `
 .ab-playback button:focus-visible,.ab-playback .abp-navigation:focus-within,.ab-playback .abp-panel:focus-visible{outline:2px solid var(--abp-play);outline-offset:3px}
 .ab-playback .abp-tabs button:focus-visible{outline-offset:-3px}
 .ab-playback .abp-range,.ab-playback .abp-status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.ab-playback .abp-figure{min-width:0}
+.ab-playback .abp-figure svg{display:block;max-width:100%;height:auto}
+.ab-playback .abp-controls{min-width:0}
+.ab-playback.abp-side{display:grid;grid-template-columns:minmax(0,var(--abp-figure-width)) minmax(296px,1fr);gap:24px;align-items:start}
+.ab-playback.abp-side .abp-controls{position:sticky;top:0;max-height:100vh;max-height:100dvh;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-gutter:stable}
+.ab-playback.abp-side .abp-step{display:none}
+.ab-playback.abp-side .abp-actions{padding-top:12px}
+.ab-playback .abp-list{list-style:none;margin:0;padding:8px 12px 12px;display:grid;gap:2px}
+.ab-playback .abp-list[hidden]{display:none}
+.ab-playback .abp-row{display:grid;grid-template-columns:28px minmax(0,1fr);column-gap:10px;width:100%;height:auto;padding:5px 8px;text-align:left;border:0;color:var(--abp-muted);background:none;line-height:1.5}
+.ab-playback .abp-row:hover{background:color-mix(in srgb,var(--abp-line) 40%,transparent)}
+.ab-playback .abp-number{grid-row:1/3;font:500 11px/20px ui-monospace,monospace}
+.ab-playback .abp-who{font:12px/20px ui-monospace,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ab-playback .abp-remark{font:14px/1.4 system-ui,sans-serif;white-space:pre-wrap}
+.ab-playback .abp-row.abp-played{color:var(--abp-ink)}
+.ab-playback .abp-row.abp-played .abp-who{color:var(--abp-muted)}
+.ab-playback .abp-row[aria-current="step"]{background:color-mix(in srgb,var(--abp-play) 10%,transparent);color:var(--abp-ink)}
+.ab-playback .abp-row[aria-current="step"] .abp-number,.ab-playback .abp-row[aria-current="step"] .abp-who{color:var(--abp-play)}
+.ab-playback .abp-row[aria-current="step"] .abp-remark{font-weight:600}
+.ab-playback .abp-row:focus-visible{outline-offset:-2px}
+.ab-playback .abp-empty{padding:12px;color:var(--abp-muted)}
 `;
 
 let mountId = 0;
@@ -48,7 +69,7 @@ export function mountPlayback(
 	container: HTMLElement | ShadowRoot,
 	svg: SVGSVGElement,
 	timelines: Timeline[],
-	options: { loop?: boolean; autoplay?: boolean } = {},
+	options: { loop?: boolean; autoplay?: boolean; layout?: "below" | "side" | "auto" } = {},
 ): PlaybackMount {
 	const doc = container.ownerDocument;
 	const removers: (() => void)[] = [];
@@ -88,6 +109,9 @@ export function mountPlayback(
 	const scheme = svg.classList.contains("ab-dark") ? "dark" : svg.classList.contains("ab-light") ? "light" : "auto";
 	root = make("div", `ab-playback ab-${scheme}`);
 	style = make("style", "", STYLE);
+	const figure = make("div", "abp-figure");
+	const column = make("div", "abp-controls");
+	root.append(figure, column);
 	const panel = make("div", "abp-panel");
 	const tabs: HTMLButtonElement[] = [];
 	if (timelines.length > 1) {
@@ -124,7 +148,7 @@ export function mountPlayback(
 			tabs.push(tab);
 			tablist.append(tab);
 		}
-		root.append(tablist);
+		column.append(tablist);
 	}
 	const actions = make("div", "abp-actions");
 	const previous = button("<", () => player.previous());
@@ -170,7 +194,39 @@ export function mountPlayback(
 	status.setAttribute("aria-atomic", "true");
 	stepLine.append(counter, actor, caption);
 	panel.append(stepLine, actions);
-	root.append(panel, status);
+	column.append(panel, status);
+	let side = false;
+	let lists: { list: HTMLOListElement; rows: HTMLButtonElement[] }[] | undefined;
+	const empty = make("div", "abp-empty", "No playable steps");
+	function ensureLists() {
+		lists ??= timelines.map((timeline, scenario) => {
+			const list = make("ol", "abp-list");
+			list.setAttribute("aria-label", `${timeline.name} steps`);
+			const rows = timeline.steps.map((step, index) => {
+				const item = make("li");
+				const row = button("", () => {
+					if (player.state.scenario === scenario) player.seek(index);
+				}, "abp-row");
+				const number = step.kind === "message" ? step.target.padStart(2, "0") : String(index + 1);
+				row.append(make("span", "abp-number", number), make("span", "abp-who", step.actor), make("span", "abp-remark", step.caption));
+				item.append(row);
+				list.append(item);
+				return row;
+			});
+			return { list, rows };
+		});
+	}
+	function keepCurrentVisible() {
+		if (!side) return;
+		const row = lists?.[player.state.scenario].rows[player.state.step];
+		if (!row) return;
+		// scrollIntoView can scroll every ancestor, including the page. Change
+		// only the column's own scroll position and never move keyboard focus.
+		const bounds = column.getBoundingClientRect();
+		const current = row.getBoundingClientRect();
+		if (current.top < bounds.top) column.scrollTop += current.top - bounds.top;
+		else if (current.bottom > bounds.bottom) column.scrollTop += Math.min(current.top - bounds.top, current.bottom - bounds.bottom);
+	}
 	let announced = "";
 	synchronize = state => {
 		const steps = timelines[state.scenario].steps;
@@ -195,14 +251,77 @@ export function mountPlayback(
 		}
 		actor.textContent = step?.actor ?? "";
 		caption.textContent = steps.length ? step?.caption ?? "" : "No playable steps";
+		for (const [scenario, { list, rows }] of (lists ?? []).entries()) {
+			list.hidden = scenario !== state.scenario;
+			for (const [index, row] of rows.entries()) {
+				const current = scenario === state.scenario && index === state.step;
+				row.classList.toggle("abp-played", scenario === state.scenario && index < state.step);
+				if (current) row.setAttribute("aria-current", "step"); else row.removeAttribute("aria-current");
+			}
+		}
+		empty.hidden = steps.length !== 0;
 		const position = `${state.scenario}:${state.step}`;
 		if (announced !== position) {
 			announced = position;
 			status.textContent = step ? [step.actor, step.caption].filter(Boolean).join(": ") : "";
+			keepCurrentVisible();
 		}
 	};
-	synchronize(player.state);
-	container.append(style, root);
+	const svgParent = svg.parentNode;
+	const svgNext = svg.nextSibling;
+	container.append(style);
+	if (svgParent === container) container.insertBefore(root, svg); else container.append(root);
+	figure.append(svg);
+	removers.push(() => {
+		if (svgParent) svgParent.insertBefore(svg, svgNext?.parentNode === svgParent ? svgNext : null);
+		else svg.remove();
+	});
+	const viewBox = (svg.getAttribute("viewBox") ?? "").trim().split(/[\s,]+/).map(Number);
+	const width = Number(svg.getAttribute("width")) || viewBox[2] || 0;
+	const height = Number(svg.getAttribute("height")) || viewBox[3] || 0;
+	root.style.setProperty("--abp-figure-width", `${width || 678}px`);
+	function updateLayout() {
+		if (destroyed || !root) return;
+		const selected = options.layout ?? "auto";
+		side = selected === "side" || (selected === "auto" && height > width && width > 0 && root.getBoundingClientRect().width - width >= 320);
+		root.classList.toggle("abp-side", side);
+		root.classList.toggle("abp-below", !side);
+		if (side) {
+			ensureLists();
+			for (const { list } of lists ?? []) if (list.parentNode !== panel) panel.append(list);
+			if (empty.parentNode !== panel) panel.append(empty);
+		} else {
+			for (const { list } of lists ?? []) list.remove();
+			empty.remove();
+		}
+		synchronize(player.state);
+		keepCurrentVisible();
+	}
+	updateLayout();
+	const view = doc.defaultView;
+	const Resize = view?.ResizeObserver;
+	if (view && Resize) {
+		// Observe the mount's available width, including when its container is a
+		// shadow root. The SVG's natural dimensions stay fixed in both layouts.
+		// Layout changes can resize the observed root. Apply them next frame,
+		// outside observer delivery, to avoid ResizeObserver loop error events.
+		let frame: number | undefined;
+		const observer = new Resize(() => {
+			if (destroyed || frame !== undefined) return;
+			frame = view.requestAnimationFrame(() => {
+				frame = undefined;
+				updateLayout();
+			});
+		});
+		observer.observe(root);
+		removers.push(() => {
+			observer.disconnect();
+			if (frame !== undefined) view.cancelAnimationFrame(frame);
+		});
+	} else if (view) {
+		view.addEventListener("resize", updateLayout);
+		removers.push(() => view.removeEventListener("resize", updateLayout));
+	}
 	if (options.autoplay) autoplay();
 	return { player, destroy };
 

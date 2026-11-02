@@ -37,8 +37,46 @@ export class Doc {
 	activeElement: El | null = null;
 	motion = new Motion();
 	viewport = new Viewport();
-	defaultView = { matchMedia: this.motion.matchMedia, IntersectionObserver: this.viewport.IntersectionObserver };
+	resize = new Resizes();
+	frames = new Frames();
+	defaultView = {
+		matchMedia: this.motion.matchMedia, IntersectionObserver: this.viewport.IntersectionObserver, ResizeObserver: this.resize.ResizeObserver,
+		requestAnimationFrame: this.frames.request, cancelAnimationFrame: this.frames.cancel,
+	};
 	createElement(tag: string): El { return new El(tag, this); }
+}
+
+class Frames {
+	callbacks = new Map<number, FrameRequestCallback>();
+	private nextId = 0;
+	request = (callback: FrameRequestCallback) => {
+		const id = ++this.nextId;
+		this.callbacks.set(id, callback);
+		return id;
+	};
+	cancel = (id: number) => { this.callbacks.delete(id); };
+	flush() {
+		const callbacks = [...this.callbacks.values()];
+		this.callbacks.clear();
+		for (const callback of callbacks) callback(0);
+	}
+}
+
+export class Resizes {
+	observers = new Set<{ callback: () => void; targets: Set<El> }>();
+	get ResizeObserver() {
+		const observers = this.observers;
+		return class {
+			entry: { callback: () => void; targets: Set<El> };
+			constructor(callback: () => void) {
+				this.entry = { callback, targets: new Set() };
+				observers.add(this.entry);
+			}
+			observe(target: El) { this.entry.targets.add(target); }
+			disconnect() { observers.delete(this.entry); }
+		};
+	}
+	flush() { for (const { callback } of [...this.observers]) callback(); }
 }
 
 export class El {
@@ -57,6 +95,10 @@ export class El {
 	max = "";
 	step = "";
 	value = "";
+	hidden = false;
+	scrollTop = 0;
+	rect: { top: number; bottom: number; width: number } | undefined;
+	style = { properties: new Map<string, string>(), setProperty(name: string, value: string) { this.properties.set(name, value); } };
 	writes = 0;
 	private text = "";
 	constructor(tag: string, doc: Doc) { this.tag = tag; this.ownerDocument = doc; }
@@ -78,9 +120,22 @@ export class El {
 		},
 	};
 	append(...els: El[]) { for (const el of els) { el.remove(); el.parent = this; this.children.push(el); } }
+	get parentNode() { return this.parent; }
+	get nextSibling(): El | null { return this.parent?.children[this.parent.children.indexOf(this) + 1] ?? null; }
+	insertBefore(el: El, next: El | null) {
+		el.remove();
+		const index = next ? this.children.indexOf(next) : this.children.length;
+		assert.ok(index >= 0);
+		el.parent = this;
+		this.children.splice(index, 0, el);
+	}
+	getBoundingClientRect(): { top: number; bottom: number; width: number } {
+		return this.rect ?? this.parent?.getBoundingClientRect() ?? { top: 0, bottom: 0, width: 0 };
+	}
 	remove() { if (this.parent) this.parent.children.splice(this.parent.children.indexOf(this), 1); this.parent = null; }
 	setAttribute(name: string, value: string) { this.attrs.set(name, value); }
 	getAttribute(name: string) { return this.attrs.get(name) ?? null; }
+	removeAttribute(name: string) { this.attrs.delete(name); }
 	addEventListener(type: string, listener: (event: Event) => void) {
 		if (!this.listeners.has(type)) this.listeners.set(type, new Set());
 		this.listeners.get(type)?.add(listener);
@@ -100,4 +155,3 @@ export class El {
 		return this.all().filter(el => el.attrs.has("data-ab-part"));
 	}
 }
-

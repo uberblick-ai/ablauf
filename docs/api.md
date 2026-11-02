@@ -29,12 +29,12 @@ each figure on the page, including figures in shadow roots.
 ### Built-in controls
 
 Mount scenario tabs, buttons, a step range and captions in an element or
-shadow root below the inline SVG:
+shadow root containing the inline SVG:
 
 ```ts
 import { mountPlayback } from "@uberblick/ablauf/playback";
 
-const mount = mountPlayback(controlsContainer, svgElement, result.timelines, { autoplay: true });
+const mount = mountPlayback(figureContainer, svgElement, result.timelines, { autoplay: true });
 // Starts idle. With autoplay it plays once half the figure is in view, pauses
 // when it leaves and resumes when it returns, unless the reader paused it.
 // Without autoplay, Play or a scenario tab starts it; the host can also call mount.player.
@@ -42,12 +42,27 @@ const mount = mountPlayback(controlsContainer, svgElement, result.timelines, { a
 mount.destroy();
 ```
 
+`layout: "auto"` (the default) places captions beside a figure when its natural
+height exceeds its width and the container leaves at least 320px beside that
+width; it switches back to below on resize. Use `layout: "side"` or `"below"`
+to select explicitly. Side has a sticky, independently scrolling column with
+all steps; activate any row to seek and pause. Below has the single caption and
+no step list. [The controls contract](plan.md#built-in-controls-and-lifetime)
+describes numbering, state and keyboard access.
+
+Pass the figure's container, rather than a separate controls container below
+the SVG. The mount moves the SVG into its own wrappers inside that container,
+even if the SVG was nested or in another parent. Mount styles set the SVG to
+`display: block`, `max-width: 100%` and `height: auto` on the controls' background;
+destroy removes those styles and restores the SVG's original parent and position.
+
 ### Playback details and the headless player
 
 The container can hold other host content. `mount.destroy()` and
 `mount.player.destroy()` perform the same idempotent cleanup: stop playback,
-clear highlighting, remove the mount's controls, style and listeners, and leave
-host content intact. Destroy the old mount before rendering changed source,
+clear highlighting, remove the mount's controls, wrappers, style, listeners and
+observers, restore the SVG's original position, and leave host content intact.
+Destroy the old mount before rendering changed source,
 then mount again. No timelines adds no controls or style. A single timeline
 has no tabs; an empty scenario stays selected and shows “No playable steps”.
 Tabs activate immediately on Left/Right (wrapping), Home/End, click or

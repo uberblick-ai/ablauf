@@ -6,13 +6,15 @@ const hostScheme = document.getElementById("review-host") as HTMLSelectElement;
 const loop = document.getElementById("review-loop") as HTMLInputElement;
 const accent = document.getElementById("review-accent") as HTMLSelectElement;
 const zeroGlow = document.getElementById("review-zero-glow") as HTMLInputElement;
+const claimLayout = document.getElementById("review-claim-layout") as HTMLSelectElement;
 const cases = document.getElementById("review-cases") as HTMLElement;
 const mounts: PlaybackMount[] = [];
 const figureCSS = ".review-figure svg{display:block;max-width:100%;height:auto}";
 
-function addCase(title: string, source: string, idPrefix: string, shadow = false, headless = false) {
+function addCase(title: string, source: string, idPrefix: string, shadow = false, headless = false, layout: "below" | "side" | "auto" = "auto") {
 	const section = document.createElement("section");
 	section.className = "review-document";
+	if (idPrefix === "review-claim") section.classList.add("review-wide");
 	const heading = document.createElement("h2");
 	heading.textContent = title;
 	const surface = document.createElement("div");
@@ -31,7 +33,7 @@ function addCase(title: string, source: string, idPrefix: string, shadow = false
 	retained.textContent = "Host content remains after either teardown entry point.";
 	container.append(style, figure, retained);
 	function makeMount(): PlaybackMount {
-		if (!headless) return mountPlayback(figure, svg as SVGSVGElement, result.timelines, { loop: loop.checked });
+		if (!headless) return mountPlayback(figure, svg as SVGSVGElement, result.timelines, { loop: loop.checked, layout });
 		const player = createPlayer(svg as SVGSVGElement, result.timelines, { loop: loop.checked });
 		return { player, destroy: () => player.destroy() };
 	}
@@ -78,10 +80,11 @@ async function load(path: string) {
 	if (!response.ok) throw new Error(`Cannot load ${path}: ${response.status}`);
 	return response.text();
 }
-const [source, fade, crossings] = await Promise.all([
+const [source, fade, crossings, claim] = await Promise.all([
 	load("/api/flow/examples/loop-play"),
 	load("/api/flow/examples/playback-fade"),
 	load("/playground/playback-crossings.flow"),
+	load("/api/flow/examples/claim-play"),
 ]);
 const single = 'flow v0\nbox a "Start"\nbox b "Finish"\na --> b\nplay "One scenario"\n step a actor="Author" "Start here"\n step b "Finish here"\n';
 const compact = [
@@ -97,6 +100,8 @@ function draw() {
 	for (const mount of mounts) mount.destroy();
 	mounts.length = 0;
 	cases.replaceChildren();
+	const layout = claimLayout.value === "side" ? "side" : claimLayout.value === "below" ? "below" : "auto";
+	addCase("Claim · responsive side captions", claim, "review-claim", false, false, layout);
 	addCase("Loop · light DOM", source, "review-light-dom");
 	addCase("Loop · shadow root", source, "review-shadow", true);
 	addCase("Compact controls · overflowing tabs and wrapping captions", compact, "review-compact");
@@ -108,6 +113,7 @@ function draw() {
 }
 scheme.addEventListener("change", draw);
 loop.addEventListener("change", draw);
+claimLayout.addEventListener("change", draw);
 hostScheme.addEventListener("change", () => { document.body.dataset.host = hostScheme.value; });
 accent.addEventListener("change", () => {
 	if (accent.value) document.body.style.setProperty("--ab-play", accent.value);
