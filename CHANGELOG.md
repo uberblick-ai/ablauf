@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Playback
+
+- Add auto, side and below layouts to `mountPlayback`. Tall figures can show
+  captions in a sticky column with a keyboard-accessible step list, while auto
+  switches layouts as the container resizes. ([#139](https://github.com/uberblick-ai/ablauf/issues/139))
+
 ## 0.3.0 — 2026-11-02
 
 ### Playback

@@ -43,7 +43,8 @@ test("mount starts idle; source-order tabs, labelled panel, native actions and r
 	t.mock.timers.enable({ apis: ["setTimeout"] });
 	const f = setup(t);
 	assert.deepEqual(f.player.state, { scenario: 0, step: -1, status: "idle" });
-	assert.deepEqual(f.cls("ab-playback").children.map(el => el.className), ["abp-tabs", "abp-panel", "abp-status"]);
+	assert.deepEqual(f.cls("ab-playback").children.map(el => el.className), ["abp-figure", "abp-controls"]);
+	assert.deepEqual(f.cls("abp-controls").children.map(el => el.className), ["abp-tabs", "abp-panel", "abp-status"]);
 	assert.deepEqual(f.role("tab").map(el => el.textContent), timelines.map(timeline => timeline.name));
 	assert.equal(f.role("tablist")[0].getAttribute("aria-label"), "Scenarios");
 	assert.equal(f.role("tabpanel")[0].getAttribute("aria-labelledby"), f.role("tab")[0].id);

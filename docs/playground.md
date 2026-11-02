@@ -16,7 +16,8 @@ Open `#examples/neutral` for filled grey boxes and panels beside the
 surface-filled `ink` and `muted` variants, with matching neutral legend samples,
 pill dots and edges. Use the scheme toggle to review light and dark.
 
-Every render with timelines now mounts the built-in playback controls; editing
+Every render with timelines mounts the built-in playback controls with
+`layout: "auto"`; editing
 source or switching examples destroys the previous mount. Open
 `#examples/loop-play` for three scenario tabs. Examples without timelines keep
 their static presentation.
@@ -57,8 +58,30 @@ case without built-in controls, a tabbed case with an empty scenario, and a
 **Compact controls** case with overflowing tabs, short captions, a long wrapping
 caption, an absent actor and an empty scenario at the end of the tab strip.
 Current-colour and zero-glow controls apply host overrides to every case,
-including the shadow root. Each document is 710px wide,
-with 16px side padding giving a 678px figure at full width.
+including the shadow root. Most documents are 710px wide,
+with 16px side padding giving a 678px figure at full width. The first case,
+**Claim · responsive side captions**, uses `claim-play.flow` in a document up
+to 1088px wide. Its **Claim layout** selector offers Auto, Side and Below;
+other cases keep Auto.
+
+For #139, a maintainer must review in a real browser in **light and dark** at
+viewport widths of **1160px and 760px**. Use the approved
+[side-column reference](https://github.com/uberblick-ai/ablauf/blob/48fd77324024cbe37bdd331fb1e61f7a39756f39/spike/sequence-playback-prototype/README.md).
+Select Side for Claim wherever Auto falls back, and review `loop-play.flow`
+below. Verify caption readability, the side column sticking to the viewport
+top while scrolling, and independent column scrolling when its list exceeds
+the viewport. Play and seek through both claim scenarios: keeping the current
+row visible must cause no page jumps or focus changes. Tab to row buttons,
+check their visible focus, and activate them with Enter and Space to seek and
+pause. Verify message numbers (`09`, `10`, `11`, `14`, `15` for Wrong code),
+played/current styling and scenario changes. Return Claim layout to Auto and
+resize across a **998px figure container** (678px natural SVG + 320px beside
+it): it must switch below when narrower and back to side at or above 998px.
+The review document adds 32px padding and the page has 48px margins, so the
+threshold here is a 1078px viewport. The SVG's natural size, rather than its
+scaled narrow-screen size, determines this choice. Source inspection and DOM
+fakes do not satisfy this visual review. The #137 dependency is now available
+as `spike/examples/claim-play.flow`.
 
 A maintainer checks these in a real browser before merging playback changes,
 including #112, #113 and #116. Capture light and dark screenshots of

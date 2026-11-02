@@ -754,8 +754,9 @@ interface TimelineStep {
 }
 ```
 
-The player and controls use only `parts`, never `kind`: a new diagram
-kind needs a resolver, not a new player. The player lives in the browser entry
+The player uses only `parts`, never `kind`: a new diagram
+kind needs a resolver, not a new player. Controls use `kind: "message"` only to
+number sequence step-list rows by their message target. The player lives in the browser entry
 `@uberblick/ablauf/playback`; the core stays DOM-free. The player owns playback
 and scenario selection; the built-in controls supply buttons, scenario
 tabs and the caption so hosts do not need to recreate them.
@@ -881,15 +882,39 @@ safe to import without browser globals, and core types need no DOM library.
 ### Built-in controls and lifetime
 
 The browser entry also exports
-`mountPlayback(container, svg, timelines, { loop?, autoplay? }?)`, returning
+`mountPlayback(container, svg, timelines, { loop?, autoplay?, layout? }?)`, returning
 `PlaybackMount { player: Player; destroy(): void }`. The host supplies an
-`HTMLElement` or `ShadowRoot` for controls below its inline SVG. Mounting starts
+`HTMLElement` or `ShadowRoot` for the inline SVG and its controls. Mounting starts
 idle with the full figure. With `autoplay: true` the mount observes the SVG and
 plays once half of it is in view, pauses it when it leaves and resumes it on
 return, unless the reader paused it meanwhile. Reduced motion, or a browser
 without `IntersectionObserver`, keeps it idle. Destroy disconnects the observer. No timelines adds no DOM or style.
 The mount uses the existing player contract for timing, navigation, looping
 and reduced motion, including changes made through the returned `player`.
+
+`layout` accepts `"below"`, `"side"` or `"auto"` (the default), for every playable
+kind. Explicit layouts always select that layout. Auto selects side only when
+the SVG's natural height exceeds its natural width and the container leaves at
+least 320px beside that natural width, including the gap. Otherwise it selects
+below. Resize observation re-evaluates in both directions without changing the
+player state. Below retains the caption and controls described here and adds no
+step list.
+
+Side places the figure on the left and a column on the right: scenario tabs,
+the actions row and an ordered step list. It hides the single-caption block.
+The column sticks to the scrolling viewport's top and scrolls independently
+when taller than the viewport. A changed current step scrolls only this column
+enough to reveal its row; playback never scrolls the page or moves focus.
+
+The list contains every step of the selected scenario. Each row has its number,
+actor and caption. Sequence message steps use the message target, padded to at
+least two digits (`07`); other kinds use their one-based scenario position.
+Unplayed rows use muted text, played rows use ink, and the current row has a
+play-colour tint, bold caption and `aria-current="step"`. At `-1` no row is
+current or played. Native row buttons are keyboard-reachable with visible
+focus; pointer or keyboard activation seeks and pauses. Scenario changes show
+the corresponding list, including an empty list and “No playable steps” for an
+empty scenario. Controls are retained across playback updates.
 
 Multiple timelines have a labelled scenario tablist first, in source order
 using `Timeline.name`; one timeline has no tabs. Tabs have selected state,
@@ -936,14 +961,17 @@ style unrelated host elements. Focus is visible. All control colours derive
 from `--ab-play`, `--ab-line`, `--ab-muted`, `--ab-ink` and `--ab-bg`; muted play
 and glow shades use `color-mix()`. Every control glow honours the shared
 `--ab-play-glow` switch: literal `0` removes tab text and current-segment glows.
-An “All steps” list and scenario links remain host features.
+Scenario links remain a host feature; the side layout supplies the built-in
+all-steps list.
 
 Both `mount.destroy()` and `mount.player.destroy()` perform the same idempotent
-teardown: destroy the player and remove this mount's controls, style and
-listeners. The host destroys before replacing the SVG or changing timelines,
+teardown: destroy the player, disconnect resize and visibility observations,
+remove this mount's controls, layout wrappers, style and listeners, and restore
+the SVG to its original parent and position without changing host content.
+The host destroys before replacing the SVG or changing timelines,
 then mounts again. Standalone `createPlayer` retains its silent teardown and
 adds no controls. No browser globals are touched at import time. The playground
-uses this mount on every render with timelines; the
+uses this mount with `layout: "auto"` on every render with timelines; the
 [browser review fixture](playground.md#playback-browser-review) exercises
 independent light DOM and shadow-root mounts, schemes and teardown.
 
@@ -957,16 +985,16 @@ independent light DOM and shadow-root mounts, schemes and teardown.
 - **v0.3.1, sequence diagrams:** implemented the same play sections, message
   targets, timelines and SVG parts/states in
   [#137](https://github.com/uberblick-ai/ablauf/issues/137), using the existing
-  player and controls. Travel animation
-  ([#138](https://github.com/uberblick-ai/ablauf/issues/138)) and the side
-  controls layout ([#139](https://github.com/uberblick-ai/ablauf/issues/139))
-  are separate changes.
+  player and controls. Built-in auto/side/below controls layouts and the side
+  step list are implemented in [#139](https://github.com/uberblick-ai/ablauf/issues/139).
+  Travel animation ([#138](https://github.com/uberblick-ai/ablauf/issues/138))
+  remains a separate change.
 - **v0.3.2, fan-outs:** [#68](https://github.com/uberblick-ai/ablauf/issues/68),
   the same play sections; a target is an outcome's text.
 
 Extras cut from v0.3.0 wait for real need. Frozen frames come later. Timelines
 from real ub-agents run logs and visual timeline editing are out of scope.
-The remaining travel, controls-layout and diagram-kind work belongs to those
+The remaining travel and diagram-kind work belongs to those
 follow-up issues.
 This section follows the design from [#66](https://github.com/uberblick-ai/ablauf/issues/66) and the
 [maintainer's prototype summary](https://github.com/uberblick-ai/ablauf/issues/66#issuecomment-6554358304).
