@@ -11,6 +11,8 @@ const fullSha = /^[0-9a-f]{40}$/;
 
 const repository = "uberblick-ai/ablauf";
 const workflow = "release.yml";
+// Five minutes of five-second pauses for the registry to show a new version.
+const registryAttempts = 60;
 const steps = ["preflight", "dispatch publication", "confirm npm publication", "create local tag", "push tag", "create GitHub release"];
 type Run = (command: string, args: string[]) => string;
 type WorkflowRun = { databaseId: number; displayTitle: string; status: string; conclusion: string; url: string };
@@ -39,6 +41,7 @@ export class Release {
 	step = steps[0];
 	sha = "";
 	notes = "";
+	finishing = false;
 	readonly version: string;
 	readonly root: string;
 	readonly run: Run;
@@ -123,31 +126,81 @@ export class Release {
 			throw new Error("Publication did not succeed for the checked version and commit");
 		}
 		this.artifacts.push(`npm publication workflow succeeded: https://www.npmjs.com/package/@uberblick/ablauf/v/${this.version} (checked commit ${this.sha}); registry confirmation pending`);
-		let confirmed = false;
-		for (let attempt = 0; attempt < 12; attempt++) {
+		// The registry can answer 404 for a minute or more after the workflow succeeds.
+		for (let attempt = 0; ; attempt++) {
 			try {
-				const published = JSON.parse(this.call("npm", "view", `@uberblick/ablauf@${this.version}`, "version", "gitHead", "--json"));
+				const published = this.published();
 				if (published.version !== this.version || published.gitHead !== this.sha) throw new Error("Published npm identity differs from checked version/commit");
-				confirmed = true;
 				break;
 			} catch (error) {
 				if (error instanceof Error && error.message.includes("identity differs")) throw error;
-				if (attempt === 11) throw error;
+				if (attempt === registryAttempts - 1) {
+					throw new Error(`npm did not show ${this.version} within five minutes; once \`npm view @uberblick/ablauf@${this.version}\` shows it, run \`mise run release ${this.version} --finish --commit ${this.sha}\` (${error instanceof Error ? error.message : String(error)})`);
+				}
 				await this.pause();
 			}
 		}
-		if (!confirmed) throw new Error("Could not confirm npm publication");
 		this.done();
+		await this.complete();
+	}
+
+	/**
+	 * Finish a release whose npm publication already succeeded: confirm npm's
+	 * version and commit, then create only the tag, tag push and GitHub release
+	 * that are missing. Existing ones must match, or it stops. Never dispatches.
+	 */
+	async finish() {
+		this.finishing = true;
+		this.step = steps[2];
+		if (!stableVersion.test(this.version) || this.version.trim() !== this.version) throw new Error("Version must be stable X.Y.Z (no leading zeros or prerelease)");
+		if (this.expectedCommit === undefined || !fullSha.test(this.expectedCommit)) throw new Error("--finish needs --commit with the checked full SHA");
+		const published = this.published();
+		if (published.version !== this.version || published.gitHead !== this.expectedCommit) throw new Error("Published npm identity differs from checked version/commit");
+		this.sha = this.expectedCommit;
+		this.call("git", "fetch", "--no-tags", "origin", "+refs/heads/main:refs/remotes/origin/main");
+		this.call("git", "merge-base", "--is-ancestor", this.sha, "refs/remotes/origin/main");
+		// Notes come from the checked commit, never from a newer main.
+		this.notes = releaseNotes(this.run("git", ["show", `${this.sha}:CHANGELOG.md`]), this.version);
+		this.done();
+		await this.complete();
+	}
+
+	published(): { version?: string; gitHead?: string } {
+		// --prefer-online revalidates, so a cached 404 packument cannot hide a new version.
+		return JSON.parse(this.call("npm", "view", `@uberblick/ablauf@${this.version}`, "version", "gitHead", "--json", "--prefer-online"));
+	}
+
+	async complete() {
 		const tag = `v${this.version}`;
+		const peeled = (lines: string) => lines.split("\n").find((line) => line.endsWith(`refs/tags/${tag}^{}`))?.split(/\s/)[0];
 		this.step = steps[3];
-		this.call("git", "tag", "-a", tag, this.sha, "-m", `@uberblick/ablauf ${this.version}`);
-		this.artifacts.push(`Local tag: ${tag} at ${this.sha}`);
+		if (this.call("git", "tag", "--list", tag)) {
+			if (this.call("git", "rev-parse", `${tag}^{commit}`) !== this.sha) throw new Error(`Local ${tag} points elsewhere; never move a tag`);
+			this.artifacts.push(`Local tag already present: ${tag} at ${this.sha}`);
+		} else {
+			this.call("git", "tag", "-a", tag, this.sha, "-m", `@uberblick/ablauf ${this.version}`);
+			this.artifacts.push(`Local tag: ${tag} at ${this.sha}`);
+		}
 		this.done();
 		this.step = steps[4];
-		this.artifacts.push(`Tag push attempted: https://github.com/${repository}/tree/${tag}; inspect origin if it fails`);
-		this.call("git", "push", "origin", `refs/tags/${tag}:refs/tags/${tag}`);
+		const remote = this.call("git", "ls-remote", "--tags", "origin", `refs/tags/${tag}`, `refs/tags/${tag}^{}`);
+		if (remote) {
+			if (peeled(remote) !== this.sha) throw new Error(`origin ${tag} points elsewhere; never move a pushed tag`);
+			this.artifacts.push(`Tag already on origin: https://github.com/${repository}/tree/${tag}`);
+		} else {
+			this.artifacts.push(`Tag push attempted: https://github.com/${repository}/tree/${tag}; inspect origin if it fails`);
+			this.call("git", "push", "origin", `refs/tags/${tag}:refs/tags/${tag}`);
+		}
 		this.done();
 		this.step = steps[5];
+		const existing = this.existingRelease(tag);
+		if (existing) {
+			if (existing.tagName !== tag || existing.body.trim() !== this.notes.trim()) throw new Error(`GitHub release ${tag} exists with other notes or tag; inspect it instead of recreating`);
+			this.artifacts.push(`GitHub release already present with the checked notes: https://github.com/${repository}/releases/tag/${tag}`);
+			this.done();
+			this.output(`${this.artifacts.join("\n")}\n`);
+			return;
+		}
 		const temporary = mkdtempSync(join(process.env.UB_AGENTS_SCRATCH ?? tmpdir(), "ablauf-release-"));
 		try {
 			const notesPath = join(temporary, "notes.md");
@@ -161,10 +214,19 @@ export class Release {
 		this.output(`${this.artifacts.join("\n")}\n`);
 	}
 
+	existingRelease(tag: string): { tagName: string; body: string } | undefined {
+		try {
+			return JSON.parse(this.call("gh", "release", "view", tag, "--repo", repository, "--json", "tagName,body"));
+		} catch (error) {
+			if (error instanceof Error && /release not found/i.test(`${error.message} ${(error as { stderr?: unknown }).stderr ?? ""}`)) return undefined;
+			throw error;
+		}
+	}
+
 	failure(error: unknown): string {
 		return `Release failed during ${this.step}: ${error instanceof Error ? error.message : String(error)}\n` +
 			`Checked version: ${this.version}; checked commit: ${this.sha || "not established"}\n` +
-			`Completed: ${this.completed.join(", ") || "none"}\nRemaining: ${steps.filter((step) => !this.completed.includes(step)).join(", ")}\n` +
+			`Completed: ${this.completed.join(", ") || "none"}\nRemaining: ${steps.slice(this.finishing ? 2 : 0).filter((step) => !this.completed.includes(step)).join(", ")}\n` +
 			`Artifacts and possibly completed remote requests:\n${this.artifacts.join("\n") || "none"}\n` +
 			"Stop and inspect remote state using docs/releases.md. Never blindly repeat npm publication or move/delete a pushed tag.\n";
 	}
@@ -174,22 +236,27 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
 	const args = process.argv.slice(2);
 	const version = args.shift();
 	let check = false;
+	let finish = false;
 	let commit: string | undefined;
 	let valid = version !== undefined;
 	while (args.length) {
 		const arg = args.shift();
-		if (arg === "--check" && !check) check = true;
+		if (arg === "--check" && !check && !finish) check = true;
+		else if (arg === "--finish" && !finish && !check) finish = true;
 		else if (arg === "--commit" && commit === undefined && args.length) commit = args.shift();
 		else { valid = false; break; }
 	}
 	if (!valid || version === undefined) {
-		console.error("Usage: mise run release X.Y.Z [--check] [--commit CONFIRMED_FULL_SHA]");
+		console.error("Usage: mise run release X.Y.Z [--check] [--commit CONFIRMED_FULL_SHA]\n       mise run release X.Y.Z --finish --commit CHECKED_FULL_SHA");
 		process.exitCode = 1;
 	} else {
 		const release = new Release(version, process.cwd(), undefined, undefined, undefined, commit);
 		try {
-			release.preflight();
-			if (!check) await release.publish();
+			if (finish) await release.finish();
+			else {
+				release.preflight();
+				if (!check) await release.publish();
+			}
 		} catch (error) {
 			console.error(release.failure(error));
 			process.exitCode = 1;

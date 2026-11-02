@@ -65,8 +65,13 @@ function fixture(t: TestContext) {
 			if (args[1] === "view") return JSON.stringify(publication);
 		}
 		if (command === "npm" && args[0] === "view") {
-			assert.deepEqual(args, ["view", `@uberblick/ablauf@${version}`, "version", "gitHead", "--json"]);
+			assert.deepEqual(args, ["view", `@uberblick/ablauf@${version}`, "version", "gitHead", "--json", "--prefer-online"]);
 			return JSON.stringify({ version, gitHead: sha });
+		}
+		if (command === "gh" && args[0] === "release" && args[1] === "view") {
+			assert.equal(args[2], `v${version}`);
+			if (!savedNotes) throw Object.assign(new Error("Command failed: gh release view"), { stderr: "release not found" });
+			return JSON.stringify({ tagName: `v${version}`, body: savedNotes });
 		}
 		if (command === "gh" && args[0] === "release" && args[1] === "create") {
 			assert.equal(args[2], `v${version}`);
@@ -77,7 +82,9 @@ function fixture(t: TestContext) {
 		throw new Error(`Unexpected external service: ${command} ${args.join(" ")}`);
 	};
 	const release = new Release(version, root, run, (text) => { output += text; }, async () => {});
+	const finisher = (commit = sha) => new Release(version, root, run, (text) => { output += text; }, async () => {}, commit);
 	return {
+		finisher,
 		base, root, origin, sha, calls, git, commit, release,
 		inject: (value: typeof injected) => { injected = value; },
 		output: () => output, notes: () => savedNotes,
@@ -181,7 +188,7 @@ test("publication orders npm before tagging and retains checked commit when main
 	const publication = f.calls.filter((call) =>
 		call.command === "npm" || call.args[0] === "workflow" || ["watch", "view", "create"].includes(call.args[1]) || call.args.includes("-a") || call.args[0] === "push");
 	assert.deepEqual(publication.map((call) => `${call.command} ${call.args.slice(0, 2).join(" ")}`), [
-		"gh workflow run", "gh run watch", "gh run view", "npm view @uberblick/ablauf@0.3.0", "git tag -a", "git push origin", "gh release create",
+		"gh workflow run", "gh run watch", "gh run view", "npm view @uberblick/ablauf@0.3.0", "git tag -a", "git push origin", "gh release view", "gh release create",
 	]);
 	assert.deepEqual(f.release.completed, ["preflight", "dispatch publication", "confirm npm publication", "create local tag", "push tag", "create GitHub release"]);
 });
@@ -321,4 +328,52 @@ test("workflow's own guards refuse outside-main, wrong-version and wrong-identit
 			assert.equal(readdirSync(f.base).includes("publication-reached"), allowed, "publication must not be reached on refusal");
 		});
 	}
+});
+
+test("registry confirmation retries fresh reads for five minutes, then names the finish command", async (t) => {
+	const f = fixture(t);
+	let views = 0;
+	f.inject((call) => {
+		if (call.command === "npm") { views++; throw new Error("E404 No match found for version 0.3.0"); }
+		return undefined;
+	});
+	f.release.preflight();
+	await assert.rejects(f.release.publish(), new RegExp(`within five minutes.*--finish --commit ${f.sha}`));
+	assert.equal(views, 60);
+	assert.equal(f.release.step, "confirm npm publication");
+	assert.equal(f.git("tag", "--list"), "");
+});
+
+test("finish creates only the missing tag, push and release from the checked commit, and never dispatches", async (t) => {
+	const f = fixture(t);
+	f.advanceMain();
+	f.git("checkout", "main");
+	writeFileSync(join(f.root, "CHANGELOG.md"), `${changelog}\nNewer main notes that must not leak.\n`);
+	f.commit(); f.git("push", "origin", "main");
+	const finish = f.finisher();
+	await finish.finish();
+	assert.deepEqual(finish.completed, ["confirm npm publication", "create local tag", "push tag", "create GitHub release"]);
+	assert.equal(f.git("rev-parse", `v${version}^{commit}`), f.sha);
+	assert.match(f.git("ls-remote", "--tags", "origin", `refs/tags/v${version}^{}`), new RegExp(f.sha));
+	assert.equal(f.notes(), body);
+	assert.ok(!f.calls.some((call) => call.args[0] === "workflow"), "finish never dispatches publication");
+	// A second run finds everything in place and creates nothing.
+	const creates = f.calls.length;
+	await f.finisher().finish();
+	assert.ok(!f.calls.slice(creates).some((call) => call.args.includes("-a") || call.args[0] === "push" || call.args[1] === "create"));
+});
+
+test("finish refuses without a matching npm version, commit, tag or release", async (t) => {
+	const cases: [string, (f: ReturnType<typeof fixture>) => Release][] = [
+		["no commit", (f) => new Release(version, f.root, undefined, () => {}, async () => {})],
+		["npm 404", (f) => { f.inject((call) => { if (call.command === "npm") throw new Error("E404"); return undefined; }); return f.finisher(); }],
+		["other npm commit", (f) => f.finisher("b".repeat(40))],
+		["moved local tag", (f) => { f.git("tag", "-a", `v${version}`, f.git("commit-tree", `${f.sha}^{tree}`, "-m", "other"), "-m", "x"); return f.finisher(); }],
+		["other release notes", (f) => { f.inject((call) => call.args[0] === "release" && call.args[1] === "view" ? JSON.stringify({ tagName: `v${version}`, body: "Other" }) : undefined); return f.finisher(); }],
+	];
+	for (const [name, make] of cases) await t.test(name, async (t) => {
+		const f = fixture(t);
+		await assert.rejects(make(f).finish());
+		assert.ok(!f.calls.some((call) => call.args[0] === "workflow" || call.args[1] === "create"), "nothing dispatched or created");
+	});
 });

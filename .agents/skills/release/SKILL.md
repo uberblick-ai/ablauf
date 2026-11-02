@@ -31,4 +31,5 @@ Work in a clean checkout at current `origin/main`. Use literal versions and SHAs
    matches the checked notes. Report verified links and identities. On any
    failure or mismatch, report completed/remaining steps and artifacts and
    refer the maintainer to partial recovery; do not retry publication or repair
-   tags/releases yourself.
+   tags/releases yourself. When npm already shows the checked version and commit,
+   hand the maintainer `mise run release X.Y.Z --finish --commit CHECKED_FULL_SHA`.

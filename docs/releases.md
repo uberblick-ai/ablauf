@@ -48,7 +48,10 @@ change any committed project file or version. A separate job
 downloads that tarball and publishes it with provenance and scripts disabled.
 Only after that exact run succeeds and npm reports the checked version and
 `gitHead` does the command create an annotated local tag, push it without force,
-and create a GitHub release using the checked notes. It never advances the tag
+and create a GitHub release using the checked notes. The registry can answer 404
+for a minute or more after the workflow succeeds, so the command reads npm with
+`--prefer-online` (a cached 404 cannot hide the new version) and keeps trying for
+five minutes before it stops. It never advances the tag
 to a newer main. All changes here require maintainer merge under project policy.
 
 ## One-time setup (maintainer only)
@@ -114,7 +117,19 @@ alone is not proof of identity.
   GitHub release. If the release already exists, inspect its notes and tag
   instead of recreating it. Finish only missing steps.
 
-A maintainer finishing the last steps uses the original full SHA, never HEAD:
+A maintainer finishes the last steps with the original full SHA, never HEAD:
+
+```sh
+mise run release X.Y.Z --finish --commit CHECKED_FULL_SHA
+```
+
+`--finish` never dispatches publication. It requires npm to report `X.Y.Z` with
+that `gitHead` and the commit to be contained in `origin/main`, takes the notes
+from `CHANGELOG.md` at that commit, and then creates only what is missing: the
+annotated local tag, its push and the GitHub release. An existing tag must peel
+to that commit and an existing release must carry that tag and the same notes;
+anything else stops for maintainer investigation. Running it again after
+success changes nothing. The manual equivalent is:
 
 ```sh
 git tag -a vX.Y.Z CHECKED_FULL_SHA -m '@uberblick/ablauf X.Y.Z'
@@ -122,7 +137,7 @@ git push origin refs/tags/vX.Y.Z:refs/tags/vX.Y.Z
 gh release create vX.Y.Z --repo uberblick-ai/ablauf --verify-tag --title '@uberblick/ablauf X.Y.Z' --notes-file release-notes.md
 ```
 
-Run each command only when its artifact is absent. Write `release-notes.md`
+Run each manual command only when its artifact is absent. Write `release-notes.md`
 outside the checkout with exactly the body printed by the original check (or
 extract it from `CHANGELOG.md` at the recorded SHA); do not reconstruct it from
 newer main. Confirm the npm version and `gitHead`, peeled remote tag and GitHub
