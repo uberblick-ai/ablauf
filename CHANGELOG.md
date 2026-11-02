@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Add configurable unplayed shape opacity with unfaded labels, live control-font
+  overrides, and optional playback text contrast checks through
+  `checkPalette(palette, { play, unreachedOpacity })`. Static palettes, SVG bytes
+  and one-argument checks stay unchanged. ([#96](https://github.com/uberblick-ai/ablauf/issues/96))
+
 ## 0.3.0 — 2026-11-02
 
 ### Playback

@@ -60,9 +60,37 @@ function checkDiagram(svg: SVGSVGElement, scheme?: RenderOptions["scheme"]) {
   const failures = result.pairs.filter(pair =&gt; pair.ratio &lt; 4.5);
   if (failures.length) throw new Error(JSON.stringify(failures, null, 2));
   return result.minimum;
+}
+
+function effectivePlayback(svg: SVGSVGElement, scheme?: RenderOptions["scheme"]) {
+  const view = svg.ownerDocument.defaultView;
+  if (!view || !svg.isConnected) throw new Error("Connect the SVG before testing it");
+  const dark = scheme ? scheme === "dark"
+    : view.matchMedia("(prefers-color-scheme: dark)").matches;
+  const probe = svg.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "rect");
+  probe.setAttribute("width", "0");
+  probe.setAttribute("height", "0");
+  probe.setAttribute("aria-hidden", "true");
+  probe.style.fill = `var(--ab-play, ${dark ? "#6ff0cf" : "#0a7a60"})`;
+  probe.style.opacity = "var(--ab-play-unreached-opacity, 0.3)";
+  svg.append(probe);
+  try {
+    const resolved = view.getComputedStyle(probe);
+    return { play: resolved.fill, unreachedOpacity: resolved.opacity };
+  } finally {
+    probe.remove();
+  }
+}
+
+function checkPlayableDiagram(svg: SVGSVGElement, scheme?: RenderOptions["scheme"]) {
+  const result = checkPalette(effectivePalette(svg, scheme), effectivePlayback(svg, scheme));
+  const failures = result.pairs.filter(pair =&gt; pair.ratio &lt; 4.5);
+  if (failures.length) throw new Error(JSON.stringify(failures, null, 2));
+  return result.minimum;
 }</code></pre>
 <p>Pass the actual SVG element to <code>checkDiagram</code>, whether it is in the document or in a shadow root. The probe is its child, so it sees inherited properties in that tree. After inserting a render made with <code>scheme: "dark"</code>, call <code>checkDiagram(svg, "dark")</code>. For an automatic render call <code>checkDiagram(svg)</code> after each system scheme change. The example reads only public <code>--ab-*</code> properties; renderer classes and internal unprefixed properties such as <code>--rework</code> are not an integration API.</p>
 <p>Test complete host palettes and renders with overrides removed, including a shadow-root fixture if you embed there. Both defaults meet 4.5: LIGHT has a minimum of <code>4.526146877943026</code>, from rework-toned edge labels on a band (including inline gap labels); DARK stays at <code>4.706637464097893</code>. Host overrides need their own contrast checks.</p>
+<p>For playback use <code>checkPlayableDiagram</code>. Set shared overrides on an ancestor of both SVG and controls, including on the shadow host when mounting in a shadow root. Controls are siblings of the SVG and cannot inherit overrides set only inside it. Verify that the mounted controls resolve the same <code>--ab-bg</code>, <code>--ab-ink</code>, <code>--ab-muted</code> and <code>--ab-play</code> values, probing in their own tree if your host styles these separately; check each effective map if they differ. Repeat after live colour, opacity and system-scheme changes without remounting. Resolve CSS expressions through the property they affect (fill/colour and opacity), rather than passing unresolved custom-property strings. The checker has no DOM or automatic-scheme detection.</p>
 </section>
 
 <section class="q" id="contract"><h2>Read the paint contract</h2>
@@ -72,6 +100,14 @@ function checkDiagram(svg: SVGSVGElement, scheme?: RenderOptions["scheme"]) {
 <p>Layers composite with alpha source-over in gamma-encoded sRGB, as browsers do. For an opaque accumulated ground, each channel is <code>source × alpha + ground × (1 − alpha)</code>. After all ground layers, the ink's alpha composites over that ground. Only then are channels linearized for WCAG luminance: <code>c / 12.92</code> for <code>c ≤ 0.04045</code>, otherwise <code>((c + 0.055) / 1.055) ** 2.4</code>. Luminance weights are <code>0.2126, 0.7152, 0.0722</code>, and contrast is <code>(lighter + 0.05) / (darker + 0.05)</code>. The minimum is the lowest unrounded ratio.</p>
 <p>Accepted colour forms are <code>#rgb</code>, <code>#rgba</code>, <code>#rrggbb</code>, <code>#rrggbbaa</code>, numeric or percentage <code>rgb()</code>/<code>rgba()</code> (comma-separated or space-separated, with optional alpha), <code>color(srgb r g b / a)</code> with numeric or percentage channels, and <code>transparent</code>. Forms are case-insensitive; surrounding whitespace is allowed. Channels and alpha must be finite and in range (RGB numbers 0–255, sRGB numbers and alpha 0–1, percentages 0–100%). <code>bg</code> must be opaque; other colours may have alpha.</p>
 <p>Every token, including non-text colours, must have its own string value. Missing keys, invalid syntax, out-of-range values and unsupported forms throw <code>TypeError</code>; none are skipped. Extra object keys are ignored. Named colours, <code>currentColor</code>, <code>var()</code>, HSL, Lab/OKLCH and other colour spaces are unsupported inputs. Browsers normally resolve ordinary CSS colours to RGB on the probe; if yours preserves another colour space, convert it to an accepted sRGB form before calling the checker, matching the host's actual displayed colour. The function never rounds a result into a passing score.</p>
+<p>The optional second argument is <code>{ play, unreachedOpacity }</code> (exported type <code>PlaybackContrast</code>); both fields are required when supplying the object. <code>play</code> is the effective <code>--ab-play</code> colour with the same accepted forms and alpha as palette colours. <code>unreachedOpacity</code> is the effective fade: a finite number or trimmed CSS numeric/percentage string, for example <code>0.3</code>, <code>"0.3"</code> or <code>"30%"</code>. Finite out-of-range values clamp to [0, 1]. Missing fields, non-finite values, invalid syntax and unsupported forms (including <code>calc()</code> and <code>var()</code>) throw <code>TypeError</code>; extra keys are ignored. Fonts and glow size are not inputs.</p>
+<p>Two-argument results retain all static pairs and add playback controls and SVG text to <code>minimum</code>. Their <code>ink</code> may also be <code>"play"</code>; <code>ground</code> still contains only palette tokens. <code>where</code> identifies normal, hover, selected and keyboard-focused tabs and their combinations, enabled/hover/focused/disabled buttons, actor, counter, caption and empty-state text, even when states share paints. SVG pairs identify current, played and unplayed node and edge labels of every tone on canvas, band, node fills and decision label boxes.</p>
+<p>Unplayed shape fills take the fade independently; text never takes it. For example, at fade 0.3 an unplayed decision over a band has <code>ground: ["bg", "band", "agent-bg", "surface"]</code> and <code>groundOpacities: [1, 1, 0.3, 0.82 * 0.3]</code>. A pill inside an unplayed panel uses <code>[1, 1, 0.3, 0.3]</code>. Every multiplier also scales that layer's colour alpha. Inline gaps repaint canvas/band with multiplier 1, and crossing knockouts are unfaded; host colour alpha still applies. Current and played fills use multiplier 1. Text has no additional opacity multiplier: its colour alpha composites over the accumulated ground. Decorative text-shadow and glow are excluded from WCAG ratios. Both built-in schemes meet 4.5:1 over the full fade range; host colours or alpha may fail with identifiable <code>where</code> values. One-argument calls keep their original TypeScript result types, exact pairs/ratios/minimum and validation behaviour.</p>
+</section>
+
+<section class="q" id="playback-review"><h2>Review playback in a browser</h2>
+<p>Use the <a href="https://github.com/uberblick-ai/ablauf/blob/main/docs/playground.md#playback-browser-review">678px playback review fixture and recording checklist</a> in automatic and pinned light/dark schemes, light DOM and shadow roots. Exercise defaults and live opacity/font/colour overrides. At fade 0, 0.01, 0.3 and 1, verify readable labels, opaque gaps/knockouts, wrapping captions without clipping, scrolling tabs and visible keyboard focus. Control fonts use <code>--ab-font-text</code> (body/caption, default <code>system-ui,sans-serif</code>) and <code>--ab-font-mono</code> (tabs/buttons/actor/counter, default <code>ui-monospace,monospace</code>) in both schemes, independently of render <code>fonts</code>. They update mounted controls, including in shadow roots, and never change SVG bytes, metrics or geometry.</p>
+<p>Record focus-ring contrast against adjacent surfaces and other non-text contrast (current/played/future progress segments and faded shapes) separately, with browser/version, OS scheme, pinned scheme, DOM context, overrides, ratios and observed visibility. These measurements never enter <code>checkPalette</code> or its 4.5 text minimum. Source inspection does not satisfy this visual review.</p>
 </section>
 
 <section class="q" id="fonts-csp"><h2>Fonts and CSP</h2>

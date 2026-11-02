@@ -11,7 +11,7 @@ export type { Diagnostic } from "./parse.ts";
 export type { Timeline, TimelineStep } from "./play.ts";
 export type { FontOptions, FontsOptions, TextStyle } from "./fonts.ts";
 export { DARK, LIGHT } from "./svg.ts";
-export { TOKENS, checkPalette, type Token, type Palette } from "./paint.ts";
+export { TOKENS, checkPalette, type Token, type Palette, type PlaybackContrast } from "./paint.ts";
 
 export interface RenderOptions extends SvgOptions {
 	fonts?: FontsOptions;

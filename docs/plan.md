@@ -763,9 +763,14 @@ scenarios, the reduced-motion reset and destruction. `createPlayer` owns both
 root hooks, including when called through `mount.player` or built-in controls.
 
 All six node kinds and every edge stroke, head and label fragment take state
-colours. While `ab-in-progress` is present, unplayed node, edge stroke and head
-wrappers fade as a whole to 0.3 opacity. Unplayed label text also fades to 0.3,
-but inline label backgrounds (`.gap` / `.gap-band`) stay fully opaque. Current
+colours. While `ab-in-progress` is present, unplayed shapes, edge strokes and
+arrowheads take `--ab-play-unreached-opacity`, default `0.3` in both schemes.
+CSS opacity numbers and percentages clamp to [0, 1]. Unplayed means neither
+current nor played. Node and edge label text never takes this fade, so built-in
+label contrast stays at least 4.5:1 throughout the range. Fade applies to each
+shape, including decision label boxes with their existing 0.82 fill opacity,
+never to groups or text. Inline label backgrounds (`.gap` / `.gap-band`) and
+crossing knockouts retain opacity multiplier 1, including at fade 0. Current
 and played parts keep their state colours at full opacity, with current taking
 precedence. Inline gaps and crossing knockouts retain fully opaque canvas or
 band backgrounds, so underlying edges never show through them. Knockouts stay
@@ -890,6 +895,18 @@ style unrelated host elements. Focus is visible. All control colours derive
 from `--ab-play`, `--ab-line`, `--ab-muted`, `--ab-ink` and `--ab-bg`; muted play
 and glow shades use `color-mix()`. Every control glow honours the shared
 `--ab-play-glow` switch: literal `0` removes tab text and current-segment glows.
+Control body/caption/empty-state fonts use `--ab-font-text`, default
+`system-ui,sans-serif`; tabs, buttons, actor and counter use `--ab-font-mono`,
+default `ui-monospace,monospace`. Defaults are identical in both schemes and
+independent of render `fonts`. Host overrides update existing controls through
+CSS inheritance, including in shadow roots. SVG text never reads these
+properties; they change neither static nor playable SVG bytes, metrics or geometry.
+The DOM-free `checkPalette(palette, { play, unreachedOpacity })` contract adds
+all control text states and current/played/unplayed flow text grounds to its
+static pairs and text minimum. Ground multipliers include faded fills and
+label-box opacity; text only has its colour alpha. Decorative text-shadow/glow
+and non-text contrast are excluded. Hosts resolve effective values first;
+the input and composition contract is in the testing guide.
 An “All steps” list and scenario links remain host features.
 
 Both `mount.destroy()` and `mount.player.destroy()` perform the same idempotent

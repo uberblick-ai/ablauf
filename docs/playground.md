@@ -45,12 +45,14 @@ The page also shows a single timeline without tabs, a direct `createPlayer`
 case without built-in controls, a tabbed case with an empty scenario, and a
 **Compact controls** case with overflowing tabs, short captions, a long wrapping
 caption, an absent actor and an empty scenario at the end of the tab strip.
-Current-colour and zero-glow controls apply host overrides to every case,
-including the shadow root. Each document is 710px wide,
+Current-colour, ink, zero-glow, unplayed-opacity and body/mono-font controls
+apply live host overrides to every mounted case, including the shadow root,
+without remounting. Compact controls, inline-label fades and crossing knockouts
+each have light DOM and shadow-root cases. Each document is 710px wide,
 with 16px side padding giving a 678px figure at full width.
 
 A maintainer checks these in a real browser before merging playback changes,
-including #112, #113 and #116. Capture light and dark screenshots of
+including #96, #112, #113 and #116. Capture light and dark screenshots of
 `/playback-review` at the 678px figure width. Compare the controls with the
 [gallery controls reference](https://raw.githubusercontent.com/uberblick-ai/ablauf/9ba61d5485c89010c57ce6eb4c0111e7e6fac8de/spike/gallery/controls.png)
 and the figures with the [scenario playback GIF](images/playback/scenario-tabs.gif).
@@ -76,6 +78,11 @@ without host control CSS; the interactive checks below still need a maintainer.
   compact 30px buttons, and fixed Play/Pause/Replay minimum width. In **Compact
   controls**, the tab strip must scroll horizontally within the figure without
   wrapping or widening the document; scroll to the last empty scenario and back.
+- Change both control font selectors while mounted, in light DOM and shadow
+  roots. The body/caption uses `--ab-font-text`, while tabs/buttons/actor/counter
+  use `--ab-font-mono`. Defaults are system sans and UI mono in both schemes,
+  independent of render fonts. Captions must wrap without clipping, tabs still
+  scroll, and focus stays visible. SVG text and geometry must stay fixed.
 - At initial idle and range `-1`, the counter is blank and visually hidden with
   its space reserved; no segment is current or played. Step forward: the counter
   reads `1/total`, then follows the one-based current step during playback and
@@ -99,10 +106,13 @@ without host control CSS; the interactive checks below still need a maintainer.
   each counter, segment bar, caption, actor, range and Play/Pause/Replay label
   follows only its player.
   Enable looping and watch the last step return to the first.
-- In light and dark at document width, play or manually step the **Fade · inline
-  labels** figure. On the first Request step, later labels fade to 0.3; their
-  gaps must keep opaque canvas and band backgrounds. The unplayed parts remain
-  readable while the active path stands out. Pause, seek forward/backward,
+- In automatic and pinned light/dark at document width, in light DOM and shadow
+  roots, play or manually step the **Fade · inline labels** figure. On the first
+  Request step, later shapes fade to 0.3; all node/edge labels stay unfaded and
+  readable. The source's first caption predates this unfaded-label rule.
+  Change opacity live through 0, 0.01 (low nonzero), 0.3/30% and 1 with defaults
+  and colour/font overrides. Gaps must keep opaque canvas and band backgrounds
+  at every fade; current/played tones stay full strength. Pause, seek forward/backward,
   switch to Review only and loop: current/played parts stay fully opaque and
   the other parts fade. At range `-1` or Empty, the entire figure is unfaded.
 - In **Fade · crossing knockouts**, select each vertical and horizontal path.
@@ -135,6 +145,24 @@ without host control CSS; the interactive checks below still need a maintainer.
 
 DOM fakes, CSS selector checks and SVG source inspection do not satisfy this
 maintainer browser gate.
+
+Record the browser review in the implementation PR with the candidate SHA.
+For each browser/version, OS scheme, automatic/pinned scheme and DOM context,
+name the overrides (or defaults), fade and fonts; attach 678px captures and
+observations for labels, gaps/knockouts, caption wrapping, tab overflow and
+keyboard focus. Report non-text contrast separately from `checkPalette` text
+ratios and its 4.5 minimum: focus rings against each adjacent surface, current/
+played/future progress segments, and faded shapes on canvas/band. Record the
+resolved colours/composited surfaces, measured ratios and observed visibility,
+including when fade 0 intentionally hides shapes. Do not report a source-only
+inspection as a browser result. A compact record can use this table, repeated
+for defaults and live overrides in every context:
+
+| Browser/version, SHA | OS / render scheme | DOM | Overrides, fade, fonts | Element / adjacent ground | Non-text ratio | Observed visibility / capture |
+| --- | --- | --- | --- | --- | --- | --- |
+| Fill during maintainer review | | | | Focus ring / canvas and control | | |
+| | | | | Current, played, future segment / canvas | | |
+| | | | | Faded shape / canvas or band | | |
 
 ## What it is for
 

@@ -111,7 +111,7 @@ assert.match(core.render("flow v0\\nbox a\\n").svg, /^<svg /);
 	// the installed tarball, with no repository types or source imports.
 	writeFileSync(join(consumer, "types.mts"), `
 import { render, type RenderOptions, type Diagnostic, type FontsOptions,
-  type FontOptions, type TextStyle, TOKENS, type Token, type Palette, LIGHT, checkPalette } from "@uberblick/ablauf";
+  type FontOptions, type TextStyle, TOKENS, type Token, type Palette, type PlaybackContrast, LIGHT, checkPalette } from "@uberblick/ablauf";
 const measureText = (text: string, { fontSize }: TextStyle) => text.length * fontSize;
 const font: FontOptions = { family: "Host Mono", measureText };
 const fonts: FontsOptions = { mono: font, text: font };
@@ -124,6 +124,12 @@ const tokens: readonly Token[] = TOKENS;
 const palette: Palette = { ...LIGHT };
 const token: Token = TOKENS[0];
 const resultPalette: { minimum: number; pairs: { ink: Token; ground: Token[]; opacity?: number; ratio: number; where: string }[] } = checkPalette(palette);
+const playbackContrast: PlaybackContrast = { play: "#0a7a60", unreachedOpacity: "30%" };
+const playbackInk: Token | "play" = checkPalette(palette, playbackContrast).pairs[0].ink;
+// @ts-expect-error Playback text ink also permits play, without widening static calls.
+const onlyStaticInk: Token = checkPalette(palette, playbackContrast).pairs[0].ink;
+// @ts-expect-error Both playback fields are required.
+checkPalette(palette, { play: "#0a7a60" });
 // @ts-expect-error TOKENS is a readonly tuple.
 TOKENS.push("ink");
 // @ts-expect-error Only supported public tokens are assignable.

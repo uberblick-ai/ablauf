@@ -6,6 +6,10 @@ const hostScheme = document.getElementById("review-host") as HTMLSelectElement;
 const loop = document.getElementById("review-loop") as HTMLInputElement;
 const accent = document.getElementById("review-accent") as HTMLSelectElement;
 const zeroGlow = document.getElementById("review-zero-glow") as HTMLInputElement;
+const fadeOpacity = document.getElementById("review-fade") as HTMLSelectElement;
+const textFont = document.getElementById("review-font-text") as HTMLSelectElement;
+const monoFont = document.getElementById("review-font-mono") as HTMLSelectElement;
+const ink = document.getElementById("review-ink") as HTMLInputElement;
 const cases = document.getElementById("review-cases") as HTMLElement;
 const mounts: PlaybackMount[] = [];
 const figureCSS = ".review-figure svg{display:block;max-width:100%;height:auto}";
@@ -100,8 +104,11 @@ function draw() {
 	addCase("Loop · light DOM", source, "review-light-dom");
 	addCase("Loop · shadow root", source, "review-shadow", true);
 	addCase("Compact controls · overflowing tabs and wrapping captions", compact, "review-compact");
+	addCase("Compact controls · shadow root", compact, "review-compact-shadow", true);
 	addCase("Fade · inline labels on canvas and band", fade, "review-fade");
+	addCase("Fade · inline labels · shadow root", fade, "review-fade-shadow", true);
 	addCase("Fade · crossing knockouts (two expected warnings)", crossings, "review-crossings");
+	addCase("Fade · crossing knockouts · shadow root", crossings, "review-crossings-shadow", true);
 	addCase("Single timeline · no tabs", single, "review-single");
 	addCase("Direct createPlayer · no built-in controls", single, "review-headless", false, true);
 	addCase("Tabbed · includes an empty scenario", `${single}play "Empty scenario"\n`, "review-empty");
@@ -117,4 +124,11 @@ zeroGlow.addEventListener("change", () => {
 	if (zeroGlow.checked) document.body.style.setProperty("--ab-play-glow", "0");
 	else document.body.style.removeProperty("--ab-play-glow");
 });
+// These mutate only inherited CSS; mounted players, focus and SVG bytes remain.
+for (const [control, property] of [[fadeOpacity, "--ab-play-unreached-opacity"], [textFont, "--ab-font-text"], [monoFont, "--ab-font-mono"], [ink, "--ab-ink"]] as const) {
+	control.addEventListener("input", () => {
+		if (control.value) document.body.style.setProperty(property, control.value);
+		else document.body.style.removeProperty(property);
+	});
+}
 draw();

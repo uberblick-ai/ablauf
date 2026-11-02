@@ -9,18 +9,18 @@ export interface PlaybackMount {
 // Defaults belong to the controls too: SVG-internal variables cannot reach a
 // sibling. Keep every selector under the mount class, including scheme rules.
 const STYLE = `
-.ab-playback{--abp-bg:var(--ab-bg,#ffffff);--abp-ink:var(--ab-ink,#17202c);--abp-muted:var(--ab-muted,#5a6575);--abp-line:var(--ab-line,#d3d9e2);--abp-play:var(--ab-play,#0a7a60);color-scheme:light;color:var(--abp-ink);background:var(--abp-bg);font:14px/1.5 system-ui,sans-serif;padding:0 0 12px;overflow-wrap:anywhere}
+.ab-playback{--abp-bg:var(--ab-bg,#ffffff);--abp-ink:var(--ab-ink,#17202c);--abp-muted:var(--ab-muted,#5a6575);--abp-line:var(--ab-line,#d3d9e2);--abp-play:var(--ab-play,#0a7a60);color-scheme:light;color:var(--abp-ink);background:var(--abp-bg);font:14px/1.5 var(--ab-font-text,system-ui,sans-serif);padding:0 0 12px;overflow-wrap:anywhere}
 .ab-playback.ab-dark{--abp-bg:var(--ab-bg,#171c24);--abp-ink:var(--ab-ink,#e5e9ef);--abp-muted:var(--ab-muted,#98a2b0);--abp-line:var(--ab-line,#2c3440);--abp-play:var(--ab-play,#6ff0cf);color-scheme:dark}
 @media (prefers-color-scheme:dark){.ab-playback.ab-auto{--abp-bg:var(--ab-bg,#171c24);--abp-ink:var(--ab-ink,#e5e9ef);--abp-muted:var(--ab-muted,#98a2b0);--abp-line:var(--ab-line,#2c3440);--abp-play:var(--ab-play,#6ff0cf);color-scheme:dark}}
-.ab-playback button{font:12px/1 ui-monospace,monospace;color:var(--abp-ink);background:var(--abp-bg);border:1px solid var(--abp-line);border-radius:8px;height:30px;padding:0 10px;cursor:pointer}
+.ab-playback button{font:12px/1 var(--ab-font-mono,ui-monospace,monospace);color:var(--abp-ink);background:var(--abp-bg);border:1px solid var(--abp-line);border-radius:8px;height:30px;padding:0 10px;cursor:pointer}
 .ab-playback .abp-tabs{display:flex;overflow-x:auto;border-bottom:1px solid var(--abp-line)}
 .ab-playback .abp-tabs button{flex:none;font-weight:500;color:var(--abp-muted);background:none;border:0;border-bottom:2px solid transparent;border-radius:0;height:auto;padding:11px 16px;white-space:nowrap}
 .ab-playback .abp-tabs button:hover{color:var(--abp-ink)}
 .ab-playback .abp-tabs button[aria-selected="true"]{color:var(--abp-play);border-bottom-color:var(--abp-play);text-shadow:0 0 var(--ab-play-glow,10px) color-mix(in srgb,var(--abp-play) 50%,transparent)}
 .ab-playback .abp-step{display:grid;grid-template-columns:54px minmax(0,1fr);grid-template-rows:20px auto;column-gap:14px;row-gap:2px;box-sizing:border-box;min-height:64px;padding:12px 12px 4px;align-content:start}
-.ab-playback .abp-counter{grid-row:1/3;align-self:start;box-sizing:border-box;font:500 11px/20px ui-monospace,monospace;color:var(--abp-muted);border:1px solid var(--abp-line);border-radius:999px;padding:0 8px;text-align:center}
+.ab-playback .abp-counter{grid-row:1/3;align-self:start;box-sizing:border-box;font:500 11px/20px var(--ab-font-mono,ui-monospace,monospace);color:var(--abp-muted);border:1px solid var(--abp-line);border-radius:999px;padding:0 8px;text-align:center}
 .ab-playback .abp-counter:empty{visibility:hidden}
-.ab-playback .abp-actor{grid-column:2;font:500 13px/20px ui-monospace,monospace;color:var(--abp-play);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ab-playback .abp-actor{grid-column:2;font:500 13px/20px var(--ab-font-mono,ui-monospace,monospace);color:var(--abp-play);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ab-playback .abp-caption{grid-column:2;font-size:16px;line-height:1.45;min-height:1.45em;white-space:pre-wrap}
 .ab-playback .abp-actions{display:flex;align-items:center;gap:8px;padding:6px 12px 0}
 .ab-playback .abp-toggle{min-width:68px}
