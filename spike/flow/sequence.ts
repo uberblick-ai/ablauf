@@ -280,6 +280,7 @@ export function renderSequence(source: string, options: RenderOptions = {}, scen
 		}
 	}
 	const body: string[] = [];
+	const timeBands: string[] = [];
 	const defs: string[] = [];
 	const prefix = `${markerPrefix(options)}-seq`;
 	for (const tone of [...new Set(messages.filter((m) => !m.response).map((m) => m.from.tone))].sort())
@@ -352,11 +353,21 @@ export function renderSequence(source: string, options: RenderOptions = {}, scen
 		const path = self
 			? `M${from},${arrowY} H${from + loop - 5} Q${from + loop},${arrowY} ${from + loop},${arrowY + 5} V${arrowY + 17} Q${from + loop},${arrowY + 22} ${from + loop - 5},${arrowY + 22} H${to}`
 			: `M${from},${arrowY} L${to},${arrowY}`;
-		body.push(`<g data-line="${message.line}" data-step="${i + 1}"${part(playback.rowParts.get(row) as string)}>`);
+		// Each quadratic corner has length 5 * (1 + asinh(1) / sqrt(2)).
+		// Keep real user-unit lengths: normalizing pathLength would scale dashes.
+		const length = self ? 2 * Math.abs(loop - 5) + 12 + 10 * (1 + Math.asinh(1) / Math.SQRT2) : Math.abs(to - from);
+		const endY = arrowY + (self ? 22 : 0);
+		const identity = playback.rowParts.get(row) as string;
+		if (playable) timeBands.push(`<g${part(identity)}><rect x="0" y="${y - 3}" width="${WIDTH}" height="${endY - y + 9}" rx="7" class="seq-time-band"/></g>`);
+		body.push(`<g data-line="${message.line}" data-step="${i + 1}"${part(identity)}${playable ? ` style="--seq-length:${Number(length.toFixed(6))}"` : ""}>`);
 		body.push(...textLines(labels, labelX, y + 12, "s12 seq-label"));
 		body.push(...textLines(numbers, 0, arrowY + 4, "s11 muted seq-number"));
 		body.push(`<path d="${path}" class="e e-${tone}${message.response ? " dash seq-response" : ""}" marker-end="url(#${prefix}-${message.response ? "response" : tone})"/>`);
 		if (!message.response) body.push(`<circle cx="${from}" cy="${arrowY}" r="2.5" class="t-${tone}"/>`);
+		if (playable) body.push(
+			`<rect x="${to - 3}" y="${endY - 9}" width="6" height="18" rx="3" class="seq-activation t-${message.to.tone}"/>`,
+			`<path d="${path}" class="seq-packet e-${message.from.tone}"/>`,
+		);
 		body.push("</g>");
 		y = arrowY + Math.max(self ? 22 : 0, (numbers.length - 1) * LEADING) + 12;
 	}
@@ -377,6 +388,6 @@ export function renderSequence(source: string, options: RenderOptions = {}, scen
 	}
 	const layout: Layout = { width: WIDTH, height, nodes: [], routes: [], bands: [], legend: null, diagnostics, typography };
 	const description = `Sequence: ${participants.map((p) => p.title).join(", ")}. ${messages.map((m) => `${m.from.title} to ${m.to.title}: ${m.label}`).join(". ")}`;
-	const svg = `<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-${mode}"${playable ? ` data-ab-play="${markerPrefix(options)}"` : ""} viewBox="0 0 ${WIDTH} ${height}" width="${WIDTH}" height="${height}" role="img" aria-label="${esc(options.title ?? description)}">\n${svgStyle(mode, typography, [STYLE, ...(playable ? [playStyle(mode, markerPrefix(options), "sequence")] : [])])}\n<defs>${defs.join("\n")}</defs>\n${[...background, ...body].join("\n")}\n</svg>\n`;
+	const svg = `<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-${mode}"${playable ? ` data-ab-play="${markerPrefix(options)}"` : ""} viewBox="0 0 ${WIDTH} ${height}" width="${WIDTH}" height="${height}" role="img" aria-label="${esc(options.title ?? description)}">\n${svgStyle(mode, typography, [STYLE, ...(playable ? [playStyle(mode, markerPrefix(options), "sequence")] : [])])}\n<defs>${defs.join("\n")}</defs>\n${[...background, ...timeBands, ...body].join("\n")}\n</svg>\n`;
 	return { svg, diagnostics, layout, timelines: playback.timelines };
 }

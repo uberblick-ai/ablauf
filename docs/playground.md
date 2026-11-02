@@ -22,14 +22,33 @@ source or switching examples destroys the previous mount. Open
 their static presentation.
 
 For sequence playback, open `#examples/claim-play` and select the 710px
-document column (678px figure). Before merging #137, a maintainer must play
+document column (678px figure). Before merging #138, a maintainer must play
 both **Claim the show** and **Wrong code** in light and dark in a browser.
 Check current/played/faded messages, participant headers and attached phase,
 branch and note annotations; the wrong-code scenario skips the success branch.
 Current messages glow without running dashes, numbers become bold in the play
 colour, and current header dots grow and glow. Structural lines/backgrounds
-stay fully visible. Pause, navigate manually and return to idle; only playing
-fades and dot growth ease. Verify reduced motion and `--ab-play-glow: 0`.
+stay fully visible. Check the chosen treatment C against the pinned
+[prototype](https://github.com/uberblick-ai/ablauf/blob/48fd77324024cbe37bdd331fb1e61f7a39756f39/spike/sequence-playback-prototype/README.md):
+arrows draw sender to receiver in about 0.55s with ease-out timing, a small dot
+rides the tip and fades on arrival, and a receiver-toned activation bar appears
+after arrival. Check reverse responses (including messages 2, 6, 8, 14 and 15):
+they regain their dashes after drawing. Check message 11's packet follows the
+whole self-message loop and its bar sits at the loop end. Played bars remain
+faint, unplayed bars stay hidden, and a soft play-colour band spans the figure
+behind the current label and arrow, taller for the self-message. Check the
+band's placement and cross-fade on every step in both scenarios.
+
+Pause midway through drawing: the arrow completes immediately, the packet
+disappears, and the bar and band show immediately. Resume: that step redraws.
+Navigate manually and check the complete arrow, bar and band without travel or
+transitions. Return to idle and check the full figure with no overlays. Only
+playing states ease or animate. Enable reduced motion before Play and during
+playback: it resets to idle and the full figure; manual steps still show their
+bar and band instantly, with no animation or transitions. Verify
+`--ab-play-glow: 0`. The packet uses a round dash on the arrow path, so no CSS
+motion-path/offset is used. Any replacement that uses it must verify travel in
+current Chromium, Firefox and Safari, or supply a compatible fallback.
 Reading SVG source or using DOM fakes does not satisfy this visual review.
 
 For the system-step comparison, open `#examples/system-steps` and select the
