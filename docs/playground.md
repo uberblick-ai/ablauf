@@ -21,6 +21,17 @@ source or switching examples destroys the previous mount. Open
 `#examples/loop-play` for three scenario tabs. Examples without timelines keep
 their static presentation.
 
+For sequence playback, open `#examples/claim-play` and select the 710px
+document column (678px figure). Before merging #137, a maintainer must play
+both **Claim the show** and **Wrong code** in light and dark in a browser.
+Check current/played/faded messages, participant headers and attached phase,
+branch and note annotations; the wrong-code scenario skips the success branch.
+Current messages glow without running dashes, numbers become bold in the play
+colour, and current header dots grow and glow. Structural lines/backgrounds
+stay fully visible. Pause, navigate manually and return to idle; only playing
+fades and dot growth ease. Verify reduced motion and `--ab-play-glow: 0`.
+Reading SVG source or using DOM fakes does not satisfy this visual review.
+
 For the system-step comparison, open `#examples/system-steps` and select the
 710 px document column. Check both light and dark: “The loop” is a blue system
 box with explanatory text, beside a neutral note and connected to a label,
