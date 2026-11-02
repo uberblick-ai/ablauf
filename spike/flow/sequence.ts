@@ -364,10 +364,7 @@ export function renderSequence(source: string, options: RenderOptions = {}, scen
 		body.push(...textLines(numbers, 0, arrowY + 4, "s11 muted seq-number"));
 		body.push(`<path d="${path}" class="e e-${tone}${message.response ? " dash seq-response" : ""}" marker-end="url(#${prefix}-${message.response ? "response" : tone})"/>`);
 		if (!message.response) body.push(`<circle cx="${from}" cy="${arrowY}" r="2.5" class="t-${tone}"/>`);
-		if (playable) body.push(
-			`<rect x="${to - 3}" y="${endY - 9}" width="6" height="18" rx="3" class="seq-activation t-${message.to.tone}"/>`,
-			`<path d="${path}" class="seq-packet e-${message.from.tone}"/>`,
-		);
+		if (playable) body.push(`<path d="${path}" class="seq-packet e-${message.from.tone}"/>`);
 		body.push("</g>");
 		y = arrowY + Math.max(self ? 22 : 0, (numbers.length - 1) * LEADING) + 12;
 	}

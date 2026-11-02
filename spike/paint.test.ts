@@ -130,8 +130,8 @@ function inspect(svg: string) {
 	const css = svg.match(/<style>([\s\S]*?)<\/style>/)?.[1];
 	assert.ok(css);
 	assert.doesNotMatch(svg, /class="[^"]*\bab-(?:playing|in-progress)\b/, "static paint inspector cannot inspect active playback fading");
-	// Keyframes do not participate in an idle figure's cascade. Travel and
-	// arrival, including their opacity, are checked in sequence-travel.test.ts.
+	// Keyframes do not participate in an idle figure's cascade. Packet travel,
+	// including its opacity, is checked in sequence-travel.test.ts.
 	const idleCss = css.replace(/@keyframes [^{]+\{(?:[^{}]*\{[^{}]*\})+\}/g, "");
 	let hiddenSequenceOverlays = false;
 	const rules = [...idleCss.matchAll(/([^{}]+)\{([^{}]+)\}/g)].flatMap(([, selector, body], order) => {
@@ -152,11 +152,11 @@ function inspect(svg: string) {
 			assert.deepEqual(declarations, { fill: "var(--play)", "font-weight": "600" });
 			return [];
 		}
-		// These three shapes are invisible in idle and cannot add a ground
+		// These two shapes are invisible in idle and cannot add a ground
 		// paint. Recognize only their exact scoped rules, retaining fail-closed
 		// behavior for changed defaults and any new opacity or fill selector.
 		const overlay = /^\.ab\[data-ab-play="[A-Za-z0-9_.-]+"\](.*)$/.exec(selector.trim())?.[1];
-		if (overlay === " :is(.seq-packet,.seq-activation,.seq-time-band)") {
+		if (overlay === " :is(.seq-packet,.seq-time-band)") {
 			assert.deepEqual(declarations, { opacity: "0", "pointer-events": "none" });
 			hiddenSequenceOverlays = true;
 			return [];
@@ -165,8 +165,6 @@ function inspect(svg: string) {
 		if (overlay === " .seq-packet") { assert.equal(declarations.fill, "none"); assert.ok(!("opacity" in declarations)); return []; }
 		const overlayOpacity: Record<string, string> = {
 			".ab-in-progress [data-ab-part].ab-current .seq-time-band": ".1",
-			".ab-in-progress [data-ab-part].ab-current .seq-activation": "1",
-			".ab-in-progress [data-ab-part].ab-played .seq-activation": ".35",
 		};
 		if (overlay && overlayOpacity[overlay]) { assert.deepEqual(declarations, { opacity: overlayOpacity[overlay] }); return []; }
 		assert.ok(!("opacity" in declarations), "inspector must handle new group/element opacity");
@@ -201,7 +199,7 @@ function inspect(svg: string) {
 			assert.match(el.attrs.style, /^--seq-length:\d+(?:\.\d+)?$/);
 		}
 		assert.ok(!el.attrs.opacity, "inspector must handle new inline opacity");
-		if (el.classes.some(c => ["seq-packet", "seq-activation", "seq-time-band"].includes(c))) {
+		if (el.classes.some(c => ["seq-packet", "seq-time-band"].includes(c))) {
 			assert.ok(hiddenSequenceOverlays, "idle sequence overlays must be hidden");
 			assert.ok(["path", "rect"].includes(el.tag), "only overlay shapes may be omitted");
 			continue;

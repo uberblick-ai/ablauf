@@ -29,23 +29,25 @@ branch and note annotations; the wrong-code scenario skips the success branch.
 Current messages glow without running dashes, numbers become bold in the play
 colour, and current header dots grow and glow. Structural lines/backgrounds
 stay fully visible. Check the chosen treatment C against the pinned
-[prototype](https://github.com/uberblick-ai/ablauf/blob/48fd77324024cbe37bdd331fb1e61f7a39756f39/spike/sequence-playback-prototype/README.md):
+[prototype](https://github.com/uberblick-ai/ablauf/blob/48fd77324024cbe37bdd331fb1e61f7a39756f39/spike/sequence-playback-prototype/README.md),
+with receiver activation bars removed per the
+[maintainer browser review](https://github.com/uberblick-ai/ablauf/pull/143#issuecomment-6581639769):
 arrows draw sender to receiver in about 0.55s with ease-out timing, a small dot
-rides the tip and fades on arrival, and a receiver-toned activation bar appears
-after arrival. Check reverse responses (including messages 2, 6, 8, 14 and 15):
+rides the tip and fades on arrival, and no receiver activation bar appears.
+Check reverse responses (including messages 2, 6, 8, 14 and 15):
 they regain their dashes after drawing. Check message 11's packet follows the
-whole self-message loop and its bar sits at the loop end. Played bars remain
-faint, unplayed bars stay hidden, and a soft play-colour band spans the figure
+whole self-message loop without a bar at the loop end. Current, played and
+unplayed messages have no activation bars. A soft play-colour band spans the figure
 behind the current label and arrow, taller for the self-message. Check the
 band's placement and cross-fade on every step in both scenarios.
 
 Pause midway through drawing: the arrow completes immediately, the packet
-disappears, and the bar and band show immediately. Resume: that step redraws.
-Navigate manually and check the complete arrow, bar and band without travel or
+disappears, and the band shows immediately. Resume: that step redraws.
+Navigate manually and check the complete arrow and band without travel or
 transitions. Return to idle and check the full figure with no overlays. Only
 playing states ease or animate. Enable reduced motion before Play and during
 playback: it resets to idle and the full figure; manual steps still show their
-bar and band instantly, with no animation or transitions. Verify
+band instantly, with no animation or transitions. Verify
 `--ab-play-glow: 0`. The packet uses a round dash on the arrow path, so no CSS
 motion-path/offset is used. Any replacement that uses it must verify travel in
 current Chromium, Firefox and Safari, or supply a compatible fallback.

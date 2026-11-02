@@ -174,23 +174,19 @@ function sequencePlayEffects(id: string): string {
 		`${root} ${headers}.ab-current circle{transform:scale(1.7);${glow}}`,
 		`${playing}{transition:opacity .35s ease}`,
 		`${root}.ab-playing ${headers} circle{transition:transform .3s ease}`,
-		`${root} :is(.seq-packet,.seq-activation,.seq-time-band){opacity:0;pointer-events:none}`,
+		`${root} :is(.seq-packet,.seq-time-band){opacity:0;pointer-events:none}`,
 		`${root} .seq-time-band{fill:var(--play)}`,
 		`${current} .seq-time-band{opacity:.1}`,
-		`${root}.ab-in-progress [data-ab-part].ab-played .seq-activation{opacity:.35}`,
-		`${current} .seq-activation{opacity:1}`,
 		// A round, near-zero dash is a dot on the same path, including loops.
 		// Its gap exceeds the whole path so no second packet can appear.
 		`${root} .seq-packet{fill:none;stroke-width:6;stroke-linecap:round;stroke-dasharray:.01 calc(var(--seq-length) + 8)}`,
 		`${root}.ab-playing .seq-time-band{transition:opacity .35s ease}`,
 		`${moving} path.e{animation:${name}-draw .55s ease-out}`,
 		`${moving} .seq-packet{animation:${name}-travel .55s ease-out}`,
-		`${moving} .seq-activation{animation:${name}-arrive .15s ease-out .55s backwards}`,
 		// No fill mode on draw: response dashes return as soon as it finishes.
 		`@keyframes ${name}-draw{from{stroke-dasharray:var(--seq-length) var(--seq-length);stroke-dashoffset:var(--seq-length)}to{stroke-dasharray:var(--seq-length) var(--seq-length);stroke-dashoffset:0}}`,
 		`@keyframes ${name}-travel{0%{stroke-dashoffset:0;opacity:1}85%{opacity:1}100%{stroke-dashoffset:calc(-1 * var(--seq-length));opacity:0}}`,
-		`@keyframes ${name}-arrive{from{opacity:0}to{opacity:1}}`,
-		`@media (prefers-reduced-motion:reduce){${playing},${root}.ab-playing ${headers} circle,${root}.ab-playing .seq-time-band{transition:none}${moving} :is(path.e,.seq-packet,.seq-activation){animation:none}}`,
+		`@media (prefers-reduced-motion:reduce){${playing},${root}.ab-playing ${headers} circle,${root}.ab-playing .seq-time-band{transition:none}${moving} :is(path.e,.seq-packet){animation:none}}`,
 	].join("");
 }
 

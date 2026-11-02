@@ -33,7 +33,7 @@ function pathLength(path: string): number {
 	return length;
 }
 
-test("every playable message has a real render-time length, matching packet path and receiver bar", () => {
+test("every playable message has a real render-time length and matching packet path, without receiver bars", () => {
 	// Include reverse requests, responses and self-responses, plus a narrow
 	// last-lane loop whose horizontal segments run backward around its corners.
 	const extra = `sequence v0\n${Array.from({ length: 20 }, (_, i) => `participant p${i} tone=${i === 19 ? "agent" : "system"}`).join("\n")}\np19 --> p0: Reverse request\np0 -.-> p19: Response\np19 --> p19: Self\np19 -.-> p19: Self response\nplay\n step 1\n`;
@@ -42,6 +42,7 @@ test("every playable message has a real render-time length, matching packet path
 		assert.deepEqual(result.diagnostics, []);
 		const messages = rows(result.svg);
 		assert.equal(messages.length, source === claim ? 15 : 4);
+		assert.doesNotMatch(result.svg, /seq-activation/);
 		const participantTones = new Map([...result.svg.matchAll(/<circle cx="([^"]+)" cy="20" r="3" class="t-([^"]+)"/g)].map(m => [Number(m[1]), m[2]]));
 		for (const [wrapper, step, drawing] of messages) {
 			const length = Number(wrapper.match(/--seq-length:([\d.]+)/)?.[1]);
@@ -53,15 +54,10 @@ test("every playable message has a real render-time length, matching packet path
 			assert.ok(length > 0);
 			assert.doesNotMatch(drawing, /pathLength=|offset-path|offset-distance|<animate/);
 			const coords = d.match(/-?\d+(?:\.\d+)?/g)?.map(Number) ?? [];
-			const self = d.includes("Q"), from = coords[0], to = self ? coords.at(-1) as number : coords[2];
-			const endY = self ? coords.at(-2) as number : coords[3];
+			const from = coords[0];
 			assert.equal(attr(paths[1], "class"), `seq-packet e-${participantTones.get(from)}`);
 			assert.doesNotMatch(paths[1], /marker-end/);
-			const bar = drawing.match(/<rect[^>]+seq-activation[^>]+>/)?.[0] ?? "";
-			assert.equal(attr(bar, "x"), String(to - 3));
-			assert.equal(attr(bar, "y"), String(endY - 9));
-			assert.equal(attr(bar, "width"), "6"); assert.equal(attr(bar, "height"), "18"); assert.equal(attr(bar, "rx"), "3");
-			assert.equal(attr(bar, "class"), `seq-activation t-${participantTones.get(to)}`);
+			assert.doesNotMatch(drawing, /<rect\b/);
 		}
 	}
 });
@@ -90,7 +86,7 @@ test("each message has a full-width background band enclosing all label lines an
 	}
 });
 
-test("SVG state rules show current and retained bars and bands, animate only while playing, and reset motion", () => {
+test("SVG state rules show the current band without receiver bars, animate only while playing, and reset motion", () => {
 	for (const scheme of schemes) for (const idPrefix of ["one", "two", "1:<unsafe>."]) {
 		const { svg } = render(claim, { scheme, idPrefix });
 		const id = attr(svg, "data-ab-play");
@@ -99,14 +95,12 @@ test("SVG state rules show current and retained bars and bands, animate only whi
 		const current = `${root}.ab-in-progress [data-ab-part].ab-current`;
 		const moving = `${root}.ab-playing [data-ab-part].ab-current`;
 		const name = `ab-seq-${Array.from(id, c => c.charCodeAt(0).toString(16)).join("-")}`;
-		assert.ok(css.includes(`${root} :is(.seq-packet,.seq-activation,.seq-time-band){opacity:0;pointer-events:none}`));
+		assert.ok(css.includes(`${root} :is(.seq-packet,.seq-time-band){opacity:0;pointer-events:none}`));
 		assert.ok(css.includes(`${root} .seq-time-band{fill:var(--play)}`));
 		assert.ok(css.includes(`${current} .seq-time-band{opacity:.1}`));
-		assert.ok(css.includes(`${current} .seq-activation{opacity:1}`));
-		assert.ok(css.includes(`${root}.ab-in-progress [data-ab-part].ab-played .seq-activation{opacity:.35}`));
+		assert.doesNotMatch(css, /seq-activation|-arrive/);
 		assert.ok(css.includes(`${moving} path.e{animation:${name}-draw .55s ease-out}`));
 		assert.ok(css.includes(`${moving} .seq-packet{animation:${name}-travel .55s ease-out}`));
-		assert.ok(css.includes(`${moving} .seq-activation{animation:${name}-arrive .15s ease-out .55s backwards}`));
 		assert.ok(css.includes(`${root}.ab-playing .seq-time-band{transition:opacity .35s ease}`));
 		assert.match(css, /stroke-linecap:round;stroke-dasharray:\.01 calc\(var\(--seq-length\) \+ 8\)/);
 		assert.ok(css.includes(`@keyframes ${name}-draw{from{stroke-dasharray:var(--seq-length) var(--seq-length);stroke-dashoffset:var(--seq-length)}to{stroke-dasharray:var(--seq-length) var(--seq-length);stroke-dashoffset:0}}`));
@@ -114,7 +108,7 @@ test("SVG state rules show current and retained bars and bands, animate only whi
 		assert.match(css, /\.ab \.dash\{stroke-dasharray:6 5\}/);
 		assert.doesNotMatch(css, /forwards|infinite|offset-path|offset-distance/);
 		const reduced = css.slice(css.indexOf("@media (prefers-reduced-motion:reduce)"));
-		assert.ok(reduced.includes(`${moving} :is(path.e,.seq-packet,.seq-activation){animation:none}`));
+		assert.ok(reduced.includes(`${moving} :is(path.e,.seq-packet){animation:none}`));
 		assert.match(reduced, /\.seq-time-band\{transition:none\}/);
 		// No animation or transition rule can match a paused/manual frame.
 		const rules = css.replace(/@keyframes [^{]+\{(?:[^{}]*\{[^{}]*\})+\}/g, "");

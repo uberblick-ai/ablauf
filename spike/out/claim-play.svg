@@ -14,7 +14,7 @@
 .ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}
 .ab .seq-lane{fill:var(--neutral-bg)}.ab .seq-life{stroke:var(--line);stroke-width:1;stroke-opacity:.5}.ab .seq-response{stroke-width:1.2}.ab .seq-group{fill:var(--neutral-bg)}.ab .seq-kind{fill:var(--ink)}.ab .seq-note{fill:var(--rework-bg)}.ab .seq-note-text{fill:var(--rework)}.ab .seq-divider{stroke:var(--line);stroke-width:1;stroke-dasharray:2 4}.ab .seq-rule{stroke:var(--line);stroke-width:1}
 .ab.ab-auto{--play:var(--ab-play,#0a7a60);}@media (prefers-color-scheme:dark){.ab.ab-auto{--play:var(--ab-play,#6ff0cf);}}.ab[data-ab-play="claim-play"].ab-in-progress [data-ab-part]:not(.ab-current):not(.ab-played):not(:has(.gap)){opacity:.3}.ab[data-ab-play="claim-play"].ab-in-progress [data-ab-part]:not(.ab-current):not(.ab-played):has(.gap) text{opacity:.3}
-.ab[data-ab-play="claim-play"] [data-ab-part]{color:var(--play)}.ab[data-ab-play="claim-play"] [data-ab-part]:has(circle.t-neutral){color:var(--neutral)}.ab[data-ab-play="claim-play"] [data-ab-part]:has(circle.t-agent){color:var(--agent)}.ab[data-ab-play="claim-play"] [data-ab-part]:has(circle.t-system){color:var(--system)}.ab[data-ab-play="claim-play"] [data-ab-part]:has(circle.t-done){color:var(--done)}.ab[data-ab-play="claim-play"] [data-ab-part]:has(circle.t-rework){color:var(--rework)}.ab[data-ab-play="claim-play"] [data-ab-part]:has(circle.t-stop){color:var(--stop)}.ab[data-ab-play="claim-play"] [data-ab-part].ab-current .e{filter:drop-shadow(0 0 var(--ab-play-glow,6px) color-mix(in srgb,currentColor 55%,transparent));stroke-width:2.2}.ab[data-ab-play="claim-play"] [data-ab-part].ab-current .seq-number{fill:var(--play);font-weight:600}.ab[data-ab-play="claim-play"] [data-ab-part].ab-current .seq-label{font-weight:600}.ab[data-ab-play="claim-play"] [data-ab-part^="participant-"] circle{transform-box:fill-box;transform-origin:center}.ab[data-ab-play="claim-play"] [data-ab-part^="participant-"].ab-current circle{transform:scale(1.7);filter:drop-shadow(0 0 var(--ab-play-glow,6px) color-mix(in srgb,currentColor 55%,transparent))}.ab[data-ab-play="claim-play"].ab-playing [data-ab-part]{transition:opacity .35s ease}.ab[data-ab-play="claim-play"].ab-playing [data-ab-part^="participant-"] circle{transition:transform .3s ease}.ab[data-ab-play="claim-play"] :is(.seq-packet,.seq-activation,.seq-time-band){opacity:0;pointer-events:none}.ab[data-ab-play="claim-play"] .seq-time-band{fill:var(--play)}.ab[data-ab-play="claim-play"].ab-in-progress [data-ab-part].ab-current .seq-time-band{opacity:.1}.ab[data-ab-play="claim-play"].ab-in-progress [data-ab-part].ab-played .seq-activation{opacity:.35}.ab[data-ab-play="claim-play"].ab-in-progress [data-ab-part].ab-current .seq-activation{opacity:1}.ab[data-ab-play="claim-play"] .seq-packet{fill:none;stroke-width:6;stroke-linecap:round;stroke-dasharray:.01 calc(var(--seq-length) + 8)}.ab[data-ab-play="claim-play"].ab-playing .seq-time-band{transition:opacity .35s ease}.ab[data-ab-play="claim-play"].ab-playing [data-ab-part].ab-current path.e{animation:ab-seq-63-6c-61-69-6d-2d-70-6c-61-79-draw .55s ease-out}.ab[data-ab-play="claim-play"].ab-playing [data-ab-part].ab-current .seq-packet{animation:ab-seq-63-6c-61-69-6d-2d-70-6c-61-79-travel .55s ease-out}.ab[data-ab-play="claim-play"].ab-playing [data-ab-part].ab-current .seq-activation{animation:ab-seq-63-6c-61-69-6d-2d-70-6c-61-79-arrive .15s ease-out .55s backwards}@keyframes ab-seq-63-6c-61-69-6d-2d-70-6c-61-79-draw{from{stroke-dasharray:var(--seq-length) var(--seq-length);stroke-dashoffset:var(--seq-length)}to{stroke-dasharray:var(--seq-length) var(--seq-length);stroke-dashoffset:0}}@keyframes ab-seq-63-6c-61-69-6d-2d-70-6c-61-79-travel{0%{stroke-dashoffset:0;opacity:1}85%{opacity:1}100%{stroke-dashoffset:calc(-1 * var(--seq-length));opacity:0}}@keyframes ab-seq-63-6c-61-69-6d-2d-70-6c-61-79-arrive{from{opacity:0}to{opacity:1}}@media (prefers-reduced-motion:reduce){.ab[data-ab-play="claim-play"].ab-playing [data-ab-part],.ab[data-ab-play="claim-play"].ab-playing [data-ab-part^="participant-"] circle,.ab[data-ab-play="claim-play"].ab-playing .seq-time-band{transition:none}.ab[data-ab-play="claim-play"].ab-playing [data-ab-part].ab-current :is(path.e,.seq-packet,.seq-activation){animation:none}}</style>
+.ab[data-ab-play="claim-play"] [data-ab-part]{color:var(--play)}.ab[data-ab-play="claim-play"] [data-ab-part]:has(circle.t-neutral){color:var(--neutral)}.ab[data-ab-play="claim-play"] [data-ab-part]:has(circle.t-agent){color:var(--agent)}.ab[data-ab-play="claim-play"] [data-ab-part]:has(circle.t-system){color:var(--system)}.ab[data-ab-play="claim-play"] [data-ab-part]:has(circle.t-done){color:var(--done)}.ab[data-ab-play="claim-play"] [data-ab-part]:has(circle.t-rework){color:var(--rework)}.ab[data-ab-play="claim-play"] [data-ab-part]:has(circle.t-stop){color:var(--stop)}.ab[data-ab-play="claim-play"] [data-ab-part].ab-current .e{filter:drop-shadow(0 0 var(--ab-play-glow,6px) color-mix(in srgb,currentColor 55%,transparent));stroke-width:2.2}.ab[data-ab-play="claim-play"] [data-ab-part].ab-current .seq-number{fill:var(--play);font-weight:600}.ab[data-ab-play="claim-play"] [data-ab-part].ab-current .seq-label{font-weight:600}.ab[data-ab-play="claim-play"] [data-ab-part^="participant-"] circle{transform-box:fill-box;transform-origin:center}.ab[data-ab-play="claim-play"] [data-ab-part^="participant-"].ab-current circle{transform:scale(1.7);filter:drop-shadow(0 0 var(--ab-play-glow,6px) color-mix(in srgb,currentColor 55%,transparent))}.ab[data-ab-play="claim-play"].ab-playing [data-ab-part]{transition:opacity .35s ease}.ab[data-ab-play="claim-play"].ab-playing [data-ab-part^="participant-"] circle{transition:transform .3s ease}.ab[data-ab-play="claim-play"] :is(.seq-packet,.seq-time-band){opacity:0;pointer-events:none}.ab[data-ab-play="claim-play"] .seq-time-band{fill:var(--play)}.ab[data-ab-play="claim-play"].ab-in-progress [data-ab-part].ab-current .seq-time-band{opacity:.1}.ab[data-ab-play="claim-play"] .seq-packet{fill:none;stroke-width:6;stroke-linecap:round;stroke-dasharray:.01 calc(var(--seq-length) + 8)}.ab[data-ab-play="claim-play"].ab-playing .seq-time-band{transition:opacity .35s ease}.ab[data-ab-play="claim-play"].ab-playing [data-ab-part].ab-current path.e{animation:ab-seq-63-6c-61-69-6d-2d-70-6c-61-79-draw .55s ease-out}.ab[data-ab-play="claim-play"].ab-playing [data-ab-part].ab-current .seq-packet{animation:ab-seq-63-6c-61-69-6d-2d-70-6c-61-79-travel .55s ease-out}@keyframes ab-seq-63-6c-61-69-6d-2d-70-6c-61-79-draw{from{stroke-dasharray:var(--seq-length) var(--seq-length);stroke-dashoffset:var(--seq-length)}to{stroke-dasharray:var(--seq-length) var(--seq-length);stroke-dashoffset:0}}@keyframes ab-seq-63-6c-61-69-6d-2d-70-6c-61-79-travel{0%{stroke-dashoffset:0;opacity:1}85%{opacity:1}100%{stroke-dashoffset:calc(-1 * var(--seq-length));opacity:0}}@media (prefers-reduced-motion:reduce){.ab[data-ab-play="claim-play"].ab-playing [data-ab-part],.ab[data-ab-play="claim-play"].ab-playing [data-ab-part^="participant-"] circle,.ab[data-ab-play="claim-play"].ab-playing .seq-time-band{transition:none}.ab[data-ab-play="claim-play"].ab-playing [data-ab-part].ab-current :is(path.e,.seq-packet){animation:none}}</style>
 <defs><marker id="claim-play-seq-ink" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker>
 <marker id="claim-play-seq-system" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-system"/></marker>
 <marker id="claim-play-seq-response" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10" class="e e-muted seq-response"/></marker></defs>
@@ -70,14 +70,12 @@
 <text x="0" y="102" class="m s11 muted seq-number">01</text>
 <path d="M88,98 L219,98" class="e e-ink" marker-end="url(#claim-play-seq-ink)"/>
 <circle cx="88" cy="98" r="2.5" class="t-ink"/>
-<rect x="216" y="89" width="6" height="18" rx="3" class="seq-activation t-system"/>
 <path d="M88,98 L219,98" class="seq-packet e-ink"/>
 </g>
 <g data-line="10" data-step="2" data-ab-part="message-1" style="--seq-length:131">
 <text x="96" y="122" class="m s12 seq-label">Claim existing, Add via RSS, Start from scratch</text>
 <text x="0" y="134" class="m s11 muted seq-number">02</text>
 <path d="M219,130 L88,130" class="e e-muted dash seq-response" marker-end="url(#claim-play-seq-response)"/>
-<rect x="85" y="121" width="6" height="18" rx="3" class="seq-activation t-ink"/>
 <path d="M219,130 L88,130" class="seq-packet e-system"/>
 </g>
 <g data-line="11" data-step="3" data-ab-part="message-2" style="--seq-length:131">
@@ -85,7 +83,6 @@
 <text x="0" y="166" class="m s11 muted seq-number">03</text>
 <path d="M88,162 L219,162" class="e e-ink" marker-end="url(#claim-play-seq-ink)"/>
 <circle cx="88" cy="162" r="2.5" class="t-ink"/>
-<rect x="216" y="153" width="6" height="18" rx="3" class="seq-activation t-system"/>
 <path d="M88,162 L219,162" class="seq-packet e-ink"/>
 </g>
 <g data-line="12" data-step="4" data-ab-part="message-3" style="--seq-length:131">
@@ -93,7 +90,6 @@
 <text x="0" y="198" class="m s11 muted seq-number">04</text>
 <path d="M219,194 L350,194" class="e e-system" marker-end="url(#claim-play-seq-system)"/>
 <circle cx="219" cy="194" r="2.5" class="t-system"/>
-<rect x="347" y="185" width="6" height="18" rx="3" class="seq-activation t-system"/>
 <path d="M219,194 L350,194" class="seq-packet e-system"/>
 </g>
 <g data-line="13" data-step="5" data-ab-part="message-4" style="--seq-length:131">
@@ -101,14 +97,12 @@
 <text x="0" y="230" class="m s11 muted seq-number">05</text>
 <path d="M350,226 L481,226" class="e e-system" marker-end="url(#claim-play-seq-system)"/>
 <circle cx="350" cy="226" r="2.5" class="t-system"/>
-<rect x="478" y="217" width="6" height="18" rx="3" class="seq-activation t-system"/>
 <path d="M350,226 L481,226" class="seq-packet e-system"/>
 </g>
 <g data-line="14" data-step="6" data-ab-part="message-5" style="--seq-length:131">
 <text x="358" y="250" class="m s12 seq-label">itunes owner email</text>
 <text x="0" y="262" class="m s11 muted seq-number">06</text>
 <path d="M481,258 L350,258" class="e e-muted dash seq-response" marker-end="url(#claim-play-seq-response)"/>
-<rect x="347" y="249" width="6" height="18" rx="3" class="seq-activation t-system"/>
 <path d="M481,258 L350,258" class="seq-packet e-system"/>
 </g>
 <g data-line="16" data-step="7" data-ab-part="message-6" style="--seq-length:262">
@@ -116,7 +110,6 @@
 <text x="0" y="294" class="m s11 muted seq-number">07</text>
 <path d="M350,290 L612,290" class="e e-system" marker-end="url(#claim-play-seq-system)"/>
 <circle cx="350" cy="290" r="2.5" class="t-system"/>
-<rect x="609" y="281" width="6" height="18" rx="3" class="seq-activation t-ink"/>
 <path d="M350,290 L612,290" class="seq-packet e-system"/>
 </g>
 <g data-line="17" data-annotation="note" data-ab-part="annotation-1">
@@ -128,7 +121,6 @@
 <text x="96" y="354" class="m s12 seq-label">Email with the code</text>
 <text x="0" y="366" class="m s11 muted seq-number">08</text>
 <path d="M612,362 L88,362" class="e e-muted dash seq-response" marker-end="url(#claim-play-seq-response)"/>
-<rect x="85" y="353" width="6" height="18" rx="3" class="seq-activation t-ink"/>
 <path d="M612,362 L88,362" class="seq-packet e-ink"/>
 </g>
 <g data-line="19" data-annotation="section" data-ab-part="annotation-2">
@@ -140,7 +132,6 @@
 <text x="0" y="428" class="m s11 muted seq-number">09</text>
 <path d="M88,424 L219,424" class="e e-ink" marker-end="url(#claim-play-seq-ink)"/>
 <circle cx="88" cy="424" r="2.5" class="t-ink"/>
-<rect x="216" y="415" width="6" height="18" rx="3" class="seq-activation t-system"/>
 <path d="M88,424 L219,424" class="seq-packet e-ink"/>
 </g>
 <g data-line="21" data-step="10" data-ab-part="message-9" style="--seq-length:131">
@@ -148,7 +139,6 @@
 <text x="0" y="460" class="m s11 muted seq-number">10</text>
 <path d="M219,456 L350,456" class="e e-system" marker-end="url(#claim-play-seq-system)"/>
 <circle cx="219" cy="456" r="2.5" class="t-system"/>
-<rect x="347" y="447" width="6" height="18" rx="3" class="seq-activation t-system"/>
 <path d="M219,456 L350,456" class="seq-packet e-system"/>
 </g>
 <g data-line="22" data-step="11" data-ab-part="message-10" style="--seq-length:66.232252">
@@ -156,7 +146,6 @@
 <text x="0" y="492" class="m s11 muted seq-number">11</text>
 <path d="M350,488 H369 Q374,488 374,493 V505 Q374,510 369,510 H350" class="e e-system" marker-end="url(#claim-play-seq-system)"/>
 <circle cx="350" cy="488" r="2.5" class="t-system"/>
-<rect x="347" y="501" width="6" height="18" rx="3" class="seq-activation t-system"/>
 <path d="M350,488 H369 Q374,488 374,493 V505 Q374,510 369,510 H350" class="seq-packet e-system"/>
 </g>
 <g data-line="23" data-annotation="open" data-ab-part="annotation-3">
@@ -167,14 +156,12 @@
 <text x="227" y="568" class="m s12 seq-label">Claim confirmed</text>
 <text x="0" y="580" class="m s11 muted seq-number">12</text>
 <path d="M350,576 L219,576" class="e e-muted dash seq-response" marker-end="url(#claim-play-seq-response)"/>
-<rect x="216" y="567" width="6" height="18" rx="3" class="seq-activation t-system"/>
 <path d="M350,576 L219,576" class="seq-packet e-system"/>
 </g>
 <g data-line="25" data-step="13" data-ab-part="message-12" style="--seq-length:131">
 <text x="96" y="600" class="m s12 seq-label">The show is yours</text>
 <text x="0" y="612" class="m s11 muted seq-number">13</text>
 <path d="M219,608 L88,608" class="e e-muted dash seq-response" marker-end="url(#claim-play-seq-response)"/>
-<rect x="85" y="599" width="6" height="18" rx="3" class="seq-activation t-ink"/>
 <path d="M219,608 L88,608" class="seq-packet e-system"/>
 </g>
 <line x1="32" y1="620" x2="405.59999999999997" y2="620" class="seq-divider"/>
@@ -186,14 +173,12 @@
 <text x="227" y="674" class="m s12 seq-label">Rejected, attempts left</text>
 <text x="0" y="686" class="m s11 muted seq-number">14</text>
 <path d="M350,682 L219,682" class="e e-muted dash seq-response" marker-end="url(#claim-play-seq-response)"/>
-<rect x="216" y="673" width="6" height="18" rx="3" class="seq-activation t-system"/>
 <path d="M350,682 L219,682" class="seq-packet e-system"/>
 </g>
 <g data-line="28" data-step="15" data-ab-part="message-14" style="--seq-length:131">
 <text x="96" y="706" class="m s12 seq-label">Try again or resend the code</text>
 <text x="0" y="718" class="m s11 muted seq-number">15</text>
 <path d="M219,714 L88,714" class="e e-muted dash seq-response" marker-end="url(#claim-play-seq-response)"/>
-<rect x="85" y="705" width="6" height="18" rx="3" class="seq-activation t-ink"/>
 <path d="M219,714 L88,714" class="seq-packet e-system"/>
 </g>
 </svg>

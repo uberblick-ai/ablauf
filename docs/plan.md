@@ -493,9 +493,8 @@ ablauf kind. There are no Mermaid aliases; `->>` and `-->>` are malformed.
 Groups retain the clear UML terms `alt`, `opt`, `loop` and `group`;
 `note over` states placement on lifelines, and `section` matches flow's phase
 term. There are no compatibility aliases. Messages are numbered automatically,
-and shared play sections can name those numbers. Activation bars appear only
-as playback overlays; authored activations, async/lost messages, participant
-creation/destruction and configurable autonumber are outside v0.
+and shared play sections can name those numbers. Activation bars, async/lost
+messages, participant creation/destruction and configurable autonumber are outside v0.
 
 ### Syntax and recovery
 
@@ -848,21 +847,19 @@ Lengths are computed in user units at render time and emitted as `--seq-length`
 on each message wrapper; the browser never measures a path. The packet is a
 short round dash on a copy of that path, without CSS motion-path/offset.
 
-After arrival, a rounded 6px × 18px activation bar appears in the receiver's
-tone, centred on its lifeline at the arrowhead (the loop end for self-messages).
-Played messages retain bars at 0.35 opacity; unplayed messages have none.
+Playback emits no receiver activation bars, including for self-messages.
 A soft play-colour band at 0.1 opacity spans the figure behind the current row,
 from above its label to just below its arrow, including the self-message loop.
-Per-row bands cross-fade over 0.35s. Bands, bars and packets never take pointer
+Per-row bands cross-fade over 0.35s. Bands and packets never take pointer
 events or affect layout or figure size, and are emitted only with play sections.
 
-Fading (0.35s), header-dot growth (0.3s), drawing, packet travel and activation
-arrival ease only while playing. Paused, ended and manually stepped states show
-the complete current arrow, bar and band immediately, with no packet. Resuming
+Fading (0.35s), header-dot growth (0.3s), drawing and packet travel ease only
+while playing. Paused, ended and manually stepped states show
+the complete current arrow and band immediately, with no packet. Resuming
 restarts the current step and its drawing. Reduced motion disables all animation
-and transitions, retaining bars and bands in manually shown states; the player's
+and transitions, retaining the band in manually shown states; the player's
 reduced-motion reset to idle is unchanged. Idle shows the full figure with no
-packets, bars or bands. Sequences without play sections gain no playback
+packets or bands. Sequences without play sections gain no playback
 attributes, styles or overlays and retain their exact SVG bytes.
 
 Playable SVGs define internal `--play` through the host's `--ab-play`

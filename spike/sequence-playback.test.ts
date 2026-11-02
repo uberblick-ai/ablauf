@@ -214,7 +214,7 @@ test("playback styles keep native tones and completed dash patterns, and scope e
 			}
 		}
 		assert.match(effects, /@media \(prefers-reduced-motion:reduce\).*transition:none/);
-		const shapes = (value: string) => value.match(/<(?:path|rect|circle|line|text)\b[^>]*>/g)?.filter(shape => !/seq-(?:packet|activation|time-band)/.test(shape));
+		const shapes = (value: string) => value.match(/<(?:path|rect|circle|line|text)\b[^>]*>/g)?.filter(shape => !/seq-(?:packet|time-band)/.test(shape));
 		assert.deepEqual(shapes(svg), shapes(plain));
 		assert.doesNotMatch(plain, /data-ab-part|data-ab-play|--ab-play/);
 		assert.match(css, /\.ab \.dash\{stroke-dasharray:6 5\}/);
