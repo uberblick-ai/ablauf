@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test, type TestContext } from "node:test";
+import { render } from "./flow/index.ts";
 import type { Timeline } from "./flow/play.ts";
 import { mountPlayback } from "./flow/playback.ts";
 import { Doc, El } from "./test-dom.ts";
@@ -28,6 +30,36 @@ function setup(t: TestContext, data = timelines) {
 	const cls = (name: string) => all.find(el => el.classList.contains(name)) as El;
 	return { doc, container, all, cls, player: mount.player, caption: cls("abp-caption"), status: cls("abp-status") };
 }
+
+test("Compact controls browser fixture keeps all captions playable without diagnostics", t => {
+	const source = readFileSync(new URL("./playground/playback-compact.flow", import.meta.url), "utf8");
+	const result = render(source);
+	assert.deepEqual(result.diagnostics, []);
+	const scenario = result.timelines.findIndex(timeline => timeline.name === "Single-line caption scrolling");
+	assert.ok(scenario >= 0);
+	const steps = result.timelines[scenario].steps;
+	assert.equal(steps.length, 3, "the blank caption must survive target resolution");
+	assert.equal(steps[0].caption, "A short caption first");
+	assert.ok(steps[1].caption.length > 300, "keep enough text to overflow the 678px browser figure");
+	assert.equal(steps[2].caption, "");
+	const f = setup(t, result.timelines);
+	f.player.select(scenario);
+	f.player.seek(-1);
+	for (const step of steps) {
+		f.player.next();
+		assert.equal(f.caption.textContent, step.caption);
+	}
+	assert.equal(f.cls("abp-counter").textContent, "3/3");
+	const withoutActor = result.timelines.findIndex(timeline => timeline.name === "Caption without an actor");
+	assert.ok(withoutActor >= 0);
+	f.player.select(withoutActor);
+	assert.equal(f.cls("abp-actor").textContent, "", "omitting actor would default to the node title");
+	const empty = result.timelines.findIndex(timeline => timeline.name === "An empty scenario at the end of the overflowing tabs");
+	assert.ok(empty >= 0);
+	assert.deepEqual(result.timelines[empty].steps, []);
+	f.player.select(empty);
+	assert.equal(f.caption.textContent, "No playable steps");
+});
 
 test("caption reserves a single scrollable line, native scrollbar space and geometry-free visible focus", t => {
 	const f = setup(t);

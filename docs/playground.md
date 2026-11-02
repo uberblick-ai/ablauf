@@ -56,7 +56,8 @@ The page also shows a single timeline without tabs, a direct `createPlayer`
 case without built-in controls, a tabbed case with an empty scenario, and a
 **Compact controls** case with overflowing tabs, successive short, horizontally
 overflowing and blank captions, an absent actor and an empty scenario at the end
-of the tab strip.
+of the tab strip. Its source is `spike/playground/playback-compact.flow`, shared
+with the caption regression test and checkable with `mise run check`.
 Current-colour and zero-glow controls apply host overrides to every case,
 including the shadow root. Each document is 710px wide,
 with 16px side padding giving a 678px figure at full width.

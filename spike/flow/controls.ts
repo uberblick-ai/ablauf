@@ -10,6 +10,7 @@ export interface PlaybackMount {
 // sibling. Keep every selector under the mount class, including scheme rules.
 // Always reserve the native horizontal scrollbar; the empty pseudo-element
 // keeps a real text line above it even when there is no caption.
+// nowrap also collapses JSON-escaped line breaks; pre would create extra rows.
 const STYLE = `
 .ab-playback{--abp-bg:var(--ab-bg,#ffffff);--abp-ink:var(--ab-ink,#17202c);--abp-muted:var(--ab-muted,#5a6575);--abp-line:var(--ab-line,#d3d9e2);--abp-play:var(--ab-play,#0a7a60);color-scheme:light;color:var(--abp-ink);background:var(--abp-bg);font:14px/1.5 system-ui,sans-serif;padding:0 0 12px;overflow-wrap:anywhere}
 .ab-playback.ab-dark{--abp-bg:var(--ab-bg,#171c24);--abp-ink:var(--ab-ink,#e5e9ef);--abp-muted:var(--ab-muted,#98a2b0);--abp-line:var(--ab-line,#2c3440);--abp-play:var(--ab-play,#6ff0cf);color-scheme:dark}

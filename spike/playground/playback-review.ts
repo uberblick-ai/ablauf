@@ -78,20 +78,13 @@ async function load(path: string) {
 	if (!response.ok) throw new Error(`Cannot load ${path}: ${response.status}`);
 	return response.text();
 }
-const [source, fade, crossings] = await Promise.all([
+const [source, fade, crossings, compact] = await Promise.all([
 	load("/api/flow/examples/loop-play"),
 	load("/api/flow/examples/playback-fade"),
 	load("/playground/playback-crossings.flow"),
+	load("/playground/playback-compact.flow"),
 ]);
 const single = 'flow v0\nbox a "Start"\nbox b "Finish"\na --> b\nplay "One scenario"\n step a actor="Author" "Start here"\n step b "Finish here"\n';
-const compact = [
-	'flow v0\nbox a "Start"\nbox b "Finish"\na --> b\n',
-	'play "Short captions"\n step a actor="Author" "Start here"\n step b actor="Reviewer" "Finish here"\n',
-	'play "Single-line caption scrolling"\n step a actor="Author" "A short caption first"\n step b actor="Reviewer" "This deliberately long caption stays on one line at document width. Scroll horizontally to read every word using pointer, touch or keyboard. The actor and caption lines keep their space, and the buttons and segmented step bar stay stationary through short, overflowing and blank captions. This is the end of the caption."\n step a ""\n',
-	'play "Caption without an actor"\n step a "The actor line still keeps its space"\n',
-	'play "Another short scenario"\n step b actor="Reviewer" "A short caption again"\n',
-	'play "An empty scenario at the end of the overflowing tabs"\n',
-].join("");
 
 function draw() {
 	for (const mount of mounts) mount.destroy();
