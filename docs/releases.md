@@ -85,7 +85,7 @@ Inspect state with literal values substituted for these placeholders:
 ```sh
 gh run list --repo uberblick-ai/ablauf --workflow release.yml --event workflow_dispatch --limit 100 --json databaseId,displayTitle,status,conclusion,url
 gh run view RUN_ID --repo uberblick-ai/ablauf
-npm view @uberblick/ablauf@X.Y.Z version gitHead dist.attestations --json
+npm view @uberblick/ablauf@X.Y.Z version gitHead dist.attestations --json --prefer-online
 git ls-remote --tags origin refs/tags/vX.Y.Z 'refs/tags/vX.Y.Z^{}'
 git rev-parse 'vX.Y.Z^{commit}'
 gh release view vX.Y.Z --repo uberblick-ai/ablauf --json tagName,targetCommitish,body,url
@@ -99,6 +99,9 @@ For the release, check its `tagName`, resolve that tag to the checked commit, an
 compare the complete `body` with the checked changelog section; `targetCommitish`
 alone is not proof of identity.
 
+- If confirmation failed with an npm 404 after the run succeeded, the registry
+  was still catching up: the command asks it for five minutes. Inspect npm
+  again with `--prefer-online`, which skips npm's local cache.
 - If dispatch is uncertain or a run is pending, find it first, approve/wait for
   that run, and inspect npm. Do not queue another publication.
 - If publication failed, confirm in the workflow logs and registry whether npm

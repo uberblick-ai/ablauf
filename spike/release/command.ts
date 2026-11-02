@@ -123,16 +123,19 @@ export class Release {
 			throw new Error("Publication did not succeed for the checked version and commit");
 		}
 		this.artifacts.push(`npm publication workflow succeeded: https://www.npmjs.com/package/@uberblick/ablauf/v/${this.version} (checked commit ${this.sha}); registry confirmation pending`);
+		// The registry can take minutes to serve a new version, and npm's local cache can hide it for
+		// longer, so every attempt asks the registry and the wait covers five minutes.
+		const attempts = 60;
 		let confirmed = false;
-		for (let attempt = 0; attempt < 12; attempt++) {
+		for (let attempt = 0; attempt < attempts; attempt++) {
 			try {
-				const published = JSON.parse(this.call("npm", "view", `@uberblick/ablauf@${this.version}`, "version", "gitHead", "--json"));
+				const published = JSON.parse(this.call("npm", "view", `@uberblick/ablauf@${this.version}`, "version", "gitHead", "--json", "--prefer-online"));
 				if (published.version !== this.version || published.gitHead !== this.sha) throw new Error("Published npm identity differs from checked version/commit");
 				confirmed = true;
 				break;
 			} catch (error) {
 				if (error instanceof Error && error.message.includes("identity differs")) throw error;
-				if (attempt === 11) throw error;
+				if (attempt === attempts - 1) throw error;
 				await this.pause();
 			}
 		}

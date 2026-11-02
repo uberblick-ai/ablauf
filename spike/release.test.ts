@@ -65,7 +65,7 @@ function fixture(t: TestContext) {
 			if (args[1] === "view") return JSON.stringify(publication);
 		}
 		if (command === "npm" && args[0] === "view") {
-			assert.deepEqual(args, ["view", `@uberblick/ablauf@${version}`, "version", "gitHead", "--json"]);
+			assert.deepEqual(args, ["view", `@uberblick/ablauf@${version}`, "version", "gitHead", "--json", "--prefer-online"]);
 			return JSON.stringify({ version, gitHead: sha });
 		}
 		if (command === "gh" && args[0] === "release" && args[1] === "create") {
@@ -192,12 +192,12 @@ test("publication finds a delayed run and waits for registry propagation without
 	let views = 0;
 	f.inject((call) => {
 		if (call.command === "gh" && call.args[1] === "list" && call.args.includes("release.yml") && lists++ === 0) return "[]";
-		if (call.command === "npm" && views++ === 0) throw new Error("registry not updated");
+		if (call.command === "npm" && views++ < 20) throw new Error("npm error code E404");
 	});
 	f.release.preflight();
 	await f.release.publish();
 	assert.equal(f.calls.filter((call) => call.args[0] === "workflow").length, 1);
-	assert.equal(views, 2);
+	assert.equal(views, 21);
 });
 
 test("every publication failure stops, reports progress/artifacts and performs no later step", async (t) => {
