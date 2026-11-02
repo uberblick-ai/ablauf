@@ -104,7 +104,7 @@ test("SVG state rules show the current band without receiver bars, animate only 
 		assert.ok(css.includes(`${root}.ab-playing .seq-time-band{transition:opacity .35s ease}`));
 		assert.match(css, /stroke-linecap:round;stroke-dasharray:\.01 calc\(var\(--seq-length\) \+ 8\)/);
 		assert.ok(css.includes(`@keyframes ${name}-draw{from{stroke-dasharray:var(--seq-length) var(--seq-length);stroke-dashoffset:var(--seq-length)}to{stroke-dasharray:var(--seq-length) var(--seq-length);stroke-dashoffset:0}}`));
-		assert.ok(css.includes(`@keyframes ${name}-travel{0%{stroke-dashoffset:0;opacity:1}85%{opacity:1}100%{stroke-dashoffset:calc(-1 * var(--seq-length));opacity:0}}`));
+		assert.ok(css.includes(`@keyframes ${name}-travel{0%{stroke-dashoffset:0px;opacity:1}85%{opacity:1}100%{stroke-dashoffset:calc(var(--seq-length) * -1px);opacity:0}}`));
 		assert.match(css, /\.ab \.dash\{stroke-dasharray:6 5\}/);
 		assert.doesNotMatch(css, /forwards|infinite|offset-path|offset-distance/);
 		const reduced = css.slice(css.indexOf("@media (prefers-reduced-motion:reduce)"));

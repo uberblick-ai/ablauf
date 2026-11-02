@@ -358,7 +358,7 @@ export function renderSequence(source: string, options: RenderOptions = {}, scen
 		const length = self ? 2 * Math.abs(loop - 5) + 12 + 10 * (1 + Math.asinh(1) / Math.SQRT2) : Math.abs(to - from);
 		const endY = arrowY + (self ? 22 : 0);
 		const identity = playback.rowParts.get(row) as string;
-		if (playable) timeBands.push(`<g${part(identity)}><rect x="0" y="${y - 3}" width="${WIDTH}" height="${endY - y + 9}" rx="7" class="seq-time-band"/></g>`);
+		if (playable) timeBands.push(`<g${part(identity)}><rect x="0" y="${y - 4}" width="${WIDTH}" height="${endY - y + 12}" rx="7" class="seq-time-band"/></g>`);
 		body.push(`<g data-line="${message.line}" data-step="${i + 1}"${part(identity)}${playable ? ` style="--seq-length:${Number(length.toFixed(6))}"` : ""}>`);
 		body.push(...textLines(labels, labelX, y + 12, "s12 seq-label"));
 		body.push(...textLines(numbers, 0, arrowY + 4, "s11 muted seq-number"));

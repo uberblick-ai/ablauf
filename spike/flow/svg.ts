@@ -185,7 +185,9 @@ function sequencePlayEffects(id: string): string {
 		`${moving} .seq-packet{animation:${name}-travel .55s ease-out}`,
 		// No fill mode on draw: response dashes return as soon as it finishes.
 		`@keyframes ${name}-draw{from{stroke-dasharray:var(--seq-length) var(--seq-length);stroke-dashoffset:var(--seq-length)}to{stroke-dasharray:var(--seq-length) var(--seq-length);stroke-dashoffset:0}}`,
-		`@keyframes ${name}-travel{0%{stroke-dashoffset:0;opacity:1}85%{opacity:1}100%{stroke-dashoffset:calc(-1 * var(--seq-length));opacity:0}}`,
+		// Lengths are unitless; both ends need a length so the offset interpolates
+		// instead of jumping to the end at the midpoint.
+		`@keyframes ${name}-travel{0%{stroke-dashoffset:0px;opacity:1}85%{opacity:1}100%{stroke-dashoffset:calc(var(--seq-length) * -1px);opacity:0}}`,
 		`@media (prefers-reduced-motion:reduce){${playing},${root}.ab-playing ${headers} circle,${root}.ab-playing .seq-time-band{transition:none}${moving} :is(path.e,.seq-packet){animation:none}}`,
 	].join("");
 }
