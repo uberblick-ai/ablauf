@@ -16,7 +16,7 @@ const timelines: Timeline[] = [
 	{ name: "Empty", slug: "empty", steps: [] },
 ];
 
-function setup(t: TestContext, data = timelines, options: { loop?: boolean; scheme?: string; shadow?: boolean; doc?: Doc } = {}) {
+function setup(t: TestContext, data = timelines, options: { loop?: boolean; autoplay?: boolean; scheme?: string; shadow?: boolean; doc?: Doc } = {}) {
 	const doc = options.doc ?? new Doc();
 	const container = new El(options.shadow ? "#shadow-root" : "main", doc);
 	const retained = new El("p", doc);
@@ -273,4 +273,35 @@ test("document and shadow mounts are independent; both teardown entries remove o
 		t.mock.timers.tick(60000);
 		assert.equal(remount.player.state.status, "idle");
 	}
+});
+
+test("autoplay starts in view, pauses out of view and resumes unless the reader paused", t => {
+	t.mock.timers.enable({ apis: ["setTimeout"] });
+	const f = setup(t, timelines, { autoplay: true });
+	assert.equal(f.doc.viewport.observers.size, 1);
+	assert.equal(f.player.state.status, "idle", "nothing plays before the figure is in view");
+	f.doc.viewport.show(true);
+	assert.deepEqual(f.player.state, { scenario: 0, step: 0, status: "playing" });
+	f.doc.viewport.show(false);
+	assert.equal(f.player.state.status, "paused");
+	f.doc.viewport.show(true);
+	assert.equal(f.player.state.status, "playing", "resumes after the view paused it");
+	f.actions()[1].click();
+	assert.equal(f.player.state.status, "paused");
+	f.doc.viewport.show(false); f.doc.viewport.show(true);
+	assert.equal(f.player.state.status, "paused", "a reader's pause sticks");
+	f.mount.destroy();
+	assert.equal(f.doc.viewport.observers.size, 0);
+});
+
+test("autoplay waits with reduced motion and is off by default", t => {
+	const reduced = new Doc();
+	reduced.motion.set(true);
+	const f = setup(t, timelines, { autoplay: true, doc: reduced });
+	f.doc.viewport.show(true);
+	assert.equal(f.player.state.status, "idle");
+	const plain = setup(t);
+	assert.equal(plain.doc.viewport.observers.size, 0);
+	plain.doc.viewport.show(true);
+	assert.equal(plain.player.state.status, "idle");
 });

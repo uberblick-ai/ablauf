@@ -13,10 +13,31 @@ class Motion {
 	}
 }
 
+// One shared fake: `show(true|false)` reports every observed element in or out of view.
+export class Viewport {
+	observers = new Set<{ callback: (entries: { isIntersecting: boolean }[]) => void; targets: Set<unknown> }>();
+	get IntersectionObserver() {
+		const observers = this.observers;
+		return class {
+			entry = { callback: (_: { isIntersecting: boolean }[]) => {}, targets: new Set<unknown>() };
+			constructor(callback: (entries: { isIntersecting: boolean }[]) => void) {
+				this.entry.callback = callback;
+				observers.add(this.entry);
+			}
+			observe(target: unknown) { this.entry.targets.add(target); }
+			disconnect() { observers.delete(this.entry); }
+		};
+	}
+	show(isIntersecting: boolean) {
+		for (const { callback, targets } of [...this.observers]) callback([...targets].map(() => ({ isIntersecting })));
+	}
+}
+
 export class Doc {
 	activeElement: El | null = null;
 	motion = new Motion();
-	defaultView = { matchMedia: this.motion.matchMedia };
+	viewport = new Viewport();
+	defaultView = { matchMedia: this.motion.matchMedia, IntersectionObserver: this.viewport.IntersectionObserver };
 	createElement(tag: string): El { return new El(tag, this); }
 }
 
