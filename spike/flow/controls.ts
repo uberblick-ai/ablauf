@@ -87,6 +87,11 @@ export function mountPlayback(
 	const panel = make("div", "abp-panel");
 	const tabs: HTMLButtonElement[] = [];
 	if (timelines.length > 1) {
+		// Choosing a scenario plays it, unless the reader asked for reduced motion.
+		const choose = (index: number) => {
+			player.select(index);
+			if (!root.ownerDocument.defaultView?.matchMedia?.("(prefers-reduced-motion: reduce)").matches) player.play();
+		};
 		const id = `ab-playback-${++mountId}`;
 		const tablist = make("div", "abp-tabs");
 		tablist.setAttribute("role", "tablist");
@@ -95,7 +100,7 @@ export function mountPlayback(
 		panel.setAttribute("role", "tabpanel");
 		panel.tabIndex = 0;
 		for (const [index, timeline] of timelines.entries()) {
-			const tab = button(timeline.name, () => player.select(index));
+			const tab = button(timeline.name, () => choose(index));
 			tab.id = `${id}-tab-${index}`;
 			tab.setAttribute("role", "tab");
 			tab.setAttribute("aria-controls", panel.id);
@@ -110,7 +115,7 @@ export function mountPlayback(
 				else return;
 				event.preventDefault();
 				tabs[target].focus();
-				player.select(target);
+				choose(target);
 			});
 			tabs.push(tab);
 			tablist.append(tab);

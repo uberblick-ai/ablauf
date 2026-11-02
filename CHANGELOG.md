@@ -10,6 +10,7 @@
   supports timing, scenarios, navigation, looping and reduced motion; importing either entry is DOM-free. ([#69](https://github.com/uberblick-ai/ablauf/issues/69))
 - Add `mountPlayback` with accessible scenario tabs, buttons, a native step range, captions, announcements
   and teardown, plus playground integration and browser fixtures for schemes, shadow roots and remounts. ([#94](https://github.com/uberblick-ai/ablauf/issues/94))
+- Choosing a scenario tab plays it from its first step, unless the reader prefers reduced motion.
 - Fade unplayed flow parts to 0.3, preserving opaque label gaps and crossing knockouts; expose
   `ab-in-progress` for hosts and add browser fade fixtures. ([#112](https://github.com/uberblick-ai/ablauf/issues/112))
 - Add mint current/played colours, heavier glowing current strokes and `--ab-play-glow` (`6px`, or `0` to disable).

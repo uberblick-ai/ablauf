@@ -109,34 +109,44 @@ test("buttons, range and direct player calls synchronize without replacing or fo
 	assert.equal(f.doc.activeElement, f.range);
 });
 
-test("tabs wrap, focus and immediately activate; clicks and Enter/Space reselect at step zero", t => {
+test("tabs wrap, focus and immediately activate; choosing a scenario plays it from step zero", t => {
 	t.mock.timers.enable({ apis: ["setTimeout"] });
 	const f = setup(t);
 	const tabs = f.role("tab");
-	f.player.play();
 	assert.ok(tabs[0].fire("keydown", "ArrowLeft"));
 	assert.equal(f.doc.activeElement, tabs[2]);
-	assert.deepEqual(f.player.state, { scenario: 2, step: -1, status: "paused" });
+	// An empty scenario has nothing to play.
+	assert.deepEqual(f.player.state, { scenario: 2, step: -1, status: "idle" });
 	assert.ok(tabs[2].fire("keydown", "ArrowRight"));
 	assert.equal(f.doc.activeElement, tabs[0]);
-	assert.deepEqual(f.player.state, { scenario: 0, step: 0, status: "paused" });
+	assert.deepEqual(f.player.state, { scenario: 0, step: 0, status: "playing" });
 	assert.deepEqual(tabs.map(tab => tab.tabIndex), [0, -1, -1]);
-	f.player.seek(1); f.player.play();
-	assert.ok(tabs[0].fire("keydown", "Enter"));
-	assert.equal(f.player.state.step, 0);
 	f.player.seek(1);
+	assert.ok(tabs[0].fire("keydown", "Enter"));
+	assert.deepEqual(f.player.state, { scenario: 0, step: 0, status: "playing" });
+	f.player.pause(); f.player.seek(1);
 	assert.ok(tabs[0].fire("keydown", " "));
-	assert.equal(f.player.state.step, 0);
+	assert.deepEqual(f.player.state, { scenario: 0, step: 0, status: "playing" });
 	tabs[1].click();
-	assert.deepEqual(f.player.state, { scenario: 1, step: 0, status: "paused" });
+	assert.deepEqual(f.player.state, { scenario: 1, step: 0, status: "playing" });
 	assert.equal(f.role("tabpanel")[0].getAttribute("aria-labelledby"), tabs[1].id);
 	assert.equal(tabs[0].fire("keydown", "x"), false);
 	assert.ok(tabs[1].fire("keydown", "End"));
 	assert.equal(f.player.state.scenario, 2);
 	assert.ok(tabs[2].fire("keydown", "Home"));
 	assert.equal(f.player.state.scenario, 0);
-	t.mock.timers.tick(60000);
-	assert.equal(f.player.state.status, "paused");
+	for (let i = 0; i < 5; i++) t.mock.timers.tick(60000);
+	assert.equal(f.player.state.status, "ended");
+});
+
+test("under reduced motion, choosing a scenario selects it without playing", t => {
+	const f = setup(t);
+	f.doc.motion.set(true);
+	const tabs = f.role("tab");
+	tabs[1].click();
+	assert.deepEqual(f.player.state, { scenario: 1, step: 0, status: "paused" });
+	assert.ok(tabs[1].fire("keydown", "ArrowLeft"));
+	assert.deepEqual(f.player.state, { scenario: 0, step: 0, status: "paused" });
 });
 
 test("one polite atomic status announces only scenario/step changes to playable steps", t => {

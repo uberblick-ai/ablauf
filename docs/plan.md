@@ -809,8 +809,9 @@ their defaults. These tokens are separate from the existing exported palette.
   seek and switching scenario pause. Play on ended replays. Stop on the last
   step after its full duration; `loop` is opt-in. Resuming restarts the current
   step's full duration. Controls offer Replay.
-- Play on click is the default. Nothing starts unless the host calls play;
-  a host may do so when a gallery card scrolls into view. With reduced motion
+- Play on click is the default. Nothing starts unless the host calls play
+  or the reader chooses a scenario tab, which plays it from its first step;
+  a host may call play when a gallery card scrolls into view. With reduced motion
   playback resets to idle at step `-1` and the full figure shows; manual
   stepping still works. Preference changes are observed while playing;
   disabling reduced motion never starts playback. Manual navigation remains
