@@ -48,4 +48,7 @@ test("the real examples include all three kinds, with claim only under Sequence"
 	assert.deepEqual(groups.flatMap((g) => g.flows.filter((f) => f.name === "claim").map((f) => ({ kind: g.kind, ...f }))), [
 		{ kind: "Sequence", folder: "examples", name: "claim" },
 	]);
+	assert.deepEqual(groups.flatMap((g) => g.flows.filter((f) => f.name === "claim-play").map((f) => ({ kind: g.kind, ...f }))), [
+		{ kind: "Sequence", folder: "examples", name: "claim-play" },
+	]);
 });

@@ -62,7 +62,21 @@ figure.innerHTML = svg;
 mountPlayback(figure, figure.querySelector("svg"), timelines, { autoplay: true });
 ```
 
-Playback in 0.3.0 supports flows. Sequence and fan-out playback will follow.
+Sequences use the same `play` sections, with each step targeting a message by
+its number. Fan-out playback is still to come.
+
+The “Wrong code” scenario from `claim-play.flow`:
+
+```
+play "Wrong code"
+  step 9 "Type a code that no longer works"
+  step 10 "Send it on for checking"
+  step 11 "Compare code and expiry"
+  step 14 "Reject it and count the attempt"
+  step 15 "Offer another try or a new code"
+```
+
+<img alt="The podcast claim sequence playing with controls and captions beside the figure: messages travel between participants, the current message row is highlighted, and the Wrong code scenario ends with another try or a new code." src="https://raw.githubusercontent.com/uberblick-ai/ablauf/main/docs/images/sequence-playback.gif">
 
 ## Install
 
