@@ -165,6 +165,8 @@ function sequencePlayEffects(id: string): string {
 		// Responses have no origin dot, so their glow keeps the play colour.
 		`${parts}.ab-current .e{${glow};stroke-width:2.2}`,
 		`${parts}.ab-current .seq-number{fill:var(--play);font-weight:600}`,
+		// Mono faces keep their advance at 600, so the bold label never re-wraps.
+		`${parts}.ab-current .seq-label{font-weight:600}`,
 		`${root} ${headers} circle{transform-box:fill-box;transform-origin:center}`,
 		`${root} ${headers}.ab-current circle{transform:scale(1.7);${glow}}`,
 		`${playing}{transition:opacity .35s ease}`,
