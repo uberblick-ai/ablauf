@@ -494,8 +494,7 @@ Groups retain the clear UML terms `alt`, `opt`, `loop` and `group`;
 `note over` states placement on lifelines, and `section` matches flow's phase
 term. There are no compatibility aliases. Messages are numbered automatically,
 and shared play sections can name those numbers. Activation bars, async/lost
-messages, participant creation/destruction and configurable autonumber are
-outside v0.
+messages, participant creation/destruction and configurable autonumber are outside v0.
 
 ### Syntax and recovery
 
@@ -826,8 +825,8 @@ distinct `idPrefix` values keep independently driven figures isolated, including
 in shadow roots. Reduced motion disables running dashes and all transitions;
 a manually shown current step may still glow. Idle and destruction remove all
 glow, heavier strokes and running-edge overrides, restoring the default figure.
-Static SVG bytes stay identical; compared with the post-#112 baseline, playable
-idle SVGs change only by added playback styles and the colour defaults below.
+Static SVG bytes stay identical; playable idle figures add playback styles,
+the colour defaults below and hidden sequence overlays.
 
 Sequence parts fade to the same 0.3 opacity while neither current nor played;
 current and played parts stay fully visible. The current message gets the
@@ -837,12 +836,31 @@ retain their native tones. Its gutter number becomes bold in the play colour.
 Current sender and receiver header dots grow to 1.7 times their size and glow
 in their own tone, using the play colour for untoned headers, including `ink`
 and `muted`. Both message and header glows honour `--ab-play-glow` (default
-`6px`, literal `0` removes the glow). Sequence messages never run dashes and
-retain request/response dash patterns in every state. Only fading (0.35s) and
-header-dot growth (0.3s) ease while playing. Manual navigation is instant;
-reduced motion removes transitions. Idle shows the full figure. Sequences
-without play sections gain no playback attributes or styles and retain their
-exact SVG bytes.
+`6px`, literal `0` removes the glow).
+
+While playing, a newly current arrow draws from sender to receiver over 0.55s
+with ease-out timing. A small dot in the sender's tone rides the drawing tip,
+fading out on arrival; self-messages follow the whole loop. Response arrows
+draw solid, then regain their native dashes immediately after arrival; sequence
+dashes never run. The marker head stays at the receiver throughout drawing.
+Lengths are computed in user units at render time and emitted as `--seq-length`
+on each message wrapper; the browser never measures a path. The packet is a
+short round dash on a copy of that path, without CSS motion-path/offset.
+
+Playback emits no receiver activation bars, including for self-messages.
+A soft play-colour band at 0.1 opacity spans the figure behind the current row,
+from above its label to just below its arrow, including the self-message loop.
+Per-row bands cross-fade over 0.35s. Bands and packets never take pointer
+events or affect layout or figure size, and are emitted only with play sections.
+
+Fading (0.35s), header-dot growth (0.3s), drawing and packet travel ease only
+while playing. Paused, ended and manually stepped states show
+the complete current arrow and band immediately, with no packet. Resuming
+restarts the current step and its drawing. Reduced motion disables all animation
+and transitions, retaining the band in manually shown states; the player's
+reduced-motion reset to idle is unchanged. Idle shows the full figure with no
+packets or bands. Sequences without play sections gain no playback
+attributes, styles or overlays and retain their exact SVG bytes.
 
 Playable SVGs define internal `--play` through the host's `--ab-play`
 override. Defaults are `#0a7a60` (light) and `#6ff0cf` (dark), each reaching
