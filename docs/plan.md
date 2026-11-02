@@ -835,8 +835,8 @@ safe to import without browser globals, and core types need no DOM library.
 ### Built-in controls and lifetime
 
 The browser entry also exports
-`mountPlayback(container, svg, timelines, { loop?, autoplay? }?)`, returning
-`PlaybackMount { player: Player; destroy(): void }`. The host supplies an
+`mountPlayback(container, svg, timelines, { loop?, autoplay?, expand? }?)`, returning
+`PlaybackMount { player: Player; expand(): void; destroy(): void }`. The host supplies an
 `HTMLElement` or `ShadowRoot` for controls below its inline SVG. Mounting starts
 idle with the full figure. With `autoplay: true` the mount observes the SVG and
 plays once half of it is in view, pauses it when it leaves and resumes it on
@@ -844,6 +844,35 @@ return, unless the reader paused it meanwhile. Reduced motion, or a browser
 without `IntersectionObserver`, keeps it idle. Destroy disconnects the observer. No timelines adds no DOM or style.
 The mount uses the existing player contract for timing, navigation, looping
 and reduced motion, including changes made through the returned `player`.
+
+`expand: true` adds a native **Expand** button (visible text and accessible
+name), in a separate right-aligned row above the inline controls. It is off
+by default. Every mount also exposes `expand()` for host controls, even without
+that option. Both entry points open the same full-screen native modal `dialog`,
+labelled from the SVG's accessible name; repeated calls while open do nothing.
+With no timelines or after destruction, `expand()` does nothing.
+
+The natural-size figure scrolls horizontally and vertically in its own region.
+Below that region, scenario tabs, counter, actor, caption, the three playback
+buttons and step navigation remain visible while the figure scrolls. A native
+**Close** button (visible text and accessible name) sits at the top right and
+receives initial focus. Tab and Shift+Tab wrap within the modal. Close, Escape
+and a click on the backdrop gutter close it; content clicks do not. Closing
+returns focus to the built-in Expand button or the previously focused host
+control, according to the entry point used. Zoom, pan, Fit and Copy remain
+host features.
+
+Expansion moves the existing SVG and controls into the dialog, then restores
+their original positions on close. One player owns the active view: its state,
+all methods, scenario selection and Play/Pause/Replay behavior stay live. Opening
+and closing preserve idle, paused, playing and ended states, including a playing
+step's remaining dwell. Viewport autoplay is suspended while expanded and never
+starts idle or paused playback as a side effect of opening or closing. Reduced
+motion still stops and resets playing, permits manual stepping, and never
+starts playback when disabled. The dialog stays in the supplied container to
+retain host overrides and automatic or pinned schemes, including shadow roots.
+Overrides inherited only by the SVG from a separate figure ancestor are captured
+on opening and restored through normal inheritance on closing.
 
 Multiple timelines have a labelled scenario tablist first, in source order
 using `Timeline.name`; one timeline has no tabs. Tabs have selected state,
@@ -893,8 +922,9 @@ and glow shades use `color-mix()`. Every control glow honours the shared
 An “All steps” list and scenario links remain host features.
 
 Both `mount.destroy()` and `mount.player.destroy()` perform the same idempotent
-teardown: destroy the player and remove this mount's controls, style and
-listeners. The host destroys before replacing the SVG or changing timelines,
+teardown: close any expanded view, restore the host SVG, destroy the player and
+remove this mount's controls, dialog, style, listeners, observer and timers.
+The host destroys before replacing the SVG or changing timelines,
 then mounts again. Standalone `createPlayer` retains its silent teardown and
 adds no controls. No browser globals are touched at import time. The playground
 uses this mount on every render with timelines; the

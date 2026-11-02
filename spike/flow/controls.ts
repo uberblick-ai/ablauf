@@ -3,6 +3,7 @@ import { createPlayer, type Player, type PlayerState } from "./player.ts";
 
 export interface PlaybackMount {
 	player: Player;
+	expand(): void;
 	destroy(): void;
 }
 
@@ -35,6 +36,14 @@ const STYLE = `
 .ab-playback button:focus-visible,.ab-playback .abp-navigation:focus-within,.ab-playback .abp-panel:focus-visible{outline:2px solid var(--abp-play);outline-offset:3px}
 .ab-playback .abp-tabs button:focus-visible{outline-offset:-3px}
 .ab-playback .abp-range,.ab-playback .abp-status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.ab-playback .abp-expand,.ab-playback .abp-close{display:flex;justify-content:flex-end;padding:6px 12px}
+.ab-playback .abp-expand[hidden]{display:none}
+.ab-playback.abp-dialog{box-sizing:border-box;position:fixed;inset:0;width:100%;height:100%;max-width:none;max-height:none;margin:0;border:0;padding:8px;overflow:hidden}
+.ab-playback.abp-dialog::backdrop{background:var(--abp-bg)}
+.ab-playback .abp-content{display:flex;flex-direction:column;height:100%;min-height:0}
+.ab-playback .abp-figure{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain}
+.ab-playback .abp-figure>svg{display:block;width:var(--abp-width)!important;height:var(--abp-height)!important;max-width:none!important;max-height:none!important;margin:0 auto}
+.ab-playback .abp-content>.ab-playback{flex:none;max-height:50%;overflow:auto}
 `;
 
 let mountId = 0;
@@ -48,12 +57,14 @@ export function mountPlayback(
 	container: HTMLElement | ShadowRoot,
 	svg: SVGSVGElement,
 	timelines: Timeline[],
-	options: { loop?: boolean; autoplay?: boolean } = {},
+	options: { loop?: boolean; autoplay?: boolean; expand?: boolean } = {},
 ): PlaybackMount {
 	const doc = container.ownerDocument;
 	const removers: (() => void)[] = [];
 	let root: HTMLDivElement | undefined;
 	let style: HTMLStyleElement | undefined;
+	let closeExpanded: (() => void) | undefined;
+	let suspendAutoplay = () => {};
 	let synchronize: (state: PlayerState) => void = () => {};
 	const player = createPlayer(svg, timelines, { loop: options.loop, onChange: state => synchronize(state) });
 	const destroyPlayer = player.destroy;
@@ -61,13 +72,14 @@ export function mountPlayback(
 	function destroy() {
 		if (destroyed) return;
 		destroyed = true;
+		closeExpanded?.();
 		destroyPlayer();
 		for (const remove of removers) remove();
 		root?.remove();
 		style?.remove();
 	}
 	player.destroy = destroy;
-	if (!timelines.length) return { player, destroy };
+	if (!timelines.length) return { player, expand, destroy };
 
 	const make = <K extends keyof HTMLElementTagNameMap>(tag: K, className = "", text = "") => {
 		const el = doc.createElement(tag);
@@ -88,6 +100,11 @@ export function mountPlayback(
 	const scheme = svg.classList.contains("ab-dark") ? "dark" : svg.classList.contains("ab-light") ? "light" : "auto";
 	root = make("div", `ab-playback ab-${scheme}`);
 	style = make("style", "", STYLE);
+	const expandRow = make("div", "abp-expand");
+	if (options.expand) {
+		expandRow.append(button("Expand", () => expand(expandRow.firstElementChild as HTMLButtonElement)));
+		root.append(expandRow);
+	}
 	const panel = make("div", "abp-panel");
 	const tabs: HTMLButtonElement[] = [];
 	if (timelines.length > 1) {
@@ -204,7 +221,81 @@ export function mountPlayback(
 	synchronize(player.state);
 	container.append(style, root);
 	if (options.autoplay) autoplay();
-	return { player, destroy };
+	return { player, expand: () => expand(), destroy };
+
+	function expand(opener?: HTMLElement) {
+		if (destroyed || !root || closeExpanded) return;
+		const scope = root.getRootNode() as Document | ShadowRoot;
+		opener ??= (scope.activeElement ?? doc.activeElement) as HTMLElement | undefined;
+		const dialog = make("dialog", `ab-playback ab-${scheme} abp-dialog`);
+		dialog.setAttribute("aria-label", svg.getAttribute("aria-label") ?? "Figure");
+		const content = make("div", "abp-content");
+		const header = make("div", "abp-close");
+		const close = make("button", "", "Close");
+		close.type = "button";
+		close.autofocus = true;
+		header.append(close);
+		const figure = make("div", "abp-figure");
+		figure.setAttribute("role", "region");
+		figure.setAttribute("aria-label", "Figure");
+		figure.tabIndex = 0;
+		figure.style.setProperty("--abp-width", `${svg.getAttribute("width")}px`);
+		figure.style.setProperty("--abp-height", `${svg.getAttribute("height")}px`);
+		// Preserve overrides from the figure's own ancestors when the controls
+		// container is elsewhere. Defaults remain live CSS, including auto scheme.
+		const inherited = svg.parentElement && doc.defaultView?.getComputedStyle(svg.parentElement);
+		const controlsTheme = doc.defaultView?.getComputedStyle(root);
+		if (inherited) for (const name of inherited) {
+			const value = inherited.getPropertyValue(name);
+			if (name.startsWith("--ab-") && value !== controlsTheme?.getPropertyValue(name)) figure.style.setProperty(name, value);
+		}
+		const svgPlace = doc.createComment("ablauf figure");
+		const controlsPlace = doc.createComment("ablauf controls");
+		svg.replaceWith(svgPlace);
+		root.replaceWith(controlsPlace);
+		figure.append(svg);
+		content.append(header, figure, root);
+		dialog.append(content);
+		container.append(dialog);
+		expandRow.hidden = true;
+		// Move the original view: there is exactly one player, timer and set of
+		// controls, so even a partially elapsed dwell survives open and close.
+		const finish = () => {
+			if (!closeExpanded) return;
+			closeExpanded = undefined;
+			close.removeEventListener("click", finish);
+			dialog.removeEventListener("close", finish);
+			dialog.removeEventListener("cancel", cancel);
+			dialog.removeEventListener("click", backdrop);
+			dialog.removeEventListener("keydown", containFocus);
+			if (dialog.open) dialog.close();
+			svgPlace.replaceWith(svg);
+			controlsPlace.replaceWith(root);
+			expandRow.hidden = false;
+			dialog.remove();
+			opener?.focus?.();
+		};
+		const cancel = (event: Event) => { event.preventDefault(); finish(); };
+		const backdrop = (event: Event) => { if (event.target === dialog) finish(); };
+		const containFocus = (event: KeyboardEvent) => {
+			if (event.key !== "Tab") return;
+			const focusable = [close, figure, ...tabs.filter(tab => tab.tabIndex === 0),
+				...(tabs.length ? [panel] : []), ...[previous, toggle, next, range].filter(el => !el.disabled)];
+			const last = focusable[focusable.length - 1];
+			const active = scope.activeElement ?? doc.activeElement;
+			if (event.shiftKey && active === close) { event.preventDefault(); last.focus(); }
+			else if (!event.shiftKey && active === last) { event.preventDefault(); close.focus(); }
+		};
+		closeExpanded = finish;
+		close.addEventListener("click", finish);
+		dialog.addEventListener("close", finish);
+		dialog.addEventListener("cancel", cancel);
+		dialog.addEventListener("click", backdrop);
+		dialog.addEventListener("keydown", containFocus);
+		suspendAutoplay();
+		dialog.showModal();
+		close.focus();
+	}
 
 	function autoplay() {
 		const view = svg.ownerDocument.defaultView;
@@ -212,7 +303,9 @@ export function mountPlayback(
 		if (!Observer) return;
 		let started = false;
 		let pausedByView = false;
+		suspendAutoplay = () => { started = true; pausedByView = false; };
 		const observer = new Observer(entries => {
+			if (destroyed || closeExpanded) return;
 			const visible = entries.some(entry => entry.isIntersecting);
 			const { status } = player.state;
 			if (!visible) {

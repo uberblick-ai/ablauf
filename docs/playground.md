@@ -49,6 +49,34 @@ Current-colour and zero-glow controls apply host overrides to every case,
 including the shadow root. Each document is 710px wide,
 with 16px side padding giving a 678px figure at full width.
 
+For #127, use a 720×680 browser viewport and open **Expand** on
+[Loop · light DOM](http://localhost:4620/playback-review#review-light-dom) or
+[Loop · shadow root](http://localhost:4620/playback-review#review-shadow).
+Both loops also offer **Host expand()**; the
+[host-only case](http://localhost:4620/playback-review#review-host-expand) omits
+the built-in Expand button to exercise the always-available API.
+The captured expanded loops are [light](images/playback/expanded-light.png),
+[dark](images/playback/expanded-dark.png),
+[shadow light](images/playback/expanded-shadow-light.png) and
+[shadow dark](images/playback/expanded-shadow-dark.png).
+
+- Expand appears in its own right-aligned row, separate from the three playback
+  buttons. Close is at the modal's top right and receives initial focus.
+- The loop retains its natural 786×780 size and overflows both axes in this
+  viewport. Scroll the figure; tabs, counter, actor, caption and navigation stay
+  below it without moving. Try a smaller figure too.
+- Tab and Shift+Tab stay in the modal. Close, Escape and a click in its narrow
+  outer backdrop gutter close it; content clicks do not. Check focus return to
+  Expand and to Host expand(), including the host button outside the shadow root.
+- Open idle, paused, playing and ended figures; change scenarios and use every
+  control while expanded. Closing retains the latest state and Play/Pause/Replay
+  text. Enable reduced motion while playing: the figure resets; manual stepping
+  still works and disabling the preference never starts playback.
+- Check automatic and pinned light/dark schemes and host overrides in both DOM
+  types. Both destroy entry points must remove an open modal, restore the host
+  SVG and leave host content intact. These interactions still require maintainer
+  review before merging.
+
 A maintainer checks these in a real browser before merging playback changes,
 including #112, #113 and #116. Capture light and dark screenshots of
 `/playback-review` at the 678px figure width. Compare the controls with the

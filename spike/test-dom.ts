@@ -37,8 +37,13 @@ export class Doc {
 	activeElement: El | null = null;
 	motion = new Motion();
 	viewport = new Viewport();
-	defaultView = { matchMedia: this.motion.matchMedia, IntersectionObserver: this.viewport.IntersectionObserver };
+	defaultView = {
+		matchMedia: this.motion.matchMedia,
+		IntersectionObserver: this.viewport.IntersectionObserver,
+		getComputedStyle: (el: El) => Object.assign([...el.style.keys()], { getPropertyValue: (name: string) => el.style.get(name) ?? "" }),
+	};
 	createElement(tag: string): El { return new El(tag, this); }
+	createComment(text: string): El { const el = new El("#comment", this); el.textContent = text; return el; }
 }
 
 export class El {
@@ -58,8 +63,28 @@ export class El {
 	step = "";
 	value = "";
 	writes = 0;
+	hidden = false;
+	open = false;
+	autofocus = false;
+	style = new Map<string, string>() as Map<string, string> & { setProperty(name: string, value: string): void };
 	private text = "";
-	constructor(tag: string, doc: Doc) { this.tag = tag; this.ownerDocument = doc; }
+	constructor(tag: string, doc: Doc) {
+		this.tag = tag; this.ownerDocument = doc;
+		this.style.setProperty = (name, value) => { this.style.set(name, value); };
+	}
+	get parentElement() { return this.parent; }
+	get firstElementChild() { return this.children[0] ?? null; }
+	getRootNode(): Doc { return this.ownerDocument; }
+	replaceWith(el: El) {
+		const parent = this.parent;
+		if (!parent) return;
+		el.remove();
+		parent.children.splice(parent.children.indexOf(this), 1, el);
+		el.parent = parent;
+		this.parent = null;
+	}
+	showModal() { this.open = true; }
+	close() { this.open = false; this.fire("close"); }
 	set innerHTML(_value: string) { assert.fail("Source text must never be parsed as HTML"); }
 	get textContent(): string { return this.text + this.children.map(el => el.textContent).join(""); }
 	set textContent(text: string) {
@@ -86,9 +111,9 @@ export class El {
 		this.listeners.get(type)?.add(listener);
 	}
 	removeEventListener(type: string, listener: (event: Event) => void) { this.listeners.get(type)?.delete(listener); }
-	fire(type: string, key = "") {
+	fire(type: string, key = "", target: El = this, shiftKey = false) {
 		let prevented = false;
-		const event = { type, key, preventDefault() { prevented = true; } } as unknown as Event;
+		const event = { type, key, target, shiftKey, preventDefault() { prevented = true; } } as unknown as Event;
 		for (const listener of this.listeners.get(type) ?? []) listener(event);
 		return prevented;
 	}
@@ -100,4 +125,3 @@ export class El {
 		return this.all().filter(el => el.attrs.has("data-ab-part"));
 	}
 }
-

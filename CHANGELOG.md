@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Add optional `mountPlayback(..., { expand: true })` and host-called `mount.expand()`:
+  a full-screen native modal keeps natural-size figure scrolling above persistent
+  playback controls and captions, preserves the active player and dwell, retains
+  themes and reduced motion, and restores focus and host content on close or teardown.
+  ([#127](https://github.com/uberblick-ai/ablauf/issues/127))
+
 ## 0.3.0 — 2026-11-02
 
 ### Playback

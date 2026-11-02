@@ -34,13 +34,37 @@ shadow root below the inline SVG:
 ```ts
 import { mountPlayback } from "@uberblick/ablauf/playback";
 
-const mount = mountPlayback(controlsContainer, svgElement, result.timelines, { autoplay: true });
+const mount = mountPlayback(controlsContainer, svgElement, result.timelines, { autoplay: true, expand: true });
 // Starts idle. With autoplay it plays once half the figure is in view, pauses
 // when it leaves and resumes when it returns, unless the reader paused it.
 // Without autoplay, Play or a scenario tab starts it; the host can also call mount.player.
+// expand: true adds an Expand button; host controls can always call:
+mount.expand();
 // Before replacing the SVG or its timelines:
 mount.destroy();
 ```
+
+`expand` defaults to false. The optional **Expand** button sits in its own
+right-aligned row above the inline controls. `mount.expand()` also works without
+the button. Both open a full-screen native modal dialog labelled from the figure,
+with initial focus on **Close** at the top right. The figure stays at natural
+size and scrolls on both axes; the same scenario tabs, step counter, actor,
+caption, playback buttons and step navigation remain below its scrolling region.
+Zoom, pan, Fit and Copy remain host features.
+
+The same `mount.player` reports and controls the active view. Opening and closing
+preserve the latest scenario, step and idle/paused/playing/ended state, including
+a playing step's remaining dwell. Only that view advances; viewport autoplay is
+suspended while expanded. Opening never starts idle or paused playback. Reduced
+motion still stops and resets playing and allows manual stepping.
+Close, Escape or a backdrop gutter click close the dialog and return focus to
+Expand or the previously focused host control. Tab stays within the modal;
+content clicks do not close it. Host `--ab-*` overrides and automatic or pinned
+schemes remain available, including in shadow roots. Figure-only ancestor
+overrides are captured on opening when its container differs from the controls.
+Repeated `expand()` calls while open do nothing, as do calls with no timelines
+or after destruction. Both destroy entry points also remove an open dialog and
+restore the SVG to its original position.
 
 ### Playback details and the headless player
 

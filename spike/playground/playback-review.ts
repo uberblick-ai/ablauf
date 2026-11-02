@@ -10,9 +10,10 @@ const cases = document.getElementById("review-cases") as HTMLElement;
 const mounts: PlaybackMount[] = [];
 const figureCSS = ".review-figure svg{display:block;max-width:100%;height:auto}";
 
-function addCase(title: string, source: string, idPrefix: string, shadow = false, headless = false) {
+function addCase(title: string, source: string, idPrefix: string, shadow = false, headless = false, hostExpand = false) {
 	const section = document.createElement("section");
 	section.className = "review-document";
+	section.id = idPrefix;
 	const heading = document.createElement("h2");
 	heading.textContent = title;
 	const surface = document.createElement("div");
@@ -31,9 +32,9 @@ function addCase(title: string, source: string, idPrefix: string, shadow = false
 	retained.textContent = "Host content remains after either teardown entry point.";
 	container.append(style, figure, retained);
 	function makeMount(): PlaybackMount {
-		if (!headless) return mountPlayback(figure, svg as SVGSVGElement, result.timelines, { loop: loop.checked });
+		if (!headless) return mountPlayback(figure, svg as SVGSVGElement, result.timelines, { loop: loop.checked, expand: !hostExpand });
 		const player = createPlayer(svg as SVGSVGElement, result.timelines, { loop: loop.checked });
-		return { player, destroy: () => player.destroy() };
+		return { player, expand: () => {}, destroy: () => player.destroy() };
 	}
 	let mount = makeMount();
 	mounts.push(mount);
@@ -57,6 +58,7 @@ function addCase(title: string, source: string, idPrefix: string, shadow = false
 			mounts.push(mount);
 			note.textContent = "Remounted, idle. No duplicate controls.";
 		}), note);
+	if (!headless) section.append(button("Host expand()", () => mount.expand()));
 	if (headless) section.append(
 		button("Direct Play / Replay", () => mount.player.play()),
 		button("Direct Pause", () => mount.player.pause()),
@@ -99,6 +101,7 @@ function draw() {
 	cases.replaceChildren();
 	addCase("Loop · light DOM", source, "review-light-dom");
 	addCase("Loop · shadow root", source, "review-shadow", true);
+	addCase("Loop · host expand() only (no built-in Expand)", source, "review-host-expand", false, false, true);
 	addCase("Compact controls · overflowing tabs and wrapping captions", compact, "review-compact");
 	addCase("Fade · inline labels on canvas and band", fade, "review-fade");
 	addCase("Fade · crossing knockouts (two expected warnings)", crossings, "review-crossings");
