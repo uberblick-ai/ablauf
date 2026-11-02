@@ -280,6 +280,8 @@ test("autoplay starts in view, pauses out of view and resumes unless the reader 
 	t.mock.timers.enable({ apis: ["setTimeout"] });
 	const f = setup(t, timelines, { autoplay: true });
 	assert.equal(f.doc.viewport.observers.size, 1);
+	const [watched] = [...f.doc.viewport.observers][0].targets;
+	assert.equal(watched, f.cls("abp-figure"), "the figure box, not a sideways-scrolling SVG, decides visibility");
 	assert.equal(f.player.state.status, "idle", "nothing plays before the figure is in view");
 	f.doc.viewport.show(true);
 	assert.deepEqual(f.player.state, { scenario: 0, step: 0, status: "playing" });

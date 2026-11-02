@@ -29,3 +29,7 @@
 .mark > span { color: var(--accent); margin-inline: 1px }
 .mark .ub { text-decoration: underline 2px #bc7509; text-underline-offset: 4px }
 .mark a:hover { color: var(--accent) }
+/* Keep the figure at its natural size, as the static examples are, and scroll
+   it sideways in narrow columns instead of shrinking the text. */
+.ex-pic[data-timelines] .abp-figure { overflow-x: auto }
+.ex-pic[data-timelines] .abp-figure svg { max-width: none }
