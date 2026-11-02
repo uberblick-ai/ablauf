@@ -38,8 +38,28 @@ export class Doc {
 	motion = new Motion();
 	viewport = new Viewport();
 	resize = new Resizes();
-	defaultView = { matchMedia: this.motion.matchMedia, IntersectionObserver: this.viewport.IntersectionObserver, ResizeObserver: this.resize.ResizeObserver };
+	frames = new Frames();
+	defaultView = {
+		matchMedia: this.motion.matchMedia, IntersectionObserver: this.viewport.IntersectionObserver, ResizeObserver: this.resize.ResizeObserver,
+		requestAnimationFrame: this.frames.request, cancelAnimationFrame: this.frames.cancel,
+	};
 	createElement(tag: string): El { return new El(tag, this); }
+}
+
+class Frames {
+	callbacks = new Map<number, FrameRequestCallback>();
+	private nextId = 0;
+	request = (callback: FrameRequestCallback) => {
+		const id = ++this.nextId;
+		this.callbacks.set(id, callback);
+		return id;
+	};
+	cancel = (id: number) => { this.callbacks.delete(id); };
+	flush() {
+		const callbacks = [...this.callbacks.values()];
+		this.callbacks.clear();
+		for (const callback of callbacks) callback(0);
+	}
 }
 
 export class Resizes {

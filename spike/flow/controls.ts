@@ -300,12 +300,24 @@ export function mountPlayback(
 	updateLayout();
 	const view = doc.defaultView;
 	const Resize = view?.ResizeObserver;
-	if (Resize) {
+	if (view && Resize) {
 		// Observe the mount's available width, including when its container is a
 		// shadow root. The SVG's natural dimensions stay fixed in both layouts.
-		const observer = new Resize(updateLayout);
+		// Layout changes can resize the observed root. Apply them next frame,
+		// outside observer delivery, to avoid ResizeObserver loop error events.
+		let frame: number | undefined;
+		const observer = new Resize(() => {
+			if (destroyed || frame !== undefined) return;
+			frame = view.requestAnimationFrame(() => {
+				frame = undefined;
+				updateLayout();
+			});
+		});
 		observer.observe(root);
-		removers.push(() => observer.disconnect());
+		removers.push(() => {
+			observer.disconnect();
+			if (frame !== undefined) view.cancelAnimationFrame(frame);
+		});
 	} else if (view) {
 		view.addEventListener("resize", updateLayout);
 		removers.push(() => view.removeEventListener("resize", updateLayout));

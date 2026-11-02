@@ -7,6 +7,14 @@
 - Add auto, side and below layouts to `mountPlayback`. Tall figures can show
   captions in a sticky column with a keyboard-accessible step list, while auto
   switches layouts as the container resizes. ([#139](https://github.com/uberblick-ai/ablauf/issues/139))
+- **Host migration from 0.3.0:** pass a container holding the inline SVG, rather
+  than a separate controls container below it. `mountPlayback` now moves the SVG
+  into mount-owned wrappers inside that container, including pulling it out of
+  another parent when necessary. Mount styles give it `display: block`,
+  `max-width: 100%` and `height: auto` on the controls' background. Either destroy
+  entry restores its original parent and position and removes the mount styles.
+  The default is now `layout: "auto"`, so existing tall figures may switch to side
+  captions without opting in; choose `layout: "below"` to keep captions below.
 
 ## 0.3.0 — 2026-11-02
 

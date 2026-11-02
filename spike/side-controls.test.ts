@@ -33,7 +33,7 @@ function setup(t: TestContext, options: { layout?: "below" | "side" | "auto"; wi
 	const rows = () => lists().find(list => !list.hidden)?.all().filter(el => el.classList.contains("abp-row")) ?? [];
 	const current = () => rows().filter(row => row.getAttribute("aria-current") === "step");
 	const played = () => rows().filter(row => row.classList.contains("abp-played"));
-	const resize = (available: number) => { container.rect = { top: 0, bottom: 800, width: available }; doc.resize.flush(); };
+	const resize = (available: number) => { container.rect = { top: 0, bottom: 800, width: available }; doc.resize.flush(); doc.frames.flush(); };
 	return { doc, container, svg, original, mount, player: mount.player, cls, lists, rows, current, played, resize };
 }
 
@@ -77,6 +77,83 @@ test("auto resizes both ways at natural width, retains navigation and synchroniz
 	assert.deepEqual(f.rows(), rows, "resizing reuses native buttons");
 	assert.equal(f.current()[0], rows[0]);
 	assert.equal(f.doc.resize.observers.size, 1);
+});
+
+test("resize delivery leaves DOM unchanged until the next frame and uses the latest width", t => {
+	const f = setup(t);
+	const root = f.cls("ab-playback");
+	const original = f.container.all();
+	f.container.rect = { top: 0, bottom: 800, width: 997 };
+	f.doc.resize.flush();
+	f.doc.resize.flush();
+	assert.ok(root.classList.contains("abp-side"));
+	assert.deepEqual(f.container.all(), original, "no layout mutations during observer delivery");
+	assert.equal(f.doc.frames.callbacks.size, 1);
+	f.doc.frames.flush();
+	assert.ok(root.classList.contains("abp-below"));
+	assert.equal(f.lists().length, 0);
+	f.container.rect.width = 998;
+	f.doc.resize.flush();
+	f.container.rect.width = 997;
+	f.doc.resize.flush();
+	f.doc.frames.flush();
+	assert.ok(root.classList.contains("abp-below"), "the final available width wins");
+	f.resize(998);
+	assert.ok(root.classList.contains("abp-side"));
+});
+
+test("both teardown entries cancel pending resize work and tolerate already queued callbacks", t => {
+	for (const entry of ["mount", "player"] as const) {
+		const f = setup(t);
+		const observer = [...f.doc.resize.observers][0];
+		f.container.rect = { top: 0, bottom: 800, width: 997 };
+		f.doc.resize.flush();
+		const callback = [...f.doc.frames.callbacks.values()][0];
+		assert.ok(callback);
+		f[entry].destroy();
+		assert.equal(f.doc.frames.callbacks.size, 0);
+		observer.callback();
+		callback(0);
+		f.doc.frames.flush();
+		assert.equal(f.doc.frames.callbacks.size, 0);
+		assert.deepEqual(f.container.children, f.original);
+	}
+});
+
+test("nested, external and detached SVGs mount inside the supplied container and return to their original position", t => {
+	for (const placement of ["nested", "external", "detached"] as const) for (const entry of ["mount", "player"] as const) {
+		const doc = new Doc();
+		const container = new El("main", doc);
+		const parent = new El("figure", doc);
+		const before = new El("p", doc);
+		const after = new El("p", doc);
+		const svg = new El("svg", doc);
+		svg.setAttribute("viewBox", "0 0 678 744");
+		svg.setAttribute("style", "width:85%;display:inline");
+		const attributes = [...svg.attrs];
+		if (placement !== "detached") parent.append(before, svg, after);
+		else parent.append(before, after);
+		const content = new El("p", doc);
+		container.append(content);
+		if (placement === "nested") container.append(parent);
+		const containerChildren = [...container.children];
+		const parentChildren = [...parent.children];
+		const mount = mountPlayback(container as unknown as HTMLElement, svg as unknown as SVGSVGElement, timelines, { layout: "side" });
+		t.after(() => mount.destroy());
+		assert.ok(svg.parent?.classList.contains("abp-figure"));
+		assert.ok(container.all().includes(svg));
+		assert.ok(container.children.includes(content));
+		const mounted = container.all();
+		(entry === "mount" ? mount : mount.player).destroy();
+		mount.destroy(); mount.player.destroy();
+		assert.deepEqual(container.children, containerChildren);
+		assert.deepEqual(parent.children, parentChildren);
+		assert.equal(svg.parent, placement === "detached" ? null : parent);
+		assert.deepEqual([...svg.attrs], attributes);
+		assert.equal(doc.resize.observers.size, 0);
+		assert.equal(doc.motion.listeners.size, 0);
+		assert.ok(mounted.every(el => [...el.listeners.values()].every(listeners => listeners.size === 0)));
+	}
 });
 
 test("side list has safe text and message numbers; play, seek, reset and scenario changes update every row", t => {
