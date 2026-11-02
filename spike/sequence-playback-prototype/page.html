@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sequence playback prototype</title>
+<style>
+:root{color-scheme:light dark;--page:#f6f7f9;--card:#ffffff;--fg:#17202c;--mute:#5a6575;--rail:#d3d9e2;--accent:#0a7a60}
+@media (prefers-color-scheme:dark){:root{--page:#11151b;--card:#171c24;--fg:#e5e9ef;--mute:#98a2b0;--rail:#2c3440;--accent:#6ff0cf}}
+body{margin:0;background:var(--page);color:var(--fg);font:14px/1.5 system-ui,sans-serif}
+main{max-width:1120px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:18px;margin:0 0 4px}
+p.lead{margin:0 0 16px;color:var(--mute)}
+.variants{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}
+.variants button{font:12px/1 ui-monospace,monospace;color:var(--fg);background:var(--card);border:1px solid var(--rail);border-radius:999px;height:30px;padding:0 12px;cursor:pointer}
+.variants button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.explain{min-height:42px;margin:0 0 14px;color:var(--mute);font-size:13px}
+.figure{background:var(--card);border:1px solid var(--rail);border-radius:12px;overflow:clip}
+.figure .ab-playback{background:none}
+.steps{list-style:none;margin:0;padding:8px 12px 12px;display:grid;gap:2px}
+.steps li{display:grid;grid-template-columns:28px minmax(0,1fr);column-gap:10px;padding:5px 8px;border-radius:8px;cursor:pointer;color:color-mix(in srgb,var(--mute) 70%,var(--card));transition:background .3s,color .3s}
+.steps li:hover{background:color-mix(in srgb,var(--rail) 40%,transparent)}
+.steps .n{grid-row:1/3;font:500 11px/20px ui-monospace,monospace}
+.steps .who{font:12px/20px ui-monospace,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.steps .cap{font-size:14px;line-height:1.4}
+.steps li.played{color:var(--fg)}
+.steps li.played .who{color:var(--mute)}
+.steps li.current{background:color-mix(in srgb,var(--accent) 10%,transparent);color:var(--fg)}
+.steps li.current .n,.steps li.current .who{color:var(--accent)}
+.steps li.current .cap{font-weight:600}
+@media (min-width:1000px){
+.figure{display:grid;grid-template-columns:auto minmax(300px,1fr);align-items:start}
+.figure .scroll{padding:12px 8px;border-right:1px solid var(--rail)}
+.figure .ab-playback{position:sticky;top:0;max-height:100vh;overflow-y:auto;padding-bottom:4px}
+.figure .ab-playback .abp-step{display:none}
+.figure .ab-playback .abp-actions{padding-top:12px}
+}
+.scroll{overflow-x:auto;padding:12px 8px 0}
+.figure svg{display:block;margin:0 auto}
+</style>
+</head>
+<body>
+<main>
+<h1>Sequence playback, prototype</h1>
+<p class="lead">The claim example from the site, played with the 0.3.0 player and controls. A step names a message by its number. Pick a treatment, then press Play. On wide screens the captions sit in a column beside the diagram; click a step to jump to it.</p>
+<div class="variants" role="group" aria-label="Treatment">
+<button type="button" data-v="v-flow">A · same as flows</button>
+<button type="button" data-v="v-packet">B · message travels</button>
+<button type="button" data-v="v-cursor">C · travels + time cursor</button>
+</div>
+<p class="explain" id="explain"></p>
+<div class="figure" id="figure">
+<div class="scroll">
+<!--SVG-->
+</div>
+</div>
+</main>
+<style id="seq-play">
+.ab.ab-auto{--play:var(--ab-play,#0a7a60)}
+@media (prefers-color-scheme:dark){.ab.ab-auto{--play:var(--ab-play,#6ff0cf)}}
+.ab [data-ab-part]{color:var(--play);transition:opacity .35s ease}
+.ab [data-ab-part] .e-system{color:var(--system)}
+.ab [data-ab-part] .e-ink{color:var(--ink)}
+/* Unplayed messages and not-yet-involved participants fade, as in flows. */
+.ab.ab-in-progress [data-ab-part]:not(.ab-current):not(.ab-played){opacity:.28}
+/* Current message: heavier glowing stroke, number in the play colour. */
+.ab [data-ab-part].ab-current .e{stroke-width:2.2;filter:drop-shadow(0 0 var(--ab-play-glow,6px) color-mix(in srgb,currentColor 55%,transparent))}
+.ab [data-ab-part].ab-current .seq-number{fill:var(--play);font-weight:600}
+.ab [data-ab-part].ab-current .seq-label{font-weight:600}
+/* Current participants: the header dot grows and glows. */
+.ab [data-ab-part^="p-"] circle{transform-box:fill-box;transform-origin:center;transition:transform .3s ease}
+.ab [data-ab-part^="p-"].ab-current circle{transform:scale(1.7);filter:drop-shadow(0 0 4px currentColor)}
+/* Overlays are hidden unless a treatment shows them. */
+.ab .seq-act,.ab .seq-packet{opacity:0;pointer-events:none}
+.ab .seq-now{fill:var(--play);opacity:0;transition:transform .45s cubic-bezier(.3,.7,.3,1),opacity .3s}
+
+/* A: the running dash used by flows. */
+.ab.v-flow.ab-playing [data-ab-part].ab-current .e{stroke-dasharray:8 6;animation:seq-run .7s linear infinite}
+@keyframes seq-run{from{stroke-dashoffset:0}to{stroke-dashoffset:-14}}
+
+/* B and C: the arrow draws from sender to receiver with a packet at its tip,
+   then the receiver's activation bar appears and stays faintly once played. */
+.ab:is(.v-packet,.v-cursor) [data-ab-part].ab-current .seq-act{opacity:1;transition:opacity .25s ease .5s}
+.ab:is(.v-packet,.v-cursor) [data-ab-part].ab-played .seq-act{opacity:.35}
+.ab:is(.v-packet,.v-cursor).ab-playing [data-ab-part].ab-current path.e{animation:seq-draw .55s cubic-bezier(.4,0,.2,1)}
+@keyframes seq-draw{from{stroke-dasharray:var(--len) var(--len);stroke-dashoffset:var(--len)}to{stroke-dasharray:var(--len) var(--len);stroke-dashoffset:0}}
+.ab .seq-packet{offset-rotate:0deg;offset-distance:100%}
+.ab:is(.v-packet,.v-cursor).ab-playing [data-ab-part].ab-current .seq-packet{animation:seq-travel .55s cubic-bezier(.4,0,.2,1) forwards}
+@keyframes seq-travel{0%{offset-distance:0%;opacity:1}85%{opacity:1}100%{offset-distance:100%;opacity:0}}
+
+/* C: one band follows the current row, like a playhead moving down time. */
+.ab.v-cursor.ab-in-progress .seq-now{opacity:.1}
+
+@media (prefers-reduced-motion:reduce){.ab *{animation:none!important;transition:none!important}}
+</style>
+<script type="module">
+/*RUNTIME*/
+const timelines = /*TIMELINES*/;
+const svg = document.querySelector("svg.ab");
+const notes = {
+	"v-flow": "The 0.3.0 flow treatment applied unchanged: unplayed parts fade, the current message glows and its arrow runs.",
+	"v-packet": "The arrow draws from sender to receiver with a dot at its tip, then a short activation bar marks the receiver. Played bars stay faint, so you can see who has already handled something.",
+	"v-cursor": "As B, plus a soft band that slides down to the current row, so time reads top to bottom. Recommended.",
+};
+for (const path of svg.querySelectorAll('[data-ab-part^="m-"] path.e')) path.style.setProperty("--len", path.getTotalLength().toFixed(1));
+const band = svg.querySelector(".seq-now");
+const moveBand = () => {
+	const current = svg.querySelector('[data-ab-part^="m-"].ab-current path.e');
+	if (!current) return;
+	const box = current.getBBox();
+	band.style.transform = `translateY(${(box.y - 21).toFixed(1)}px)`;
+	band.setAttribute("height", (box.height + 30).toFixed(0));
+};
+new MutationObserver(moveBand).observe(svg, { subtree: true, attributes: true, attributeFilter: ["class"] });
+const explain = document.getElementById("explain");
+function choose(v) {
+	svg.classList.remove("v-flow", "v-packet", "v-cursor");
+	svg.classList.add(v);
+	for (const b of document.querySelectorAll(".variants button")) b.setAttribute("aria-pressed", String(b.dataset.v === v));
+	explain.textContent = notes[v];
+	try { localStorage.setItem("seq-variant", v); } catch {}
+}
+for (const b of document.querySelectorAll(".variants button")) b.addEventListener("click", () => choose(b.dataset.v));
+let initial = new URLSearchParams(location.search).get("v");
+try { initial ??= localStorage.getItem("seq-variant"); } catch {}
+choose(notes[initial] ? initial : "v-cursor");
+window.mount = mountPlayback(document.getElementById("figure"), svg, timelines, { loop: false });
+// Host-side step list: every caption of the chosen scenario, numbered like the messages.
+const panel = document.querySelector("#figure .ab-playback");
+const list = document.createElement("ol");
+list.className = "steps";
+list.setAttribute("aria-label", "Steps");
+panel.append(list);
+let shown = "";
+function syncList() {
+	const { scenario, step } = mount.player.state;
+	const steps = timelines[scenario].steps;
+	if (shown !== String(scenario)) {
+		shown = String(scenario);
+		list.replaceChildren(...steps.map((s, i) => {
+			const li = document.createElement("li");
+			li.innerHTML = `<span class="n"></span><span class="who"></span><span class="cap"></span>`;
+			li.querySelector(".n").textContent = s.target.padStart(2, "0");
+			li.querySelector(".who").textContent = s.actor;
+			li.querySelector(".cap").textContent = s.caption;
+			li.addEventListener("click", () => mount.player.seek(i));
+			return li;
+		}));
+	}
+	list.querySelectorAll("li").forEach((li, i) => {
+		li.classList.toggle("current", i === step);
+		li.classList.toggle("played", i < step);
+		if (i === step) li.setAttribute("aria-current", "step"); else li.removeAttribute("aria-current");
+	});
+}
+new MutationObserver(syncList).observe(svg, { attributes: true, attributeFilter: ["class"], subtree: true });
+syncList();
+</script>
+</body>
+</html>
