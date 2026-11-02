@@ -34,8 +34,10 @@ shadow root below the inline SVG:
 ```ts
 import { mountPlayback } from "@uberblick/ablauf/playback";
 
-const mount = mountPlayback(controlsContainer, svgElement, result.timelines);
-// Starts idle; Play or a scenario tab starts it. The host can also call mount.player.
+const mount = mountPlayback(controlsContainer, svgElement, result.timelines, { autoplay: true });
+// Starts idle. With autoplay it plays once half the figure is in view, pauses
+// when it leaves and resumes when it returns, unless the reader paused it.
+// Without autoplay, Play or a scenario tab starts it; the host can also call mount.player.
 // Before replacing the SVG or its timelines:
 mount.destroy();
 ```

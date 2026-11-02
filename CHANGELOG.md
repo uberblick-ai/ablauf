@@ -18,6 +18,8 @@
   `ab-playing` enables forward edge dashes and 0.35s easing; reduced motion disables both. ([#113](https://github.com/uberblick-ai/ablauf/issues/113))
 - Make controls compact, with underlined scrolling tabs, reserved counter and actor/caption space,
   and a seekable segmented bar; preserve native range access and the glow override. ([#116](https://github.com/uberblick-ai/ablauf/issues/116))
+- Add `mountPlayback(..., { autoplay: true })`: play once the figure is half in view, pause off screen and
+  resume on return unless the reader paused; reduced motion keeps it idle.
 
 ### Diagrams and host themes
 

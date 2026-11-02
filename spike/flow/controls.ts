@@ -39,12 +39,16 @@ const STYLE = `
 
 let mountId = 0;
 
-/** Mount controls beside an inline SVG. Both destroy entry points tear down the mount. */
+/**
+ * Mount controls beside an inline SVG. Both destroy entry points tear down the mount.
+ * With `autoplay`, the figure plays when half of it scrolls into view, pauses when it
+ * leaves and resumes when it returns, unless the reader paused it in between.
+ */
 export function mountPlayback(
 	container: HTMLElement | ShadowRoot,
 	svg: SVGSVGElement,
 	timelines: Timeline[],
-	options: { loop?: boolean } = {},
+	options: { loop?: boolean; autoplay?: boolean } = {},
 ): PlaybackMount {
 	const doc = container.ownerDocument;
 	const removers: (() => void)[] = [];
@@ -199,5 +203,28 @@ export function mountPlayback(
 	};
 	synchronize(player.state);
 	container.append(style, root);
+	if (options.autoplay) autoplay();
 	return { player, destroy };
+
+	function autoplay() {
+		const view = svg.ownerDocument.defaultView;
+		const Observer = view?.IntersectionObserver;
+		if (!Observer) return;
+		let started = false;
+		let pausedByView = false;
+		const observer = new Observer(entries => {
+			const visible = entries.some(entry => entry.isIntersecting);
+			const { status } = player.state;
+			if (!visible) {
+				if (status === "playing") { player.pause(); pausedByView = true; }
+				return;
+			}
+			if (view.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+			if ((!started && status === "idle") || (pausedByView && status === "paused")) player.play();
+			started = true;
+			pausedByView = false;
+		}, { threshold: 0.5 });
+		observer.observe(svg);
+		removers.push(() => observer.disconnect());
+	}
 }
