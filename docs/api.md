@@ -35,7 +35,7 @@ shadow root below the inline SVG:
 import { mountPlayback } from "@uberblick/ablauf/playback";
 
 const mount = mountPlayback(controlsContainer, svgElement, result.timelines);
-// Starts idle; the user presses Play. The host can also call mount.player.
+// Starts idle; Play or a scenario tab starts it. The host can also call mount.player.
 // Before replacing the SVG or its timelines:
 mount.destroy();
 ```
@@ -48,8 +48,10 @@ clear highlighting, remove the mount's controls, style and listeners, and leave
 host content intact. Destroy the old mount before rendering changed source,
 then mount again. No timelines adds no controls or style. A single timeline
 has no tabs; an empty scenario stays selected and shows “No playable steps”.
-Tabs activate immediately on Left/Right (wrapping), click or Enter/Space;
-selection pauses on the first step. The range includes the full figure at `-1`.
+Tabs activate immediately on Left/Right (wrapping), Home/End, click or
+Enter/Space, and play the chosen scenario from its first step; under reduced
+motion they only select it. The headless `player.select()` still pauses on the
+first step. The range includes the full figure at `-1`.
 Controls follow the SVG's automatic or pinned scheme and accept host `--ab-*`
 colour overrides on their container. `PlaybackMount` is exported from the same
 entry. Both entries are safe to import without browser globals.
