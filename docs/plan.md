@@ -778,15 +778,17 @@ Whenever a step is shown, including paused and ended frames, its current node
 outlines/decision shapes and incoming edge strokes have a soft glow and a
 slightly heavier stroke. Played parts do not glow. Filters apply to individual
 shapes only, never groups, label text, inline gaps, crossing knockouts or the
-root. Glow colour uses `color-mix()` from internal `--play`, following host
-`--ab-play` overrides in light and dark. Its blur size is `--ab-play-glow`,
+root. No state recolours a part: strokes, fills, dashes and arrowheads keep
+their tone colours. The glow uses `color-mix()` from `currentColor`, which is a
+toned outline's or edge's own tone, a pill's dot tone, and otherwise internal
+`--play`, following host `--ab-play` overrides in light and dark. Its blur size is `--ab-play-glow`,
 default `6px` in both schemes; the literal `--ab-play-glow: 0` removes the glow.
 
 Only while `ab-playing` is present, current incoming edge strokes run as moving
 dashes toward their targets, with a seamless loop; arrowheads stay put. The
 current step's timeline `parts` identify the incoming edges, including parallel
 edges. Steps without an incoming edge animate none. Paused and ended edges are
-still. Fades and colour changes ease over 0.35s only while playing; manual
+still. Fades ease over 0.35s only while playing; manual
 navigation and other non-playing changes are instant. Animation, transitions
 and keyframes are embedded in every playable SVG and scoped to its figure;
 distinct `idPrefix` values keep independently driven figures isolated, including
@@ -796,11 +798,9 @@ glow, heavier strokes and running-edge overrides, restoring the default figure.
 Static SVG bytes stay identical; compared with the post-#112 baseline, playable
 idle SVGs change only by added playback styles and the colour defaults below.
 
-Playable SVGs define internal `--play` and `--play-done` through the host's
-`--ab-play` and `--ab-play-done` overrides. Current defaults are `#0a7a60`
-(light) and `#6ff0cf` (dark); played defaults are `#596e81` (light) and
-`#5f9e8a` (dark). Each reaches WCAG sRGB text contrast of at least 4.5:1 on
-its scheme's canvas and band. Auto follows `prefers-color-scheme`; pinned schemes keep
+Playable SVGs define internal `--play` through the host's `--ab-play`
+override. Defaults are `#0a7a60` (light) and `#6ff0cf` (dark), each reaching
+WCAG sRGB text contrast of at least 4.5:1 on its scheme's canvas and band. Auto follows `prefers-color-scheme`; pinned schemes keep
 their defaults. These tokens are separate from the existing exported palette.
 
 ### Behaviour and theming
@@ -816,10 +816,11 @@ their defaults. These tokens are separate from the existing exported palette.
   disabling reduced motion never starts playback. Manual navigation remains
   instant; only playing frames enable motion and easing as described above.
 - Without a player, the diagram is the full figure.
-- One accent marks the current step; played parts keep a quieter tint. Use
-  `--ab-play` for current and `--ab-play-done` for played parts, emitted only
-  in playable SVGs. They follow the existing host-override and light/dark
-  default rules; the existing palette stays unchanged.
+- Parts keep their tone colours in every state. The current step stands out by
+  glow and a heavier stroke, played parts by staying unfaded. `--ab-play` is
+  emitted only in playable SVGs and colours the glow of untoned parts; it
+  follows the existing host-override and light/dark default rules, and the
+  existing palette stays unchanged.
 
 `createPlayer(svg, timelines, { loop?, onChange? }?)` exports the headless API;
 see [usage and navigation semantics](../README.md#play-an-inline-svg).

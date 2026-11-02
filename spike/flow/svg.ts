@@ -136,9 +136,10 @@ export const markerPrefix = (options: SvgOptions) =>
 	);
 
 // Playback fades unplayed parts, preserving opaque gaps and knockouts.
-// Geometry and foreground draw order never change; only playing frames ease.
+// Parts keep their own tone colours in every state; the current step stands
+// out by glow and a heavier stroke. Geometry and draw order never change.
 function playStyle(mode: "auto" | "light" | "dark", id: string): string {
-	const colors = (dark: boolean) => `--play:var(--ab-play,${dark ? "#6ff0cf" : "#0a7a60"});--play-done:var(--ab-play-done,${dark ? "#5f9e8a" : "#596e81"});`;
+	const colors = (dark: boolean) => `--play:var(--ab-play,${dark ? "#6ff0cf" : "#0a7a60"});`;
 	const defaults = mode === "auto"
 		? `.ab.ab-auto{${colors(false)}}@media (prefers-color-scheme:dark){.ab.ab-auto{${colors(true)}}}`
 		: `.ab.ab-${mode}{${colors(mode === "dark")}}`;
@@ -146,15 +147,11 @@ function playStyle(mode: "auto" | "light" | "dark", id: string): string {
 	// Group opacity composites nodes, strokes and marker heads as a whole.
 	// Inline labels contain a canvas/band gap: only their text may fade.
 	const fade = `${unplayed}:not(:has(.gap)){opacity:.3}${unplayed}:has(.gap) text{opacity:.3}`;
-	const states = ["played", "current"].map(state => {
-		const color = state === "current" ? "play" : "play-done";
-		// Marker URLs differ per figure; the selector must stay local when
-		// several playable SVGs share a document and cascade their styles.
-		const selector = `.ab[data-ab-play="${id}"] [data-ab-part].ab-${state}`;
-		return `${selector} :is(rect:not(.gap),path:not(.arrow),line){stroke:var(--${color})}${selector} :is(text,circle){fill:var(--${color})}${selector} .arrow{marker-end:url(#${id}-play-${state})}.ab .play-head-${state}{fill:var(--${color})}`;
-	}).join("");
-	return `${defaults}${states}${fade}\n${playEffects(id)}`;
+	return `${defaults}${fade}\n${playEffects(id)}`;
 }
+
+// Toned shapes glow in their own tone; untoned ones in the play colour.
+const GLOW_TONES = ["agent", "system", "done", "rework", "stop"] as const;
 
 function playEffects(id: string): string {
 	const root = `.ab[data-ab-play="${id}"]`;
@@ -165,17 +162,23 @@ function playEffects(id: string): string {
 	const shapes = ":is(rect:not(.gap),.decision,.e)";
 	const edge = `${playing} [data-ab-part].ab-current .e`;
 	const fades = `${playing} [data-ab-part]:not(:has(.gap)),${playing} [data-ab-part] text`;
-	const paints = `${playing} [data-ab-part] :is(rect:not(.gap),path:not(.arrow),line,text,circle)`;
+	// The glow reads currentColor: the play colour by default, a pill's dot
+	// tone for the whole pill, and a shape's own tone for toned outlines/edges.
+	const glowColors = [
+		`${root} [data-ab-part]{color:var(--play)}`,
+		...GLOW_TONES.map(t => `${root} [data-ab-part]:has(circle.t-${t}){color:var(--${t})}`),
+		...GLOW_TONES.map(t => `${root} :is(.k-${t},.e-${t}){color:var(--${t})}`),
+	];
 	return [
+		...glowColors,
 		// Filter individual outlines/strokes only, never groups, text, gaps or
 		// marker carriers. A literal zero blur leaves no outward glow.
-		`${root} [data-ab-part].ab-current ${shapes}{filter:drop-shadow(0 0 var(--ab-play-glow,6px) color-mix(in srgb,var(--play) 55%,transparent));stroke-width:2.2}`,
+		`${root} [data-ab-part].ab-current ${shapes}{filter:drop-shadow(0 0 var(--ab-play-glow,6px) color-mix(in srgb,currentColor 55%,transparent));stroke-width:2.2}`,
 		`${edge}{stroke-dasharray:8 6;animation:${run} .7s linear infinite}`,
 		// Offset decreases by exactly one dash period, flowing source to target.
 		`@keyframes ${run}{from{stroke-dashoffset:0}to{stroke-dashoffset:-14}}`,
 		`${fades}{transition:opacity .35s ease}`,
-		`${paints}{transition:opacity .35s ease,fill .35s ease,stroke .35s ease}`,
-		`@media (prefers-reduced-motion:reduce){${edge}{animation:none}${fades},${paints}{transition:none}}`,
+		`@media (prefers-reduced-motion:reduce){${edge}{animation:none}${fades}{transition:none}}`,
 	].join("");
 }
 
@@ -211,9 +214,6 @@ export function toSvg(layout: Layout, options: SvgOptions = {}, playable = false
 		out.push(
 			`<marker id="${id}-${t}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-${t}"/></marker>`,
 		);
-	}
-	if (playable) for (const state of ["played", "current"]) {
-		out.push(`<marker id="${id}-play-${state}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="play-head-${state}"/></marker>`);
 	}
 	out.push("</defs>");
 	const part = (name: string, svg: string) => playable ? `<g data-ab-part="${name}">${svg}</g>` : svg;

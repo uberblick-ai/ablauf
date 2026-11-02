@@ -12,7 +12,8 @@
   and teardown, plus playground integration and browser fixtures for schemes, shadow roots and remounts. ([#94](https://github.com/uberblick-ai/ablauf/issues/94))
 - Fade unplayed flow parts to 0.3, preserving opaque label gaps and crossing knockouts; expose
   `ab-in-progress` for hosts and add browser fade fixtures. ([#112](https://github.com/uberblick-ai/ablauf/issues/112))
-- Add mint current/played colours, heavier glowing current strokes and `--ab-play-glow` (`6px`, or `0` to disable).
+- Glow the current step in its own tone with a heavier stroke, keeping every part's colours, dashes and arrowheads;
+  `--ab-play-glow` sets the blur (`6px`, or `0` to disable).
   `ab-playing` enables forward edge dashes and 0.35s easing; reduced motion disables both. ([#113](https://github.com/uberblick-ai/ablauf/issues/113))
 - Make controls compact, with underlined scrolling tabs, reserved counter and actor/caption space,
   and a seekable segmented bar; preserve native range access and the glow override. ([#116](https://github.com/uberblick-ai/ablauf/issues/116))

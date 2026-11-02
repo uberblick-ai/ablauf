@@ -64,7 +64,12 @@ test("pre-fade drawing and style bytes survive added fade/effects CSS and playba
 	// Captured from spike/out/loop-play.svg at 559775a720de6543ad0cf033df7973d6f32216e2.
 	// The existing pre-playback.json.gz static baseline stays unchanged too.
 	const before = gunzipSync(readFileSync(new URL("./fixtures/pre-fade-loop-play.svg.gz", import.meta.url))).toString()
-		.replaceAll("#2869b8", "#0a7a60").replaceAll("#88baff", "#6ff0cf").replaceAll("#62798e", "#596e81").replaceAll("#8498ac", "#5f9e8a");
+		.replaceAll("#2869b8", "#0a7a60").replaceAll("#88baff", "#6ff0cf")
+		// Tone-keeping playback dropped the current/played recolouring and heads.
+		.replace(/--play-done:var\(--ab-play-done,#[0-9a-f]+\);/g, "")
+		.replace(/\.ab\[data-ab-play="[^"]+"\] \[data-ab-part\]\.ab-(?:played|current) [^{}]+\{[^{}]*\}/g, "")
+		.replace(/\.ab \.play-head-(?:played|current)\{[^{}]*\}/g, "")
+		.replace(/\n<marker id="[^"]+-play-(?:played|current)"[\s\S]*?<\/marker>/g, "");
 	const source = readFileSync(new URL("./examples/loop-play.flow", import.meta.url), "utf8");
 	const after = render(source, { idPrefix: "loop-play" }).svg;
 	const rules = /\.ab\[data-ab-play="loop-play"\]\.ab-in-progress [^{}]+\{opacity:\.3\}/g;
