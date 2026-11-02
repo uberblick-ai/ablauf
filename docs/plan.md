@@ -850,6 +850,9 @@ are no-ops with no selection/reset or notification; manual `next`, `previous`,
 `seek` and `select` still work and pause as usual. Restoration or reconnection
 does not resume a lifecycle-paused player, including through autoplay; explicit
 Play or scenario activation must start it again.
+Lifecycle checks on idle or already viewport-paused players preserve first-view
+autoplay and pending viewport resume; a later half-visible viewport report
+can start them only while the document is visible and the SVG connected.
 
 `pauseWhenOffscreen?: boolean` defaults to false in both creation APIs. When
 enabled, an IntersectionObserver report of `isIntersecting === false` pauses
@@ -857,6 +860,9 @@ on the current frame and cancels the timer. While known to be nonintersecting,
 playback cannot start or advance. Entry alone never starts a standalone player
 or a mount without autoplay. Without IntersectionObserver, viewport pausing
 and autoplay are unavailable; lifecycle guards remain.
+Scenario activation still selects while off screen, leaving the selection
+paused when viewport pausing blocks playback. Autoplay alone does not block
+explicit Play or scenario activation off screen.
 
 ### Built-in controls and lifetime
 

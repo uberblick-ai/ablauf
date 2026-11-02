@@ -114,7 +114,7 @@ export function mountPlayback(
 		let trackRemovers: (() => void)[] = [];
 		removers.push(() => { for (const remove of [...tabRemovers, ...trackRemovers]) remove(); });
 		const choose = (index: number) => {
-			if (!binding.canPlay()) return;
+			if (!binding.canActivate()) return;
 			player.select(index);
 			if (!svg.ownerDocument.defaultView?.matchMedia?.("(prefers-reduced-motion: reduce)").matches) player.play();
 		};

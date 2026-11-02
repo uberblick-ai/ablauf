@@ -128,6 +128,9 @@ With viewport pausing, an IntersectionObserver report of no intersection pauses
 on the current frame and blocks playback while known to be off screen. Entry
 alone never starts a standalone player or a mount without autoplay. Without
 IntersectionObserver, both viewport pausing and autoplay are unavailable.
+Scenario tabs still select while off screen; with viewport pausing enabled,
+the selected scenario stays paused until an allowed start. Autoplay alone
+does not block explicit Play or scenario activation off screen.
 
 Autoplay starts initially and resumes viewport-caused pauses only with
 `isIntersecting` and `intersectionRatio >= 0.5`. Falling below half visibility
@@ -144,6 +147,9 @@ While hidden or disconnected, Play and scenario-tab activation are no-ops,
 without selecting, resetting or notifying. Manual navigation and `select`
 still work and pause as usual. Restoration/reconnection never resumes a
 lifecycle-paused player, including through autoplay; start it explicitly.
+If a lifecycle check finds an idle or already viewport-paused player, it
+preserves first-view autoplay or pending viewport resume. Those starts still
+require a later half-visible viewport report while connected and visible.
 These guards work for both document and shadow-root SVGs.
 
 `subscribe(fn: (state: PlayerState) => void): () => void` adds a listener

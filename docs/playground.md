@@ -157,6 +157,15 @@ without host control CSS; the interactive checks below still need a maintainer.
   intersecting keeps playing; no intersection pauses. Manual pause/navigation,
   including Pause via the API when already viewport-paused, cancels resume.
   Reduced motion and lifecycle pauses also prevent automatic starts.
+- Before first reaching an autoplay figure, switch browser tabs and return,
+  then scroll it to half visibility: first-view autoplay still starts. Repeat
+  after scrolling a playing figure fully out of view: hiding/restoring the tab
+  while it is viewport-paused preserves resume at half visibility. Test both
+  autoplay cases. If hiding actually paused playback, it still needs Play.
+  With the SVG fully off screen and controls visible, autoplay alone permits
+  Play, panel Space and scenario activation. With viewport pausing enabled,
+  scenario tabs still select, but playback stays paused; entry alone must
+  not start that manually selected scenario.
 - Focus the panel itself in the single, multiple and shadow-root cases:
   Space toggles Play/Pause (Replay after ending), Left/Right step and pause,
   with browser defaults prevented. Focus buttons/range/tabs: native actions

@@ -80,7 +80,8 @@ test("hidden and disconnected tab activations do not select, reset or notify", t
 	assert.equal(states.length, 0);
 	f.doc.setHidden(false); f.image.connected = false;
 	f.tabs()[1].fire("keydown", "Enter"); assert.equal(states.length, 0);
-	f.image.connected = true; f.doc.viewport.show(true); assert.equal(states.length, 0);
+	f.image.connected = true; assert.equal(states.length, 0);
+	f.doc.viewport.show(true); assert.equal(f.player.state.status, "playing");
 	f.tabs()[1].click(); assert.equal(f.player.state.scenario, 1); assert.equal(f.player.state.status, "playing");
 });
 
@@ -121,16 +122,68 @@ for (const pauseWhenOffscreen of [false, true]) {
 	});
 }
 
-test("lifecycle pauses revoke autoplay, including a pending viewport resume", t => {
+test("lifecycle pauses revoke autoplay when they pause a playing player", t => {
 	const f = setup(t, { autoplay: true });
 	f.doc.viewport.show(true); f.doc.setHidden(true); f.doc.setHidden(false); f.doc.viewport.show(true);
-	assert.equal(f.player.state.status, "paused");
-	f.player.play(); f.doc.viewport.show(false); f.doc.setHidden(true); f.doc.setHidden(false); f.doc.viewport.show(true);
 	assert.equal(f.player.state.status, "paused");
 	f.player.play(); f.image.connected = false; t.mock.timers.tick(100);
 	f.image.connected = true; f.doc.viewport.show(true); assert.equal(f.player.state.status, "paused");
 	f.player.play(); assert.equal(f.player.state.status, "playing");
 });
+
+for (const pauseWhenOffscreen of [false, true]) {
+	for (const started of [false, true]) {
+		test(`lifecycle checks preserve ${started ? "viewport resume" : "first-view autoplay"} intent (pauseWhenOffscreen=${pauseWhenOffscreen})`, t => {
+			const f = setup(t, { autoplay: true, pauseWhenOffscreen });
+			if (started) f.doc.viewport.show(true);
+			f.doc.viewport.show(false);
+			const snapshot = f.player.state;
+			const states: PlayerState[] = []; f.player.subscribe(state => states.push(state));
+			f.doc.setHidden(true);
+			f.doc.viewport.show(false);
+			f.doc.setHidden(false);
+			f.image.connected = false; f.doc.viewport.show(false); f.image.connected = true;
+			f.doc.viewport.show(true, 0.49);
+			assert.equal(f.player.state, snapshot); assert.equal(states.length, 0);
+			f.doc.viewport.show(true, 0.5);
+			assert.equal(f.player.state.status, "playing"); assert.equal(states.length, 1);
+			t.mock.timers.tick(100); assert.equal(f.player.state.step, 1);
+		});
+	}
+}
+
+for (const action of ["api", "button", "space", "tab click", "tab key"]) {
+	test(`autoplay alone permits explicit off-screen playback via ${action}`, t => {
+		const f = setup(t, { autoplay: true });
+		f.doc.viewport.show(false);
+		if (action === "api") f.player.play();
+		else if (action === "button") f.cls("abp-toggle").click();
+		else if (action === "space") f.cls("abp-panel").fire("keydown", " ");
+		else if (action === "tab click") f.tabs()[1].click();
+		else f.tabs()[1].fire("keydown", "Enter");
+		const tab = action.startsWith("tab");
+		assert.deepEqual(f.player.state, { scenario: tab ? 1 : 0, step: 0, status: "playing" });
+		t.mock.timers.tick(100);
+		assert.equal(f.player.state.status, tab ? "ended" : "playing");
+		assert.equal(f.player.state.step, tab ? 0 : 1);
+	});
+}
+
+for (const autoplay of [false, true]) {
+	test(`off-screen scenario activation selects but cannot play with viewport pausing (autoplay=${autoplay})`, t => {
+		const f = setup(t, { autoplay, pauseWhenOffscreen: true });
+		f.doc.viewport.show(false);
+		f.tabs()[1].click();
+		assert.deepEqual(f.player.state, { scenario: 1, step: 0, status: "paused" });
+		f.tabs()[0].fire("keydown", "Enter");
+		assert.deepEqual(f.player.state, { scenario: 0, step: 0, status: "paused" });
+		f.cls("abp-toggle").click(); f.cls("abp-panel").fire("keydown", " "); f.player.play();
+		t.mock.timers.tick(1000);
+		assert.deepEqual(f.player.state, { scenario: 0, step: 0, status: "paused" });
+		f.doc.viewport.show(true); assert.equal(f.player.state.status, "paused");
+		f.tabs()[1].click(); assert.equal(f.player.state.status, "playing");
+	});
+}
 
 test("without IntersectionObserver both APIs retain lifecycle guards", t => {
 	const doc = new Doc(); Object.assign(doc.defaultView, { IntersectionObserver: undefined });

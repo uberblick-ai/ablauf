@@ -52,7 +52,8 @@ export function createPlayerBinding(
 	let notifying = false;
 	const steps = () => timelines[state.scenario]?.steps ?? [];
 	const lifecycleReady = () => svg.isConnected && !svg.ownerDocument.hidden && svg.ownerDocument.visibilityState !== "hidden";
-	const canPlay = () => !destroyed && lifecycleReady() && !offscreen;
+	const canActivate = () => !destroyed && lifecycleReady();
+	const canPlay = () => canActivate() && !(options.pauseWhenOffscreen && offscreen);
 
 	function paint(clear = false) {
 		svg.classList.toggle("ab-playing", !clear && state.status === "playing");
@@ -103,12 +104,15 @@ export function createPlayerBinding(
 		cancel();
 		change(state.scenario, state.step, "paused");
 	}
-	function lifecyclePause() { manual(); pause(); }
+	function lifecyclePause() {
+		if (state.status !== "playing") return;
+		manual(); pause();
+	}
 	function advance() {
 		timer = undefined;
 		if (destroyed || state.status !== "playing") return;
 		if (!lifecycleReady()) { lifecyclePause(); return; }
-		if (offscreen) { pause(); return; }
+		if (options.pauseWhenOffscreen && offscreen) { pause(); return; }
 		if (state.step < steps().length - 1) change(state.scenario, state.step + 1, "playing");
 		else if (options.loop) change(state.scenario, 0, "playing");
 		else { unobserveMotion(); change(state.scenario, state.step, "ended"); }
@@ -193,7 +197,7 @@ export function createPlayerBinding(
 	};
 	paint(); bind();
 	return {
-		player, canPlay,
+		player, canActivate,
 		update(nextSvg: SVGSVGElement, nextTimelines: Timeline[]) {
 			if (destroyed) return;
 			const slug = timelines[state.scenario]?.slug;
