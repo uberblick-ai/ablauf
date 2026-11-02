@@ -3,7 +3,7 @@
 // example's first line must be the kind's header.
 
 export interface Example {
-	/** A file in site/examples or spike/examples, without `.flow`. */
+	/** A file in site/examples or examples, without `.flow`. */
 	name: string;
 	title: string;
 	/** One or two sentences under the title; may contain inline HTML. */

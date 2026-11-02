@@ -34,12 +34,12 @@
     "prepack": "npm run build",
     "lint": "biome lint --error-on-warnings .",
     "typecheck": "tsc --noEmit",
-    "test": "node --test 'spike/**/*.test.ts'",
-    "test:package": "node --test spike/package.test.ts",
-    "render": "node spike/render.ts",
-    "check": "node spike/check.ts",
-    "measure": "node spike/measure.ts",
-    "playground": "node spike/playground/server.ts"
+    "test": "node --test 'test/**/*.test.ts'",
+    "test:package": "node --test test/package.test.ts",
+    "render": "node tools/render.ts",
+    "check": "node tools/check.ts",
+    "measure": "node tools/measure.ts",
+    "playground": "node tools/playground/server.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.9",

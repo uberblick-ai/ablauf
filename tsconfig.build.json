@@ -4,8 +4,8 @@
     "noEmit": false,
     "rewriteRelativeImportExtensions": true,
     "declaration": true,
-    "rootDir": "spike/flow",
+    "rootDir": "src",
     "outDir": "dist"
   },
-  "include": ["spike/flow/**/*.ts"]
+  "include": ["src/**/*.ts"]
 }

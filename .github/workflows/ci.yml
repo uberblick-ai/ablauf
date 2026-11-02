@@ -54,3 +54,14 @@ jobs:
       - if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         name: Packed consumer on Node 24
         run: mise exec node@24 -- pnpm -s test:package
+      - if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        name: Render every example
+        id: render
+        run: mise run render
+      - if: ${{ !cancelled() && steps.render.outcome == 'success' }}
+        name: Upload example SVGs for the checked head
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: examples-${{ github.event.pull_request.head.sha || github.sha }}
+          path: out/
+          if-no-files-found: error

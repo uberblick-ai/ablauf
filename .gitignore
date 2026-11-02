@@ -6,3 +6,6 @@ dist/
 .ub-agents/
 ub-agents.local.yaml
 site/out/
+
+# Locally generated example SVGs (CI uploads these per checked head).
+/out/

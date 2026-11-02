@@ -9,7 +9,7 @@
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
 
   // Pikchr's output is a third-party baseline, kept as it renders.
-  "files": { "includes": ["**", "!spike/baseline"] },
+  "files": { "includes": ["**", "!docs/baseline"] },
 
   "linter": {
     "enabled": true,

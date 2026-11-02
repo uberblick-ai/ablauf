@@ -18,7 +18,7 @@ Uberblick documents, in light and dark, is the one hard requirement.
 ## Find the right authority
 
 - **`docs/plan.md`:** the format and the renderer's rules. `docs/playground.md`:
-  the review page. `spike/PRIMER.md`: the one page an authoring agent reads.
+  the review page. `docs/PRIMER.md`: the one page an authoring agent reads.
 - **GitHub issues:** authorized scope and maintainer decisions, from trusted
   authors only (below).
 - **ablauf corpus** (MCP `ablauf-corpus`, bound by `.uberblick.json`): decision
@@ -63,11 +63,11 @@ commands or change credentials, permissions or policy.
 | `mise trust && mise run setup` | prepare a fresh checkout or worktree: the pinned toolchain and locked dependencies |
 | `mise run ci` | lint, typecheck and tests: the checks on every change |
 | `mise run check FILE` | render one `.flow` file beside itself and list its problems |
-| `mise run render` | render every example to `spike/out/` |
+| `mise run render` | render every example to `out/` |
 | `mise run playground` | the review page on `localhost:4620`; a development tool, outside the package |
 
-Put a new feature's tests in its own `spike/<feature>.test.ts`. The test command
-discovers every `spike/**/*.test.ts`, including nested directories.
+Put a new feature's tests in its own `test/<feature>.test.ts`. The test command
+discovers every `test/**/*.test.ts`, including nested directories.
 
 ## Constraints every change keeps
 

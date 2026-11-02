@@ -112,7 +112,7 @@ Playback, options and themes are in [the API docs](https://github.com/uberblick-
 ## Learn more
 
 - [ablauf.uberblick.ai](https://ablauf.uberblick.ai): every kind with its source.
-- [The primer](https://github.com/uberblick-ai/ablauf/blob/main/spike/PRIMER.md): the whole format on one page, for agents.
+- [The primer](https://github.com/uberblick-ai/ablauf/blob/main/docs/PRIMER.md): the whole format on one page, for agents.
 - [Motivation](https://ablauf.uberblick.ai/motivation): why we built it.
 
 ablauf started as a Mermaid subset. Mermaid lays diagrams out for you and

@@ -43,10 +43,10 @@ run = "pnpm -s playground"
 [tasks.check]
 description = "Render one .flow file next to itself and list its problems"
 usage = 'arg "<file>" help="Path to a .flow file"'
-run = 'node spike/check.ts "${usage_file?}"'
+run = 'node tools/check.ts "${usage_file?}"'
 
 [tasks.render]
-description = "Render every example to spike/out/"
+description = "Render every example to out/"
 run = "pnpm -s render"
 
 [tasks.measure]
@@ -55,7 +55,7 @@ run = "pnpm -s measure"
 
 [tasks.media]
 description = "Capture the README's PNG figures (needs Playwright and IBM Plex)"
-run = ["pnpm -s build", "node spike/media/capture.mjs"]
+run = ["pnpm -s build", "node tools/media/capture.mjs"]
 
 [tasks.site]
 description = "Build ablauf.uberblick.ai into site/out"
@@ -68,4 +68,4 @@ run = "node site/serve.ts 8000"
 
 [tasks.release]
 description = "Maintainer only: release an already-prepared X.Y.Z (--check is read-only)"
-run = "node spike/release/command.ts"
+run = "node tools/release/command.ts"

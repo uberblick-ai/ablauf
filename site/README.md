@@ -16,7 +16,7 @@ mise run site-serve  # then open http://127.0.0.1:8000/
   its own page at `/<id>`, a sidebar link and a line on the landing page. An
   example with `editOf` marks the lines it changed or added against the
   example it edits.
-- Examples come from `examples/` (site only) or `spike/examples`. Each one is
+- Examples come from `site/examples/` (site only) or the root `examples/`. Each one is
   shown as tabs, Displayed and Source, like the block examples on uberblick.ai.
 - Placeholders in a page: `<!-- example NAME -->`, `<!-- example NAME STYLE -->`
   (drawn with `styles/STYLE.css` on a `.STYLE` wrapper, with a CSS tab),
@@ -30,13 +30,13 @@ mise run site-serve  # then open http://127.0.0.1:8000/
   `site/static/shared.css`; switch to linking `https://uberblick.ai/shared.css`
   once the new uberblick.ai serves there. `site.css` is what ablauf adds.
 
-`spike/site.test.ts` builds the site in `mise run ci`. Nothing here enters the
+`test/site.test.ts` builds the site in `mise run ci`. Nothing here enters the
 npm package.
 
 ## Deploying
 
 Cloudflare Pages builds the site on every push to `main` that touches `site/`,
-`spike/flow/` or `spike/examples/`, and serves it at ablauf.uberblick.ai. The
+`src/` or `examples/`, and serves it at ablauf.uberblick.ai. The
 Pages project and the DNS record are Terraform in
 [uberblick-infra](https://github.com/uberblick-ai/uberblick-infra)
 (`cloudflare/ablauf.tf`, set up as in its `docs/website.md`), beside the

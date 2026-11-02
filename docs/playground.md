@@ -35,10 +35,10 @@ use the printed server URL with `/playback-review`. No build or setup script is
 needed beyond that command.
 
 The fixture shows two independently rendered copies of
-`spike/examples/loop-play.flow`, one in the light DOM and one inside a shadow
-root, using distinct `idPrefix` values. `spike/examples/playback-fade.flow` adds
+`examples/loop-play.flow`, one in the light DOM and one inside a shadow
+root, using distinct `idPrefix` values. `examples/playback-fade.flow` adds
 all six node kinds and inline label gaps on canvas and band backgrounds, with
-zero diagnostics. The playground-only `spike/playground/playback-crossings.flow`
+zero diagnostics. The playground-only `tools/playground/playback-crossings.flow`
 visibly exercises canvas and band knockouts; its two crossing warnings are
 intentional and shown on the page. It stays outside the rendered example set.
 The page also shows a single timeline without tabs, a direct `createPlayer`
@@ -198,7 +198,7 @@ line, and approve the examples that should become golden figures. Agents use
 
 Each step is one small PR:
 
-1. **Package skeleton.** Move `spike/flow` to `src/` and adopt wireframe-md's
+1. **Package skeleton.** Keep the renderer in `src/` and adopt wireframe-md's
    tooling (pnpm, Biome, tsc, the test runner, mise tasks). The examples
    become `examples/` and the tests run every example.
 2. **Playground core.** Copy wireframe-md's server, catalog, editor and
