@@ -181,17 +181,15 @@ test("the primer's complete playback example can be copied and rendered", () => 
 	assert.deepEqual(result.timelines.map(t => t.steps.length), [3, 5]);
 });
 
-test("playable SVG preserves drawing order and all labels, with scoped state colours and heads", () => {
+test("playable SVG preserves drawing order, labels, tone colours and arrowheads", () => {
 	const staticSvg = render(flow).svg;
 	for (const scheme of [undefined, "light", "dark"] as const) {
 		const svg = render(`${flow}play\n step start\n`, { scheme, idPrefix: 'host:<unsafe>' }).svg;
 		assert.equal(svg, render(`${flow}play\n step start\n`, { scheme, idPrefix: 'host:<unsafe>' }).svg);
 		assert.match(svg, /--play:var\(--ab-play,#[0-9a-f]+\)/);
-		assert.match(svg, /--play-done:var\(--ab-play-done,#[0-9a-f]+\)/);
 		assert.match(svg, /\.ab\[data-ab-play="host\.003a\.003cunsafe\.003e"\] \[data-ab-part\]\.ab-current/);
-		assert.match(svg, /\.ab\[data-ab-play="host\.003a\.003cunsafe\.003e"\] \[data-ab-part\]\.ab-played/);
-		assert.match(svg, /marker-end:url\(#host\.003a\.003cunsafe\.003e-play-current\)/);
-		assert.match(svg, /class="play-head-played"/);
+		// Current and played parts keep their tone colours and arrowheads.
+		assert.doesNotMatch(svg, /--play-done|play-head|-play-(?:current|played)|\.ab-played [^{}]*\{/);
 		assert.equal(svg.match(/data-ab-part="edge-3"/g)?.length, 3, "stroke, head and label share a part");
 		for (let i = 0; i < 6; i++) assert.match(svg, new RegExp(`data-ab-part="node-${i}"`));
 		const shapes = (value: string) => value.replace(/<defs>[\s\S]*?<\/defs>/, "").match(/<(?:path|rect|circle|line|text)\b[^>]*>/g)?.map(tag => tag.replace(/marker-end="[^"]*"/, 'marker-end="HEAD"'));
@@ -204,14 +202,12 @@ test("playable SVG preserves drawing order and all labels, with scoped state col
 	assert.equal(Object.keys(DARK).length, 18);
 });
 
-test("two playable SVGs scope state marker references to their own root", () => {
+test("two playable SVGs scope glow colours and arrowheads to their own root", () => {
 	for (const idPrefix of ["first", "second"]) {
 		const svg = render(`${flow}play\n step start\n`, { idPrefix }).svg;
 		assert.match(svg, new RegExp(`<svg[^>]+data-ab-play="${idPrefix}"`));
-		for (const state of ["current", "played"]) {
-			const expected = `.ab[data-ab-play="${idPrefix}"] [data-ab-part].ab-${state} .arrow{marker-end:url(#${idPrefix}-play-${state})}`;
-			assert.ok(svg.includes(expected));
-		}
+		assert.ok(svg.includes(`.ab[data-ab-play="${idPrefix}"] [data-ab-part]{color:var(--play)}`));
+		for (const [, ref] of svg.matchAll(/marker-end="url\(#([^)]+)\)"/g)) assert.ok(ref.startsWith(`${idPrefix}-`), ref);
 		assert.doesNotMatch(svg, /\.ab \[data-ab-part\]/);
 	}
 });

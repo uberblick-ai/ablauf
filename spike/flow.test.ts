@@ -441,8 +441,8 @@ test("the documented host CSS supplies both complete palettes", () => {
 			]),
 	);
 	assert.deepEqual(palettes, {
-		light: { ...LIGHT, play: "#0a7a60", "play-done": "#596e81" },
-		dark: { ...DARK, play: "#6ff0cf", "play-done": "#5f9e8a" },
+		light: { ...LIGHT, play: "#0a7a60" },
+		dark: { ...DARK, play: "#6ff0cf" },
 	});
 	assert.equal(css.match(/--ab-play-glow: 6px;/g)?.length, 2);
 });

@@ -145,7 +145,16 @@ test("independently driven roots, including a shadow container, retain their own
 	assert.equal(two.player.state.status, "idle");
 });
 
-test("post-112 idle SVG bytes change only by added styles and playback colour substitutions", () => {
+// Before tone-keeping playback, current and played parts were recoloured with
+// --play/--play-done and swapped arrowheads. Strip exactly those rules and
+// markers from older baselines; everything else must stay byte-identical.
+const withoutRecolouring = (svg: string) => svg
+	.replace(/--play-done:var\(--ab-play-done,#[0-9a-f]+\);/g, "")
+	.replace(/\.ab\[data-ab-play="[^"]+"\] \[data-ab-part\]\.ab-(?:played|current) [^{}]+\{[^{}]*\}/g, "")
+	.replace(/\.ab \.play-head-(?:played|current)\{[^{}]*\}/g, "")
+	.replace(/\n<marker id="[^"]+-play-(?:played|current)"[\s\S]*?<\/marker>/g, "");
+
+test("post-112 idle SVG bytes change only by added styles, playback colour substitutions and dropped recolouring", () => {
 	const baseline = JSON.parse(gunzipSync(readFileSync(new URL("./fixtures/pre-playback-motion.json.gz", import.meta.url))).toString()) as {
 		sha: string; fixtures: { file: string; outputs: string[] }[];
 	};
@@ -153,7 +162,7 @@ test("post-112 idle SVG bytes change only by added styles and playback colour su
 	for (const { file, outputs } of baseline.fixtures) {
 		const input = readFileSync(new URL(`./examples/${file}`, import.meta.url), "utf8");
 		for (const [i, scheme] of ([undefined, "light", "dark"] as const).entries()) {
-			const expected = outputs[i].replaceAll("#2869b8", "#0a7a60").replaceAll("#88baff", "#6ff0cf").replaceAll("#62798e", "#596e81").replaceAll("#8498ac", "#5f9e8a");
+			const expected = withoutRecolouring(outputs[i].replaceAll("#2869b8", "#0a7a60").replaceAll("#88baff", "#6ff0cf"));
 			const actual = render(input, { scheme, idPrefix: file.slice(0, -5) }).svg;
 			const originalStyle = expected.match(/<style>([\s\S]*?)<\/style>/)?.[1];
 			const newStyle = actual.match(/<style>([\s\S]*?)<\/style>/)?.[1];
@@ -177,7 +186,14 @@ test("embedded effects target current shapes, with figure-local seamless forward
 		const filterRules = [...effects.matchAll(/([^{}]+)\{([^{}]*filter:[^{}]*)\}/g)];
 		assert.equal(filterRules.length, 1);
 		assert.equal(filterRules[0][1], `${root} [data-ab-part].ab-current :is(rect:not(.gap),.decision,.e)`);
-		assert.match(filterRules[0][2], /drop-shadow\(0 0 var\(--ab-play-glow,6px\) color-mix\(in srgb,var\(--play\) 55%,transparent\)\)/);
+		assert.match(filterRules[0][2], /drop-shadow\(0 0 var\(--ab-play-glow,6px\) color-mix\(in srgb,currentColor 55%,transparent\)\)/);
+		// The glow follows the play colour by default, a pill's dot tone and a
+		// toned shape's own colour, so highlighted parts keep their tones.
+		assert.ok(effects.includes(`${root} [data-ab-part]{color:var(--play)}`));
+		for (const tone of ["agent", "system", "done", "rework", "stop"]) {
+			assert.ok(effects.includes(`${root} [data-ab-part]:has(circle.t-${tone}){color:var(--${tone})}`), tone);
+			assert.ok(effects.includes(`${root} :is(.k-${tone},.e-${tone}){color:var(--${tone})}`), tone);
+		}
 		assert.match(filterRules[0][2], /stroke-width:2\.2/);
 		const name = effects.match(/@keyframes ([\w-]+)/)?.[1];
 		assert.ok(name);
@@ -194,17 +210,19 @@ test("embedded effects target current shapes, with figure-local seamless forward
 			if (/stroke-dasharray:/.test(body)) assert.equal(selector, `${root}.ab-playing [data-ab-part].ab-current .e`);
 		}
 		assert.doesNotMatch(effects, /\.knockout|\.gap-band|\.ab-played|filter:[^{}]+\}[^{]*\.arrow/);
+		assert.doesNotMatch(css, /\[data-ab-part\][^{}]*\{[^{}]*(?:\bstroke:|\bfill:|marker-end)|play-done|play-head/, "playback never recolours parts or swaps arrowheads");
 	}
 });
 
-test("playback current and played defaults reach WCAG sRGB 4.5:1 on canvas and band", () => {
+test("the playback colour default reaches WCAG sRGB 4.5:1 on canvas and band", () => {
 	function luminance(hex: string) {
 		const channels = [1, 3, 5].map(i => Number.parseInt(hex.slice(i, i + 2), 16) / 255).map(v => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
 		return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
 	}
-	for (const [scheme, palette, defaults] of [["light", LIGHT, ["#0a7a60", "#596e81"]], ["dark", DARK, ["#6ff0cf", "#5f9e8a"]]] as const) {
+	for (const [scheme, palette, defaults] of [["light", LIGHT, ["#0a7a60"]], ["dark", DARK, ["#6ff0cf"]]] as const) {
 		const svg = render(source, { scheme }).svg;
-		for (const [i, token] of ["play", "play-done"].entries()) {
+		assert.doesNotMatch(svg, /play-done/);
+		for (const [i, token] of ["play"].entries()) {
 			const colour = svg.match(new RegExp(`--${token}:var\\(--ab-${token},(#[0-9a-f]+)\\)`))?.[1];
 			assert.equal(colour, defaults[i]);
 			for (const ground of [palette.bg, palette.band]) {
