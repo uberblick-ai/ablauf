@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-auto" data-ab-play="claim-play" viewBox="0 0 678 744" width="678" height="744" role="img" aria-label="Sequence: Creator, Studio, Backend, RSS feed, Owner's inbox. Creator to Studio: Sign in, no show yet. Studio to Creator: Claim existing, Add via RSS, Start from scratch. Creator to Studio: Claim existing show. Studio to Backend: POST claim for show. Backend to RSS feed: Fetch feed live. RSS feed to Backend: itunes owner email. Backend to Owner's inbox: Send 6-digit code. Owner's inbox to Creator: Email with the code. Creator to Studio: Enter code. Studio to Backend: POST verify code. Backend to Backend: Check code and expiry. Backend to Studio: Claim confirmed. Studio to Creator: The show is yours. Backend to Studio: Rejected, attempts left. Studio to Creator: Try again or resend the code">
+<style>.ab.ab-auto{--bg:var(--ab-bg,#ffffff);--ink:var(--ab-ink,#17202c);--muted:var(--ab-muted,#5a6575);--line:var(--ab-line,#d3d9e2);--band:var(--ab-band,#e9eef5);--surface:var(--ab-surface,#ffffff);--neutral:var(--ab-neutral,#59616c);--neutral-bg:var(--ab-neutral-bg,#e1e3e6);--agent:var(--ab-agent,#3e6563);--agent-bg:var(--ab-agent-bg,#e7eeed);--system:var(--ab-system,#4f5d76);--system-bg:var(--ab-system-bg,#ebedf3);--rework:var(--ab-rework,#806752);--rework-bg:var(--ab-rework-bg,#f3f0eb);--stop:var(--ab-stop,#815f5a);--stop-bg:var(--ab-stop-bg,#ede6e5);--done:var(--ab-done,#536e5a);--done-bg:var(--ab-done-bg,#e8ede9);}@media (prefers-color-scheme:dark){.ab.ab-auto{--bg:var(--ab-bg,#171c24);--ink:var(--ab-ink,#e5e9ef);--muted:var(--ab-muted,#98a2b0);--line:var(--ab-line,#2c3440);--band:var(--ab-band,#151b23);--surface:var(--ab-surface,#1d232d);--neutral:var(--ab-neutral,#b6bbc3);--neutral-bg:var(--ab-neutral-bg,#303640);--agent:var(--ab-agent,#85aaa5);--agent-bg:var(--ab-agent-bg,#232d2b);--system:var(--ab-system,#98a5bf);--system-bg:var(--ab-system-bg,#262a31);--rework:var(--ab-rework,#b29d87);--rework-bg:var(--ab-rework-bg,#2c2720);--stop:var(--ab-stop,#ac8c88);--stop-bg:var(--ab-stop-bg,#2b2221);--done:var(--ab-done,#95b09c);--done-bg:var(--ab-done-bg,#222a24);}}
+.ab text{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
+.ab .m{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.ab .s11{font-size:11px}.ab .s12{font-size:12px}.ab .s13{font-size:13px}
+.ab .muted{fill:var(--muted)}.ab .b{font-weight:600}
+.ab .cap{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.08em;fill:var(--muted)}
+.ab .band{fill:var(--band)}.ab .rule{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 5}
+.ab .pill{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.ab .e{fill:none;stroke-width:1.6}.ab .dash{stroke-dasharray:6 5}
+.ab .knockout{fill:none;stroke:var(--bg);stroke-width:5.6}.ab .knockout-band{stroke:var(--band)}
+.ab .arrow{fill:none;stroke:none}
+.ab .t-ink{fill:var(--muted)}.ab .e-ink{stroke:var(--muted)}.ab .k-ink{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-muted{fill:var(--muted)}.ab .e-muted{stroke:var(--muted)}.ab .k-muted{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.ab .t-neutral{fill:var(--neutral)}.ab .e-neutral{stroke:var(--neutral)}.ab .k-neutral{fill:var(--neutral-bg);stroke:var(--neutral);stroke-width:1.5}.ab .t-agent{fill:var(--agent)}.ab .e-agent{stroke:var(--agent)}.ab .k-agent{fill:var(--agent-bg);stroke:var(--agent);stroke-width:1.5}.ab .t-system{fill:var(--system)}.ab .e-system{stroke:var(--system)}.ab .k-system{fill:var(--system-bg);stroke:var(--system);stroke-width:1.5}.ab .t-done{fill:var(--done)}.ab .e-done{stroke:var(--done)}.ab .k-done{fill:var(--done-bg);stroke:var(--done);stroke-width:1.5}.ab .t-rework{fill:var(--rework)}.ab .e-rework{stroke:var(--rework)}.ab .k-rework{fill:var(--rework-bg);stroke:var(--rework);stroke-width:1.5}.ab .t-stop{fill:var(--stop)}.ab .e-stop{stroke:var(--stop)}.ab .k-stop{fill:var(--stop-bg);stroke:var(--stop);stroke-width:1.5}
+.ab .k-stop.panel{stroke-width:1.2;stroke-dasharray:5 4}
+.ab .seq-lane{fill:var(--neutral-bg)}.ab .seq-life{stroke:var(--line);stroke-width:1;stroke-opacity:.5}.ab .seq-response{stroke-width:1.2}.ab .seq-group{fill:var(--neutral-bg)}.ab .seq-kind{fill:var(--ink)}.ab .seq-note{fill:var(--rework-bg)}.ab .seq-note-text{fill:var(--rework)}.ab .seq-divider{stroke:var(--line);stroke-width:1;stroke-dasharray:2 4}.ab .seq-rule{stroke:var(--line);stroke-width:1}
+.ab.ab-auto{--play:var(--ab-play,#0a7a60);}@media (prefers-color-scheme:dark){.ab.ab-auto{--play:var(--ab-play,#6ff0cf);}}.ab[data-ab-play="claim-play"].ab-in-progress [data-ab-part]:not(.ab-current):not(.ab-played):not(:has(.gap)){opacity:.3}.ab[data-ab-play="claim-play"].ab-in-progress [data-ab-part]:not(.ab-current):not(.ab-played):has(.gap) text{opacity:.3}
+.ab[data-ab-play="claim-play"] [data-ab-part]{color:var(--play)}.ab[data-ab-play="claim-play"] [data-ab-part]:has(circle.t-neutral){color:var(--neutral)}.ab[data-ab-play="claim-play"] [data-ab-part]:has(circle.t-agent){color:var(--agent)}.ab[data-ab-play="claim-play"] [data-ab-part]:has(circle.t-system){color:var(--system)}.ab[data-ab-play="claim-play"] [data-ab-part]:has(circle.t-done){color:var(--done)}.ab[data-ab-play="claim-play"] [data-ab-part]:has(circle.t-rework){color:var(--rework)}.ab[data-ab-play="claim-play"] [data-ab-part]:has(circle.t-stop){color:var(--stop)}.ab[data-ab-play="claim-play"] [data-ab-part].ab-current .e{filter:drop-shadow(0 0 var(--ab-play-glow,6px) color-mix(in srgb,currentColor 55%,transparent));stroke-width:2.2}.ab[data-ab-play="claim-play"] [data-ab-part].ab-current .seq-number{fill:var(--play);font-weight:600}.ab[data-ab-play="claim-play"] [data-ab-part].ab-current .seq-label{font-weight:600}.ab[data-ab-play="claim-play"] [data-ab-part^="participant-"] circle{transform-box:fill-box;transform-origin:center}.ab[data-ab-play="claim-play"] [data-ab-part^="participant-"].ab-current circle{transform:scale(1.7);filter:drop-shadow(0 0 var(--ab-play-glow,6px) color-mix(in srgb,currentColor 55%,transparent))}.ab[data-ab-play="claim-play"].ab-playing [data-ab-part]{transition:opacity .35s ease}.ab[data-ab-play="claim-play"].ab-playing [data-ab-part^="participant-"] circle{transition:transform .3s ease}@media (prefers-reduced-motion:reduce){.ab[data-ab-play="claim-play"].ab-playing [data-ab-part],.ab[data-ab-play="claim-play"].ab-playing [data-ab-part^="participant-"] circle{transition:none}}</style>
+<defs><marker id="claim-play-seq-ink" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-ink"/></marker>
+<marker id="claim-play-seq-system" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="t-system"/></marker>
+<marker id="claim-play-seq-response" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10" class="e e-muted seq-response"/></marker></defs>
+<rect x="153.2" y="8" width="131.2" height="728" rx="8" class="seq-lane" fill-opacity="0.15"/>
+<rect x="415.59999999999997" y="8" width="131.2" height="728" rx="8" class="seq-lane" fill-opacity="0.15"/>
+<rect x="24" y="522" width="389.59999999999997" height="204" rx="8" class="seq-group" fill-opacity="0.5"/>
+<line x1="88" y1="40" x2="88" y2="736" class="seq-life"/>
+<line x1="219" y1="40" x2="219" y2="736" class="seq-life"/>
+<line x1="350" y1="40" x2="350" y2="736" class="seq-life"/>
+<line x1="481" y1="40" x2="481" y2="736" class="seq-life"/>
+<line x1="612" y1="40" x2="612" y2="736" class="seq-life"/>
+<g data-line="2" data-ab-part="participant-0">
+<circle cx="88" cy="20" r="3" class="t-ink"/>
+<text x="88" y="40" text-anchor="middle" class="m s12 b t-ink seq-title">Creator</text>
+</g>
+<g data-line="3" data-ab-part="participant-1">
+<circle cx="219" cy="20" r="3" class="t-system"/>
+<text x="219" y="40" text-anchor="middle" class="m s12 b t-system seq-title">Studio</text>
+</g>
+<g data-line="4" data-ab-part="participant-2">
+<circle cx="350" cy="20" r="3" class="t-system"/>
+<text x="350" y="40" text-anchor="middle" class="m s12 b t-system seq-title">Backend</text>
+</g>
+<g data-line="5" data-ab-part="participant-3">
+<circle cx="481" cy="20" r="3" class="t-system"/>
+<text x="481" y="40" text-anchor="middle" class="m s12 b t-system seq-title">RSS feed</text>
+</g>
+<g data-line="6" data-ab-part="participant-4">
+<circle cx="612" cy="20" r="3" class="t-ink"/>
+<text x="612" y="40" text-anchor="middle" class="m s12 b t-ink seq-title">Owner's inbox</text>
+</g>
+<g data-line="8" data-annotation="section" data-ab-part="annotation-0">
+<text x="30" y="64" class="m s11 muted seq-section">CLAIM</text>
+</g>
+<line x1="75" y1="60" x2="670" y2="60" class="seq-rule"/>
+<g data-line="9" data-step="1" data-ab-part="message-0">
+<text x="96" y="90" class="m s12 seq-label">Sign in, no show yet</text>
+<text x="0" y="102" class="m s11 muted seq-number">01</text>
+<path d="M88,98 L219,98" class="e e-ink" marker-end="url(#claim-play-seq-ink)"/>
+<circle cx="88" cy="98" r="2.5" class="t-ink"/>
+</g>
+<g data-line="10" data-step="2" data-ab-part="message-1">
+<text x="96" y="122" class="m s12 seq-label">Claim existing, Add via RSS, Start from scratch</text>
+<text x="0" y="134" class="m s11 muted seq-number">02</text>
+<path d="M219,130 L88,130" class="e e-muted dash seq-response" marker-end="url(#claim-play-seq-response)"/>
+</g>
+<g data-line="11" data-step="3" data-ab-part="message-2">
+<text x="96" y="154" class="m s12 seq-label">Claim existing show</text>
+<text x="0" y="166" class="m s11 muted seq-number">03</text>
+<path d="M88,162 L219,162" class="e e-ink" marker-end="url(#claim-play-seq-ink)"/>
+<circle cx="88" cy="162" r="2.5" class="t-ink"/>
+</g>
+<g data-line="12" data-step="4" data-ab-part="message-3">
+<text x="227" y="186" class="m s12 seq-label">POST claim for show</text>
+<text x="0" y="198" class="m s11 muted seq-number">04</text>
+<path d="M219,194 L350,194" class="e e-system" marker-end="url(#claim-play-seq-system)"/>
+<circle cx="219" cy="194" r="2.5" class="t-system"/>
+</g>
+<g data-line="13" data-step="5" data-ab-part="message-4">
+<text x="358" y="218" class="m s12 seq-label">Fetch feed live</text>
+<text x="0" y="230" class="m s11 muted seq-number">05</text>
+<path d="M350,226 L481,226" class="e e-system" marker-end="url(#claim-play-seq-system)"/>
+<circle cx="350" cy="226" r="2.5" class="t-system"/>
+</g>
+<g data-line="14" data-step="6" data-ab-part="message-5">
+<text x="358" y="250" class="m s12 seq-label">itunes owner email</text>
+<text x="0" y="262" class="m s11 muted seq-number">06</text>
+<path d="M481,258 L350,258" class="e e-muted dash seq-response" marker-end="url(#claim-play-seq-response)"/>
+</g>
+<g data-line="16" data-step="7" data-ab-part="message-6">
+<text x="358" y="282" class="m s12 seq-label">Send 6-digit code</text>
+<text x="0" y="294" class="m s11 muted seq-number">07</text>
+<path d="M350,290 L612,290" class="e e-system" marker-end="url(#claim-play-seq-system)"/>
+<circle cx="350" cy="290" r="2.5" class="t-system"/>
+</g>
+<g data-line="17" data-annotation="note" data-ab-part="annotation-1">
+<rect x="219.2" y="302" width="261.6" height="30" rx="6" class="seq-note"/>
+<rect x="219.2" y="307" width="3" height="20" rx="1.5" class="t-rework"/>
+<text x="231.2" y="318" class="m s12 seq-note-text">The code expires after 15 minutes</text>
+</g>
+<g data-line="18" data-step="8" data-ab-part="message-7">
+<text x="96" y="354" class="m s12 seq-label">Email with the code</text>
+<text x="0" y="366" class="m s11 muted seq-number">08</text>
+<path d="M612,362 L88,362" class="e e-muted dash seq-response" marker-end="url(#claim-play-seq-response)"/>
+</g>
+<g data-line="19" data-annotation="section" data-ab-part="annotation-2">
+<text x="30" y="390" class="m s11 muted seq-section">VERIFY</text>
+</g>
+<line x1="81.6" y1="386" x2="670" y2="386" class="seq-rule"/>
+<g data-line="20" data-step="9" data-ab-part="message-8">
+<text x="96" y="416" class="m s12 seq-label">Enter code</text>
+<text x="0" y="428" class="m s11 muted seq-number">09</text>
+<path d="M88,424 L219,424" class="e e-ink" marker-end="url(#claim-play-seq-ink)"/>
+<circle cx="88" cy="424" r="2.5" class="t-ink"/>
+</g>
+<g data-line="21" data-step="10" data-ab-part="message-9">
+<text x="227" y="448" class="m s12 seq-label">POST verify code</text>
+<text x="0" y="460" class="m s11 muted seq-number">10</text>
+<path d="M219,456 L350,456" class="e e-system" marker-end="url(#claim-play-seq-system)"/>
+<circle cx="219" cy="456" r="2.5" class="t-system"/>
+</g>
+<g data-line="22" data-step="11" data-ab-part="message-10">
+<text x="382" y="480" class="m s12 seq-label">Check code and expiry</text>
+<text x="0" y="492" class="m s11 muted seq-number">11</text>
+<path d="M350,488 H369 Q374,488 374,493 V505 Q374,510 369,510 H350" class="e e-system" marker-end="url(#claim-play-seq-system)"/>
+<circle cx="350" cy="488" r="2.5" class="t-system"/>
+</g>
+<g data-line="23" data-annotation="open" data-ab-part="annotation-3">
+<text x="34" y="536" class="m s11 b seq-kind">ALT</text>
+<text x="65.8" y="536" class="m s11 muted seq-group-label">CODE MATCHES</text>
+</g>
+<g data-line="24" data-step="12" data-ab-part="message-11">
+<text x="227" y="568" class="m s12 seq-label">Claim confirmed</text>
+<text x="0" y="580" class="m s11 muted seq-number">12</text>
+<path d="M350,576 L219,576" class="e e-muted dash seq-response" marker-end="url(#claim-play-seq-response)"/>
+</g>
+<g data-line="25" data-step="13" data-ab-part="message-12">
+<text x="96" y="600" class="m s12 seq-label">The show is yours</text>
+<text x="0" y="612" class="m s11 muted seq-number">13</text>
+<path d="M219,608 L88,608" class="e e-muted dash seq-response" marker-end="url(#claim-play-seq-response)"/>
+</g>
+<line x1="32" y1="620" x2="405.59999999999997" y2="620" class="seq-divider"/>
+<g data-line="26" data-annotation="else" data-ab-part="annotation-4">
+<text x="34" y="642" class="m s11 b seq-kind">ELSE</text>
+<text x="72.4" y="642" class="m s11 muted seq-else-label">WRONG OR EXPIRED CODE</text>
+</g>
+<g data-line="27" data-step="14" data-ab-part="message-13">
+<text x="227" y="674" class="m s12 seq-label">Rejected, attempts left</text>
+<text x="0" y="686" class="m s11 muted seq-number">14</text>
+<path d="M350,682 L219,682" class="e e-muted dash seq-response" marker-end="url(#claim-play-seq-response)"/>
+</g>
+<g data-line="28" data-step="15" data-ab-part="message-14">
+<text x="96" y="706" class="m s12 seq-label">Try again or resend the code</text>
+<text x="0" y="718" class="m s11 muted seq-number">15</text>
+<path d="M219,714 L88,714" class="e e-muted dash seq-response" marker-end="url(#claim-play-seq-response)"/>
+</g>
+</svg>

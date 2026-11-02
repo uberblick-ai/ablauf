@@ -492,8 +492,10 @@ and `-.->` for a dashed response: one arrow means one line style in every
 ablauf kind. There are no Mermaid aliases; `->>` and `-->>` are malformed.
 Groups retain the clear UML terms `alt`, `opt`, `loop` and `group`;
 `note over` states placement on lifelines, and `section` matches flow's phase
-term. There are no compatibility aliases. Activation bars, async/lost messages,
-participant creation/destruction, autonumber and playback are outside v0.
+term. There are no compatibility aliases. Messages are numbered automatically,
+and shared play sections can name those numbers. Activation bars, async/lost
+messages, participant creation/destruction and configurable autonumber are
+outside v0.
 
 ### Syntax and recovery
 
@@ -597,8 +599,8 @@ participant creation/destruction, autonumber and playback are outside v0.
   Their labels use all remaining width to the right of that loop.
 - Message numbers are `01`, `02`, … in `--ab-muted` mono, level with the
   arrows in the gutter. Rejected source is not a message and is not numbered.
-  Annotation rows are not numbered; message numbers will serve
-  as playback steps later.
+  Annotation rows are not numbered. Playback steps name the drawn message
+  numbers; `9` and `09` both select message 9.
 - All text uses `fonts.mono`, including measured wrapping; `fonts.text` has
   no effect. The host-font contract above applies. As with fan-out, a glyph
   wider than its entire available slot is consumed alone to ensure progress;
@@ -646,9 +648,9 @@ trials are references only. No spike code or dependency ships.
 
 ## Playback
 
-Flow play sections, resolved timelines, SVG state styles and the headless
-browser player (#69), and built-in controls (#94) are implemented.
-Sequence/fan-out target resolution is still planned. This design records the
+Flow and sequence play sections, resolved timelines and SVG state styles,
+the headless browser player (#69), and built-in controls (#94) are implemented.
+Fan-out target resolution is still planned. This design records the
 smallest package feature that lets a host show several scenarios of one
 diagram. It does not change the existing flow, sequence or fan-out syntax or
 static rendering rules.
@@ -688,10 +690,9 @@ play "Tests failing"
 - Durations are `2.4s` or `800ms`, between 100 ms and 60 s; default tempo is
   1.6 s. Anything else is a diagnostic on its line and falls back to the tempo.
 - Unreadable lines are diagnostics on their line. The diagram always renders.
-- Until a diagram kind has a playback resolver, each play section produces
-  a diagnostic on its `play` line and `render()` returns `timelines: []`;
-  the static diagram still renders. This applies to sequence and fan-out in
-  v0.3.0, so splitting off play sections never silently discards them.
+- Fan-out has no playback resolver yet: each play section produces a
+  diagnostic on its `play` line and `render()` returns `timelines: []`;
+  the static diagram still renders, so play sections are never silently dropped.
 
 ### What a flow step lights
 
@@ -702,7 +703,33 @@ edge. An unknown target, or a step with no edge from the last successfully
 resolved step, is a diagnostic on that step's line and is skipped. A skipped
 step does not change that predecessor for later steps. Current and played
 labels never fade.
-Sequence and fan-out define their own lighting rules when they arrive.
+
+### What a sequence step lights
+
+A target is a positive decimal integer naming a message as drawn in the
+gutter. Leading zeroes are allowed: `9` and `09` resolve to target `"9"`.
+A participant id, zero, a number beyond the last drawn message or any other
+invalid token diagnoses the step's original source line and skips that step.
+The diagram still renders. Consecutive steps need no connection; a scenario
+may skip messages or branches, repeat messages or go backward.
+
+A step lights its complete message row (arrow, head, origin dot when present,
+label and number), both participants' header dots and titles (one header for
+a self-message), and attached annotations. By default the actor is
+`Sender → Receiver` using participant titles, or the title alone for a
+self-message; `actor=` overrides it.
+
+Attachment follows accepted diagram row order. Blank and comment lines and
+invisible `end` rows do not break adjacency. Every note in an uninterrupted
+run immediately after a message attaches to it. Every section, group-opening
+or `else` label in an uninterrupted run immediately before a message attaches
+to it. Other visible row kinds break the run: `section` + `alt` + message and
+`loop` + `alt` + message attach both labels, but a note between an opening
+label and a message prevents that label attaching. Every visible annotation
+and participant header is a part, even if no step lights it. Unattached parts
+fade while neither current nor played. Lifelines, lane tints, group backgrounds,
+dividers (including section rules) and rejected-source lines are never parts
+and remain fully visible.
 
 ### Timeline and browser contract
 
@@ -718,9 +745,9 @@ interface Timeline {
   steps: TimelineStep[];
 }
 interface TimelineStep {
-  target: string;           // as written, resolved for the diagram's kind
-  kind: string;             // box, pill, end, text, panel, decision; later message, outcome
-  actor: string;            // actor=, else the target's title
+  target: string;           // flow id as written; sequence message number without padding
+  kind: string;             // box, pill, end, text, panel, decision, message; later outcome
+  actor: string;            // actor=, else node title or sequence sender/receiver titles
   caption: string;          // "" when none
   ms: number;
   parts: string[];          // what this step lights
@@ -741,14 +768,18 @@ styles only when a play section exists; otherwise its bytes are unchanged.
 Output remains deterministic and inert, with escaped source text and styles
 scoped under the SVG root class.
 
-The implemented SVG contract for #69 adds `data-ab-play` to the root, using
-the encoded `idPrefix` to scope state marker references when several figures
+The SVG contract adds `data-ab-play` to the root, using
+the encoded `idPrefix` to scope state styles when several figures
 share a page. Use distinct `idPrefix` values as with static SVG markers.
 There is `data-ab-part="node-N"` on each
 node's wrapper and `data-ab-part="edge-N"` on separate wrappers for an edge's
-stroke, head and label (when present). Indices are zero-based layout order,
-local to this SVG; consumers must use timeline `parts` rather than construct
-ids. Distinct edges, including parallel edges, have distinct part identities.
+stroke, head and label (when present). A sequence has `message-N` on each
+message row wrapper, `participant-N` on each header wrapper and `annotation-N`
+on each visible annotation wrapper. Sequence indices are zero-based accepted
+order within each category; invisible `end` rows and rejected source consume
+no identities. Flow indices are zero-based layout order. Identities are local
+to this SVG; consumers must use timeline `parts` rather than construct ids.
+Distinct edges, including parallel edges, have distinct part identities.
 Use `querySelectorAll('[data-ab-part="' + part + '"]')` within the SVG to
 find **all** fragments of a part. Apply `ab-current` or `ab-played` to every
 matching wrapper; current takes precedence if both are present. Remove both
@@ -762,11 +793,11 @@ Remove it on pause, end, manual navigation, scenario changes, idle, empty
 scenarios, the reduced-motion reset and destruction. `createPlayer` owns both
 root hooks, including when called through `mount.player` or built-in controls.
 
-All six node kinds and every edge stroke, head and label fragment take state
-colours. While `ab-in-progress` is present, unplayed node, edge stroke and head
+All six flow node kinds and every edge stroke, head and label fragment keep
+their native tone colours. While `ab-in-progress` is present, unplayed node, edge stroke and head
 wrappers fade as a whole to 0.3 opacity. Unplayed label text also fades to 0.3,
 but inline label backgrounds (`.gap` / `.gap-band`) stay fully opaque. Current
-and played parts keep their state colours at full opacity, with current taking
+and played parts keep their native colours at full opacity, with current taking
 precedence. Inline gaps and crossing knockouts retain fully opaque canvas or
 band backgrounds, so underlying edges never show through them. Knockouts stay
 unfaded. Geometry and draw order never change. The scoped styles are embedded
@@ -775,16 +806,16 @@ looping recompute the faded parts. Idle, the reduced-motion reset, empty
 scenarios and destruction restore the full unfaded figure.
 
 Whenever a step is shown, including paused and ended frames, its current node
-outlines/decision shapes and incoming edge strokes have a soft glow and a
+outlines/decision shapes and incoming flow edge strokes have a soft glow and a
 slightly heavier stroke. Played parts do not glow. Filters apply to individual
 shapes only, never groups, label text, inline gaps, crossing knockouts or the
-root. No state recolours a part: strokes, fills, dashes and arrowheads keep
+root. No flow state recolours a part: strokes, fills, dashes and arrowheads keep
 their tone colours. The glow uses `color-mix()` from `currentColor`, which is a
 toned outline's or edge's own tone, a pill's dot tone, and otherwise internal
 `--play`, following host `--ab-play` overrides in light and dark. Its blur size is `--ab-play-glow`,
 default `6px` in both schemes; the literal `--ab-play-glow: 0` removes the glow.
 
-Only while `ab-playing` is present, current incoming edge strokes run as moving
+Only while `ab-playing` is present, current incoming flow edge strokes run as moving
 dashes toward their targets, with a seamless loop; arrowheads stay put. The
 current step's timeline `parts` identify the incoming edges, including parallel
 edges. Steps without an incoming edge animate none. Paused and ended edges are
@@ -797,6 +828,21 @@ a manually shown current step may still glow. Idle and destruction remove all
 glow, heavier strokes and running-edge overrides, restoring the default figure.
 Static SVG bytes stay identical; compared with the post-#112 baseline, playable
 idle SVGs change only by added playback styles and the colour defaults below.
+
+Sequence parts fade to the same 0.3 opacity while neither current nor played;
+current and played parts stay fully visible. The current message gets the
+flow glow and 2.2px stroke. Its glow uses its own tone, or the play colour for
+untoned (`ink`/`muted`) and response arrows; stroke, fill and arrowhead colours
+retain their native tones. Its gutter number becomes bold in the play colour.
+Current sender and receiver header dots grow to 1.7 times their size and glow
+in their own tone, using the play colour for untoned headers, including `ink`
+and `muted`. Both message and header glows honour `--ab-play-glow` (default
+`6px`, literal `0` removes the glow). Sequence messages never run dashes and
+retain request/response dash patterns in every state. Only fading (0.35s) and
+header-dot growth (0.3s) ease while playing. Manual navigation is instant;
+reduced motion removes transitions. Idle shows the full figure. Sequences
+without play sections gain no playback attributes or styles and retain their
+exact SVG bytes.
 
 Playable SVGs define internal `--play` through the host's `--ab-play`
 override. Defaults are `#0a7a60` (light) and `#6ff0cf` (dark), each reaching
@@ -969,14 +1015,20 @@ independent light DOM and shadow-root mounts, schemes and teardown.
   ([#69](https://github.com/uberblick-ai/ablauf/issues/69)), and built-in
   controls with scenario tabs
   ([#94](https://github.com/uberblick-ai/ablauf/issues/94)).
-- **v0.3.1, sequence diagrams:** the same play sections; a target is a
-  message number.
+- **v0.3.1, sequence diagrams:** implemented the same play sections, message
+  targets, timelines and SVG parts/states in
+  [#137](https://github.com/uberblick-ai/ablauf/issues/137), using the existing
+  player and controls. Travel animation
+  ([#138](https://github.com/uberblick-ai/ablauf/issues/138)) and the side
+  controls layout ([#139](https://github.com/uberblick-ai/ablauf/issues/139))
+  are separate changes.
 - **v0.3.2, fan-outs:** [#68](https://github.com/uberblick-ai/ablauf/issues/68),
   the same play sections; a target is an outcome's text.
 
 Extras cut from v0.3.0 wait for real need. Frozen frames come later. Timelines
 from real ub-agents run logs and visual timeline editing are out of scope.
-The remaining browser and diagram-kind work belongs to those follow-up issues.
+The remaining travel, controls-layout and diagram-kind work belongs to those
+follow-up issues.
 This section follows the design from [#66](https://github.com/uberblick-ai/ablauf/issues/66) and the
 [maintainer's prototype summary](https://github.com/uberblick-ai/ablauf/issues/66#issuecomment-6554358304).
 Uberblick integration is
