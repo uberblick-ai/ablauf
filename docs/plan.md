@@ -809,9 +809,9 @@ their defaults. These tokens are separate from the existing exported palette.
   seek and switching scenario pause. Play on ended replays. Stop on the last
   step after its full duration; `loop` is opt-in. Resuming restarts the current
   step's full duration. Controls offer Replay.
-- Play on click is the default. Nothing starts unless the host calls play
-  or the reader chooses a scenario tab, which plays it from its first step;
-  a host may call play when a gallery card scrolls into view. With reduced motion
+- Play on click is the default. Nothing starts unless the host calls play,
+  the reader chooses a scenario tab (which plays it from its first step), or
+  the host opts into `autoplay`, which starts a figure when it scrolls into view. With reduced motion
   playback resets to idle at step `-1` and the full figure shows; manual
   stepping still works. Preference changes are observed while playing;
   disabling reduced motion never starts playback. Manual navigation remains
@@ -835,10 +835,13 @@ safe to import without browser globals, and core types need no DOM library.
 ### Built-in controls and lifetime
 
 The browser entry also exports
-`mountPlayback(container, svg, timelines, { loop? }?)`, returning
+`mountPlayback(container, svg, timelines, { loop?, autoplay? }?)`, returning
 `PlaybackMount { player: Player; destroy(): void }`. The host supplies an
 `HTMLElement` or `ShadowRoot` for controls below its inline SVG. Mounting starts
-idle with the full figure, without autoplay. No timelines adds no DOM or style.
+idle with the full figure. With `autoplay: true` the mount observes the SVG and
+plays once half of it is in view, pauses it when it leaves and resumes it on
+return, unless the reader paused it meanwhile. Reduced motion, or a browser
+without `IntersectionObserver`, keeps it idle. Destroy disconnects the observer. No timelines adds no DOM or style.
 The mount uses the existing player contract for timing, navigation, looping
 and reduced motion, including changes made through the returned `player`.
 

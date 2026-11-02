@@ -58,7 +58,8 @@ import { mountPlayback } from "@uberblick/ablauf/playback";
 
 const { svg, timelines } = render(source, { idPrefix: "dependabot" });
 figure.innerHTML = svg;
-mountPlayback(figure, figure.querySelector("svg"), timelines);
+// autoplay: play while the figure is in view
+mountPlayback(figure, figure.querySelector("svg"), timelines, { autoplay: true });
 ```
 
 Playback in 0.3.0 supports flows. Sequence and fan-out playback will follow.
