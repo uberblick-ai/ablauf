@@ -343,7 +343,9 @@ export function mountPlayback(
 			started = true;
 			pausedByView = false;
 		}, { threshold: 0.5 });
-		observer.observe(svg);
+		// Watch the figure box, not the SVG: a figure wider than a phone scrolls
+		// sideways, so half of the SVG itself may never be on screen at once.
+		observer.observe(figure);
 		removers.push(() => observer.disconnect());
 	}
 }

@@ -96,9 +96,9 @@ export const kinds: readonly Kind[] = [
 			"Ordered participants and messages on lifelines, with groups, notes and sections to explain an exchange.",
 		examples: [
 			{
-				name: "claim-short",
+				name: "claim-play",
 				title: "Claim your podcast",
-				note: "Participants run left to right in declaration order. Requests use <code>--&gt;</code> and responses <code>-.-&gt;</code>, sharing flow's arrow and <code>: label</code> notation. Sections separate Claim and Verify, a note explains the code's expiry, and an <code>alt</code>/<code>else</code> group shows the two outcomes. The playground has a longer version with more participants.",
+				note: "Participants run left to right in declaration order. Requests use <code>--&gt;</code> and responses <code>-.-&gt;</code>, sharing flow's arrow and <code>: label</code> notation. Sections separate Claim and Verify, a note explains the code's expiry, and an <code>alt</code>/<code>else</code> group shows the two outcomes. The <code>play</code> sections walk through claiming the show and entering a wrong code, with each step targeting a message by number. Playback starts when the figure is in view; use the controls to pause or choose a scenario.",
 			},
 		],
 	},

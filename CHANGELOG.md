@@ -4,6 +4,11 @@
 
 ### Playback
 
+- Play sequence messages by number in named `play` scenarios, with captions and
+  current/played message and participant highlights. ([#137](https://github.com/uberblick-ai/ablauf/issues/137))
+- Animate the current message travelling to its receiver and highlight its row
+  with a band; manual navigation and reduced motion show the completed message.
+  ([#138](https://github.com/uberblick-ai/ablauf/issues/138))
 - Add auto, side and below layouts to `mountPlayback`. Tall figures can show
   captions in a sticky column with a keyboard-accessible step list, while auto
   switches layouts as the container resizes. ([#139](https://github.com/uberblick-ai/ablauf/issues/139))
