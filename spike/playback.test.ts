@@ -150,8 +150,8 @@ play
 	for (let i = 0; i < 4; i++) assert.equal(svg.match(new RegExp(`data-ab-part="edge-${i}"`, "g"))?.length, 2);
 });
 
-test("sequence and fan-out retain static figures and diagnose every unsupported section", () => {
-	for (const source of ['sequence v0\nparticipant A\nparticipant B\nA --> B: Hello\n', 'fan-out v0\nstep "Choose"\noutcome "Done" reason="Yes" destination="End"\n']) {
+test("fan-out retains its static figure and diagnoses every unsupported section", () => {
+	for (const source of ['fan-out v0\nstep "Choose"\noutcome "Done" reason="Yes" destination="End"\n']) {
 		const result = render(`${source}play "First"\n step 1\nplay\n step "Done"\n`);
 		assert.deepEqual(result.timelines, []);
 		assert.equal(result.svg, render(source).svg);

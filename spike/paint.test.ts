@@ -139,6 +139,14 @@ function inspect(svg: string) {
 			assert.deepEqual(declarations, { opacity: ".3" });
 			return [];
 		}
+		// Only the current sequence gutter number takes the playback colour.
+		// It is inactive in this static inspector; sequence-playback.test.ts
+		// checks its state rule. Keep refusing active figures and new paints.
+		if (/^\.ab\[data-ab-play="[A-Za-z0-9_.-]+"\] \[data-ab-part\]\.ab-current \.seq-number$/.test(selector.trim())) {
+			assert.doesNotMatch(svg, /class="[^"]*\bab-current\b/, "static paint inspector cannot inspect current playback parts");
+			assert.deepEqual(declarations, { fill: "var(--play)", "font-weight": "600" });
+			return [];
+		}
 		assert.ok(!("opacity" in declarations), "inspector must handle new group/element opacity");
 		if (!("fill" in declarations) && !("fill-opacity" in declarations)) return [];
 		assert.match(selector.trim(), /^\.ab (?:text|(?:\.[\w-]+)+)$/);
@@ -259,6 +267,13 @@ test("focused renders cover every tone, section ground, label mode, node/legend 
 		for (const ground of [["bg", "surface"], ["bg", "band", "surface"], ["bg", `${tone}-bg`, "surface"], ["bg", "band", `${tone}-bg`, "surface"]]) assert.ok(seen.has(key(tone, ground, 0.82)), key(tone, ground, 0.82));
 	}
 	for (const paint of contract) assert.ok(seen.has(paint), `contract paint has no rendered witness: ${paint}`);
+});
+
+test("static paint inspection accepts idle sequence numbers and refuses active parts or changed state paints", () => {
+	const svg = render('sequence v0\nparticipant a\na --> a: Check\nplay\n step 1\n').svg;
+	covered(svg, "idle sequence playback");
+	assert.throws(() => inspect(svg.replace('class="m s11 muted seq-number"', 'class="m s11 muted seq-number ab-current"')), /static paint inspector cannot inspect current playback parts/);
+	assert.throws(() => inspect(svg.replace('fill:var(--play);font-weight:600', 'fill:var(--ink);font-weight:600')));
 });
 
 test("coverage detects new text and ground paints from SVG CSS", () => {
