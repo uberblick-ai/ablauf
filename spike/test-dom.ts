@@ -57,6 +57,7 @@ export class El {
 	max = "";
 	step = "";
 	value = "";
+	scrollLeft = 0;
 	writes = 0;
 	private text = "";
 	constructor(tag: string, doc: Doc) { this.tag = tag; this.ownerDocument = doc; }
@@ -88,8 +89,10 @@ export class El {
 	removeEventListener(type: string, listener: (event: Event) => void) { this.listeners.get(type)?.delete(listener); }
 	fire(type: string, key = "") {
 		let prevented = false;
-		const event = { type, key, preventDefault() { prevented = true; } } as unknown as Event;
-		for (const listener of this.listeners.get(type) ?? []) listener(event);
+		const event = { type, key, target: this, preventDefault() { prevented = true; } } as unknown as Event;
+		for (let el: El | null = this; el; el = el.parent) {
+			for (const listener of el.listeners.get(type) ?? []) listener(event);
+		}
 		return prevented;
 	}
 	click() { if (!this.disabled) this.fire("click"); }
@@ -100,4 +103,3 @@ export class El {
 		return this.all().filter(el => el.attrs.has("data-ab-part"));
 	}
 }
-

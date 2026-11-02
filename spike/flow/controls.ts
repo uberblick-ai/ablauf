@@ -8,6 +8,8 @@ export interface PlaybackMount {
 
 // Defaults belong to the controls too: SVG-internal variables cannot reach a
 // sibling. Keep every selector under the mount class, including scheme rules.
+// Always reserve the native horizontal scrollbar; the empty pseudo-element
+// keeps a real text line above it even when there is no caption.
 const STYLE = `
 .ab-playback{--abp-bg:var(--ab-bg,#ffffff);--abp-ink:var(--ab-ink,#17202c);--abp-muted:var(--ab-muted,#5a6575);--abp-line:var(--ab-line,#d3d9e2);--abp-play:var(--ab-play,#0a7a60);color-scheme:light;color:var(--abp-ink);background:var(--abp-bg);font:14px/1.5 system-ui,sans-serif;padding:0 0 12px;overflow-wrap:anywhere}
 .ab-playback.ab-dark{--abp-bg:var(--ab-bg,#171c24);--abp-ink:var(--ab-ink,#e5e9ef);--abp-muted:var(--ab-muted,#98a2b0);--abp-line:var(--ab-line,#2c3440);--abp-play:var(--ab-play,#6ff0cf);color-scheme:dark}
@@ -21,7 +23,8 @@ const STYLE = `
 .ab-playback .abp-counter{grid-row:1/3;align-self:start;box-sizing:border-box;font:500 11px/20px ui-monospace,monospace;color:var(--abp-muted);border:1px solid var(--abp-line);border-radius:999px;padding:0 8px;text-align:center}
 .ab-playback .abp-counter:empty{visibility:hidden}
 .ab-playback .abp-actor{grid-column:2;font:500 13px/20px ui-monospace,monospace;color:var(--abp-play);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ab-playback .abp-caption{grid-column:2;font-size:16px;line-height:1.45;min-height:1.45em;white-space:pre-wrap}
+.ab-playback .abp-caption{grid-column:2;min-width:0;font-size:16px;line-height:1.45;min-height:1.45em;white-space:nowrap;overflow-x:scroll;overflow-y:hidden;scroll-behavior:auto}
+.ab-playback .abp-caption:empty::before{content:"\\00a0"}
 .ab-playback .abp-actions{display:flex;align-items:center;gap:8px;padding:6px 12px 0}
 .ab-playback .abp-toggle{min-width:68px}
 .ab-playback .abp-navigation{position:relative;flex:1;min-width:0;border-radius:4px}
@@ -32,7 +35,7 @@ const STYLE = `
 .ab-playback .abp-segment.abp-played::before{background:color-mix(in srgb,var(--abp-play) 45%,var(--abp-line))}
 .ab-playback .abp-segment.abp-current::before{background:var(--abp-play);box-shadow:0 0 var(--ab-play-glow,8px) color-mix(in srgb,var(--abp-play) 70%,transparent)}
 .ab-playback button:disabled{color:var(--abp-muted);cursor:default}
-.ab-playback button:focus-visible,.ab-playback .abp-navigation:focus-within,.ab-playback .abp-panel:focus-visible{outline:2px solid var(--abp-play);outline-offset:3px}
+.ab-playback button:focus-visible,.ab-playback .abp-navigation:focus-within,.ab-playback .abp-panel:focus-visible,.ab-playback .abp-caption:focus-visible{outline:2px solid var(--abp-play);outline-offset:3px}
 .ab-playback .abp-tabs button:focus-visible{outline-offset:-3px}
 .ab-playback .abp-range,.ab-playback .abp-status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 `;
@@ -164,6 +167,9 @@ export function mountPlayback(
 	counter.setAttribute("aria-hidden", "true");
 	const actor = make("div", "abp-actor");
 	const caption = make("div", "abp-caption");
+	caption.tabIndex = 0;
+	caption.setAttribute("role", "region");
+	caption.setAttribute("aria-label", "Step caption");
 	const status = make("div", "abp-status");
 	status.setAttribute("role", "status");
 	status.setAttribute("aria-live", "polite");
@@ -193,11 +199,12 @@ export function mountPlayback(
 				segment.classList.toggle("abp-played", scenario === state.scenario && index < state.step);
 			}
 		}
-		actor.textContent = step?.actor ?? "";
-		caption.textContent = steps.length ? step?.caption ?? "" : "No playable steps";
 		const position = `${state.scenario}:${state.step}`;
 		if (announced !== position) {
 			announced = position;
+			actor.textContent = step?.actor ?? "";
+			caption.textContent = steps.length ? step?.caption ?? "" : "No playable steps";
+			caption.scrollLeft = 0;
 			status.textContent = step ? [step.actor, step.caption].filter(Boolean).join(": ") : "";
 		}
 	};

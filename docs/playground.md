@@ -54,14 +54,15 @@ visibly exercises canvas and band knockouts; its two crossing warnings are
 intentional and shown on the page. It stays outside the rendered example set.
 The page also shows a single timeline without tabs, a direct `createPlayer`
 case without built-in controls, a tabbed case with an empty scenario, and a
-**Compact controls** case with overflowing tabs, short captions, a long wrapping
-caption, an absent actor and an empty scenario at the end of the tab strip.
+**Compact controls** case with overflowing tabs, successive short, horizontally
+overflowing and blank captions, an absent actor and an empty scenario at the end
+of the tab strip.
 Current-colour and zero-glow controls apply host overrides to every case,
 including the shadow root. Each document is 710px wide,
 with 16px side padding giving a 678px figure at full width.
 
 A maintainer checks these in a real browser before merging playback changes,
-including #112, #113 and #116. Capture light and dark screenshots of
+including #112, #113, #116 and #146. Capture light and dark screenshots of
 `/playback-review` at the 678px figure width. Compare the controls with the
 [gallery controls reference](https://raw.githubusercontent.com/uberblick-ai/ablauf/9ba61d5485c89010c57ce6eb4c0111e7e6fac8de/spike/gallery/controls.png)
 and the figures with the [scenario playback GIF](images/playback/scenario-tabs.gif).
@@ -94,11 +95,24 @@ without host control CSS; the interactive checks below still need a maintainer.
   full play colour with glow, and future segments are subdued. Click a segment
   while playing: it seeks to that step and pauses. Seek with range arrows and
   switch scenarios: counter, segment count and highlights stay synchronized.
-- In **Compact controls**, compare idle, both short-caption steps, the scenario
-  without an actor, and empty: the step row reserves the same two-line minimum
-  and the action row stays at the same height. Select **Long caption wrapping**:
-  all text wraps visibly and the row grows, with no clipping or overlap. Repeat
-  in light and dark, including a narrower document.
+- In **Compact controls**, play and manually step **Single-line caption scrolling**
+  through its short, overflowing and blank captions. Compare idle/full figure,
+  the scenario without an actor and the empty scenario: at the 678px figure width,
+  the actor and caption lines remain reserved, and the step-row height and button
+  positions stay constant. Long text stays on one line within the figure. Read
+  all of it by pointer/touch and keyboard scrolling; confirm the ending is reachable.
+  Tab to the “Step caption” region before Previous in short, blank, idle and empty
+  states too. Check its visible focus outline, and that Left/Right, Home and End
+  scroll natively without changing playback state, step or scenario.
+  Scroll partway through the long caption: pause/resume preserves that position,
+  while a scenario or step change resets instantly to the beginning. Check end
+  preservation on the last caption of **Short captions** after making the document
+  narrow enough to scroll it. Playback must not move focus, pan automatically or
+  announce scrolling; the complete actor and caption still announce once per
+  playable-step change through the polite status. Repeat in light and dark, with
+  reduced motion, a narrower document and a browser using non-overlay scrollbars:
+  scrollbar space must stay reserved even for short or blank captions, and scroll
+  reset must have no animation.
 - Play and pause both the direct `createPlayer` case and built-in controls.
   Current node outlines/decision shapes and incoming strokes glow, including
   when paused or ended; played parts do not glow. Playing incoming dashes move
