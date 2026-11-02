@@ -92,7 +92,7 @@ for (const mode of ["headless", "mounted", "controls"] as const) {
 		f.action("play");
 		f.tick(100); f.tick(100);
 		assert.equal(f.player.state.status, "ended");
-		assert.ok(f.svg.classList.contains("ab-in-progress"));
+		assert.ok(!f.svg.classList.contains("ab-in-progress"));
 		f.action("play");
 		assert.equal(f.player.state.step, 0);
 		f.player.seek(-1); f.check();

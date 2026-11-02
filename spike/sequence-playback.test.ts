@@ -269,9 +269,11 @@ for (const scheme of schemes) for (const mode of ["headless", "mounted", "contro
 		frame(2);
 		if (mode === "controls") click("Previous"); else player.previous();
 		frame(1);
-		player.seek(2); player.play(); t.mock.timers.tick(100); frame(2);
+		player.seek(2); player.play(); t.mock.timers.tick(99); frame(2);
+		t.mock.timers.tick(1); frame(-1);
 		assert.equal(player.state.status, "ended");
-		player.play(); frame(0);
+		if (mode === "controls") click("Replay"); else player.play();
+		frame(0);
 		player.select(1); frame(0, 1); assert.equal(player.state.status, "paused");
 		player.select(2); frame(-1, 2); player.play(); frame(-1, 2);
 		player.select(0); player.seek(-1); frame(-1);

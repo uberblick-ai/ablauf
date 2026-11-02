@@ -70,7 +70,7 @@ export function createPlayer(
 		else if (options.loop) change(state.scenario, 0, "playing");
 		else {
 			unobserve();
-			change(state.scenario, state.step, "ended");
+			change(state.scenario, -1, "ended");
 		}
 	}
 

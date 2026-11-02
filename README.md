@@ -58,9 +58,12 @@ import { mountPlayback } from "@uberblick/ablauf/playback";
 
 const { svg, timelines } = render(source, { idPrefix: "dependabot" });
 figure.innerHTML = svg;
-// autoplay: play while the figure is in view
-mountPlayback(figure, figure.querySelector("svg"), timelines, { autoplay: true });
+mountPlayback(figure, figure.querySelector("svg"), timelines);
 ```
+
+The figure starts idle and fully visible. Play or a scenario tab starts playback;
+finishing restores the full figure. Autoplay is opt-in with `{ autoplay: true }`,
+which waits until half the figure is in view before starting.
 
 Playback in 0.3.0 supports flows. Sequence and fan-out playback will follow.
 

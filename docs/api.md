@@ -34,13 +34,17 @@ shadow root below the inline SVG:
 ```ts
 import { mountPlayback } from "@uberblick/ablauf/playback";
 
-const mount = mountPlayback(controlsContainer, svgElement, result.timelines, { autoplay: true });
-// Starts idle. With autoplay it plays once half the figure is in view, pauses
-// when it leaves and resumes when it returns, unless the reader paused it.
-// Without autoplay, Play or a scenario tab starts it; the host can also call mount.player.
+const mount = mountPlayback(controlsContainer, svgElement, result.timelines);
+// Starts idle with the full figure. Play or a scenario tab starts it;
+// the host can also call mount.player.
 // Before replacing the SVG or its timelines:
 mount.destroy();
 ```
+
+Autoplay is off by default. Opt in with `{ autoplay: true }` as the fourth
+argument: mounting still shows the full idle figure until half of it is in
+view. Playback then starts, pauses when it leaves and resumes when it returns,
+unless the reader paused it.
 
 ### Playback details and the headless player
 
@@ -78,12 +82,22 @@ export function attachPlayback(svg: SVGSVGElement, timelines: Timeline[]) {
 Creation shows the full figure at `{ scenario: 0, step: -1, status: "idle" }`
 without a timer or callback. Call `play()` from a host interaction to start;
 `pause()` keeps the frame, and resuming restarts its full dwell. Each step,
-including the last, stays current for its `ms`. Playback ends on the last
-frame; `play()` replays it, or `{ loop: true }` loops the selected scenario.
+including the last, stays current for its `ms`. A non-looping scene then ends
+at `{ scenario, step: -1, status: "ended" }`, preserving the selected scenario
+in both `player.state` and `onChange`. The full figure returns without fading,
+current/played highlighting or glow; the SVG has neither `ab-in-progress` nor
+`ab-playing`. Pausing mid-scene retains the current highlight and fade.
+`play()` replays from step `0`, or `{ loop: true }` loops the selected scenario.
 Repeated `play()` during playback leaves the timer alone.
 
+After completion the built-in controls show a blank counter, empty actor and
+caption, no current/played segments, and range `-1` with value text “Full figure”.
+The status region clears without repeating the last step. The toggle reads
+“Replay” and starts at step `0`.
+
 `next()`, `previous()` and `seek(step)` pause and clamp integer steps to
-`-1..last`; `-1` clears highlighting. `select(scenario)` pauses on that
+`-1..last`; `-1` clears highlighting. From ended, `next()` goes to step `0`
+paused and `previous()` stays at `-1` paused. `select(scenario)` pauses on that
 scenario's first step, including when reselecting it. Invalid scenario indices
 and non-integer indices are ignored. Empty scenarios stay at step `-1`;
 playing them stays idle. The player never chooses another scenario for you.
