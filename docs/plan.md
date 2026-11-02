@@ -823,24 +823,55 @@ their defaults. These tokens are separate from the existing exported palette.
   follows the existing host-override and light/dark default rules, and the
   existing palette stays unchanged.
 
-`createPlayer(svg, timelines, { loop?, onChange? }?)` exports the headless API;
-see [usage and navigation semantics](../README.md#play-an-inline-svg).
+`createPlayer(svg, timelines, { loop?, onChange?, pauseWhenOffscreen? }?)`
+exports the headless API; see [usage and navigation semantics](api.md#playback).
 Creation is idle at scenario `0`, step `-1`, without callbacks or timers.
-Only a changed scenario/step/status tuple notifies `onChange`, after state
-and SVG updates, with a stable snapshot. Destroy is silent and idempotent,
+`select(scenario: number | string): void` selects an index or exact `Timeline.slug`,
+pausing at the first step (`-1` when empty), including when reselecting.
+Unknown slugs and invalid indices are no-ops. `subscribe(fn: (state: PlayerState)
+=> void): () => void` adds an independent listener alongside `onChange` and returns
+an idempotent unsubscribe; registration does not notify. Only a changed
+scenario/step/status tuple notifies active listeners once, after state, SVG
+and built-in controls synchronize, with stable snapshots. Same-tuple updates
+and destruction do not notify. Destroy is silent and idempotent,
 clears highlighting, timers and listeners, preserves the scenario, and
-leaves idle at step `-1`; later methods do nothing. Both package entries are
+leaves idle at step `-1`; later methods/updates do nothing and subscriptions
+return inert unsubscribes. Both package entries are
 safe to import without browser globals, and core types need no DOM library.
+
+Both APIs check the SVG's `isConnected` and owning document's `hidden` and
+`visibilityState` before starting and at each step timer callback. A callback
+finding it disconnected or hidden pauses on the current frame without advancing
+or arming another timer. No mutation tracking: removal and reinsertion entirely
+between checks is not detected. An owning-document `visibilitychange` to hidden
+pauses immediately and cancels the timer. These checks apply in document and
+shadow roots. While hidden or disconnected, `play()` and scenario-tab activation
+are no-ops with no selection/reset or notification; manual `next`, `previous`,
+`seek` and `select` still work and pause as usual. Restoration or reconnection
+does not resume a lifecycle-paused player, including through autoplay; explicit
+Play or scenario activation must start it again.
+
+`pauseWhenOffscreen?: boolean` defaults to false in both creation APIs. When
+enabled, an IntersectionObserver report of `isIntersecting === false` pauses
+on the current frame and cancels the timer. While known to be nonintersecting,
+playback cannot start or advance. Entry alone never starts a standalone player
+or a mount without autoplay. Without IntersectionObserver, viewport pausing
+and autoplay are unavailable; lifecycle guards remain.
 
 ### Built-in controls and lifetime
 
 The browser entry also exports
-`mountPlayback(container, svg, timelines, { loop?, autoplay? }?)`, returning
-`PlaybackMount { player: Player; destroy(): void }`. The host supplies an
+`mountPlayback(container, svg, timelines, { loop?, autoplay?, pauseWhenOffscreen? }?)`, returning
+`PlaybackMount { player: Player; update(svg: SVGSVGElement, timelines: Timeline[]): void; destroy(): void }`.
+The host supplies an
 `HTMLElement` or `ShadowRoot` for controls below its inline SVG. Mounting starts
 idle with the full figure. With `autoplay: true` the mount observes the SVG and
-plays once half of it is in view, pauses it when it leaves and resumes it on
-return, unless the reader paused it meanwhile. Reduced motion, or a browser
+plays once `isIntersecting` and `intersectionRatio >= 0.5`, pauses it on no
+intersection (not merely below half visibility), and resumes viewport-caused
+pauses at half visibility. Manual pause/navigation cancels automatic resume,
+including a pause while already viewport-paused. The same rules apply with
+both autoplay and viewport pausing enabled, respecting lifecycle guards.
+Reduced motion, or a browser
 without `IntersectionObserver`, keeps it idle. Destroy disconnects the observer. No timelines adds no DOM or style.
 The mount uses the existing player contract for timing, navigation, looping
 and reduced motion, including changes made through the returned `player`.
@@ -850,7 +881,14 @@ using `Timeline.name`; one timeline has no tabs. Tabs have selected state,
 one tab stop and an associated labelled panel. Left/Right wrap focus and
 immediately activate the focused scenario; click, Enter and Space activate
 too. Activation calls `select`, pausing on step `0` (or `-1` when empty).
-Playback updates never move focus or recreate controls.
+Ordinary playback state changes never move focus or recreate controls.
+The panel is a visible-focus tab stop for one or multiple scenarios. Only
+keydown events targeting the panel itself, with no modifiers, handle Space
+for Play/Pause (Replay when ended), Left for `previous()` and Right for `next()`;
+handled keys prevent their browser default. Descendant controls retain native
+behavior, tabs retain activation, and editable targets including inherited
+contenteditable never trigger shortcuts. Keys are handled once and stay local
+to each independent document/shadow-root mount.
 
 Tabs are borderless monospace text on one rule, scrolling horizontally without
 wrapping. Selection uses the play colour, a 2px underline and a faint glow.
@@ -882,7 +920,7 @@ leaving tabs usable; it never selects another scenario automatically.
 
 Each mount appends its own scoped style and controls root inside the supplied
 container, leaving other host content intact. Its scheme comes from the SVG
-root's `ab-auto`, `ab-light` or `ab-dark` class at mounting. Controls resolve
+root's `ab-auto`, `ab-light` or `ab-dark` class at mounting and rebinding. Controls resolve
 existing `--ab-*` host overrides with their own matching light/dark defaults:
 the SVG's internal variables cannot be inherited by sibling controls. Every
 selector is under `.ab-playback`, so document and shadow-root mounts do not
@@ -894,8 +932,25 @@ An “All steps” list and scenario links remain host features.
 
 Both `mount.destroy()` and `mount.player.destroy()` perform the same idempotent
 teardown: destroy the player and remove this mount's controls, style and
-listeners. The host destroys before replacing the SVG or changing timelines,
-then mounts again. Standalone `createPlayer` retains its silent teardown and
+listeners. `mount.update(svg, timelines)` instead binds replacement SVG/data
+while retaining player identity and subscriptions. It keeps the selected
+scenario by exact slug after reordering, otherwise selects the first (scenario
+`0` with no timelines). It cancels playback and leaves paused at step `0`, or
+`-1` for an empty scenario or no timelines. It always refreshes tabs, counts,
+segments, range, actor, caption, announcements and scheme, even if the state
+tuple is unchanged. The old SVG loses all player state classes and observation;
+subsequent actions affect only the replacement, and stale callbacks are inert.
+
+While controls remain, retain the panel, action buttons and range with their
+focus. A focused tab survives by slug after reorder; if removed or tabs disappear
+for one scenario, focus the panel. Otherwise update does not move focus. No
+timelines removes owned controls and style without focusing unrelated host
+content; later updates can add them. Updating never starts playback, even with
+autoplay: viewport events cannot start the new binding until explicit Play or
+scenario activation. Repeated updates add no duplicate controls, timers,
+listeners or observers. Both teardown paths clean up the current binding and
+mount; later updates, subscriptions and browser callbacks cannot mutate DOM,
+start timers or notify. Standalone `createPlayer` retains its silent teardown and
 adds no controls. No browser globals are touched at import time. The playground
 uses this mount on every render with timelines; the
 [browser review fixture](playground.md#playback-browser-review) exercises

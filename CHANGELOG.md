@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Add playback rebinding through `mount.update`, exact-slug scenario selection,
+  independent subscriptions and panel-local keyboard shortcuts. Preserve controls
+  and focus while refreshing SVG/data and clear the old binding.
+- Pause hidden/disconnected players and optionally off-screen players, preserving
+  autoplay only for viewport-caused pauses. Extend the maintainer browser fixture
+  for rebinding, lifecycle, viewport and keyboard review. ([#95](https://github.com/uberblick-ai/ablauf/issues/95))
+
 ## 0.3.0 — 2026-11-02
 
 ### Playback

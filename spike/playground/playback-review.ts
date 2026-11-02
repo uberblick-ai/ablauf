@@ -7,7 +7,7 @@ const loop = document.getElementById("review-loop") as HTMLInputElement;
 const accent = document.getElementById("review-accent") as HTMLSelectElement;
 const zeroGlow = document.getElementById("review-zero-glow") as HTMLInputElement;
 const cases = document.getElementById("review-cases") as HTMLElement;
-const mounts: PlaybackMount[] = [];
+const mounts: { destroy(): void }[] = [];
 const figureCSS = ".review-figure svg{display:block;max-width:100%;height:auto}";
 
 function addCase(title: string, source: string, idPrefix: string, shadow = false, headless = false) {
@@ -30,7 +30,7 @@ function addCase(title: string, source: string, idPrefix: string, shadow = false
 	retained.className = "review-note";
 	retained.textContent = "Host content remains after either teardown entry point.";
 	container.append(style, figure, retained);
-	function makeMount(): PlaybackMount {
+	function makeMount(): Pick<PlaybackMount, "player" | "destroy"> & Partial<Pick<PlaybackMount, "update">> {
 		if (!headless) return mountPlayback(figure, svg as SVGSVGElement, result.timelines, { loop: loop.checked });
 		const player = createPlayer(svg as SVGSVGElement, result.timelines, { loop: loop.checked });
 		return { player, destroy: () => player.destroy() };

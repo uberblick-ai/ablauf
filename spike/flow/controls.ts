@@ -1,8 +1,9 @@
 import type { Timeline } from "./play.ts";
-import { createPlayer, type Player, type PlayerState } from "./player.ts";
+import { createPlayerBinding, type Player, type PlayerState } from "./player.ts";
 
 export interface PlaybackMount {
 	player: Player;
+	update(svg: SVGSVGElement, timelines: Timeline[]): void;
 	destroy(): void;
 }
 
@@ -48,183 +49,209 @@ export function mountPlayback(
 	container: HTMLElement | ShadowRoot,
 	svg: SVGSVGElement,
 	timelines: Timeline[],
-	options: { loop?: boolean; autoplay?: boolean } = {},
+	options: { loop?: boolean; autoplay?: boolean; pauseWhenOffscreen?: boolean } = {},
 ): PlaybackMount {
 	const doc = container.ownerDocument;
 	const removers: (() => void)[] = [];
 	let root: HTMLDivElement | undefined;
 	let style: HTMLStyleElement | undefined;
 	let synchronize: (state: PlayerState) => void = () => {};
-	const player = createPlayer(svg, timelines, { loop: options.loop, onChange: state => synchronize(state) });
+	const binding = createPlayerBinding(svg, timelines, { ...options, synchronize: state => synchronize(state) });
+	const player = binding.player;
+	let refresh = () => {};
 	const destroyPlayer = player.destroy;
 	let destroyed = false;
 	function destroy() {
 		if (destroyed) return;
 		destroyed = true;
 		destroyPlayer();
-		for (const remove of removers) remove();
+		for (const remove of removers.splice(0)) remove();
 		root?.remove();
 		style?.remove();
 	}
 	player.destroy = destroy;
-	if (!timelines.length) return { player, destroy };
+	function update(nextSvg: SVGSVGElement, nextTimelines: Timeline[]) {
+		if (destroyed) return;
+		svg = nextSvg;
+		timelines = nextTimelines;
+		if (!timelines.length) {
+			for (const remove of removers.splice(0)) remove();
+			root?.remove(); style?.remove(); root = undefined; style = undefined;
+			synchronize = () => {};
+		} else if (!root) buildControls();
+		else refresh();
+		binding.update(svg, timelines);
+	}
+	if (timelines.length) buildControls();
+	return { player, update, destroy };
 
-	const make = <K extends keyof HTMLElementTagNameMap>(tag: K, className = "", text = "") => {
-		const el = doc.createElement(tag);
-		el.className = className;
-		el.textContent = text;
-		return el;
-	};
-	function listen(el: HTMLElement, type: string, listener: (event: Event) => void) {
-		el.addEventListener(type, listener);
-		removers.push(() => el.removeEventListener(type, listener));
-	}
-	function button(text: string, action: () => void, className = "") {
-		const el = make("button", className, text);
-		el.type = "button";
-		listen(el, "click", action);
-		return el;
-	}
-	const scheme = svg.classList.contains("ab-dark") ? "dark" : svg.classList.contains("ab-light") ? "light" : "auto";
-	root = make("div", `ab-playback ab-${scheme}`);
-	style = make("style", "", STYLE);
-	const panel = make("div", "abp-panel");
-	const tabs: HTMLButtonElement[] = [];
-	if (timelines.length > 1) {
-		// Choosing a scenario plays it, unless the reader asked for reduced motion.
-		const choose = (index: number) => {
-			player.select(index);
-			if (!root.ownerDocument.defaultView?.matchMedia?.("(prefers-reduced-motion: reduce)").matches) player.play();
+	function buildControls() {
+
+		const make = <K extends keyof HTMLElementTagNameMap>(tag: K, className = "", text = "") => {
+			const el = doc.createElement(tag);
+			el.className = className;
+			el.textContent = text;
+			return el;
 		};
-		const id = `ab-playback-${++mountId}`;
-		const tablist = make("div", "abp-tabs");
-		tablist.setAttribute("role", "tablist");
-		tablist.setAttribute("aria-label", "Scenarios");
-		panel.id = `${id}-panel`;
-		panel.setAttribute("role", "tabpanel");
+		function listen(el: HTMLElement, type: string, listener: (event: Event) => void) {
+			el.addEventListener(type, listener);
+			removers.push(() => el.removeEventListener(type, listener));
+		}
+		function button(text: string, action: () => void, className = "") {
+			const el = make("button", className, text);
+			el.type = "button";
+			listen(el, "click", action);
+			return el;
+		}
+		root = make("div", "ab-playback");
+		style = make("style", "", STYLE);
+		const panel = make("div", "abp-panel");
 		panel.tabIndex = 0;
-		for (const [index, timeline] of timelines.entries()) {
-			const tab = button(timeline.name, () => choose(index));
-			tab.id = `${id}-tab-${index}`;
-			tab.setAttribute("role", "tab");
-			tab.setAttribute("aria-controls", panel.id);
-			listen(tab, "keydown", event => {
-				const key = (event as KeyboardEvent).key;
-				let target: number;
-				if (key === "ArrowLeft") target = (index + tabs.length - 1) % tabs.length;
-				else if (key === "ArrowRight") target = (index + 1) % tabs.length;
-				else if (key === "Home") target = 0;
-				else if (key === "End") target = tabs.length - 1;
-				else if (key === "Enter" || key === " ") target = index;
-				else return;
-				event.preventDefault();
-				tabs[target].focus();
-				choose(target);
-			});
-			tabs.push(tab);
-			tablist.append(tab);
-		}
-		root.append(tablist);
-	}
-	const actions = make("div", "abp-actions");
-	const previous = button("<", () => player.previous());
-	previous.setAttribute("aria-label", "Previous");
-	const toggle = button("Play", () => player.state.status === "playing" ? player.pause() : player.play(), "abp-toggle");
-	const next = button(">", () => player.next());
-	next.setAttribute("aria-label", "Next");
-	const navigation = make("div", "abp-navigation");
-	const rangeLabel = make("label", "abp-range", "Step");
-	const range = make("input");
-	range.type = "range";
-	range.min = "-1";
-	range.step = "1";
-	listen(range, "input", () => player.seek(Number(range.value)));
-	rangeLabel.append(range);
-	navigation.append(rangeLabel);
-	// Keep each scenario's track mounted so updates never replace controls or
-	// disturb focus. Only the selected track is displayed; the range supplies
-	// all keyboard and assistive-technology navigation.
-	const tracks = timelines.map((timeline, scenario) => {
-		const track = make("div", "abp-segments");
-		track.setAttribute("aria-hidden", "true");
-		const segments = timeline.steps.map((_, index) => {
-			const segment = make("span", "abp-segment");
-			listen(segment, "click", () => {
-				if (player.state.scenario === scenario) player.seek(index);
-			});
-			track.append(segment);
-			return segment;
+		const id = `ab-playback-${++mountId}`;
+		panel.id = `${id}-panel`;
+		let tabs: HTMLButtonElement[] = [];
+		let tablist: HTMLDivElement | undefined;
+		let tabRemovers: (() => void)[] = [];
+		let trackRemovers: (() => void)[] = [];
+		removers.push(() => { for (const remove of [...tabRemovers, ...trackRemovers]) remove(); });
+		const choose = (index: number) => {
+			if (!binding.canPlay()) return;
+			player.select(index);
+			if (!svg.ownerDocument.defaultView?.matchMedia?.("(prefers-reduced-motion: reduce)").matches) player.play();
+		};
+		listen(panel, "keydown", event => {
+			const key = event as KeyboardEvent;
+			if (key.target !== panel || panel.isContentEditable || key.altKey || key.ctrlKey || key.metaKey || key.shiftKey) return;
+			if (key.key === " ") { event.preventDefault(); player.state.status === "playing" ? player.pause() : player.play(); }
+			else if (key.key === "ArrowLeft") { event.preventDefault(); player.previous(); }
+			else if (key.key === "ArrowRight") { event.preventDefault(); player.next(); }
 		});
-		navigation.append(track);
-		return { track, segments };
-	});
-	actions.append(previous, toggle, next, navigation);
-	const stepLine = make("div", "abp-step");
-	const counter = make("span", "abp-counter");
-	counter.setAttribute("aria-hidden", "true");
-	const actor = make("div", "abp-actor");
-	const caption = make("div", "abp-caption");
-	const status = make("div", "abp-status");
-	status.setAttribute("role", "status");
-	status.setAttribute("aria-live", "polite");
-	status.setAttribute("aria-atomic", "true");
-	stepLine.append(counter, actor, caption);
-	panel.append(stepLine, actions);
-	root.append(panel, status);
-	let announced = "";
-	synchronize = state => {
-		const steps = timelines[state.scenario].steps;
-		const step = steps[state.step];
-		for (const [index, tab] of tabs.entries()) {
-			tab.setAttribute("aria-selected", String(index === state.scenario));
-			tab.tabIndex = index === state.scenario ? 0 : -1;
-		}
-		if (tabs.length) panel.setAttribute("aria-labelledby", tabs[state.scenario].id);
-		toggle.textContent = state.status === "playing" ? "Pause" : state.status === "ended" ? "Replay" : "Play";
-		for (const control of [previous, toggle, next, range]) control.disabled = steps.length === 0;
-		range.max = String(steps.length - 1);
-		range.value = String(state.step);
-		range.setAttribute("aria-valuetext", step ? `Step ${state.step + 1} of ${steps.length}` : steps.length ? "Full figure" : "No playable steps");
-		counter.textContent = step ? `${state.step + 1}/${steps.length}` : "";
-		for (const [scenario, { track, segments }] of tracks.entries()) {
-			track.classList.toggle("abp-inactive", scenario !== state.scenario);
-			for (const [index, segment] of segments.entries()) {
-				segment.classList.toggle("abp-current", scenario === state.scenario && index === state.step);
-				segment.classList.toggle("abp-played", scenario === state.scenario && index < state.step);
+		const actions = make("div", "abp-actions");
+		const previous = button("<", () => player.previous());
+		previous.setAttribute("aria-label", "Previous");
+		const toggle = button("Play", () => player.state.status === "playing" ? player.pause() : player.play(), "abp-toggle");
+		const next = button(">", () => player.next());
+		next.setAttribute("aria-label", "Next");
+		const navigation = make("div", "abp-navigation");
+		const rangeLabel = make("label", "abp-range", "Step");
+		const range = make("input");
+		range.type = "range";
+		range.min = "-1";
+		range.step = "1";
+		listen(range, "input", () => player.seek(Number(range.value)));
+		rangeLabel.append(range);
+		navigation.append(rangeLabel);
+		let tracks: { track: HTMLDivElement; segments: HTMLSpanElement[] }[] = [];
+		actions.append(previous, toggle, next, navigation);
+		const stepLine = make("div", "abp-step");
+		const counter = make("span", "abp-counter");
+		counter.setAttribute("aria-hidden", "true");
+		const actor = make("div", "abp-actor");
+		const caption = make("div", "abp-caption");
+		const status = make("div", "abp-status");
+		status.setAttribute("role", "status");
+		status.setAttribute("aria-live", "polite");
+		status.setAttribute("aria-atomic", "true");
+		stepLine.append(counter, actor, caption);
+		panel.append(stepLine, actions);
+		root.append(panel, status);
+		let announced = "";
+		synchronize = state => {
+			const steps = timelines[state.scenario]?.steps ?? [];
+			const step = steps[state.step];
+			for (const [index, tab] of tabs.entries()) {
+				tab.setAttribute("aria-selected", String(index === state.scenario));
+				tab.tabIndex = index === state.scenario ? 0 : -1;
 			}
-		}
-		actor.textContent = step?.actor ?? "";
-		caption.textContent = steps.length ? step?.caption ?? "" : "No playable steps";
-		const position = `${state.scenario}:${state.step}`;
-		if (announced !== position) {
-			announced = position;
-			status.textContent = step ? [step.actor, step.caption].filter(Boolean).join(": ") : "";
-		}
-	};
-	synchronize(player.state);
-	container.append(style, root);
-	if (options.autoplay) autoplay();
-	return { player, destroy };
-
-	function autoplay() {
-		const view = svg.ownerDocument.defaultView;
-		const Observer = view?.IntersectionObserver;
-		if (!Observer) return;
-		let started = false;
-		let pausedByView = false;
-		const observer = new Observer(entries => {
-			const visible = entries.some(entry => entry.isIntersecting);
-			const { status } = player.state;
-			if (!visible) {
-				if (status === "playing") { player.pause(); pausedByView = true; }
-				return;
+			if (tabs.length) panel.setAttribute("aria-labelledby", tabs[state.scenario].id);
+			toggle.textContent = state.status === "playing" ? "Pause" : state.status === "ended" ? "Replay" : "Play";
+			for (const control of [previous, toggle, next, range]) control.disabled = steps.length === 0;
+			range.max = String(steps.length - 1);
+			range.value = String(state.step);
+			range.setAttribute("aria-valuetext", step ? `Step ${state.step + 1} of ${steps.length}` : steps.length ? "Full figure" : "No playable steps");
+			counter.textContent = step ? `${state.step + 1}/${steps.length}` : "";
+			for (const [scenario, { track, segments }] of tracks.entries()) {
+				track.classList.toggle("abp-inactive", scenario !== state.scenario);
+				for (const [index, segment] of segments.entries()) {
+					segment.classList.toggle("abp-current", scenario === state.scenario && index === state.step);
+					segment.classList.toggle("abp-played", scenario === state.scenario && index < state.step);
+				}
 			}
-			if (view.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
-			if ((!started && status === "idle") || (pausedByView && status === "paused")) player.play();
-			started = true;
-			pausedByView = false;
-		}, { threshold: 0.5 });
-		observer.observe(svg);
-		removers.push(() => observer.disconnect());
+			actor.textContent = step?.actor ?? "";
+			caption.textContent = steps.length ? step?.caption ?? "" : "No playable steps";
+			const position = `${state.scenario}:${state.step}`;
+			if (announced !== position) {
+				announced = position;
+				status.textContent = step ? [step.actor, step.caption].filter(Boolean).join(": ") : "";
+			}
+		};
+		refresh = () => {
+			const scheme = svg.classList.contains("ab-dark") ? "dark" : svg.classList.contains("ab-light") ? "light" : "auto";
+			if (!root) return;
+			root.className = `ab-playback ab-${scheme}`;
+			const active = (panel.getRootNode() as Document | ShadowRoot).activeElement;
+			const focusedTab = tabs.find(tab => tab === active);
+			const oldTabs = new Map(tabs.map(tab => [tab.dataset.slug ?? "", tab]));
+			for (const remove of tabRemovers) remove();
+			tabRemovers = [];
+			tabs = [];
+			if (timelines.length > 1) {
+				if (!tablist) {
+					tablist = make("div", "abp-tabs");
+					tablist.setAttribute("role", "tablist");
+					tablist.setAttribute("aria-label", "Scenarios");
+					root.insertBefore(tablist, panel);
+				}
+				panel.setAttribute("role", "tabpanel");
+				for (const [index, timeline] of timelines.entries()) {
+					const tab = oldTabs.get(timeline.slug) ?? make("button");
+					oldTabs.delete(timeline.slug);
+					tab.type = "button"; tab.textContent = timeline.name;
+					tab.dataset.slug = timeline.slug;
+					tab.id = `${id}-tab-${index}`;
+					tab.setAttribute("role", "tab");
+					tab.setAttribute("aria-controls", panel.id);
+					const click = () => choose(index);
+					const keydown = (event: Event) => {
+						const key = (event as KeyboardEvent).key;
+						let target: number;
+						if (key === "ArrowLeft") target = (index + tabs.length - 1) % tabs.length;
+						else if (key === "ArrowRight") target = (index + 1) % tabs.length;
+						else if (key === "Home") target = 0;
+						else if (key === "End") target = tabs.length - 1;
+						else if (key === "Enter" || key === " ") target = index;
+						else return;
+						event.preventDefault(); tabs[target].focus(); choose(target);
+					};
+					tab.addEventListener("click", click); tab.addEventListener("keydown", keydown);
+					tabRemovers.push(() => { tab.removeEventListener("click", click); tab.removeEventListener("keydown", keydown); });
+					tabs.push(tab); tablist.append(tab);
+				}
+			} else {
+				tablist?.remove(); tablist = undefined;
+				panel.removeAttribute("role"); panel.removeAttribute("aria-labelledby");
+			}
+			for (const tab of oldTabs.values()) tab.remove();
+			if (focusedTab) (tabs.includes(focusedTab) ? focusedTab : panel).focus();
+			for (const remove of trackRemovers) remove();
+			trackRemovers = [];
+			for (const { track } of tracks) track.remove();
+			tracks = timelines.map((timeline, scenario) => {
+				const track = make("div", "abp-segments");
+				track.setAttribute("aria-hidden", "true");
+				const segments = timeline.steps.map((_, index) => {
+					const segment = make("span", "abp-segment");
+					const click = () => { if (player.state.scenario === scenario) player.seek(index); };
+					segment.addEventListener("click", click);
+					trackRemovers.push(() => segment.removeEventListener("click", click));
+					track.append(segment); return segment;
+				});
+				navigation.append(track); return { track, segments };
+			});
+			announced = "";
+		};
+		container.append(style, root);
+		refresh();
+		if (player.state.status === "idle") synchronize(player.state);
 	}
 }

@@ -15,12 +15,12 @@ class Motion {
 
 // One shared fake: `show(true|false)` reports every observed element in or out of view.
 export class Viewport {
-	observers = new Set<{ callback: (entries: { isIntersecting: boolean }[]) => void; targets: Set<unknown> }>();
+	observers = new Set<{ callback: (entries: { target: unknown; isIntersecting: boolean; intersectionRatio: number }[]) => void; targets: Set<unknown> }>();
 	get IntersectionObserver() {
 		const observers = this.observers;
 		return class {
-			entry = { callback: (_: { isIntersecting: boolean }[]) => {}, targets: new Set<unknown>() };
-			constructor(callback: (entries: { isIntersecting: boolean }[]) => void) {
+			entry = { callback: (_: { target: unknown; isIntersecting: boolean; intersectionRatio: number }[]) => {}, targets: new Set<unknown>() };
+			constructor(callback: (entries: { target: unknown; isIntersecting: boolean; intersectionRatio: number }[]) => void) {
 				this.entry.callback = callback;
 				observers.add(this.entry);
 			}
@@ -28,13 +28,25 @@ export class Viewport {
 			disconnect() { observers.delete(this.entry); }
 		};
 	}
-	show(isIntersecting: boolean) {
-		for (const { callback, targets } of [...this.observers]) callback([...targets].map(() => ({ isIntersecting })));
+	show(isIntersecting: boolean, intersectionRatio = isIntersecting ? 1 : 0) {
+		for (const { callback, targets } of [...this.observers]) callback([...targets].map(target => ({ target, isIntersecting, intersectionRatio })));
 	}
 }
 
 export class Doc {
 	activeElement: El | null = null;
+	hidden = false;
+	visibilityState = "visible";
+	listeners = new Map<string, Set<() => void>>();
+	addEventListener(type: string, listener: () => void) {
+		if (!this.listeners.has(type)) this.listeners.set(type, new Set());
+		this.listeners.get(type)?.add(listener);
+	}
+	removeEventListener(type: string, listener: () => void) { this.listeners.get(type)?.delete(listener); }
+	setHidden(hidden: boolean) {
+		this.hidden = hidden; this.visibilityState = hidden ? "hidden" : "visible";
+		for (const listener of [...this.listeners.get("visibilitychange") ?? []]) listener();
+	}
 	motion = new Motion();
 	viewport = new Viewport();
 	defaultView = { matchMedia: this.motion.matchMedia, IntersectionObserver: this.viewport.IntersectionObserver };
@@ -49,6 +61,12 @@ export class El {
 	attrs = new Map<string, string>();
 	listeners = new Map<string, Set<(event: Event) => void>>();
 	className = "";
+	dataset: Record<string, string> = {};
+	connected = true;
+	contentEditable = "inherit";
+	get isConnected(): boolean { return this.connected && (this.parent?.isConnected ?? true); }
+	get isContentEditable(): boolean { return this.contentEditable === "true" || (this.contentEditable === "inherit" && (this.parent?.isContentEditable ?? false)); }
+	getRootNode(): Doc { return this.ownerDocument; }
 	id = "";
 	type = "";
 	disabled = false;
@@ -79,6 +97,8 @@ export class El {
 	};
 	append(...els: El[]) { for (const el of els) { el.remove(); el.parent = this; this.children.push(el); } }
 	remove() { if (this.parent) this.parent.children.splice(this.parent.children.indexOf(this), 1); this.parent = null; }
+	insertBefore(el: El, before: El) { el.remove(); el.parent = this; this.children.splice(this.children.indexOf(before), 0, el); }
+	removeAttribute(name: string) { this.attrs.delete(name); }
 	setAttribute(name: string, value: string) { this.attrs.set(name, value); }
 	getAttribute(name: string) { return this.attrs.get(name) ?? null; }
 	addEventListener(type: string, listener: (event: Event) => void) {
@@ -86,10 +106,14 @@ export class El {
 		this.listeners.get(type)?.add(listener);
 	}
 	removeEventListener(type: string, listener: (event: Event) => void) { this.listeners.get(type)?.delete(listener); }
-	fire(type: string, key = "") {
+	fire(type: string, key = "", extra: Record<string, unknown> = {}) {
 		let prevented = false;
-		const event = { type, key, preventDefault() { prevented = true; } } as unknown as Event;
-		for (const listener of this.listeners.get(type) ?? []) listener(event);
+		const event = { type, key, target: this, ...extra, preventDefault() { prevented = true; } } as unknown as Event;
+		let el: El | null = this;
+		while (el) {
+			for (const listener of el.listeners.get(type) ?? []) listener(event);
+			el = el.parent;
+		}
 		return prevented;
 	}
 	click() { if (!this.disabled) this.fire("click"); }
