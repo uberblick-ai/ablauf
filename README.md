@@ -59,8 +59,17 @@ import { mountPlayback } from "@uberblick/ablauf/playback";
 const { svg, timelines } = render(source, { idPrefix: "dependabot" });
 figure.innerHTML = svg;
 // autoplay: play while the figure is in view
-mountPlayback(figure, figure.querySelector("svg"), timelines, { autoplay: true });
+const mount = mountPlayback(figure, figure.querySelector("svg"), timelines, { autoplay: true });
+// After replacing just the inline SVG with a freshly rendered one:
+// mount.update(replacementSvg, replacementTimelines); // Paused, same controls/player.
+const unsubscribe = mount.player.subscribe(state => console.log(state));
+// unsubscribe(); mount.destroy(); // When these are no longer needed.
 ```
+
+`pauseWhenOffscreen: true` pauses manual playback outside the viewport. Hidden
+documents and disconnected figures also pause; start them explicitly after
+returning. Focus the controls panel for Space and Left/Right shortcuts.
+See [rebinding, subscriptions and lifecycle behavior](docs/api.md#playback).
 
 Sequences use the same `play` sections, with each step targeting a message by
 its number. Fan-out playback is still to come.

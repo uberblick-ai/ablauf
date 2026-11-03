@@ -154,22 +154,25 @@ declare const svg: SVGSVGElement;
 declare const timelines: Timeline[];
 declare const element: HTMLElement;
 declare const shadow: ShadowRoot;
-const mount: PlaybackMount = mountPlayback(element, svg, timelines, { loop: true });
+const mount: PlaybackMount = mountPlayback(element, svg, timelines, { loop: true, autoplay: true, pauseWhenOffscreen: true });
 const shadowMount: PlaybackMount = mountPlayback(shadow, svg, timelines);
 const mountedPlayer: Player = mount.player;
+mount.update(svg, timelines); shadowMount.update(svg, []);
+const unsubscribe: () => void = mountedPlayer.subscribe((state: PlayerState) => { const step: number = state.step; });
+unsubscribe(); unsubscribe();
 mount.destroy(); mountedPlayer.destroy(); shadowMount.destroy();
 // @ts-expect-error The container must be an HTML element or shadow root.
 mountPlayback(svg, svg, timelines);
-// @ts-expect-error Mount options only configure looping.
+// @ts-expect-error Mount options do not accept onChange.
 mountPlayback(element, svg, timelines, { onChange() {} });
-const player: Player = createPlayer(svg, timelines, { loop: true, onChange(state: PlayerState) {
+const player: Player = createPlayer(svg, timelines, { loop: true, pauseWhenOffscreen: true, onChange(state: PlayerState) {
   const scenario: number = state.scenario;
   const step: number = state.step;
   const status: "idle" | "paused" | "playing" | "ended" = state.status;
 } });
 const minimal: Player = createPlayer(svg, timelines);
 const state: PlayerState = player.state;
-player.play(); player.pause(); player.next(); player.previous(); player.seek(-1); player.select(0); player.destroy();
+player.play(); player.pause(); player.next(); player.previous(); player.seek(-1); player.select(0); player.select("exact-slug"); player.destroy();
 // @ts-expect-error Player state is a readonly property.
 player.state = state;
 // @ts-expect-error Seek takes a numeric step index.

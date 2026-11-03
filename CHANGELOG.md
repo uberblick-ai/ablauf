@@ -21,6 +21,19 @@
   The default is now `layout: "auto"`, so existing tall figures may switch to side
   captions without opting in; choose `layout: "below"` to keep captions below.
 
+- Add playback rebinding through `mount.update`, exact-slug scenario selection,
+  independent subscriptions and panel-local keyboard shortcuts. Preserve controls
+  and focus while refreshing SVG/data and clear the old binding. Rebinding also
+  refreshes side step lists, retains row focus by scenario slug and step position,
+  and keeps auto/side/below layout and deferred resize handling working; teardown
+  restores the current SVG and removes all mount-owned wrappers and resources.
+- Pause hidden/disconnected players and optionally off-screen players, preserving
+  first-view autoplay and viewport resume across lifecycle checks that find no
+  playback to pause. Autoplay alone still allows explicit off-screen playback;
+  viewport pausing blocks playback while allowing scenario selection. Extend the
+  maintainer browser fixture for rebinding, lifecycle, viewport and keyboard review.
+  ([#95](https://github.com/uberblick-ai/ablauf/issues/95))
+
 ## 0.3.0 — 2026-11-02
 
 ### Playback

@@ -78,12 +78,19 @@ The page also shows a single timeline without tabs, a direct `createPlayer`
 case without built-in controls, a tabbed case with an empty scenario, and a
 **Compact controls** case with overflowing tabs, short captions, a long wrapping
 caption, an absent actor and an empty scenario at the end of the tab strip.
+Each mounted case has replacement-data controls and immediate/delayed rebinding;
+every case has SVG removal/reinsertion and a subscription state readout.
+Separate cases exercise viewport pausing alone (mounted and standalone),
+autoplay alone, and autoplay with viewport pausing in a shadow root.
 Current-colour and zero-glow controls apply host overrides to every case,
 including the shadow root. Most documents are 710px wide,
 with 16px side padding giving a 678px figure at full width. The first case,
 **Claim · responsive side captions**, uses `claim-play.flow` in a document up
 to 1088px wide. Its **Claim layout** selector offers Auto, Side and Below;
 other cases keep Auto.
+**Claim · side captions in shadow root** uses the same wide document, always
+uses Side and includes the same replacement-data controls. Use delayed rebinding in both Claim cases to review
+row focus, alongside the below-layout flow cases.
 
 For #139, a maintainer must review in a real browser in **light and dark** at
 viewport widths of **1160px and 760px**. Use the approved
@@ -105,7 +112,7 @@ fakes do not satisfy this visual review. The #137 dependency is now available
 as `spike/examples/claim-play.flow`.
 
 A maintainer checks these in a real browser before merging playback changes,
-including #112, #113 and #116. Capture light and dark screenshots of
+including #95, #112, #113 and #116. Capture light and dark screenshots of
 `/playback-review` at the 678px figure width. Compare the controls with the
 [gallery controls reference](https://raw.githubusercontent.com/uberblick-ai/ablauf/9ba61d5485c89010c57ce6eb4c0111e7e6fac8de/spike/gallery/controls.png)
 and the figures with the [scenario playback GIF](images/playback/scenario-tabs.gif).
@@ -177,6 +184,65 @@ without host control CSS; the interactive checks below still need a maintainer.
 - Select the empty scenario: “No playable steps”, disabled buttons/range and
   usable tabs, a blank reserved counter and no segments. Verify the single-timeline
   case has no tab row.
+- For document and shadow-root cases, choose **Reorder scenarios**, then
+  **Rebind in 2 seconds** and focus a tab before it fires. Selection and focused
+  tab follow the exact slug. Repeat with focus on each action button, range and
+  panel: the same control keeps focus. With **Remove selected scenario** and
+  focus on that tab, focus falls back to the panel and selection to the first
+  scenario. **Keep selected scenario only** removes tabs and focuses the panel
+  if a tab had focus. Other host focus stays put. The panel remains a visible
+  tab stop with a single scenario.
+- Use **Refresh labels, counts and scheme** twice while paused on step 0.
+  Actor, caption, announcement, counter, range, segments, tab names and scheme
+  refresh even when the state tuple is unchanged. **Empty selected scenario**
+  pauses at `-1` with no segments. **No timelines** removes controls/style;
+  **Restore original data** adds them again without duplicates. Focus must
+  never move to unrelated host content. Rebinding always pauses on step 0
+  (or `-1` when empty); scrolling cannot restart it, including autoplay cases,
+  until Play or a scenario activation explicitly starts the new binding.
+- Repeat the rebinding cases in Claim with **Claim layout** set to Side and
+  Below, and in **Claim · side captions in shadow root**. Side lists must follow
+  reordered/renamed/removed scenarios and changed step counts, message numbers,
+  actors and captions. Focus a row before delayed rebinding: it survives by
+  scenario slug and step position, or falls back to the panel if removed.
+  Restore data, choose Auto and resize across the threshold after rebinding:
+  layout still switches both ways using the replacement's natural size, with
+  synchronized lists. Try No timelines and Restore original data repeatedly,
+  then both teardown buttons: no duplicate wrappers, stale lists or resize
+  callbacks; the current SVG remains and unrelated host content is intact.
+- While playing each document, shadow-root and direct case, **Remove SVG**,
+  wait longer than a dwell, then **Reinsert SVG**. The state readout pauses on
+  the same step; reinsertion and scrolling do not resume it. Explicit Play
+  resumes. Switch browser tabs while playing, then return: it pauses on the
+  same step immediately and never resumes automatically. Manual navigation
+  still works while an SVG is removed; scenario activation must not select or
+  reset it. Removal/reinsertion entirely between timer checks is not detected.
+- In **Viewport pause only**, press Play, scroll until no part intersects,
+  then return. It pauses on the same frame and needs explicit Play. Entry
+  alone never starts it. Repeat with **Direct createPlayer · viewport pause
+  only**. In **Autoplay** and **Autoplay and viewport pause**, initial entry
+  and automatic resume require half visibility. Below half but still
+  intersecting keeps playing; no intersection pauses. Manual pause/navigation,
+  including Pause via the API when already viewport-paused, cancels resume.
+  Reduced motion and lifecycle pauses also prevent automatic starts.
+- Before first reaching an autoplay figure, switch browser tabs and return,
+  then scroll it to half visibility: first-view autoplay still starts. Repeat
+  after scrolling a playing figure fully out of view: hiding/restoring the tab
+  while it is viewport-paused preserves resume at half visibility. Test both
+  autoplay cases. If hiding actually paused playback, it still needs Play.
+  With the SVG fully off screen and controls visible, autoplay alone permits
+  Play, panel Space and scenario activation. With viewport pausing enabled,
+  scenario tabs still select, but playback stays paused; entry alone must
+  not start that manually selected scenario.
+- Focus the panel itself in the single, multiple and shadow-root cases:
+  Space toggles Play/Pause (Replay after ending), Left/Right step and pause,
+  with browser defaults prevented. Focus buttons/range/tabs: native actions
+  and existing tab activation remain, with no double handling. Modifier keys,
+  editable descendants and inherited contenteditable must not trigger panel
+  shortcuts (use browser devtools to toggle contenteditable for this check).
+  Play two document/shadow figures: keys and focus affect only the targeted
+  panel; outside focus does nothing. Repeat updates and both teardown paths:
+  no duplicate controls, timers, callbacks or announcements.
 - Enable reduced motion before Play and during playback. The figure resets
   to full idle, manual stepping still works, and disabling the preference does
   not start playback. No running dashes or transitions remain; a manually
