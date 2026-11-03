@@ -127,12 +127,13 @@ test("all accepted headers, messages and annotations are indexed parts with exac
 	assert.deepEqual(timelines[1].steps[0].parts, ["message-1", "participant-1", "annotation-5", "annotation-6", "annotation-7"]);
 	assert.equal(timelines[1].steps[0].actor, "Receiver");
 	const parts = [...svg.matchAll(/<g[^>]*data-ab-part="([^"]+)"[^>]*>([\s\S]*?)<\/g>/g)];
-	assert.equal(parts.length, 22);
+	assert.equal(parts.length, 26);
 	assert.equal(new Set(parts.map(m => m[1])).size, 22);
 	const lit = new Set(timelines.flatMap(t => t.steps.flatMap(s => s.parts)));
 	assert.deepEqual(parts.map(m => m[1]).filter(p => !lit.has(p)), ["participant-2", "annotation-0", "annotation-10", "annotation-11", "annotation-12", "annotation-13", "annotation-14"]);
 	for (const [, id, drawing] of parts) {
 		assert.doesNotMatch(drawing, /seq-life|seq-lane|seq-group"|seq-divider|seq-rule|seq-rejected/);
+		if (drawing.includes('class="seq-time-band"')) continue;
 		if (id.startsWith("message-")) {
 			assert.match(drawing, /seq-label/); assert.match(drawing, /seq-number/);
 			assert.match(drawing, /<path[^>]*marker-end="url\(#/);
@@ -181,7 +182,7 @@ test("sequence play metadata remains inert and every timeline part belongs to a 
 	assert.ok(result.timelines.every(t => t.steps.every(s => s.parts.every(p => parts.has(p)))));
 });
 
-test("playback styles keep native tones and dash patterns, scope effects and ease only fade and header growth", () => {
+test("playback styles keep native tones and completed dash patterns, and scope effects to the figure", () => {
 	const tones = ["ink", "muted", "neutral", "agent", "system", "done", "rework", "stop"];
 	const diagram = `sequence v0\n${tones.map(t => `participant ${t} tone=${t}`).join("\n")}\n${tones.map(t => `${t} --> ${t}: Request\n${t} -.-> ${t}: Response`).join("\n")}\n`;
 	for (const scheme of schemes) for (const idPrefix of ["first", "second", "1:<unsafe>."]) {
@@ -195,7 +196,7 @@ test("playback styles keep native tones and dash patterns, scope effects and eas
 		assert.ok(css.includes(`${root}.ab-in-progress [data-ab-part]:not(.ab-current):not(.ab-played):not(:has(.gap)){opacity:.3}`));
 		assert.ok(effects.includes(`${root} [data-ab-part]{color:var(--play)}`));
 		for (const tone of tones.slice(2)) assert.ok(effects.includes(`${root} [data-ab-part]:has(circle.t-${tone}){color:var(--${tone})}`));
-		assert.doesNotMatch(effects, /color:var\(--(?:ink|muted)\)|stroke-dash|animation:|keyframes|\.e-system\{color/);
+		assert.doesNotMatch(effects, /color:var\(--(?:ink|muted)\)|\.e-system\{color|infinite/);
 		const filters = [...effects.matchAll(/([^{}]+)\{([^{}]*filter:[^{}]*)\}/g)];
 		assert.equal(filters.length, 2);
 		assert.equal(filters[0][1], `${root} [data-ab-part].ab-current .e`);
@@ -204,7 +205,8 @@ test("playback styles keep native tones and dash patterns, scope effects and eas
 		assert.match(filters[1][2], /transform:scale\(1\.7\)/);
 		for (const [, , body] of filters) assert.match(body, /drop-shadow\(0 0 var\(--ab-play-glow,6px\) color-mix\(in srgb,currentColor 55%,transparent\)\)/);
 		assert.ok(effects.includes(`${root} [data-ab-part].ab-current .seq-number{fill:var(--play);font-weight:600}`));
-		for (const [, selector, body] of effects.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+		const rules = effects.replace(/@keyframes [^{]+\{(?:[^{}]*\{[^{}]*\})+\}/g, "");
+		for (const [, selector, body] of rules.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
 			for (const item of selector.split(/,(?=\.ab\[)/)) assert.ok(item.startsWith(root), item);
 			if (/transition:/.test(body)) {
 				assert.ok(selector.includes(".ab-playing"));
@@ -212,7 +214,7 @@ test("playback styles keep native tones and dash patterns, scope effects and eas
 			}
 		}
 		assert.match(effects, /@media \(prefers-reduced-motion:reduce\).*transition:none/);
-		const shapes = (value: string) => value.match(/<(?:path|rect|circle|line|text)\b[^>]*>/g);
+		const shapes = (value: string) => value.match(/<(?:path|rect|circle|line|text)\b[^>]*>/g)?.filter(shape => !/seq-(?:packet|time-band)/.test(shape));
 		assert.deepEqual(shapes(svg), shapes(plain));
 		assert.doesNotMatch(plain, /data-ab-part|data-ab-play|--ab-play/);
 		assert.match(css, /\.ab \.dash\{stroke-dasharray:6 5\}/);

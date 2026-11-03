@@ -36,6 +36,27 @@ const STYLE = `
 .ab-playback button:focus-visible,.ab-playback .abp-navigation:focus-within,.ab-playback .abp-panel:focus-visible{outline:2px solid var(--abp-play);outline-offset:3px}
 .ab-playback .abp-tabs button:focus-visible{outline-offset:-3px}
 .ab-playback .abp-range,.ab-playback .abp-status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.ab-playback .abp-figure{min-width:0}
+.ab-playback .abp-figure svg{display:block;max-width:100%;height:auto}
+.ab-playback .abp-controls{min-width:0}
+.ab-playback.abp-side{display:grid;grid-template-columns:minmax(0,var(--abp-figure-width)) minmax(296px,1fr);gap:24px;align-items:start}
+.ab-playback.abp-side .abp-controls{position:sticky;top:0;max-height:100vh;max-height:100dvh;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-gutter:stable}
+.ab-playback.abp-side .abp-step{display:none}
+.ab-playback.abp-side .abp-actions{padding-top:12px}
+.ab-playback .abp-list{list-style:none;margin:0;padding:8px 12px 12px;display:grid;gap:2px}
+.ab-playback .abp-list[hidden]{display:none}
+.ab-playback .abp-row{display:grid;grid-template-columns:28px minmax(0,1fr);column-gap:10px;width:100%;height:auto;padding:5px 8px;text-align:left;border:0;color:var(--abp-muted);background:none;line-height:1.5}
+.ab-playback .abp-row:hover{background:color-mix(in srgb,var(--abp-line) 40%,transparent)}
+.ab-playback .abp-number{grid-row:1/3;font:500 11px/20px ui-monospace,monospace}
+.ab-playback .abp-who{font:12px/20px ui-monospace,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ab-playback .abp-remark{font:14px/1.4 system-ui,sans-serif;white-space:pre-wrap}
+.ab-playback .abp-row.abp-played{color:var(--abp-ink)}
+.ab-playback .abp-row.abp-played .abp-who{color:var(--abp-muted)}
+.ab-playback .abp-row[aria-current="step"]{background:color-mix(in srgb,var(--abp-play) 10%,transparent);color:var(--abp-ink)}
+.ab-playback .abp-row[aria-current="step"] .abp-number,.ab-playback .abp-row[aria-current="step"] .abp-who{color:var(--abp-play)}
+.ab-playback .abp-row[aria-current="step"] .abp-remark{font-weight:600}
+.ab-playback .abp-row:focus-visible{outline-offset:-2px}
+.ab-playback .abp-empty{padding:12px;color:var(--abp-muted)}
 `;
 
 let mountId = 0;
@@ -49,16 +70,18 @@ export function mountPlayback(
 	container: HTMLElement | ShadowRoot,
 	svg: SVGSVGElement,
 	timelines: Timeline[],
-	options: { loop?: boolean; autoplay?: boolean; pauseWhenOffscreen?: boolean } = {},
+	options: { loop?: boolean; autoplay?: boolean; pauseWhenOffscreen?: boolean; layout?: "below" | "side" | "auto" } = {},
 ): PlaybackMount {
 	const doc = container.ownerDocument;
 	const removers: (() => void)[] = [];
 	let root: HTMLDivElement | undefined;
 	let style: HTMLStyleElement | undefined;
+	let viewportTarget: Element | undefined;
 	let synchronize: (state: PlayerState) => void = () => {};
-	const binding = createPlayerBinding(svg, timelines, { ...options, synchronize: state => synchronize(state) });
+	const binding = createPlayerBinding(svg, timelines, { ...options, synchronize: state => synchronize(state), viewportTarget: () => viewportTarget ?? svg });
 	const player = binding.player;
 	let refresh = () => {};
+	let placeSvg = (_next: SVGSVGElement) => {};
 	const destroyPlayer = player.destroy;
 	let destroyed = false;
 	function destroy() {
@@ -72,20 +95,24 @@ export function mountPlayback(
 	player.destroy = destroy;
 	function update(nextSvg: SVGSVGElement, nextTimelines: Timeline[]) {
 		if (destroyed) return;
+		if (root) placeSvg(nextSvg);
 		svg = nextSvg;
 		timelines = nextTimelines;
 		if (!timelines.length) {
 			for (const remove of removers.splice(0)) remove();
 			root?.remove(); style?.remove(); root = undefined; style = undefined;
 			synchronize = () => {};
+			viewportTarget = undefined;
 		} else if (!root) buildControls();
 		else refresh();
 		binding.update(svg, timelines);
 	}
-	if (timelines.length) buildControls();
+	if (timelines.length) { buildControls(); binding.refreshViewport(); }
 	return { player, update, destroy };
 
 	function buildControls() {
+		let live = true;
+		removers.push(() => { live = false; });
 		const make = <K extends keyof HTMLElementTagNameMap>(tag: K, className = "", text = "") => {
 			const el = doc.createElement(tag);
 			el.className = className;
@@ -93,8 +120,9 @@ export function mountPlayback(
 			return el;
 		};
 		function listen(el: HTMLElement, type: string, listener: (event: Event) => void) {
-			el.addEventListener(type, listener);
-			removers.push(() => el.removeEventListener(type, listener));
+			const guarded = (event: Event) => { if (live && !destroyed) listener(event); };
+			el.addEventListener(type, guarded);
+			removers.push(() => el.removeEventListener(type, guarded));
 		}
 		function button(text: string, action: () => void, className = "") {
 			const el = make("button", className, text);
@@ -104,6 +132,31 @@ export function mountPlayback(
 		}
 		root = make("div", "ab-playback");
 		style = make("style", "", STYLE);
+		const figure = make("div", "abp-figure");
+		viewportTarget = figure;
+		const column = make("div", "abp-controls");
+		root.append(figure, column);
+		let mountedSvg: SVGSVGElement | undefined;
+		let svgParent: ParentNode | null = null;
+		let svgNext: ChildNode | null = null;
+		placeSvg = next => {
+			if (next !== mountedSvg) {
+				// Replacements already in our figure (or supplied detached) inherit
+				// its host position. External replacements retain their own position.
+				if (!mountedSvg || (next.parentNode && next.parentNode !== figure)) {
+					svgParent = next.parentNode;
+					svgNext = next.nextSibling;
+				}
+				if (mountedSvg?.parentNode === figure) mountedSvg.remove();
+				mountedSvg = next;
+			}
+			if (next.parentNode !== figure) figure.append(next);
+		};
+		removers.push(() => {
+			if (!mountedSvg) return;
+			if (svgParent) svgParent.insertBefore(mountedSvg, svgNext?.parentNode === svgParent ? svgNext : null);
+			else mountedSvg.remove();
+		});
 		const panel = make("div", "abp-panel");
 		panel.tabIndex = 0;
 		const id = `ab-playback-${++mountId}`;
@@ -153,7 +206,59 @@ export function mountPlayback(
 		status.setAttribute("aria-atomic", "true");
 		stepLine.append(counter, actor, caption);
 		panel.append(stepLine, actions);
-		root.append(panel, status);
+		column.append(panel, status);
+		let side = false;
+		let lists: { slug: string; list: HTMLOListElement; rows: HTMLButtonElement[] }[] | undefined;
+		let rowRemovers: (() => void)[] = [];
+		removers.push(() => { for (const remove of rowRemovers) remove(); });
+		const empty = make("div", "abp-empty", "No playable steps");
+		function ensureLists() {
+			if (!lists) refreshLists();
+		}
+		function refreshLists() {
+			const active = (panel.getRootNode() as Document | ShadowRoot).activeElement;
+			const focusedRow = lists?.flatMap(({ rows }) => rows).find(row => row === active);
+			const oldLists = new Map(lists?.map(list => [list.slug, list]));
+			for (const remove of rowRemovers) remove();
+			rowRemovers = [];
+			lists = timelines.map((timeline, scenario) => {
+				const previous = oldLists.get(timeline.slug);
+				oldLists.delete(timeline.slug);
+				const list = previous?.list ?? make("ol", "abp-list");
+				list.setAttribute("aria-label", `${timeline.name} steps`);
+				const rows = timeline.steps.map((step, index) => {
+					const row = previous?.rows[index] ?? make("button", "abp-row");
+					row.type = "button";
+					const item = row.parentElement ?? make("li");
+					let current = true;
+					const click = () => { if (current && live && !destroyed && player.state.scenario === scenario) player.seek(index); };
+					row.addEventListener("click", click);
+					rowRemovers.push(() => { current = false; row.removeEventListener("click", click); });
+					const number = step.kind === "message" ? step.target.padStart(2, "0") : String(index + 1);
+					row.textContent = "";
+					row.append(make("span", "abp-number", number), make("span", "abp-who", step.actor), make("span", "abp-remark", step.caption));
+					item.append(row);
+					list.append(item);
+					return row;
+				});
+				for (const row of previous?.rows.slice(rows.length) ?? []) row.parentElement?.remove();
+				return { slug: timeline.slug, list, rows };
+			});
+			for (const { list } of oldLists.values()) list.remove();
+			if (side) for (const { list } of lists) panel.append(list);
+			if (focusedRow) (lists.some(({ rows }) => rows.includes(focusedRow)) ? focusedRow : panel).focus({ preventScroll: true });
+		}
+		function keepCurrentVisible() {
+			if (!side) return;
+			const row = lists?.[player.state.scenario]?.rows[player.state.step];
+			if (!row) return;
+			// scrollIntoView can scroll every ancestor, including the page. Change
+			// only the column's own scroll position and never move keyboard focus.
+			const bounds = column.getBoundingClientRect();
+			const current = row.getBoundingClientRect();
+			if (current.top < bounds.top) column.scrollTop += current.top - bounds.top;
+			else if (current.bottom > bounds.bottom) column.scrollTop += Math.min(current.top - bounds.top, current.bottom - bounds.bottom);
+		}
 		let announced = "";
 		synchronize = state => {
 			const steps = timelines[state.scenario]?.steps ?? [];
@@ -178,16 +283,26 @@ export function mountPlayback(
 			}
 			actor.textContent = step?.actor ?? "";
 			caption.textContent = steps.length ? step?.caption ?? "" : "No playable steps";
+			for (const [scenario, { list, rows }] of (lists ?? []).entries()) {
+				list.hidden = scenario !== state.scenario;
+				for (const [index, row] of rows.entries()) {
+					const current = scenario === state.scenario && index === state.step;
+					row.classList.toggle("abp-played", scenario === state.scenario && index < state.step);
+					if (current) row.setAttribute("aria-current", "step"); else row.removeAttribute("aria-current");
+				}
+			}
+			empty.hidden = steps.length !== 0;
 			const position = `${state.scenario}:${state.step}`;
 			if (announced !== position) {
 				announced = position;
 				status.textContent = step ? [step.actor, step.caption].filter(Boolean).join(": ") : "";
+				keepCurrentVisible();
 			}
 		};
 		refresh = () => {
 			const scheme = svg.classList.contains("ab-dark") ? "dark" : svg.classList.contains("ab-light") ? "light" : "auto";
 			if (!root) return;
-			root.className = `ab-playback ab-${scheme}`;
+			for (const name of ["auto", "light", "dark"]) root.classList.toggle(`ab-${name}`, name === scheme);
 			const active = (panel.getRootNode() as Document | ShadowRoot).activeElement;
 			const focusedTab = tabs.find(tab => tab === active);
 			const oldTabs = new Map(tabs.map(tab => [tab.dataset.slug ?? "", tab]));
@@ -199,7 +314,7 @@ export function mountPlayback(
 					tablist = make("div", "abp-tabs");
 					tablist.setAttribute("role", "tablist");
 					tablist.setAttribute("aria-label", "Scenarios");
-					root.insertBefore(tablist, panel);
+					column.insertBefore(tablist, panel);
 				}
 				panel.setAttribute("role", "tabpanel");
 				for (const [index, timeline] of timelines.entries()) {
@@ -210,8 +325,10 @@ export function mountPlayback(
 					tab.id = `${id}-tab-${index}`;
 					tab.setAttribute("role", "tab");
 					tab.setAttribute("aria-controls", panel.id);
-					const click = () => choose(index);
+					let current = true;
+					const click = () => { if (current && live) choose(index); };
 					const keydown = (event: Event) => {
+						if (!current || !live) return;
 						const key = (event as KeyboardEvent).key;
 						let target: number;
 						if (key === "ArrowLeft") target = (index + tabs.length - 1) % tabs.length;
@@ -223,7 +340,7 @@ export function mountPlayback(
 						event.preventDefault(); tabs[target].focus(); choose(target);
 					};
 					tab.addEventListener("click", click); tab.addEventListener("keydown", keydown);
-					tabRemovers.push(() => { tab.removeEventListener("click", click); tab.removeEventListener("keydown", keydown); });
+					tabRemovers.push(() => { current = false; tab.removeEventListener("click", click); tab.removeEventListener("keydown", keydown); });
 					tabs.push(tab); tablist.append(tab);
 				}
 			} else {
@@ -231,7 +348,7 @@ export function mountPlayback(
 				panel.removeAttribute("role"); panel.removeAttribute("aria-labelledby");
 			}
 			for (const tab of oldTabs.values()) tab.remove();
-			if (focusedTab) (tabs.includes(focusedTab) ? focusedTab : panel).focus();
+			if (focusedTab) (tabs.includes(focusedTab) ? focusedTab : panel).focus({ preventScroll: true });
 			for (const remove of trackRemovers) remove();
 			trackRemovers = [];
 			for (const { track } of tracks) track.remove();
@@ -240,16 +357,70 @@ export function mountPlayback(
 				track.setAttribute("aria-hidden", "true");
 				const segments = timeline.steps.map((_, index) => {
 					const segment = make("span", "abp-segment");
-					const click = () => { if (player.state.scenario === scenario) player.seek(index); };
+					let current = true;
+					const click = () => { if (current && live && player.state.scenario === scenario) player.seek(index); };
 					segment.addEventListener("click", click);
-					trackRemovers.push(() => segment.removeEventListener("click", click));
+					trackRemovers.push(() => { current = false; segment.removeEventListener("click", click); });
 					track.append(segment); return segment;
 				});
 				navigation.append(track); return { track, segments };
 			});
+			if (lists) refreshLists();
+			updateLayout(false);
 			announced = "";
 		};
-		container.append(style, root);
+		function updateLayout(sync = true) {
+			if (!live || destroyed || !root) return;
+			const viewBox = (svg.getAttribute("viewBox") ?? "").trim().split(/[\s,]+/).map(Number);
+			const width = Number(svg.getAttribute("width")) || viewBox[2] || 0;
+			const height = Number(svg.getAttribute("height")) || viewBox[3] || 0;
+			root.style.setProperty("--abp-figure-width", `${width || 678}px`);
+			const selected = options.layout ?? "auto";
+			side = selected === "side" || (selected === "auto" && height > width && width > 0 && root.getBoundingClientRect().width - width >= 320);
+			root.classList.toggle("abp-side", side);
+			root.classList.toggle("abp-below", !side);
+			if (side) {
+				ensureLists();
+				for (const { list } of lists ?? []) if (list.parentNode !== panel) panel.append(list);
+				if (empty.parentNode !== panel) panel.append(empty);
+			} else {
+				const active = (panel.getRootNode() as Document | ShadowRoot).activeElement;
+				const focusedRow = lists?.some(({ rows }) => rows.some(row => row === active));
+				for (const { list } of lists ?? []) list.remove();
+				empty.remove();
+				if (focusedRow) panel.focus({ preventScroll: true });
+			}
+			if (sync) { synchronize(player.state); keepCurrentVisible(); }
+		}
+		const view = doc.defaultView;
+		const Resize = view?.ResizeObserver;
+		if (view && Resize) {
+			// Observe the mount's available width, including when its container is a
+			// shadow root. The SVG's natural dimensions stay fixed in both layouts.
+			// Layout changes can resize the observed root. Apply them next frame,
+			// outside observer delivery, to avoid ResizeObserver loop error events.
+			let frame: number | undefined;
+			const observer = new Resize(() => {
+				if (!live || destroyed || frame !== undefined) return;
+				frame = view.requestAnimationFrame(() => {
+					frame = undefined;
+					updateLayout();
+				});
+			});
+			observer.observe(root);
+			removers.push(() => {
+				observer.disconnect();
+				if (frame !== undefined) view.cancelAnimationFrame(frame);
+			});
+		} else if (view) {
+			const resize = () => updateLayout();
+			view.addEventListener("resize", resize);
+			removers.push(() => view.removeEventListener("resize", resize));
+		}
+
+		container.append(style);
+		if (svg.parentNode === container) container.insertBefore(root, svg); else container.append(root);
+		placeSvg(svg);
 		refresh();
 		if (player.state.status === "idle") synchronize(player.state);
 	}

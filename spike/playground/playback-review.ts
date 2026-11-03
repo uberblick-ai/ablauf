@@ -6,14 +6,16 @@ const hostScheme = document.getElementById("review-host") as HTMLSelectElement;
 const loop = document.getElementById("review-loop") as HTMLInputElement;
 const accent = document.getElementById("review-accent") as HTMLSelectElement;
 const zeroGlow = document.getElementById("review-zero-glow") as HTMLInputElement;
+const claimLayout = document.getElementById("review-claim-layout") as HTMLSelectElement;
 const cases = document.getElementById("review-cases") as HTMLElement;
 const mounts: { destroy(): void }[] = [];
 const figureCSS = ".review-figure svg{display:block;max-width:100%;height:auto}";
 
 function addCase(title: string, source: string, idPrefix: string, shadow = false, headless = false,
-	playbackOptions: { autoplay?: boolean; pauseWhenOffscreen?: boolean } = {}) {
+	playbackOptions: { autoplay?: boolean; pauseWhenOffscreen?: boolean; layout?: "below" | "side" | "auto" } = {}) {
 	const section = document.createElement("section");
 	section.className = "review-document";
+	if (idPrefix.startsWith("review-claim")) section.classList.add("review-wide");
 	const heading = document.createElement("h2");
 	heading.textContent = title;
 	const surface = document.createElement("div");
@@ -68,7 +70,7 @@ function addCase(title: string, source: string, idPrefix: string, shadow = false
 			note.textContent = "Remounted, idle. No duplicate controls.";
 		}),
 		button("Remove SVG", () => { svg.remove(); note.textContent = "SVG removed. Wait beyond the current dwell before reinserting."; }),
-		button("Reinsert SVG", () => { figure.prepend(svg); note.textContent = "SVG reinserted. A lifecycle pause must wait for explicit Play."; }),
+		button("Reinsert SVG", () => { (figure.querySelector(".abp-figure") ?? figure).prepend(svg); note.textContent = "SVG reinserted. A lifecycle pause must wait for explicit Play."; }),
 		note, stateLine);
 	if (!headless) {
 		const mode = document.createElement("select");
@@ -100,13 +102,14 @@ function addCase(title: string, source: string, idPrefix: string, shadow = false
 				replacement.classList.remove("ab-auto", "ab-light", "ab-dark");
 				replacement.classList.add(++revision % 2 ? "ab-dark" : "ab-light");
 			}
-			svg.remove(); figure.prepend(replacement); svg = replacement; timelines = next;
+			if (svg.parentNode) svg.replaceWith(replacement); else figure.prepend(replacement);
+			svg = replacement; timelines = next;
 			mount.update?.(svg, timelines);
 			note.textContent = `Rebound: ${mode.selectedOptions[0].textContent}. Paused until explicit Play or scenario activation, including with autoplay.`;
 		};
 		section.append(mode, button("Rebind now", rebind), button("Rebind in 2 seconds (focus a control)", () => {
 			clearTimeout(pending); pending = setTimeout(rebind, 2000);
-			note.textContent = "Rebinding in two seconds: focus a tab, panel, button or range now.";
+			note.textContent = "Rebinding in two seconds: focus a tab, panel, action button, range or side-list row now.";
 		}));
 	}
 	if (headless) section.append(
@@ -130,10 +133,11 @@ async function load(path: string) {
 	if (!response.ok) throw new Error(`Cannot load ${path}: ${response.status}`);
 	return response.text();
 }
-const [source, fade, crossings] = await Promise.all([
+const [source, fade, crossings, claim] = await Promise.all([
 	load("/api/flow/examples/loop-play"),
 	load("/api/flow/examples/playback-fade"),
 	load("/playground/playback-crossings.flow"),
+	load("/api/flow/examples/claim-play"),
 ]);
 const single = 'flow v0\nbox a "Start"\nbox b "Finish"\na --> b\nplay "One scenario"\n step a actor="Author" "Start here"\n step b "Finish here"\n';
 const compact = [
@@ -149,6 +153,9 @@ function draw() {
 	for (const mount of mounts) mount.destroy();
 	mounts.length = 0;
 	cases.replaceChildren();
+	const layout = claimLayout.value === "side" ? "side" : claimLayout.value === "below" ? "below" : "auto";
+	addCase("Claim · responsive side captions", claim, "review-claim", false, false, { layout });
+	addCase("Claim · side captions in shadow root", claim, "review-claim-shadow", true, false, { layout: "side" });
 	addCase("Loop · light DOM", source, "review-light-dom");
 	addCase("Loop · shadow root", source, "review-shadow", true);
 	addCase("Compact controls · overflowing tabs and wrapping captions", compact, "review-compact");
@@ -164,6 +171,7 @@ function draw() {
 }
 scheme.addEventListener("change", draw);
 loop.addEventListener("change", draw);
+claimLayout.addEventListener("change", draw);
 hostScheme.addEventListener("change", () => { document.body.dataset.host = hostScheme.value; });
 accent.addEventListener("change", () => {
 	if (accent.value) document.body.style.setProperty("--ab-play", accent.value);

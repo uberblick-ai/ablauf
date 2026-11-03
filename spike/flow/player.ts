@@ -33,7 +33,7 @@ export function createPlayer(svg: SVGSVGElement, timelines: Timeline[], options:
 export function createPlayerBinding(
 	svg: SVGSVGElement,
 	timelines: Timeline[],
-	options: PlayerOptions & { autoplay?: boolean; synchronize?: (state: PlayerState) => void } = {},
+	options: PlayerOptions & { autoplay?: boolean; synchronize?: (state: PlayerState) => void; viewportTarget?: () => Element } = {},
 ) {
 	let state: PlayerState = Object.freeze({ scenario: 0, step: -1, status: "idle" });
 	let destroyed = false;
@@ -136,11 +136,12 @@ export function createPlayerBinding(
 		removeVisibility = () => doc.removeEventListener("visibilitychange", visibility);
 		const Observer = doc.defaultView?.IntersectionObserver;
 		if (!Observer || (!options.autoplay && !options.pauseWhenOffscreen)) return;
+		const target = options.viewportTarget?.() ?? svg;
 		observer = new Observer(entries => {
 			if (destroyed || version !== bindingVersion) return;
 			for (const entry of entries) {
 				if (destroyed || version !== bindingVersion) return;
-				if (entry.target !== svg) continue;
+				if (entry.target !== target) continue;
 				offscreen = !entry.isIntersecting;
 				if (!lifecycleReady()) { lifecyclePause(); continue; }
 				if (offscreen) {
@@ -153,7 +154,7 @@ export function createPlayerBinding(
 				}
 			}
 		}, { threshold: [0, 0.5] });
-		observer.observe(svg);
+		observer.observe(target);
 	}
 	function unbind() { ++bindingVersion; removeVisibility(); observer?.disconnect(); observer = undefined; }
 	const player: Player = {
@@ -198,6 +199,7 @@ export function createPlayerBinding(
 	paint(); bind();
 	return {
 		player, canActivate,
+		refreshViewport() { if (!destroyed) { unbind(); bind(); } },
 		update(nextSvg: SVGSVGElement, nextTimelines: Timeline[]) {
 			if (destroyed) return;
 			const slug = timelines[state.scenario]?.slug;

@@ -29,12 +29,12 @@ each figure on the page, including figures in shadow roots.
 ### Built-in controls
 
 Mount scenario tabs, buttons, a step range and captions in an element or
-shadow root below the inline SVG:
+shadow root containing the inline SVG:
 
 ```ts
 import { mountPlayback } from "@uberblick/ablauf/playback";
 
-const mount = mountPlayback(controlsContainer, svgElement, result.timelines, { autoplay: true });
+const mount = mountPlayback(figureContainer, svgElement, result.timelines, { autoplay: true });
 // Starts idle. With autoplay it plays once half the figure is in view, pauses
 // when it leaves and resumes when it returns, unless the reader paused it.
 // Without autoplay, Play or a scenario tab starts it; the host can also call mount.player.
@@ -49,24 +49,47 @@ unsubscribe(); // Idempotent; other subscriptions and controls keep working.
 mount.destroy();
 ```
 
+`layout: "auto"` (the default) places captions beside a figure when its natural
+height exceeds its width and the container leaves at least 320px beside that
+width; it switches back to below on resize. Use `layout: "side"` or `"below"`
+to select explicitly. Side has a sticky, independently scrolling column with
+all steps; activate any row to seek and pause. Below has the single caption and
+no step list. [The controls contract](plan.md#built-in-controls-and-lifetime)
+describes numbering, state and keyboard access.
+
+Pass the figure's container, rather than a separate controls container below
+the SVG. The mount moves the SVG into its own wrappers inside that container,
+even if the SVG was nested or in another parent. Mount styles set the SVG to
+`display: block`, `max-width: 100%` and `height: auto` on the controls' background;
+destroy removes those styles and restores the SVG's original parent and position.
+
 ### Playback details and the headless player
 
 The container can hold other host content. `mount.destroy()` and
 `mount.player.destroy()` perform the same idempotent cleanup: stop playback,
-clear highlighting, remove the mount's controls, style and listeners, and leave
-host content intact. `mount.update(svg: SVGSVGElement, timelines: Timeline[]): void`
+clear highlighting, remove the mount's controls, wrappers, style, listeners and
+observers, restore the current SVG's host position, and leave host content intact.
+`mount.update(svg: SVGSVGElement, timelines: Timeline[]): void`
 rebinds an existing mount. It keeps the selected scenario by exact slug after
 reordering, otherwise chooses the first (index `0` with no timelines), cancels
 playback and pauses at step `0`, or `-1` for an empty scenario or no timelines.
 It refreshes all controls and the SVG's scheme even when the state tuple is
 unchanged. It clears the old SVG's player classes and stops observing it.
-The returned player identity and subscriptions stay usable.
+The replacement moves into the existing figure wrapper. A replacement supplied
+inside that wrapper or detached inherits the previous SVG's host position for
+teardown; one supplied in another parent returns to that parent and position.
+The outgoing SVG is removed if still inside the wrapper. The returned player
+identity and subscriptions stay usable. The `layout` option stays in effect;
+auto reevaluates the replacement's natural dimensions and still responds to
+resize. Side lists refresh their names, numbers, actors, captions and counts.
 
 While controls remain, the panel, buttons and range retain their identity and
 focus. A focused tab survives by slug after reordering; removing that tab or
-reducing to one scenario focuses the panel. Other focus stays put. No timelines
-removes owned controls and style without focusing unrelated host content;
-later updates can add controls again. Updating never starts playback, even with
+reducing to one scenario focuses the panel. Side-list row buttons survive by
+scenario slug and step position; removing a focused row or switching below
+focuses the panel. Other focus stays put. No timelines restores the current SVG
+and removes owned controls, wrappers, style and resize handling without focusing
+unrelated host content; later updates can add controls again. Updating never starts playback, even with
 autoplay: viewport events cannot start the replacement until explicit Play or
 scenario activation. A single timeline
 has no tabs; an empty scenario stays selected and shows “No playable steps”.
@@ -123,7 +146,7 @@ The player adds no animations, transitions, controls or layout changes.
 
 Both creation APIs accept `pauseWhenOffscreen?: boolean` (default `false`):
 `createPlayer(svg, timelines, { loop?, onChange?, pauseWhenOffscreen? }?)` and
-`mountPlayback(container, svg, timelines, { loop?, autoplay?, pauseWhenOffscreen? }?)`.
+`mountPlayback(container, svg, timelines, { loop?, autoplay?, pauseWhenOffscreen?, layout? }?)`.
 With viewport pausing, an IntersectionObserver report of no intersection pauses
 on the current frame and blocks playback while known to be off screen. Entry
 alone never starts a standalone player or a mount without autoplay. Without

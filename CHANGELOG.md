@@ -2,9 +2,31 @@
 
 ## Unreleased
 
+### Playback
+
+- Play sequence messages by number in named `play` scenarios, with captions and
+  current/played message and participant highlights. ([#137](https://github.com/uberblick-ai/ablauf/issues/137))
+- Animate the current message travelling to its receiver and highlight its row
+  with a band; manual navigation and reduced motion show the completed message.
+  ([#138](https://github.com/uberblick-ai/ablauf/issues/138))
+- Add auto, side and below layouts to `mountPlayback`. Tall figures can show
+  captions in a sticky column with a keyboard-accessible step list, while auto
+  switches layouts as the container resizes. ([#139](https://github.com/uberblick-ai/ablauf/issues/139))
+- **Host migration from 0.3.0:** pass a container holding the inline SVG, rather
+  than a separate controls container below it. `mountPlayback` now moves the SVG
+  into mount-owned wrappers inside that container, including pulling it out of
+  another parent when necessary. Mount styles give it `display: block`,
+  `max-width: 100%` and `height: auto` on the controls' background. Either destroy
+  entry restores its original parent and position and removes the mount styles.
+  The default is now `layout: "auto"`, so existing tall figures may switch to side
+  captions without opting in; choose `layout: "below"` to keep captions below.
+
 - Add playback rebinding through `mount.update`, exact-slug scenario selection,
   independent subscriptions and panel-local keyboard shortcuts. Preserve controls
-  and focus while refreshing SVG/data and clear the old binding.
+  and focus while refreshing SVG/data and clear the old binding. Rebinding also
+  refreshes side step lists, retains row focus by scenario slug and step position,
+  and keeps auto/side/below layout and deferred resize handling working; teardown
+  restores the current SVG and removes all mount-owned wrappers and resources.
 - Pause hidden/disconnected players and optionally off-screen players, preserving
   first-view autoplay and viewport resume across lifecycle checks that find no
   playback to pause. Autoplay alone still allows explicit off-screen playback;
