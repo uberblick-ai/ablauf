@@ -69,7 +69,9 @@ test("the Sequence tabs preserve the complete source and mount its resolved play
 	assert.ok(find("ab-playback").classList.contains("abp-side"));
 	assert.equal(find("abp-toggle").textContent, "Play");
 	doc.viewport.show(true);
-	assert.equal(find("abp-toggle").textContent, "Pause", "autoplay starts on entering the viewport");
+	assert.equal(find("abp-toggle").textContent, "Play", "entering the viewport does not start playback");
+	find("abp-toggle").click();
+	assert.equal(find("abp-toggle").textContent, "Pause", "playback starts on the reader's Play");
 	find("abp-toggle").click();
 	assert.equal(find("abp-toggle").textContent, "Play");
 	const scenarios = figure.all().filter(el => el.getAttribute("role") === "tab");
