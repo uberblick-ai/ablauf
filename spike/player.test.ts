@@ -42,8 +42,9 @@ class Motion {
 function svgFake(parts = ["start", "link", "link", "link", "finish", "other"], motion = new Motion()) {
 	const wrappers = parts.map(part => new Part(part));
 	const svg = {
+		isConnected: true,
 		classList: new Part("root").classList,
-		ownerDocument: { defaultView: { matchMedia: motion.matchMedia } },
+		ownerDocument: { addEventListener() {}, removeEventListener() {}, defaultView: { matchMedia: motion.matchMedia } },
 		querySelectorAll(selector: string) {
 			assert.equal(selector, "[data-ab-part]");
 			return wrappers;

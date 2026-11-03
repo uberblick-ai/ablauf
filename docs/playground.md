@@ -16,20 +16,42 @@ Open `#examples/neutral` for filled grey boxes and panels beside the
 surface-filled `ink` and `muted` variants, with matching neutral legend samples,
 pill dots and edges. Use the scheme toggle to review light and dark.
 
-Every render with timelines now mounts the built-in playback controls; editing
+Every render with timelines mounts the built-in playback controls with
+`layout: "auto"`; editing
 source or switching examples destroys the previous mount. Open
 `#examples/loop-play` for three scenario tabs. Examples without timelines keep
 their static presentation.
 
 For sequence playback, open `#examples/claim-play` and select the 710px
-document column (678px figure). Before merging #137, a maintainer must play
+document column (678px figure). Before merging #138, a maintainer must play
 both **Claim the show** and **Wrong code** in light and dark in a browser.
 Check current/played/faded messages, participant headers and attached phase,
 branch and note annotations; the wrong-code scenario skips the success branch.
 Current messages glow without running dashes, numbers become bold in the play
 colour, and current header dots grow and glow. Structural lines/backgrounds
-stay fully visible. Pause, navigate manually and return to idle; only playing
-fades and dot growth ease. Verify reduced motion and `--ab-play-glow: 0`.
+stay fully visible. Check the chosen treatment C against the pinned
+[prototype](https://github.com/uberblick-ai/ablauf/blob/48fd77324024cbe37bdd331fb1e61f7a39756f39/spike/sequence-playback-prototype/README.md),
+with receiver activation bars removed per the
+[maintainer browser review](https://github.com/uberblick-ai/ablauf/pull/143#issuecomment-6581639769):
+arrows draw sender to receiver in about 0.55s with ease-out timing, a small dot
+rides the tip and fades on arrival, and no receiver activation bar appears.
+Check reverse responses (including messages 2, 6, 8, 14 and 15):
+they regain their dashes after drawing. Check message 11's packet follows the
+whole self-message loop without a bar at the loop end. Current, played and
+unplayed messages have no activation bars. A soft play-colour band spans the figure
+behind the current label and arrow, taller for the self-message. Check the
+band's placement and cross-fade on every step in both scenarios.
+
+Pause midway through drawing: the arrow completes immediately, the packet
+disappears, and the band shows immediately. Resume: that step redraws.
+Navigate manually and check the complete arrow and band without travel or
+transitions. Return to idle and check the full figure with no overlays. Only
+playing states ease or animate. Enable reduced motion before Play and during
+playback: it resets to idle and the full figure; manual steps still show their
+band instantly, with no animation or transitions. Verify
+`--ab-play-glow: 0`. The packet uses a round dash on the arrow path, so no CSS
+motion-path/offset is used. Any replacement that uses it must verify travel in
+current Chromium, Firefox and Safari, or supply a compatible fallback.
 Reading SVG source or using DOM fakes does not satisfy this visual review.
 
 For the system-step comparison, open `#examples/system-steps` and select the
@@ -56,12 +78,41 @@ The page also shows a single timeline without tabs, a direct `createPlayer`
 case without built-in controls, a tabbed case with an empty scenario, and a
 **Compact controls** case with overflowing tabs, short captions, a long wrapping
 caption, an absent actor and an empty scenario at the end of the tab strip.
+Each mounted case has replacement-data controls and immediate/delayed rebinding;
+every case has SVG removal/reinsertion and a subscription state readout.
+Separate cases exercise viewport pausing alone (mounted and standalone),
+autoplay alone, and autoplay with viewport pausing in a shadow root.
 Current-colour and zero-glow controls apply host overrides to every case,
-including the shadow root. Each document is 710px wide,
-with 16px side padding giving a 678px figure at full width.
+including the shadow root. Most documents are 710px wide,
+with 16px side padding giving a 678px figure at full width. The first case,
+**Claim · responsive side captions**, uses `claim-play.flow` in a document up
+to 1088px wide. Its **Claim layout** selector offers Auto, Side and Below;
+other cases keep Auto.
+**Claim · side captions in shadow root** uses the same wide document, always
+uses Side and includes the same replacement-data controls. Use delayed rebinding in both Claim cases to review
+row focus, alongside the below-layout flow cases.
+
+For #139, a maintainer must review in a real browser in **light and dark** at
+viewport widths of **1160px and 760px**. Use the approved
+[side-column reference](https://github.com/uberblick-ai/ablauf/blob/48fd77324024cbe37bdd331fb1e61f7a39756f39/spike/sequence-playback-prototype/README.md).
+Select Side for Claim wherever Auto falls back, and review `loop-play.flow`
+below. Verify caption readability, the side column sticking to the viewport
+top while scrolling, and independent column scrolling when its list exceeds
+the viewport. Play and seek through both claim scenarios: keeping the current
+row visible must cause no page jumps or focus changes. Tab to row buttons,
+check their visible focus, and activate them with Enter and Space to seek and
+pause. Verify message numbers (`09`, `10`, `11`, `14`, `15` for Wrong code),
+played/current styling and scenario changes. Return Claim layout to Auto and
+resize across a **998px figure container** (678px natural SVG + 320px beside
+it): it must switch below when narrower and back to side at or above 998px.
+The review document adds 32px padding and the page has 48px margins, so the
+threshold here is a 1078px viewport. The SVG's natural size, rather than its
+scaled narrow-screen size, determines this choice. Source inspection and DOM
+fakes do not satisfy this visual review. The #137 dependency is now available
+as `spike/examples/claim-play.flow`.
 
 A maintainer checks these in a real browser before merging playback changes,
-including #112, #113 and #116. Capture light and dark screenshots of
+including #95, #112, #113 and #116. Capture light and dark screenshots of
 `/playback-review` at the 678px figure width. Compare the controls with the
 [gallery controls reference](https://raw.githubusercontent.com/uberblick-ai/ablauf/9ba61d5485c89010c57ce6eb4c0111e7e6fac8de/spike/gallery/controls.png)
 and the figures with the [scenario playback GIF](images/playback/scenario-tabs.gif).
@@ -143,6 +194,65 @@ without host control CSS; the interactive checks below still need a maintainer.
 - Select the empty scenario: “No playable steps”, disabled buttons/range and
   usable tabs, a blank reserved counter and no segments. Verify the single-timeline
   case has no tab row.
+- For document and shadow-root cases, choose **Reorder scenarios**, then
+  **Rebind in 2 seconds** and focus a tab before it fires. Selection and focused
+  tab follow the exact slug. Repeat with focus on each action button, range and
+  panel: the same control keeps focus. With **Remove selected scenario** and
+  focus on that tab, focus falls back to the panel and selection to the first
+  scenario. **Keep selected scenario only** removes tabs and focuses the panel
+  if a tab had focus. Other host focus stays put. The panel remains a visible
+  tab stop with a single scenario.
+- Use **Refresh labels, counts and scheme** twice while paused on step 0.
+  Actor, caption, announcement, counter, range, segments, tab names and scheme
+  refresh even when the state tuple is unchanged. **Empty selected scenario**
+  pauses at `-1` with no segments. **No timelines** removes controls/style;
+  **Restore original data** adds them again without duplicates. Focus must
+  never move to unrelated host content. Rebinding always pauses on step 0
+  (or `-1` when empty); scrolling cannot restart it, including autoplay cases,
+  until Play or a scenario activation explicitly starts the new binding.
+- Repeat the rebinding cases in Claim with **Claim layout** set to Side and
+  Below, and in **Claim · side captions in shadow root**. Side lists must follow
+  reordered/renamed/removed scenarios and changed step counts, message numbers,
+  actors and captions. Focus a row before delayed rebinding: it survives by
+  scenario slug and step position, or falls back to the panel if removed.
+  Restore data, choose Auto and resize across the threshold after rebinding:
+  layout still switches both ways using the replacement's natural size, with
+  synchronized lists. Try No timelines and Restore original data repeatedly,
+  then both teardown buttons: no duplicate wrappers, stale lists or resize
+  callbacks; the current SVG remains and unrelated host content is intact.
+- While playing each document, shadow-root and direct case, **Remove SVG**,
+  wait longer than a dwell, then **Reinsert SVG**. The state readout pauses on
+  the same step; reinsertion and scrolling do not resume it. Explicit Play
+  resumes. Switch browser tabs while playing, then return: it pauses on the
+  same step immediately and never resumes automatically. Manual navigation
+  still works while an SVG is removed; scenario activation must not select or
+  reset it. Removal/reinsertion entirely between timer checks is not detected.
+- In **Viewport pause only**, press Play, scroll until no part intersects,
+  then return. It pauses on the same frame and needs explicit Play. Entry
+  alone never starts it. Repeat with **Direct createPlayer · viewport pause
+  only**. In **Autoplay** and **Autoplay and viewport pause**, initial entry
+  and automatic resume require half visibility. Below half but still
+  intersecting keeps playing; no intersection pauses. Manual pause/navigation,
+  including Pause via the API when already viewport-paused, cancels resume.
+  Reduced motion and lifecycle pauses also prevent automatic starts.
+- Before first reaching an autoplay figure, switch browser tabs and return,
+  then scroll it to half visibility: first-view autoplay still starts. Repeat
+  after scrolling a playing figure fully out of view: hiding/restoring the tab
+  while it is viewport-paused preserves resume at half visibility. Test both
+  autoplay cases. If hiding actually paused playback, it still needs Play.
+  With the SVG fully off screen and controls visible, autoplay alone permits
+  Play, panel Space and scenario activation. With viewport pausing enabled,
+  scenario tabs still select, but playback stays paused; entry alone must
+  not start that manually selected scenario.
+- Focus the panel itself in the single, multiple and shadow-root cases:
+  Space toggles Play/Pause (Replay after ending), Left/Right step and pause,
+  with browser defaults prevented. Focus buttons/range/tabs: native actions
+  and existing tab activation remain, with no double handling. Modifier keys,
+  editable descendants and inherited contenteditable must not trigger panel
+  shortcuts (use browser devtools to toggle contenteditable for this check).
+  Play two document/shadow figures: keys and focus affect only the targeted
+  panel; outside focus does nothing. Repeat updates and both teardown paths:
+  no duplicate controls, timers, callbacks or announcements.
 - Enable reduced motion before Play and during playback. The figure resets
   to full idle, manual stepping still works, and disabling the preference does
   not start playback. No running dashes or transitions remain; a manually

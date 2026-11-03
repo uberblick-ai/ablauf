@@ -7,7 +7,7 @@ import { createServer } from "node:http";
 import { extname, join, normalize } from "node:path";
 
 const OUT = join(import.meta.dirname, "out");
-const TYPES: Record<string, string> = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon", ".xml": "application/xml", ".txt": "text/plain" };
+const TYPES: Record<string, string> = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon", ".xml": "application/xml", ".txt": "text/plain" };
 const port = Number(process.argv[2] ?? 8000);
 
 createServer((req, res) => {

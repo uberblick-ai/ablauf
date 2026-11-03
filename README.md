@@ -58,14 +58,37 @@ import { mountPlayback } from "@uberblick/ablauf/playback";
 
 const { svg, timelines } = render(source, { idPrefix: "dependabot" });
 figure.innerHTML = svg;
-mountPlayback(figure, figure.querySelector("svg"), timelines);
+const mount = mountPlayback(figure, figure.querySelector("svg"), timelines);
+// After replacing just the inline SVG with a freshly rendered one:
+// mount.update(replacementSvg, replacementTimelines); // Paused, same controls/player.
+const unsubscribe = mount.player.subscribe(state => console.log(state));
+// unsubscribe(); mount.destroy(); // When these are no longer needed.
 ```
 
 The figure starts idle and fully visible. Play or a scenario tab starts playback;
 finishing restores the full figure. Autoplay is opt-in with `{ autoplay: true }`,
 which waits until half the figure is in view before starting.
 
-Playback in 0.3.0 supports flows. Sequence and fan-out playback will follow.
+`pauseWhenOffscreen: true` pauses manual playback outside the viewport. Hidden
+documents and disconnected figures also pause; start them explicitly after
+returning. Focus the controls panel for Space and Left/Right shortcuts.
+See [rebinding, subscriptions and lifecycle behavior](docs/api.md#playback).
+
+Sequences use the same `play` sections, with each step targeting a message by
+its number. Fan-out playback is still to come.
+
+The “Wrong code” scenario from `claim-play.flow`:
+
+```
+play "Wrong code"
+  step 9 "Type a code that no longer works"
+  step 10 "Send it on for checking"
+  step 11 "Compare code and expiry"
+  step 14 "Reject it and count the attempt"
+  step 15 "Offer another try or a new code"
+```
+
+<img alt="The podcast claim sequence playing with controls and captions beside the figure: messages travel between participants, the current message row is highlighted, and the Wrong code scenario ends with another try or a new code." src="https://raw.githubusercontent.com/uberblick-ai/ablauf/main/docs/images/sequence-playback.gif">
 
 ## Install
 
