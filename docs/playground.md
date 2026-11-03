@@ -215,6 +215,10 @@ without host control CSS; the interactive checks below still need a maintainer.
   reordered/renamed/removed scenarios and changed step counts, message numbers,
   actors and captions. Focus a row before delayed rebinding: it survives by
   scenario slug and step position, or falls back to the panel if removed.
+  After rebinding from a playing or ended scene, play the replacement with
+  looping disabled and let it finish: the full figure returns, the side list
+  has no current or played row, controls and announcements clear, and Replay,
+  Next and Previous behave as above. Repeat in light and dark in both layouts.
   Restore data, choose Auto and resize across the threshold after rebinding:
   layout still switches both ways using the replacement's natural size, with
   synchronized lists. Try No timelines and Restore original data repeatedly,
