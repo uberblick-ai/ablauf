@@ -165,7 +165,7 @@ for (const action of ["api", "button", "space", "tab click", "tab key"]) {
 		assert.deepEqual(f.player.state, { scenario: tab ? 1 : 0, step: 0, status: "playing" });
 		t.mock.timers.tick(100);
 		assert.equal(f.player.state.status, tab ? "ended" : "playing");
-		assert.equal(f.player.state.step, tab ? 0 : 1);
+		assert.equal(f.player.state.step, tab ? -1 : 1);
 	});
 }
 
@@ -301,8 +301,14 @@ for (const entry of ["player", "mount"] as const) {
 		f.player.play();
 		oldObserver.callback([{ target: f.image, isIntersecting: false, intersectionRatio: 0 }]);
 		f.doc.hidden = true; oldVisibility(); assert.equal(f.player.state.status, "playing");
-		t.mock.timers.tick(100); assert.equal(f.player.state.status, "ended");
+		t.mock.timers.tick(99);
+		assert.deepEqual(f.player.state, { scenario: 0, step: 0, status: "playing" });
 		assert.ok(nextImage.children[1].classList.contains("ab-current"));
+		t.mock.timers.tick(1);
+		assert.deepEqual(f.player.state, { scenario: 0, step: -1, status: "ended" });
+		assert.equal(nextImage.classList.contains("ab-in-progress"), false);
+		assert.equal(nextImage.classList.contains("ab-playing"), false);
+		assert.ok(nextImage.children.every(el => !el.classList.contains("ab-current") && !el.classList.contains("ab-played")));
 		const controls = f.cls("ab-playback").all();
 		const currentObserver = [...nextDoc.viewport.observers][0];
 		let calls = 0; f.player.subscribe(() => calls++);

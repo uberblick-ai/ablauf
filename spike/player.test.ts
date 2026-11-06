@@ -105,7 +105,8 @@ test("each step including the last gets its full dwell; ended replays immediatel
 	tick(299);
 	assert.equal(player.state.status, "playing");
 	tick(1);
-	assert.deepEqual(player.state, { scenario: 0, step: 2, status: "ended" });
+	assert.deepEqual(player.state, { scenario: 0, step: -1, status: "ended" });
+	assert.deepEqual(changes.at(-1), player.state);
 	assert.equal(motion.listeners.size, 0);
 	tick(60000);
 	assert.equal(changes.length, 4);
@@ -187,10 +188,12 @@ test("navigation clamps, clears at -1, cancels timers and notifies only on chang
 	assert.deepEqual(player.state, { scenario: 0, step: 0, status: "paused" });
 });
 
-test("next at ended stays on the last frame and pauses", t => {
-	const { player, tick } = setup(t, [timelines[1]]);
-	player.play(); tick(150); player.next();
+test("navigation from ended starts at the first step or stays at the full figure and pauses", t => {
+	const { player, tick } = setup(t);
+	player.play(); tick(100); tick(200); tick(300); player.next();
 	assert.deepEqual(player.state, { scenario: 0, step: 0, status: "paused" });
+	player.seek(2); player.play(); tick(300); player.previous();
+	assert.deepEqual(player.state, { scenario: 0, step: -1, status: "paused" });
 });
 
 test("invalid indexed calls leave state, callback count and running timer alone", t => {

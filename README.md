@@ -58,13 +58,16 @@ import { mountPlayback } from "@uberblick/ablauf/playback";
 
 const { svg, timelines } = render(source, { idPrefix: "dependabot" });
 figure.innerHTML = svg;
-// autoplay: play while the figure is in view
-const mount = mountPlayback(figure, figure.querySelector("svg"), timelines, { autoplay: true });
+const mount = mountPlayback(figure, figure.querySelector("svg"), timelines);
 // After replacing just the inline SVG with a freshly rendered one:
 // mount.update(replacementSvg, replacementTimelines); // Paused, same controls/player.
 const unsubscribe = mount.player.subscribe(state => console.log(state));
 // unsubscribe(); mount.destroy(); // When these are no longer needed.
 ```
+
+The figure starts idle and fully visible. Play or a scenario tab starts playback;
+finishing restores the full figure. Autoplay is opt-in with `{ autoplay: true }`,
+which waits until half the figure is in view before starting.
 
 `pauseWhenOffscreen: true` pauses manual playback outside the viewport. Hidden
 documents and disconnected figures also pause; start them explicitly after

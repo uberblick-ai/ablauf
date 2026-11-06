@@ -34,10 +34,9 @@ shadow root containing the inline SVG:
 ```ts
 import { mountPlayback } from "@uberblick/ablauf/playback";
 
-const mount = mountPlayback(figureContainer, svgElement, result.timelines, { autoplay: true });
-// Starts idle. With autoplay it plays once half the figure is in view, pauses
-// when it leaves and resumes when it returns, unless the reader paused it.
-// Without autoplay, Play or a scenario tab starts it; the host can also call mount.player.
+const mount = mountPlayback(figureContainer, svgElement, result.timelines);
+// Starts idle with the full figure. Play or a scenario tab starts it;
+// the host can also call mount.player.
 // After rendering changed source, replace only the old SVG in the host:
 svgElement.replaceWith(replacementSvg);
 mount.update(replacementSvg, replacementResult.timelines);
@@ -48,6 +47,11 @@ unsubscribe(); // Idempotent; other subscriptions and controls keep working.
 // When the host no longer needs the mount:
 mount.destroy();
 ```
+
+Autoplay is off by default. Opt in with `{ autoplay: true }` as the fourth
+argument: mounting still shows the full idle figure until half of it is in
+view. Playback then starts, pauses when it leaves and resumes when it returns,
+unless the reader paused it.
 
 `layout: "auto"` (the default) places captions beside a figure when its natural
 height exceeds its width and the container leaves at least 320px beside that
@@ -127,12 +131,22 @@ export function attachPlayback(svg: SVGSVGElement, timelines: Timeline[]) {
 Creation shows the full figure at `{ scenario: 0, step: -1, status: "idle" }`
 without a timer or callback. Call `play()` from a host interaction to start;
 `pause()` keeps the frame, and resuming restarts its full dwell. Each step,
-including the last, stays current for its `ms`. Playback ends on the last
-frame; `play()` replays it, or `{ loop: true }` loops the selected scenario.
+including the last, stays current for its `ms`. A non-looping scene then ends
+at `{ scenario, step: -1, status: "ended" }`, preserving the selected scenario
+in both `player.state` and `onChange`. The full figure returns without fading,
+current/played highlighting or glow; the SVG has neither `ab-in-progress` nor
+`ab-playing`. Pausing mid-scene retains the current highlight and fade.
+`play()` replays from step `0`, or `{ loop: true }` loops the selected scenario.
 Repeated `play()` during playback leaves the timer alone.
 
+After completion the built-in controls show a blank counter, empty actor and
+caption, no current/played segments, and range `-1` with value text “Full figure”.
+The status region clears without repeating the last step. The toggle reads
+“Replay” and starts at step `0`.
+
 `next()`, `previous()` and `seek(step)` pause and clamp integer steps to
-`-1..last`; `-1` clears highlighting. `select(scenario)` pauses on that
+`-1..last`; `-1` clears highlighting. From ended, `next()` goes to step `0`
+paused and `previous()` stays at `-1` paused. `select(scenario)` pauses on that
 scenario's first step, including when reselecting it.
 `select(scenario: number | string): void` accepts a numeric index or exact
 `Timeline.slug`. Unknown slugs, invalid indices and non-integer indices are

@@ -33,6 +33,11 @@
   viewport pausing blocks playback while allowing scenario selection. Extend the
   maintainer browser fixture for rebinding, lifecycle, viewport and keyboard review.
   ([#95](https://github.com/uberblick-ai/ablauf/issues/95))
+- Restore the full unfaded figure after a non-looping flow or sequence finishes,
+  preserving the scenario with step `-1` and status `ended` in the player and its
+  callback. Clear step details and highlights in controls, with Replay starting
+  at step `0`; Next from ended selects the first step paused and Previous keeps
+  the full figure paused. Document default-off, opt-in autoplay. ([#145](https://github.com/uberblick-ai/ablauf/issues/145))
 
 ## 0.3.0 — 2026-11-02
 

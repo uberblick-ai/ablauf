@@ -152,11 +152,20 @@ without host control CSS; the interactive checks below still need a maintainer.
   in light and dark, including a narrower document.
 - Play and pause both the direct `createPlayer` case and built-in controls.
   Current node outlines/decision shapes and incoming strokes glow, including
-  when paused or ended; played parts do not glow. Playing incoming dashes move
+  when paused; played parts do not glow. Playing incoming dashes move
   toward fixed arrowheads with no jump at the loop seam. No incoming edge means
   no running stroke. Fades and colours change gently over about 0.35s while
-  playing; manual navigation and scenario changes are instant. Paused/ended
+  playing; manual navigation and scenario changes are instant. Paused
   figures are still. Gaps and crossing knockouts have no glow or running dashes.
+- Open `#examples/loop-play` in the playground and disable looping. A maintainer
+  must review it in a real browser in light and dark at initial idle, while
+  playing and after the scene ends. Idle and completion show the full unfaded
+  figure without current/played highlights or glow; pausing mid-scene keeps
+  the highlight and fade. Let the last step finish its full duration: the
+  counter becomes blank, actor/caption empty, all segments unhighlighted,
+  range `-1` with “Full figure”, and the toggle reads Replay. Replay starts
+  at the first step; from ended, Next shows the first step paused and Previous
+  stays at the full figure paused. SVG-source inspection does not satisfy this check.
 - Play two figures simultaneously, switch scenarios and navigate. Check that
   each counter, segment bar, caption, actor, range and Play/Pause/Replay label
   follows only its player.
@@ -179,8 +188,9 @@ without host control CSS; the interactive checks below still need a maintainer.
   outline around the segment bar; segments must add no tab stops or announced
   controls. Verify the three buttons' accessible names are Previous,
   Play/Pause/Replay and Next. Check announcements with a screen reader: actor
-  and remark announce once on step changes, while pause/end alone do not repeat
-  them, and the counter/segments add no announcements. Repeat in the shadow root.
+  and remark announce once on step changes, pause does not repeat them, and
+  completion clears the status without repeating the last step. The
+  counter/segments add no announcements. Repeat in the shadow root.
 - Select the empty scenario: “No playable steps”, disabled buttons/range and
   usable tabs, a blank reserved counter and no segments. Verify the single-timeline
   case has no tab row.
@@ -205,6 +215,10 @@ without host control CSS; the interactive checks below still need a maintainer.
   reordered/renamed/removed scenarios and changed step counts, message numbers,
   actors and captions. Focus a row before delayed rebinding: it survives by
   scenario slug and step position, or falls back to the panel if removed.
+  After rebinding from a playing or ended scene, play the replacement with
+  looping disabled and let it finish: the full figure returns, the side list
+  has no current or played row, controls and announcements clear, and Replay,
+  Next and Previous behave as above. Repeat in light and dark in both layouts.
   Restore data, choose Auto and resize across the threshold after rebinding:
   layout still switches both ways using the replacement's natural size, with
   synchronized lists. Try No timelines and Restore original data repeatedly,

@@ -167,7 +167,8 @@ test("one polite atomic status announces only scenario/step changes to playable 
 	assert.equal(status.textContent, "Second actor: Second remark");
 	count = status.writes;
 	t.mock.timers.tick(200);
-	assert.equal(status.writes, count);
+	assert.equal(status.textContent, "");
+	assert.equal(status.writes, count + 1, "completion clears the status without repeating the last step");
 	f.player.select(1);
 	assert.equal(status.textContent, "Other actor");
 	count = status.writes;

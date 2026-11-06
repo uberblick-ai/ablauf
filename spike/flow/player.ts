@@ -115,7 +115,7 @@ export function createPlayerBinding(
 		if (options.pauseWhenOffscreen && offscreen) { pause(); return; }
 		if (state.step < steps().length - 1) change(state.scenario, state.step + 1, "playing");
 		else if (options.loop) change(state.scenario, 0, "playing");
-		else { unobserveMotion(); change(state.scenario, state.step, "ended"); }
+		else { unobserveMotion(); change(state.scenario, -1, "ended"); }
 	}
 	function reset() { manual(); cancel(); change(state.scenario, -1, "idle"); }
 	function motionChanged(event: MediaQueryListEvent) {

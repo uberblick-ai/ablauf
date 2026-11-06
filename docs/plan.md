@@ -786,8 +786,8 @@ matching wrapper; current takes precedence if both are present. Remove both
 classes and the root's `ab-in-progress` and `ab-playing` classes for the full
 default figure.
 Hand-driven hosts set `ab-in-progress` on the SVG root exactly while a scenario
-step is shown (`step >= 0`), including paused and ended states. Remove it at
-idle (`step === -1`), for empty scenarios and after destruction.
+step is shown (`step >= 0`), including paused steps. Remove it at
+idle and completion (`step === -1`), for empty scenarios and after destruction.
 Hand-driven hosts also set `ab-playing` on the SVG root exactly while playing.
 Remove it on pause, end, manual navigation, scenario changes, idle, empty
 scenarios, the reduced-motion reset and destruction. `createPlayer` owns both
@@ -802,10 +802,10 @@ precedence. Inline gaps and crossing knockouts retain fully opaque canvas or
 band backgrounds, so underlying edges never show through them. Knockouts stay
 unfaded. Geometry and draw order never change. The scoped styles are embedded
 in every playable SVG; hosts need no CSS. Navigation, scenario changes and
-looping recompute the faded parts. Idle, the reduced-motion reset, empty
+looping recompute the faded parts. Idle, completion, the reduced-motion reset, empty
 scenarios and destruction restore the full unfaded figure.
 
-Whenever a step is shown, including paused and ended frames, its current node
+Whenever a step is shown, including paused frames, its current node
 outlines/decision shapes and incoming flow edge strokes have a soft glow and a
 slightly heavier stroke. Played parts do not glow. Filters apply to individual
 shapes only, never groups, label text, inline gaps, crossing knockouts or the
@@ -818,13 +818,13 @@ default `6px` in both schemes; the literal `--ab-play-glow: 0` removes the glow.
 Only while `ab-playing` is present, current incoming flow edge strokes run as moving
 dashes toward their targets, with a seamless loop; arrowheads stay put. The
 current step's timeline `parts` identify the incoming edges, including parallel
-edges. Steps without an incoming edge animate none. Paused and ended edges are
+edges. Steps without an incoming edge animate none. Paused edges are
 still. Fades ease over 0.35s only while playing; manual
 navigation and other non-playing changes are instant. Animation, transitions
 and keyframes are embedded in every playable SVG and scoped to its figure;
 distinct `idPrefix` values keep independently driven figures isolated, including
 in shadow roots. Reduced motion disables running dashes and all transitions;
-a manually shown current step may still glow. Idle and destruction remove all
+a manually shown current step may still glow. Idle, completion and destruction remove all
 glow, heavier strokes and running-edge overrides, restoring the default figure.
 Static SVG bytes stay identical; playable idle figures add playback styles,
 the colour defaults below and hidden sequence overlays.
@@ -855,11 +855,11 @@ Per-row bands cross-fade over 0.35s. Bands and packets never take pointer
 events or affect layout or figure size, and are emitted only with play sections.
 
 Fading (0.35s), header-dot growth (0.3s), drawing and packet travel ease only
-while playing. Paused, ended and manually stepped states show
+while playing. Paused and manually stepped states show
 the complete current arrow and band immediately, with no packet. Resuming
 restarts the current step and its drawing. Reduced motion disables all animation
 and transitions, retaining the band in manually shown states; the player's
-reduced-motion reset to idle is unchanged. Idle shows the full figure with no
+reduced-motion reset to idle is unchanged. Idle and completion show the full figure with no
 packets or bands. Sequences without play sections gain no playback
 attributes, styles or overlays and retain their exact SVG bytes.
 
@@ -870,9 +870,14 @@ their defaults. These tokens are separate from the existing exported palette.
 
 ### Behaviour and theming
 
-- States are idle (full figure), paused, playing and ended. Previous, next,
-  seek and switching scenario pause. Play on ended replays. Stop on the last
-  step after its full duration; `loop` is opt-in. Resuming restarts the current
+- States are idle (full figure), paused, playing and ended (full figure).
+  After the last step's full duration, a non-looping flow or sequence changes
+  to `{ scenario, step: -1, status: "ended" }`, preserving the selected scenario
+  in `player.state` and `onChange`. It clears fading, current/played highlighting,
+  glow and both root classes. `loop` is opt-in. Previous, next, seek and
+  switching scenario pause. From ended, Next goes to step `0` paused and
+  Previous stays at `-1` paused. Play on ended replays from step `0`.
+  Pausing mid-scene retains the highlight and fade; resuming restarts the current
   step's full duration. Controls offer Replay.
 - Play on click is the default. Nothing starts unless the host calls play,
   the reader chooses a scenario tab (which plays it from its first step), or
@@ -936,7 +941,9 @@ The browser entry also exports
 `PlaybackMount { player: Player; update(svg: SVGSVGElement, timelines: Timeline[]): void; destroy(): void }`.
 The host supplies an
 `HTMLElement` or `ShadowRoot` for the inline SVG and its controls. Mounting starts
-idle with the full figure. With `autoplay: true` the mount observes the figure
+idle with the full unfaded, unhighlighted figure and neither root class.
+Autoplay is off by default. With `autoplay: true` the mount stays idle until
+visibility starts playback: it observes the figure
 wrapper (so a sideways-scrolling SVG does not change the visibility threshold) and
 plays once `isIntersecting` and `intersectionRatio >= 0.5`, pauses it on no
 intersection (not merely below half visibility), and resumes viewport-caused
@@ -1008,9 +1015,12 @@ native range remains focusable, with a visible outline around the bar when
 focused, covering `-1..last`, including the full figure at `-1`. Its native
 keyboard and screen reader navigation is preserved. Navigation pauses.
 
-Actor and caption are cleared at `-1`. One polite atomic status announces actor and remark
-when the scenario/step changes to a playable step; pause and end alone do not
-repeat it. All source strings are assigned with `textContent`. A selected
+Actor and caption are cleared at `-1`. Completion uses this full-figure controls
+presentation: blank counter, empty actor/caption, no current/played segments,
+and range `-1` with value text “Full figure”; the toggle reads Replay.
+One polite atomic status announces actor and remark when the scenario/step
+changes to a playable step. Pause does not repeat it; completion clears the
+region without re-announcing the last step. All source strings are assigned with `textContent`. A selected
 empty scenario shows “No playable steps” and disables buttons and range while
 leaving tabs usable; it never selects another scenario automatically.
 

@@ -172,8 +172,9 @@ test("side list has safe text and message numbers; play, seek, reset and scenari
 	assert.deepEqual(f.current(), [f.rows()[1]]);
 	assert.deepEqual(f.played(), [f.rows()[0]]);
 	t.mock.timers.tick(100);
-	assert.equal(f.player.state.status, "ended");
-	assert.deepEqual(f.current(), [f.rows()[1]]);
+	assert.deepEqual(f.player.state, { scenario: 0, step: -1, status: "ended" });
+	assert.equal(f.current().length, 0);
+	assert.equal(f.played().length, 0);
 	f.player.seek(-1);
 	assert.equal(f.current().length, 0);
 	assert.equal(f.played().length, 0);
