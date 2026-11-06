@@ -51,7 +51,8 @@ test("counter and segments follow direct navigation, playback, scenarios and ful
 	assert.deepEqual(f.states(), ["played", "played", "current"]);
 	t.mock.timers.tick(100);
 	assert.equal(f.player.state.status, "ended");
-	assert.equal(counter.textContent, "3/3");
+	assert.equal(counter.textContent, "");
+	assert.deepEqual(f.states(), ["future", "future", "future"]);
 	f.player.seek(-1);
 	assert.equal(counter.textContent, "");
 	assert.deepEqual(f.states(), ["future", "future", "future"]);
