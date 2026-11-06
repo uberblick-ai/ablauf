@@ -1012,10 +1012,11 @@ The caption is always a tab stop (`tabindex="0"`) before Previous, with
 Its scoped `:focus-visible` outline does not change geometry. Left/Right, Home
 and End in the caption retain native scrolling; playback shortcuts must not
 consume them or switch steps or scenarios. Scenario/step changes reset the
-caption instantly to its beginning; pause, resume and end at the same step
-preserve the reader's scroll position. There is no automatic panning or scrolling
-animation, including under reduced motion. Scrolling never moves focus or
-announces text; the caption region is not a live region.
+caption instantly to its beginning; pause and resume at the same step preserve
+the reader's scroll position. Completion restores the full figure at step `-1`,
+clearing the caption and resetting its scrolling. There is no automatic panning
+or scrolling animation, including under reduced motion. Scrolling never moves
+focus or announces text; the caption region is not a live region.
 
 Below the step line are exactly three native buttons: `<` (accessible name
 Previous), Play/Pause/Replay, and `>` (accessible name Next). They use monospace,

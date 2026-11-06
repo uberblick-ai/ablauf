@@ -157,10 +157,12 @@ without host control CSS; the interactive checks below still need a maintainer.
   states too. Check its visible focus outline, and that Left/Right, Home and End
   scroll natively without changing playback state, step or scenario.
   Scroll partway through the long caption: pause/resume preserves that position,
-  while a scenario or step change resets instantly to the beginning. Check end
-  preservation on the last caption of **Short captions** after making the document
-  narrow enough to scroll it. Playback must not move focus, pan automatically or
-  announce scrolling; the complete actor and caption still announce once per
+  while a scenario or step change resets instantly to the beginning. Make the
+  document narrow enough to scroll the last caption of **Short captions**, scroll
+  partway through it and let playback finish: the full figure returns, the caption
+  clears and its scrolling resets without animation or focus movement.
+  Playback must not move focus, pan automatically or announce scrolling;
+  the complete actor and caption still announce once per
   playable-step change through the polite status. Repeat in light and dark, with
   reduced motion, a narrower document and a browser using non-overlay scrollbars:
   scrollbar space must stay reserved even for short or blank captions, and scroll
