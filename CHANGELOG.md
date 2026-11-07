@@ -4,6 +4,12 @@
 
 ### Playback
 
+- Add optional `mountPlayback(..., { expand: true })` and host-called `mount.expand()`:
+  a full-screen native modal keeps natural-size figure scrolling above persistent
+  playback controls and single-line captions, preserves the active player and dwell,
+  retains themes and reduced motion, and restores focus and inline layout on close.
+  Rebinding works while expanded; no timelines or teardown closes the modal.
+  ([#127](https://github.com/uberblick-ai/ablauf/issues/127))
 - Play sequence messages by number in named `play` scenarios, with captions and
   current/played message and participant highlights. ([#137](https://github.com/uberblick-ai/ablauf/issues/137))
 - Animate the current message travelling to its receiver and highlight its row

@@ -113,6 +113,49 @@ scaled narrow-screen size, determines this choice. Source inspection and DOM
 fakes do not satisfy this visual review. The #137 dependency is now available
 as `spike/examples/claim-play.flow`.
 
+For #127, use a 720×680 browser viewport and open **Expand** on
+[Loop · light DOM](http://localhost:4620/playback-review#review-light-dom) or
+[Loop · shadow root](http://localhost:4620/playback-review#review-shadow).
+Both loops also offer **Host expand()**; the
+[host-only case](http://localhost:4620/playback-review#review-host-expand) omits
+the built-in Expand button to exercise the always-available API.
+The captured expanded loops are [light](images/playback/expanded-light.png),
+[dark](images/playback/expanded-dark.png),
+[shadow light](images/playback/expanded-shadow-light.png) and
+[shadow dark](images/playback/expanded-shadow-dark.png).
+
+- Expand appears in its own right-aligned row, separate from the three playback
+  buttons. Close is at the modal's top right and receives initial focus.
+- The loop retains its natural 786×780 size and overflows both axes in this
+  viewport. Scroll the figure; tabs, counter, actor, caption and navigation stay
+  below it without moving. Try a smaller figure too.
+- Tab and Shift+Tab stay in the modal. Close, Escape and a click in its narrow
+  outer backdrop gutter close it; content clicks and drags from the content into
+  the gutter do not. Check focus return to
+  Expand and to Host expand(), including the host button outside the shadow root.
+- Open idle, paused, playing and ended figures; change scenarios and use every
+  control while expanded. Closing retains the latest state and Play/Pause/Replay
+  text. Enable reduced motion while playing: the figure resets; manual stepping
+  still works and disabling the preference never starts playback.
+- Check automatic and pinned light/dark schemes and host overrides in both DOM
+  types. Both destroy entry points must remove an open modal, restore the host
+  SVG and leave host content intact. These interactions still require maintainer
+  review before merging.
+- In Compact controls, step through short, long and blank captions while expanded:
+  the caption stays one horizontally scrollable line and reserves its scrollbar
+  space. Same-step Pause/Play and opening/closing preserve caption scroll; changing
+  step/scenario or reaching ended resets it. Ended shows the full unfaded figure,
+  clears step details and offers Replay from step 0.
+- Open a Claim side-layout case: expansion places the figure above the controls
+  and shows the single-line caption. Closing restores Side and its step list.
+  Use delayed rebinding while expanded to check the modal stays open and refreshes
+  its figure, controls and scheme; no timelines closes it. Repeat expansion after
+  restoring data, and test both teardown paths with a replacement SVG.
+- In the autoplay/viewport cases, open idle or paused before entry: expansion
+  never starts playback and ends initial autoplay/pending automatic resume.
+  Explicit playback continues despite viewport observations while expanded.
+  Hidden/disconnected guards still pause it; closing restores viewport pausing.
+
 A maintainer checks these in a real browser before merging playback changes,
 including #95, #112, #113, #116 and #146. Capture light and dark screenshots of
 `/playback-review` at the 678px figure width. Compare the controls with the

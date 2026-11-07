@@ -56,6 +56,7 @@ export class Doc {
 		requestAnimationFrame: this.frames.request, cancelAnimationFrame: this.frames.cancel,
 	};
 	createElement(tag: string): El { return new El(tag, this); }
+	createComment(text: string): El { const el = new El("#comment", this); el.textContent = text; return el; }
 }
 
 class Frames {
@@ -127,8 +128,21 @@ export class El {
 	rect: { top: number; bottom: number; width: number } | undefined;
 	style = { properties: new Map<string, string>(), setProperty(name: string, value: string) { this.properties.set(name, value); } };
 	writes = 0;
+	open = false;
+	autofocus = false;
 	private text = "";
 	constructor(tag: string, doc: Doc) { this.tag = tag; this.ownerDocument = doc; }
+	get firstElementChild() { return this.children[0] ?? null; }
+	replaceWith(el: El) {
+		const parent = this.parent;
+		if (!parent) return;
+		el.remove();
+		parent.children.splice(parent.children.indexOf(this), 1, el);
+		el.parent = parent;
+		this.parent = null;
+	}
+	showModal() { this.open = true; }
+	close() { this.open = false; this.fire("close"); }
 	set innerHTML(_value: string) { assert.fail("Source text must never be parsed as HTML"); }
 	get textContent(): string { return this.text + this.children.map(el => el.textContent).join(""); }
 	set textContent(text: string) {

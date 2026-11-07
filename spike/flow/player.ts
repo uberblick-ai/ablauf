@@ -45,6 +45,7 @@ export function createPlayerBinding(
 	let observer: IntersectionObserver | undefined;
 	let removeVisibility = () => {};
 	let offscreen = false;
+	let expanded = false;
 	let initialAutoplay = !!options.autoplay;
 	let pausedByView = false;
 	const listeners = new Set<(state: PlayerState) => void>();
@@ -53,7 +54,7 @@ export function createPlayerBinding(
 	const steps = () => timelines[state.scenario]?.steps ?? [];
 	const lifecycleReady = () => svg.isConnected && !svg.ownerDocument.hidden && svg.ownerDocument.visibilityState !== "hidden";
 	const canActivate = () => !destroyed && lifecycleReady();
-	const canPlay = () => canActivate() && !(options.pauseWhenOffscreen && offscreen);
+	const canPlay = () => canActivate() && !(options.pauseWhenOffscreen && offscreen && !expanded);
 
 	function paint(clear = false) {
 		svg.classList.toggle("ab-playing", !clear && state.status === "playing");
@@ -112,7 +113,7 @@ export function createPlayerBinding(
 		timer = undefined;
 		if (destroyed || state.status !== "playing") return;
 		if (!lifecycleReady()) { lifecyclePause(); return; }
-		if (options.pauseWhenOffscreen && offscreen) { pause(); return; }
+		if (options.pauseWhenOffscreen && offscreen && !expanded) { pause(); return; }
 		if (state.step < steps().length - 1) change(state.scenario, state.step + 1, "playing");
 		else if (options.loop) change(state.scenario, 0, "playing");
 		else { unobserveMotion(); change(state.scenario, -1, "ended"); }
@@ -138,9 +139,9 @@ export function createPlayerBinding(
 		if (!Observer || (!options.autoplay && !options.pauseWhenOffscreen)) return;
 		const target = options.viewportTarget?.() ?? svg;
 		observer = new Observer(entries => {
-			if (destroyed || version !== bindingVersion) return;
+			if (destroyed || expanded || version !== bindingVersion) return;
 			for (const entry of entries) {
-				if (destroyed || version !== bindingVersion) return;
+				if (destroyed || expanded || version !== bindingVersion) return;
 				if (entry.target !== target) continue;
 				offscreen = !entry.isIntersecting;
 				if (!lifecycleReady()) { lifecyclePause(); continue; }
@@ -199,6 +200,14 @@ export function createPlayerBinding(
 	paint(); bind();
 	return {
 		player, canActivate,
+		setExpanded(value: boolean) {
+			if (destroyed) return;
+			expanded = value;
+			// Reader engagement ends initial autoplay and pending viewport resume.
+			// Re-observe inline visibility on close without touching the dwell timer.
+			manual(); offscreen = false;
+			if (!expanded) { unbind(); bind(); }
+		},
 		refreshViewport() { if (!destroyed) { unbind(); bind(); } },
 		update(nextSvg: SVGSVGElement, nextTimelines: Timeline[]) {
 			if (destroyed) return;

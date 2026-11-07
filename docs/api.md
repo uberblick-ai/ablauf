@@ -67,6 +67,32 @@ even if the SVG was nested or in another parent. Mount styles set the SVG to
 `display: block`, `max-width: 100%` and `height: auto` on the controls' background;
 destroy removes those styles and restores the SVG's original parent and position.
 
+`expand: true` adds an **Expand** button in its own right-aligned row above the
+inline controls. Every mount also offers `mount.expand()` for host controls,
+with or without that option. Both open a full-screen native modal labelled from
+the figure, with initial focus on **Close** at the top right. The natural-size
+figure scrolls on both axes above the same tabs, counter, actor, single-line
+caption, playback buttons and step navigation. Expansion uses the below layout;
+closing restores the requested inline layout. Zoom, pan, Fit and Copy remain
+host features.
+
+The same `mount.player` reports and controls the active view, preserving scenario,
+step, playback status and remaining dwell in both directions. Opening never
+starts idle or paused playback. Viewport autoplay and off-screen pausing are
+suspended while expanded; opening also ends initial autoplay and pending automatic
+resume. After closing, subsequent viewport exits can pause playing figures as
+usual. Reduced motion and hidden/disconnected lifecycle guards still apply.
+Close, Escape or a click that starts and ends in the backdrop gutter closes the
+dialog and returns focus to Expand or the previously focused host control.
+Tab stays within the modal; content clicks and drags into the gutter do not close
+it. Host `--ab-*` overrides and automatic or pinned schemes stay live, including
+in shadow roots.
+
+Repeated `expand()` calls while open do nothing, as do calls with no timelines
+or after destruction. `mount.update()` refreshes the expanded SVG, controls and
+scheme without closing; updating to no timelines closes the view. Both destroy
+entry points close any open dialog and restore the current SVG's host position.
+
 ### Playback details and the headless player
 
 The container can hold other host content. `mount.destroy()` and

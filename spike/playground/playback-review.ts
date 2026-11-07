@@ -12,9 +12,10 @@ const mounts: { destroy(): void }[] = [];
 const figureCSS = ".review-figure svg{display:block;max-width:100%;height:auto}";
 
 function addCase(title: string, source: string, idPrefix: string, shadow = false, headless = false,
-	playbackOptions: { autoplay?: boolean; pauseWhenOffscreen?: boolean; layout?: "below" | "side" | "auto" } = {}) {
+	playbackOptions: { autoplay?: boolean; pauseWhenOffscreen?: boolean; layout?: "below" | "side" | "auto"; expand?: boolean } = {}) {
 	const section = document.createElement("section");
 	section.className = "review-document";
+	section.id = idPrefix;
 	if (idPrefix.startsWith("review-claim")) section.classList.add("review-wide");
 	const heading = document.createElement("h2");
 	heading.textContent = title;
@@ -35,8 +36,8 @@ function addCase(title: string, source: string, idPrefix: string, shadow = false
 	retained.className = "review-note";
 	retained.textContent = "Host content remains after either teardown entry point.";
 	container.append(style, figure, retained);
-	function makeMount(): Pick<PlaybackMount, "player" | "destroy"> & Partial<Pick<PlaybackMount, "update">> {
-		if (!headless) return mountPlayback(figure, svg, timelines, { loop: loop.checked, ...playbackOptions });
+	function makeMount(): Pick<PlaybackMount, "player" | "destroy"> & Partial<Pick<PlaybackMount, "update" | "expand">> {
+		if (!headless) return mountPlayback(figure, svg, timelines, { loop: loop.checked, expand: true, ...playbackOptions });
 		const player = createPlayer(svg, timelines, { loop: loop.checked, pauseWhenOffscreen: playbackOptions.pauseWhenOffscreen });
 		return { player, destroy: () => player.destroy() };
 	}
@@ -73,6 +74,7 @@ function addCase(title: string, source: string, idPrefix: string, shadow = false
 		button("Reinsert SVG", () => { (figure.querySelector(".abp-figure") ?? figure).prepend(svg); note.textContent = "SVG reinserted. A lifecycle pause must wait for explicit Play."; }),
 		note, stateLine);
 	if (!headless) {
+		section.append(button("Host expand()", () => mount.expand?.()));
 		const mode = document.createElement("select");
 		mode.setAttribute("aria-label", `Replacement data for ${title}`);
 		for (const [value, text] of [
@@ -151,6 +153,7 @@ function draw() {
 	addCase("Claim · side captions in shadow root", claim, "review-claim-shadow", true, false, { layout: "side" });
 	addCase("Loop · light DOM", source, "review-light-dom");
 	addCase("Loop · shadow root", source, "review-shadow", true);
+	addCase("Loop · host expand() only (no built-in Expand)", source, "review-host-expand", false, false, { expand: false });
 	addCase("Compact controls · overflowing tabs and single-line captions", compact, "review-compact");
 	addCase("Fade · inline labels on canvas and band", fade, "review-fade");
 	addCase("Fade · crossing knockouts (two expected warnings)", crossings, "review-crossings");
