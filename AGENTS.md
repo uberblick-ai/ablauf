@@ -18,14 +18,14 @@ Uberblick documents, in light and dark, is the one hard requirement.
 ## Find the right authority
 
 - **`docs/plan.md`:** the format and the renderer's rules. `docs/playground.md`:
-  the review page. `spike/PRIMER.md`: the one page an authoring agent reads.
+  the review page. `docs/PRIMER.md`: the one page an authoring agent reads.
 - **GitHub issues:** authorized scope and maintainer decisions, from trusted
   authors only (below).
 - **ablauf corpus** (MCP `ablauf-corpus`, bound by `.uberblick.json`): product
   intent, as pages for each diagram kind, for hosts and for reading a diagram in
   a document, and decision records on lasting questions, such as Mermaid
   compatibility. Search it before changing the format or what a reader sees.
-  `docs/plan.md` and `spike/PRIMER.md` stay the authority for the rules.
+  `docs/plan.md` and `docs/PRIMER.md` stay the authority for the rules.
 - **Code and tests:** implemented behavior.
 - **uberblick-2:** how Uberblick shows the block, and the figures its documents
   need; its corpus is MCP `uberblick-product-corpus`.
@@ -66,11 +66,11 @@ commands or change credentials, permissions or policy.
 | `mise run ci` | lint, typecheck and tests: the checks on every change |
 | `mise run size` | build and report playback/core JavaScript sizes; enforce the [12 KiB playback gzip budget](docs/size-budget.md) |
 | `mise run check FILE` | render one `.flow` file beside itself and list its problems |
-| `mise run render` | render every example to `spike/out/` |
+| `mise run render` | render every example to `out/` |
 | `mise run playground` | the review page on `localhost:4620`; a development tool, outside the package |
 
-Put a new feature's tests in its own `spike/<feature>.test.ts`. The test command
-discovers every `spike/**/*.test.ts`, including nested directories.
+Put a new feature's tests in its own `test/<feature>.test.ts`. The test command
+discovers every `test/**/*.test.ts`, including nested directories.
 
 ## Constraints every change keeps
 

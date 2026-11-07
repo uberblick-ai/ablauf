@@ -6,7 +6,7 @@ import { kinds } from "./kinds.ts";
 
 const REPO = "https://github.com/uberblick-ai/ablauf";
 const NPM = "https://www.npmjs.com/package/@uberblick/ablauf";
-const PRIMER = `${REPO}/blob/main/spike/PRIMER.md`;
+const PRIMER = `${REPO}/blob/main/docs/PRIMER.md`;
 
 // [group title or null for an ungrouped list, [href, label][]]
 const SIDE: [string | null, [string, string][]][] = [
