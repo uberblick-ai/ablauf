@@ -1009,9 +1009,12 @@ a fixed figure width.
 
 The caption is always a tab stop (`tabindex="0"`) before Previous, with
 `role="region"` and the constant accessible name “Step caption” (`aria-label`).
-Its scoped `:focus-visible` outline does not change geometry. Left/Right, Home
-and End in the caption retain native scrolling; playback shortcuts must not
-consume them or switch steps or scenarios. Scenario/step changes reset the
+Its scoped `:focus-visible` outline does not change geometry. Playback
+shortcuts must not consume Left/Right, Home or End in the caption or switch
+steps or scenarios on them; the browser handles them natively. Left/Right
+scroll the caption horizontally. Browsers treat Home and End as vertical keys,
+so in a caption without vertical overflow they scroll the page instead, as
+they would in any horizontal scroller. Scenario/step changes reset the
 caption instantly to its beginning; pause and resume at the same step preserve
 the reader's scroll position. Completion restores the full figure at step `-1`,
 clearing the caption and resetting its scrolling. There is no automatic panning
