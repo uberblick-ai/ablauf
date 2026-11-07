@@ -7,12 +7,14 @@
 <link rel="icon" href="data:,">
 <script type="module" src="/playground/playback-review.ts"></script>
 <style>
-body{margin:24px;font:15px/1.5 system-ui,sans-serif;background:#fff;color:#17202c}
+body{margin:24px;font:15px/1.5 system-ui,sans-serif;background:#fff;color:#17202c;color-scheme:light}
+body[data-host="light dark"]{color-scheme:light dark;background:light-dark(#fff,#171c24);color:light-dark(#17202c,#e5e9ef)}
+body[data-host="normal"]{color-scheme:normal}
 body[data-host="dark"]{background:#171c24;color:#e5e9ef;color-scheme:dark}
 @media(prefers-color-scheme:dark){body[data-host="auto"]{background:#171c24;color:#e5e9ef;color-scheme:dark}}
-header{max-width:710px}label{display:inline-block;margin:8px}button,select{font:inherit}
-.review-document{width:710px;max-width:100%;box-sizing:border-box;padding:16px;outline:1px solid #98a2b0;margin:24px 0}
-.review-document.review-wide{width:1088px}
+header{max-width:710px}label{display:inline-block;margin:8px}header button,header select{font:inherit}
+.review-document{width:var(--review-width,710px);max-width:100%;box-sizing:border-box;padding:16px;outline:1px solid #98a2b0;margin:24px 0}
+.review-document.review-wide{width:var(--review-width,1088px)}
 .review-figure svg{display:block;max-width:100%;height:auto}
 .review-note{font-size:13px}
 </style>
@@ -23,18 +25,25 @@ header{max-width:710px}label{display:inline-block;margin:8px}button,select{font:
 <h1>Playback browser review</h1>
 <p>Use Expand above the controls or Host expand() to open the natural-size figure in a full-screen modal. Close, Escape or the outer gutter returns focus; captions and controls stay below the scrolling figure. The host-only case omits the built-in button.</p>
 <p>The claim document is up to 1088px wide for side captions. Other documents are 710px wide with a 678px figure. The two loop diagrams have independent players and distinct SVG IDs; the second lives inside a shadow root.</p>
-<label>SVG and controls scheme <select id="review-scheme"><option value="auto">Automatic (OS)</option><option value="light">Pinned light</option><option value="dark">Pinned dark</option></select></label>
-<label>Host background <select id="review-host"><option value="auto">Automatic (OS)</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
+<label>SVG scheme (automatic controls inherit host) <select id="review-scheme"><option value="auto">Automatic SVG (OS)</option><option value="light">Pinned light</option><option value="dark">Pinned dark</option></select></label>
+<label>Host colour scheme and surface <select id="review-host"><option value="auto">Automatic (OS)</option><option value="light">Pinned light</option><option value="dark">Pinned dark</option><option value="light dark">Inherited light dark</option><option value="normal">Normal (browser default)</option></select></label>
+<label>Document width <select id="review-width"><option value="">678px figures (wide Claim)</option><option value="352px">320px figures</option></select></label>
 <label><input id="review-loop" type="checkbox">Loop playback</label>
 <label>Claim layout <select id="review-claim-layout"><option value="auto">Auto</option><option value="side">Side</option><option value="below">Below</option></select></label>
 <label>Current colour <select id="review-accent"><option value="">Default mint</option><option value="#a777d4">Host purple override</option></select></label>
 <label><input id="review-zero-glow" type="checkbox">Zero glow (--ab-play-glow: 0)</label>
+<label>Unplayed shape opacity <select id="review-fade"><option value="">Default (0.3)</option><option value="0">0</option><option value="0.01">0.01 (low nonzero)</option><option value="30%">30%</option><option value="1">1</option></select></label>
+<label>Control body/caption font <select id="review-font-text"><option value="">Default system sans</option><option value="Georgia,serif">Georgia, serif</option><option value="monospace">Monospace</option></select></label>
+<label>Control mono font <select id="review-font-mono"><option value="">Default UI monospace</option><option value="Georgia,serif">Georgia, serif</option><option value="system-ui,sans-serif">System sans</option></select></label>
+<label>Host ink override <input id="review-ink" placeholder="Default; try #777 or #7778" aria-label="Host --ab-ink override"></label>
 <p>Compare the current outlines and incoming edges with the <a href="https://raw.githubusercontent.com/uberblick-ai/ablauf/main/docs/images/playback/scenario-tabs.gif">scenario playback reference</a>. While playing, incoming strokes run toward the fixed arrowheads and colours/fades ease gently. Pause or end: still edges and a glowing current step. Manual navigation is instant. Try the mint defaults, purple host override and zero-glow control in both schemes, including the shadow root and direct createPlayer case.</p>
 <p>Use Tab, Left/Right, Enter/Space and the range arrows. Enable reduced motion in your browser or OS before and during play: the full figure should return, with manual stepping still available. Try both destroy buttons while playing, then remount. Other figures should keep playing.</p>
+<p>In the fade figure, select Request and Next to show the first step: later shapes dim while all labels stay unfaded and readable. Change opacity through 0, 0.01, 0.3 (30%) and 1 without rerendering. Gaps and crossing breaks must keep opaque canvas and band backgrounds at every fade. Seek through the steps and switch to Review only or Empty. The reference source's first caption predates unfaded labels. The crossing figure's two warnings are intentional.</p>
+<p>Change both control fonts and host colours live, including the shadow-root and Claim side-list cases. Below captions keep one scrollable line; side remarks wrap without clipping. SVG text/geometry must stay fixed. With automatic SVGs, pin the host light against OS dark, then host dark against OS light: controls follow the host; automatic SVGs keep following the OS. Try pinned SVGs and live host changes while expanded too. Controls have a transparent surface and need no corrective host control CSS.</p>
+<p>Enable coarse-pointer touch emulation (including a device with both fine and coarse pointers). Measure every button, tab, side row and step segment: at least 44px in both dimensions. At 678px and the narrower document width, actions and segments wrap without page overflow; tabs still scroll horizontally. Return to a fine-only pointer and verify compact sizes. Record browser/version, OS/host/SVG schemes, pointer settings, DOM context, fonts and overrides, captures and observed visibility. Measure focus rings against each adjacent surface, progress segments and faded shapes separately from text ratios. See the <a href="https://github.com/uberblick-ai/ablauf/blob/main/docs/playground.md#playback-browser-review">review checklist and record template</a>.</p>
 <p>For rebinding, choose replacement data and Rebind now, or schedule it in two seconds and focus a tab, action button, range or panel. Reordering preserves the selected/focused slug; a removed tab focuses the panel. Try one scenario, an empty scenario, no timelines, refreshed labels/counts/scheme and restore. Every update pauses; scrolling must not restart it.</p>
 <p>Remove a playing SVG, wait beyond its dwell, then reinsert: it pauses without advancing and needs explicit Play. Hide this browser tab while playing and return: no automatic resume. The state readout uses a subscription. Focus the panel itself for Space and Left/Right shortcuts; native buttons, range and tabs keep their own behavior. Check isolation between document and shadow-root cases.</p>
 <p>The viewport cases below exercise pause-only, autoplay-only and both options together, plus a direct pause-only player. Scroll slowly: autoplay entry/resume needs half visibility, but only no intersection pauses. Manual pauses/navigation and lifecycle pauses must prevent automatic resume. Review all cases in light and dark at the 678px figure width before merging.</p>
-<p>In the fade figure, select Request and Next to show the first step: all later labels should dim to 0.3 while their canvas and band gaps stay opaque. Seek through the steps and switch to Review only or Empty. In the crossing figure, try each vertical and horizontal scenario: the two crossing breaks must keep opaque canvas and band backgrounds even while their edges fade. Its two crossing warnings are intentional.</p>
 </header>
 <main id="review-cases"></main>
 </body>

@@ -40,17 +40,16 @@ function setup(mounted: boolean, idPrefix = "fade", loop = false, doc = new Doc(
 	return { ...result, container, svg, doc, player, mount, frame };
 }
 
-test("embedded fade rules scope to each figure, composite whole parts and exempt inline gaps", () => {
+test("embedded fade rules scope to each figure, fade only shapes and exempt text, gaps and knockouts", () => {
 	for (const scheme of [undefined, "light", "dark"] as const) {
 		for (const idPrefix of ["first", "second"]) {
 			const { svg, diagnostics } = render(example, { scheme, idPrefix });
 			assert.deepEqual(diagnostics, []);
 			const styles = svg.match(/<style>([\s\S]*?)<\/style>/)?.[1] ?? "";
-			const selector = `.ab[data-ab-play="${idPrefix}"].ab-in-progress [data-ab-part]:not(.ab-current):not(.ab-played)`;
+			const selector = `.ab[data-ab-play="${idPrefix}"].ab-in-progress [data-ab-part]:where(:not(.ab-current):not(.ab-played))`;
 			const fadeRules = styles.match(/[^{}]+\{opacity:[^}]+\}/g);
 			assert.deepEqual(fadeRules, [
-				`${selector}:not(:has(.gap)){opacity:.3}`,
-				`${selector}:has(.gap) text{opacity:.3}`,
+				`${selector} :is(rect:not(.gap),path:not(.knockout),circle,line){opacity:var(--ab-play-unreached-opacity,.3)}`,
 			]);
 			assert.match(styles, /\.ab \.gap\{fill:var\(--bg\)\}\.ab \.gap-band\{fill:var\(--band\)\}/);
 			assert.match(styles, /\.ab-playing/);
@@ -72,8 +71,8 @@ test("pre-fade drawing and style bytes survive added fade/effects CSS and playba
 		.replace(/\n<marker id="[^"]+-play-(?:played|current)"[\s\S]*?<\/marker>/g, "");
 	const source = readFileSync(new URL("./examples/loop-play.flow", import.meta.url), "utf8");
 	const after = render(source, { idPrefix: "loop-play" }).svg;
-	const rules = /\.ab\[data-ab-play="loop-play"\]\.ab-in-progress [^{}]+\{opacity:\.3\}/g;
-	assert.equal(after.match(rules)?.length, 2);
+	const rules = /\.ab\[data-ab-play="loop-play"\]\.ab-in-progress [^{}]+\{opacity:var\(--ab-play-unreached-opacity,\.3\)\}/g;
+	assert.equal(after.match(rules)?.length, 1);
 	// The final style line adds motion/glow; playback-effects.test.ts checks
 	// its scope and guards and compares the complete post-112 baseline.
 	const styles = after.match(/<style>([\s\S]*?)<\/style>/)?.[1];

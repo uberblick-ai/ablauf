@@ -4,6 +4,16 @@
 
 ### Playback
 
+- Built-in playback controls inherit the host's `color-scheme` in automatic mode,
+  with live scheme-dependent fallback colours and a transparent surface. Reuse
+  host text/mono font hooks throughout side captions and expanded controls.
+  Coarse-pointer buttons and segments have 44px targets with wrapping; ordinary
+  host rules override defaults through the `ablauf-playback` cascade layer.
+  ([#151](https://github.com/uberblick-ai/ablauf/issues/151))
+- Add configurable unplayed shape opacity with unfaded labels, live control-font
+  overrides, and optional playback text contrast checks through
+  `checkPalette(palette, { play, unreachedOpacity })`. Static palettes, SVG bytes
+  and one-argument checks stay unchanged. ([#96](https://github.com/uberblick-ai/ablauf/issues/96))
 - Add optional `mountPlayback(..., { expand: true })` and host-called `mount.expand()`:
   a full-screen native modal keeps natural-size figure scrolling above persistent
   playback controls and single-line captions, preserves the active player and dwell,

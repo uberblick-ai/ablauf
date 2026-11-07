@@ -135,7 +135,7 @@ export const markerPrefix = (options: SvgOptions) =>
 		(c) => `.${c.charCodeAt(0).toString(16).padStart(4, "0")}`,
 	);
 
-// Playback fades unplayed parts, preserving opaque gaps and knockouts.
+// Playback fades unplayed shapes, preserving text, gaps and knockouts.
 // Parts keep their own tone colours in every state; the current step stands
 // out by glow and a heavier stroke. Geometry and draw order never change.
 export function playStyle(mode: "auto" | "light" | "dark", id: string, kind: "flow" | "sequence" = "flow"): string {
@@ -143,15 +143,20 @@ export function playStyle(mode: "auto" | "light" | "dark", id: string, kind: "fl
 	const defaults = mode === "auto"
 		? `.ab.ab-auto{${colors(false)}}@media (prefers-color-scheme:dark){.ab.ab-auto{${colors(true)}}}`
 		: `.ab.ab-${mode}{${colors(mode === "dark")}}`;
-	const unplayed = `.ab[data-ab-play="${id}"].ab-in-progress [data-ab-part]:not(.ab-current):not(.ab-played)`;
-	// Group opacity composites nodes, strokes and marker heads as a whole.
-	// Inline labels contain a canvas/band gap: only their text may fade.
-	const fade = `${unplayed}:not(:has(.gap)){opacity:.3}${unplayed}:has(.gap) text{opacity:.3}`;
+	const unplayed = `.ab[data-ab-play="${id}"].ab-in-progress [data-ab-part]:where(:not(.ab-current):not(.ab-played))`;
+	// Fade individual shapes so text never inherits a group opacity. Opacity
+	// accepts numbers/percentages and clamps in CSS; marker carriers fade heads.
+	// Sequence playback retains its existing group fade and overlay ordering.
+	const sequenceUnplayed = `.ab[data-ab-play="${id}"].ab-in-progress [data-ab-part]:not(.ab-current):not(.ab-played)`;
+	const fade = kind === "sequence"
+		? `${sequenceUnplayed}:not(:has(.gap)){opacity:.3}${sequenceUnplayed}:has(.gap) text{opacity:.3}`
+		: `${unplayed} ${FADE_SHAPES}{opacity:var(--ab-play-unreached-opacity,.3)}`;
 	return `${defaults}${fade}\n${kind === "sequence" ? sequencePlayEffects(id) : playEffects(id)}`;
 }
 
 // Toned shapes glow in their own tone; untoned ones in the play colour.
-const GLOW_TONES = ["agent", "system", "done", "rework", "stop"] as const;
+const GLOW_TONES = ["neutral", "agent", "system", "done", "rework", "stop"] as const;
+const FADE_SHAPES = ":is(rect:not(.gap),path:not(.knockout),circle,line)";
 
 function sequencePlayEffects(id: string): string {
 	const root = `.ab[data-ab-play="${id}"]`;
@@ -164,7 +169,7 @@ function sequencePlayEffects(id: string): string {
 	const glow = "filter:drop-shadow(0 0 var(--ab-play-glow,6px) color-mix(in srgb,currentColor 55%,transparent))";
 	return [
 		`${parts}{color:var(--play)}`,
-		...["neutral", ...GLOW_TONES].map(t => `${parts}:has(circle.t-${t}){color:var(--${t})}`),
+		...GLOW_TONES.map(t => `${parts}:has(circle.t-${t}){color:var(--${t})}`),
 		// Responses have no origin dot, so their glow keeps the play colour.
 		`${parts}.ab-current .e{${glow};stroke-width:2.2}`,
 		`${parts}.ab-current .seq-number{fill:var(--play);font-weight:600}`,
@@ -200,7 +205,7 @@ function playEffects(id: string): string {
 	const run = `ab-run-${Array.from(id, c => c.charCodeAt(0).toString(16)).join("-")}`;
 	const shapes = ":is(rect:not(.gap),.decision,.e)";
 	const edge = `${playing} [data-ab-part].ab-current .e`;
-	const fades = `${playing} [data-ab-part]:not(:has(.gap)),${playing} [data-ab-part] text`;
+	const fades = `${playing} [data-ab-part] ${FADE_SHAPES}`;
 	// The glow reads currentColor: the play colour by default, a pill's dot
 	// tone for the whole pill, and a shape's own tone for toned outlines/edges.
 	const glowColors = [

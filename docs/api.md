@@ -133,8 +133,21 @@ itself, unmodified Space toggles Play/Pause (Replay when ended), Left calls
 Descendant controls keep native behavior, tabs keep their own activation, and
 editable targets (including inherited contenteditable) never trigger shortcuts.
 Shortcuts are local to each mount, including in shadow roots.
-Controls follow the SVG's automatic or pinned scheme and accept host `--ab-*`
-colour overrides on their container. `PlaybackMount` is exported from the same
+Automatic controls inherit the host's CSS `color-scheme`, including live changes;
+controls from pinned-light/dark SVGs retain that pinned scheme. The automatic
+SVG still follows the OS. Controls sit transparently on the host surface and
+accept host `--ab-*` colour overrides in all modes. Set `--ab-font-text` once
+for captions, side remarks and other body text, and `--ab-font-mono` for buttons,
+tabs, actors and numbers; these are independent of SVG render `fonts` and
+inherit through shadow roots. Defaults are `system-ui,sans-serif` and
+`ui-monospace,monospace`. Under `(any-pointer: coarse)`, every button and step
+segment has a minimum 44px width/height, action and segment rows wrap, and tabs
+keep horizontal scrolling. Fine-only pointers retain compact sizing. Defaults
+are in the `ablauf-playback` cascade layer: ordinary unlayered host selectors
+such as `.ab-playback`, `.ab-playback button` and `.ab-playback .abp-segment`
+override them even when the host stylesheet precedes mount styles. Place scoped
+rules inside a shadow root to select its controls; inherited hooks cross its host.
+`PlaybackMount` is exported from the same
 entry. Both entries are safe to import without browser globals.
 
 For custom controls, use the headless player:

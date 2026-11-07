@@ -428,7 +428,7 @@ test("the documented host CSS supplies both complete palettes", () => {
 		join(import.meta.dirname, "../docs/theming.md"),
 		"utf8",
 	);
-	const css = doc.match(/```css\n([\s\S]*?)\n```/)?.[1];
+	const css = doc.match(/```css\n(:root\[data-theme="light"\][\s\S]*?)\n```/)?.[1];
 	assert.ok(css, "a copyable host CSS example");
 	const palettes = Object.fromEntries(
 		[...css.matchAll(/:root\[data-theme="(light|dark)"\]\s*\{([^}]+)\}/g)]

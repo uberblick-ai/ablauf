@@ -13,19 +13,20 @@ export interface PlaybackMount {
 // Always reserve the native horizontal scrollbar; the empty pseudo-element
 // keeps a real text line above it even when there is no caption.
 // nowrap also collapses JSON-escaped line breaks; pre would create extra rows.
-const STYLE = `
-.ab-playback{--abp-bg:var(--ab-bg,#ffffff);--abp-ink:var(--ab-ink,#17202c);--abp-muted:var(--ab-muted,#5a6575);--abp-line:var(--ab-line,#d3d9e2);--abp-play:var(--ab-play,#0a7a60);color-scheme:light;color:var(--abp-ink);background:var(--abp-bg);font:14px/1.5 system-ui,sans-serif;padding:0 0 12px;overflow-wrap:anywhere}
-.ab-playback.ab-dark{--abp-bg:var(--ab-bg,#171c24);--abp-ink:var(--ab-ink,#e5e9ef);--abp-muted:var(--ab-muted,#98a2b0);--abp-line:var(--ab-line,#2c3440);--abp-play:var(--ab-play,#6ff0cf);color-scheme:dark}
-@media (prefers-color-scheme:dark){.ab-playback.ab-auto{--abp-bg:var(--ab-bg,#171c24);--abp-ink:var(--ab-ink,#e5e9ef);--abp-muted:var(--ab-muted,#98a2b0);--abp-line:var(--ab-line,#2c3440);--abp-play:var(--ab-play,#6ff0cf);color-scheme:dark}}
-.ab-playback button{font:12px/1 ui-monospace,monospace;color:var(--abp-ink);background:var(--abp-bg);border:1px solid var(--abp-line);border-radius:8px;height:30px;padding:0 10px;cursor:pointer}
+// Unlayered host rules win even when installed before this mount's defaults.
+const STYLE = `@layer ablauf-playback{
+.ab-playback{--abp-bg:var(--ab-bg,light-dark(#ffffff,#171c24));--abp-ink:var(--ab-ink,light-dark(#17202c,#e5e9ef));--abp-muted:var(--ab-muted,light-dark(#5a6575,#98a2b0));--abp-line:var(--ab-line,light-dark(#d3d9e2,#2c3440));--abp-play:var(--ab-play,light-dark(#0a7a60,#6ff0cf));color-scheme:inherit;color:var(--abp-ink);background:transparent;font:14px/1.5 var(--ab-font-text,system-ui,sans-serif);padding:0 0 12px;overflow-wrap:anywhere}
+.ab-playback.ab-light{color-scheme:light}
+.ab-playback.ab-dark{color-scheme:dark}
+.ab-playback button{font:12px/1 var(--ab-font-mono,ui-monospace,monospace);color:var(--abp-ink);background:var(--abp-bg);border:1px solid var(--abp-line);border-radius:8px;height:30px;padding:0 10px;cursor:pointer}
 .ab-playback .abp-tabs{display:flex;overflow-x:auto;border-bottom:1px solid var(--abp-line)}
 .ab-playback .abp-tabs button{flex:none;font-weight:500;color:var(--abp-muted);background:none;border:0;border-bottom:2px solid transparent;border-radius:0;height:auto;padding:11px 16px;white-space:nowrap}
 .ab-playback .abp-tabs button:hover{color:var(--abp-ink)}
 .ab-playback .abp-tabs button[aria-selected="true"]{color:var(--abp-play);border-bottom-color:var(--abp-play);text-shadow:0 0 var(--ab-play-glow,10px) color-mix(in srgb,var(--abp-play) 50%,transparent)}
 .ab-playback .abp-step{display:grid;grid-template-columns:54px minmax(0,1fr);grid-template-rows:20px auto;column-gap:14px;row-gap:2px;box-sizing:border-box;min-height:64px;padding:12px 12px 4px;align-content:start}
-.ab-playback .abp-counter{grid-row:1/3;align-self:start;box-sizing:border-box;font:500 11px/20px ui-monospace,monospace;color:var(--abp-muted);border:1px solid var(--abp-line);border-radius:999px;padding:0 8px;text-align:center}
+.ab-playback .abp-counter{grid-row:1/3;align-self:start;box-sizing:border-box;font:500 11px/20px var(--ab-font-mono,ui-monospace,monospace);color:var(--abp-muted);border:1px solid var(--abp-line);border-radius:999px;padding:0 8px;text-align:center}
 .ab-playback .abp-counter:empty{visibility:hidden}
-.ab-playback .abp-actor{grid-column:2;font:500 13px/20px ui-monospace,monospace;color:var(--abp-play);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ab-playback .abp-actor{grid-column:2;font:500 13px/20px var(--ab-font-mono,ui-monospace,monospace);color:var(--abp-play);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ab-playback .abp-caption{grid-column:2;min-width:0;font-size:16px;line-height:1.45;min-height:1.45em;white-space:nowrap;overflow-x:scroll;overflow-y:hidden;scroll-behavior:auto}
 .ab-playback .abp-caption:empty::before{content:"\\00a0"}
 .ab-playback .abp-actions{display:flex;align-items:center;gap:8px;padding:6px 12px 0}
@@ -52,9 +53,9 @@ const STYLE = `
 .ab-playback .abp-list[hidden]{display:none}
 .ab-playback .abp-row{display:grid;grid-template-columns:28px minmax(0,1fr);column-gap:10px;width:100%;height:auto;padding:5px 8px;text-align:left;border:0;color:var(--abp-muted);background:none;line-height:1.5}
 .ab-playback .abp-row:hover{background:color-mix(in srgb,var(--abp-line) 40%,transparent)}
-.ab-playback .abp-number{grid-row:1/3;font:500 11px/20px ui-monospace,monospace}
-.ab-playback .abp-who{font:12px/20px ui-monospace,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ab-playback .abp-remark{font:14px/1.4 system-ui,sans-serif;white-space:pre-wrap}
+.ab-playback .abp-number{grid-row:1/3;font:500 11px/20px var(--ab-font-mono,ui-monospace,monospace)}
+.ab-playback .abp-who{font:12px/20px var(--ab-font-mono,ui-monospace,monospace);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ab-playback .abp-remark{font:14px/1.4 var(--ab-font-text,system-ui,sans-serif);white-space:pre-wrap}
 .ab-playback .abp-row.abp-played{color:var(--abp-ink)}
 .ab-playback .abp-row.abp-played .abp-who{color:var(--abp-muted)}
 .ab-playback .abp-row[aria-current="step"]{background:color-mix(in srgb,var(--abp-play) 10%,transparent);color:var(--abp-ink)}
@@ -71,6 +72,12 @@ const STYLE = `
 .ab-playback.abp-expanded>.abp-figure{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain}
 .ab-playback.abp-expanded>.abp-figure>svg{display:block;width:var(--abp-width)!important;height:var(--abp-height)!important;max-width:none!important;max-height:none!important;margin:0 auto}
 .ab-playback.abp-expanded>.abp-controls{flex:none;position:static;max-height:50%;overflow:auto}
+@media (any-pointer:coarse){
+.ab-playback button,.ab-playback .abp-segment{box-sizing:border-box;min-width:44px;min-height:44px}
+.ab-playback .abp-actions,.ab-playback .abp-segments{flex-wrap:wrap}
+.ab-playback .abp-navigation{flex-basis:100%}
+}
+}
 `;
 
 let mountId = 0;

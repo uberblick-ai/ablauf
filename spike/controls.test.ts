@@ -228,7 +228,7 @@ test("no timelines adds nothing; single and empty scenarios retain their own sel
 	assert.equal(empty.role("status")[0].textContent, "");
 });
 
-test("every CSS selector is scoped; all schemes have independent token defaults", t => {
+test("every CSS selector is scoped; fallback tokens follow the used scheme", t => {
 	for (const scheme of ["auto", "light", "dark"]) {
 		const f = setup(t, timelines, { scheme });
 		assert.ok(f.cls("ab-playback").classList.contains(`ab-${scheme}`));
@@ -237,10 +237,9 @@ test("every CSS selector is scoped; all schemes have independent token defaults"
 		assert.ok(selectors.length > 10);
 		for (const group of selectors) for (const selector of group.split(",")) assert.match(selector, /^\.ab-playback(?:[ .[:]|$)/);
 		for (const [token, light, dark] of [["bg", "#ffffff", "#171c24"], ["ink", "#17202c", "#e5e9ef"], ["muted", "#5a6575", "#98a2b0"], ["line", "#d3d9e2", "#2c3440"], ["play", "#0a7a60", "#6ff0cf"]]) {
-			assert.ok(css.includes(`var(--ab-${token},${light})`));
-			assert.ok(css.includes(`var(--ab-${token},${dark})`));
+			assert.ok(css.includes(`var(--ab-${token},light-dark(${light},${dark}))`));
 		}
-		assert.match(css, /prefers-color-scheme:dark/);
+		assert.doesNotMatch(css, /prefers-color-scheme/);
 		assert.match(css, /:focus-visible/);
 	}
 });

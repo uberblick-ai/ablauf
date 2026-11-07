@@ -51,7 +51,7 @@ play "Röute"
 play "Empty"
 `;
 
-test("every pre-change example retains exact SVG bytes in auto, light and dark", () => {
+test("pre-sequence examples retain SVG bytes apart from the separately tested flow playback styles", () => {
 	const baseline = JSON.parse(gunzipSync(readFileSync(new URL("./fixtures/pre-sequence-playback.json.gz", import.meta.url))).toString()) as {
 		sha: string; fixtures: { file: string; outputs: string[] }[];
 	};
@@ -60,7 +60,13 @@ test("every pre-change example retains exact SVG bytes in auto, light and dark",
 	assert.deepEqual(baseline.fixtures.map(f => f.file), readdirSync(new URL("./examples", import.meta.url)).filter(f => f.endsWith(".flow") && f !== "claim-play.flow").sort());
 	for (const { file, outputs } of baseline.fixtures) {
 		for (const [i, scheme] of schemes.entries()) {
-			assert.equal(render(read(`./examples/${file}`), { scheme, idPrefix: file.slice(0, -5) }).svg, outputs[i], `${file}, ${scheme ?? "auto"}`);
+			const actual = render(read(`./examples/${file}`), { scheme, idPrefix: file.slice(0, -5) }).svg;
+			// #96 intentionally changes flow fade/effect CSS. Its full emitted
+			// cascade is checked by playback-fade/effects/theming.test.ts; keep
+			// this older sequence baseline checking all other drawing bytes.
+			const drawing = (svg: string) => /data-ab-play=/.test(svg) && /^flow v0/m.test(read(`./examples/${file}`))
+				? svg.replace(/<style>[\s\S]*?<\/style>/, "") : svg;
+			assert.equal(drawing(actual), drawing(outputs[i]), `${file}, ${scheme ?? "auto"}`);
 		}
 	}
 });
