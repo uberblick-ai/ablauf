@@ -9,6 +9,11 @@
   --ab-bg: var(--panel); --ab-ink: var(--fg); --ab-muted: var(--muted); --ab-line: var(--line); --ab-surface: var(--bg); --ab-band: var(--code) }
 .ex-pic > div { width: fit-content; margin-inline: auto }
 .ex-pic svg { display: block; max-width: none; height: auto; margin-inline: auto }
+/* Leave room for the figure and side controls on wide screens. The mount
+   chooses below controls as the available container width narrows. */
+.layout:has(.ex-pic[data-timelines]) { max-width: 1360px }
+.tabs.ex:has(.ex-pic[data-timelines]), .ex-pic[data-timelines] { overflow: visible }
+.ex-pic[data-timelines] > .ab-playback { width: auto; margin: 0 }
 .tabs.ex .panel pre { max-height: 560px }
 /* shared.css keeps an install command's code on one line; a source keeps its lines. */
 .tabs.ex .panel pre code { white-space: pre; font-size: inherit }
@@ -24,3 +29,7 @@
 .mark > span { color: var(--accent); margin-inline: 1px }
 .mark .ub { text-decoration: underline 2px #bc7509; text-underline-offset: 4px }
 .mark a:hover { color: var(--accent) }
+/* Keep the figure at its natural size, as the static examples are, and scroll
+   it sideways in narrow columns instead of shrinking the text. */
+.ex-pic[data-timelines] .abp-figure { overflow-x: auto }
+.ex-pic[data-timelines] .abp-figure svg { max-width: none }

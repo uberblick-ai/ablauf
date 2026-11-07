@@ -138,7 +138,7 @@ export const markerPrefix = (options: SvgOptions) =>
 // Playback fades unplayed parts, preserving opaque gaps and knockouts.
 // Parts keep their own tone colours in every state; the current step stands
 // out by glow and a heavier stroke. Geometry and draw order never change.
-function playStyle(mode: "auto" | "light" | "dark", id: string): string {
+export function playStyle(mode: "auto" | "light" | "dark", id: string, kind: "flow" | "sequence" = "flow"): string {
 	const colors = (dark: boolean) => `--play:var(--ab-play,${dark ? "#6ff0cf" : "#0a7a60"});`;
 	const defaults = mode === "auto"
 		? `.ab.ab-auto{${colors(false)}}@media (prefers-color-scheme:dark){.ab.ab-auto{${colors(true)}}}`
@@ -147,11 +147,50 @@ function playStyle(mode: "auto" | "light" | "dark", id: string): string {
 	// Group opacity composites nodes, strokes and marker heads as a whole.
 	// Inline labels contain a canvas/band gap: only their text may fade.
 	const fade = `${unplayed}:not(:has(.gap)){opacity:.3}${unplayed}:has(.gap) text{opacity:.3}`;
-	return `${defaults}${fade}\n${playEffects(id)}`;
+	return `${defaults}${fade}\n${kind === "sequence" ? sequencePlayEffects(id) : playEffects(id)}`;
 }
 
 // Toned shapes glow in their own tone; untoned ones in the play colour.
 const GLOW_TONES = ["agent", "system", "done", "rework", "stop"] as const;
+
+function sequencePlayEffects(id: string): string {
+	const root = `.ab[data-ab-play="${id}"]`;
+	const parts = `${root} [data-ab-part]`;
+	const playing = `${root}.ab-playing [data-ab-part]`;
+	const current = `${root}.ab-in-progress [data-ab-part].ab-current`;
+	const moving = `${playing}.ab-current`;
+	const name = `ab-seq-${Array.from(id, c => c.charCodeAt(0).toString(16)).join("-")}`;
+	const headers = '[data-ab-part^="participant-"]';
+	const glow = "filter:drop-shadow(0 0 var(--ab-play-glow,6px) color-mix(in srgb,currentColor 55%,transparent))";
+	return [
+		`${parts}{color:var(--play)}`,
+		...["neutral", ...GLOW_TONES].map(t => `${parts}:has(circle.t-${t}){color:var(--${t})}`),
+		// Responses have no origin dot, so their glow keeps the play colour.
+		`${parts}.ab-current .e{${glow};stroke-width:2.2}`,
+		`${parts}.ab-current .seq-number{fill:var(--play);font-weight:600}`,
+		// Mono faces keep their advance at 600, so the bold label never re-wraps.
+		`${parts}.ab-current .seq-label{font-weight:600}`,
+		`${root} ${headers} circle{transform-box:fill-box;transform-origin:center}`,
+		`${root} ${headers}.ab-current circle{transform:scale(1.7);${glow}}`,
+		`${playing}{transition:opacity .35s ease}`,
+		`${root}.ab-playing ${headers} circle{transition:transform .3s ease}`,
+		`${root} :is(.seq-packet,.seq-time-band){opacity:0;pointer-events:none}`,
+		`${root} .seq-time-band{fill:var(--play)}`,
+		`${current} .seq-time-band{opacity:.1}`,
+		// A round, near-zero dash is a dot on the same path, including loops.
+		// Its gap exceeds the whole path so no second packet can appear.
+		`${root} .seq-packet{fill:none;stroke-width:6;stroke-linecap:round;stroke-dasharray:.01 calc(var(--seq-length) + 8)}`,
+		`${root}.ab-playing .seq-time-band{transition:opacity .35s ease}`,
+		`${moving} path.e{animation:${name}-draw .55s ease-out}`,
+		`${moving} .seq-packet{animation:${name}-travel .55s ease-out}`,
+		// No fill mode on draw: response dashes return as soon as it finishes.
+		`@keyframes ${name}-draw{from{stroke-dasharray:var(--seq-length) var(--seq-length);stroke-dashoffset:var(--seq-length)}to{stroke-dasharray:var(--seq-length) var(--seq-length);stroke-dashoffset:0}}`,
+		// Lengths are unitless; both ends need a length so the offset interpolates
+		// instead of jumping to the end at the midpoint.
+		`@keyframes ${name}-travel{0%{stroke-dashoffset:0px;opacity:1}85%{opacity:1}100%{stroke-dashoffset:calc(var(--seq-length) * -1px);opacity:0}}`,
+		`@media (prefers-reduced-motion:reduce){${playing},${root}.ab-playing ${headers} circle,${root}.ab-playing .seq-time-band{transition:none}${moving} :is(path.e,.seq-packet){animation:none}}`,
+	].join("");
+}
 
 function playEffects(id: string): string {
 	const root = `.ab[data-ab-play="${id}"]`;

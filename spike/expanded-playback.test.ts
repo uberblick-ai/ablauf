@@ -15,7 +15,7 @@ const timelines: Timeline[] = [
 	{ name: "Empty", slug: "empty", steps: [] },
 ];
 
-function setup(t: TestContext, options: { expand?: boolean; autoplay?: boolean; loop?: boolean } = {}, data = timelines) {
+function setup(t: TestContext, options: { expand?: boolean; autoplay?: boolean; pauseWhenOffscreen?: boolean; loop?: boolean; layout?: "auto" | "below" | "side" } = {}, data = timelines) {
 	t.mock.timers.enable({ apis: ["setTimeout"] });
 	const doc = new Doc();
 	const container = new El("main", doc);
@@ -45,9 +45,10 @@ function setup(t: TestContext, options: { expand?: boolean; autoplay?: boolean; 
 test("optional Expand row leaves the three actions intact; both entries open one labelled native dialog", t => {
 	const f = setup(t, { expand: true });
 	const controls = f.find("ab-playback");
+	const inlineFigure = f.svg.parent;
 	const expand = f.button("Expand");
 	assert.equal(expand.type, "button");
-	assert.equal(controls.children[0], expand.parent);
+	assert.equal(f.find("abp-controls").children[0], expand.parent);
 	assert.equal(expand.parent?.className, "abp-expand");
 	assert.deepEqual(f.find("abp-actions").children.slice(0, 3).map(el => el.getAttribute("aria-label") ?? el.textContent), ["Previous", "Play", "Next"]);
 	expand.click();
@@ -57,15 +58,15 @@ test("optional Expand row leaves the three actions intact; both entries open one
 	assert.equal(f.doc.activeElement, f.button("Close"));
 	assert.equal(f.button("Close").autofocus, true);
 	assert.equal(f.find("abp-expand").hidden, true);
-	assert.equal(f.find("abp-content").children[2], controls);
+	assert.equal(f.find("abp-content").children[1], controls);
 	assert.equal(f.svg.parent, f.find("abp-figure"));
-	assert.equal(f.find("abp-figure").style.get("--abp-width"), "1200px");
-	assert.equal(f.find("abp-figure").style.get("--abp-height"), "1500px");
+	assert.equal(f.find("abp-figure").style.properties.get("--abp-width"), "1200px");
+	assert.equal(f.find("abp-figure").style.properties.get("--abp-height"), "1500px");
 	f.mount.expand(); f.mount.expand();
 	assert.equal(f.container.all().filter(el => el.tag === "dialog").length, 1);
 	f.button("Close").click();
 	assert.equal(f.dialog(), undefined);
-	assert.equal(f.svg.parent, f.figure);
+	assert.equal(f.svg.parent, inlineFigure);
 	assert.equal(f.doc.activeElement, expand);
 	assert.equal(f.find("abp-expand").hidden, false);
 	f.host.focus(); f.mount.expand();
@@ -76,19 +77,20 @@ test("optional Expand row leaves the three actions intact; both entries open one
 
 test("host expand works by default; Close, Escape, native close and backdrop return focus, content clicks do not close", t => {
 	const f = setup(t);
+	const inlineFigure = f.svg.parent;
 	assert.equal(f.button("Expand"), undefined);
 	for (const path of ["button", "escape", "native", "backdrop"]) {
 		f.host.focus(); f.mount.expand();
 		const dialog = f.dialog();
-		dialog.fire("click", "", f.find("abp-content"));
+		f.find("abp-content").click();
 		assert.equal(dialog.open, true);
 		if (path === "button") f.button("Close").click();
 		if (path === "escape") assert.equal(dialog.fire("cancel"), true);
 		if (path === "native") dialog.close();
-		if (path === "backdrop") dialog.click();
+		if (path === "backdrop") { dialog.fire("pointerdown"); dialog.click(); }
 		assert.equal(f.dialog(), undefined);
 		assert.equal(f.doc.activeElement, f.host);
-		assert.equal(f.svg.parent, f.figure);
+		assert.equal(f.svg.parent, inlineFigure);
 		assert.ok([...dialog.listeners.values()].every(set => set.size === 0));
 	}
 });
@@ -117,17 +119,16 @@ test("idle, paused and ended states and controls survive opening and closing in 
 test("Tab and Shift+Tab wrap at the modal boundaries, including empty scenarios", t => {
 	const f = setup(t);
 	f.mount.expand();
-	const dialog = f.dialog();
 	const close = f.button("Close");
 	const range = f.container.all().find(el => el.type === "range") as El;
-	assert.equal(dialog.fire("keydown", "Tab", close, true), true);
+	assert.equal(close.fire("keydown", "Tab", { shiftKey: true }), true);
 	assert.equal(f.doc.activeElement, range);
-	assert.equal(dialog.fire("keydown", "Tab", range), true);
+	assert.equal(range.fire("keydown", "Tab"), true);
 	assert.equal(f.doc.activeElement, close);
 	f.player.select(2);
-	assert.equal(dialog.fire("keydown", "Tab", close, true), true);
-	assert.equal(f.doc.activeElement, f.find("abp-panel"));
-	assert.equal(dialog.fire("keydown", "Tab", f.find("abp-panel")), true);
+	assert.equal(close.fire("keydown", "Tab", { shiftKey: true }), true);
+	assert.equal(f.doc.activeElement, f.find("abp-caption"));
+	assert.equal(f.find("abp-caption").fire("keydown", "Tab"), true);
 	assert.equal(f.doc.activeElement, close);
 });
 
@@ -205,7 +206,7 @@ for (const entry of ["mount", "player"] as const) test(`${entry}.destroy while o
 	f[entry].destroy(); f.mount.destroy(); f.player.destroy();
 	f.mount.expand(); f.player.play(); f.player.next(); f.player.select(1);
 	for (const callback of lateClose) callback({} as Event);
-	for (const callback of lateViewport) callback([{ isIntersecting: true }]);
+	for (const callback of lateViewport) callback([{ target: f.svg, isIntersecting: true, intersectionRatio: 1 }]);
 	f.doc.motion.set(true); f.tick(60000);
 	assert.deepEqual(f.container.all(), f.original);
 	assert.ok(elements.every(el => [...el.listeners.values()].every(listeners => listeners.size === 0)));
@@ -222,17 +223,155 @@ test("no timelines exposes inert expand without adding DOM", t => {
 	assert.deepEqual(f.container.all(), f.original);
 });
 
-test("expansion retains figure-ancestor overrides without copying unrelated CSS or rewriting the SVG", t => {
+test("expansion stays in the host theme scope and retains the same wrappers and SVG", t => {
 	const f = setup(t);
-	f.figure.style.setProperty("--ab-bg", "#123456");
-	f.figure.style.setProperty("--ab-play", "#abcdef");
-	f.figure.style.setProperty("unrelated", "value");
+	f.container.style.setProperty("--ab-bg", "#123456");
+	f.container.style.setProperty("--ab-play", "#abcdef");
+	const root = f.find("ab-playback");
+	const figure = f.find("abp-figure");
 	f.mount.expand();
-	assert.equal(f.find("abp-figure").style.get("--ab-bg"), "#123456");
-	assert.equal(f.find("abp-figure").style.get("--ab-play"), "#abcdef");
-	assert.equal(f.find("abp-figure").style.has("unrelated"), false);
-	assert.equal(f.svg.style.size, 0);
+	assert.equal(f.dialog().parent, f.container);
+	assert.ok(f.dialog().classList.contains("ab-auto"));
+	assert.equal(f.find("abp-figure"), figure);
+	assert.equal(root.parent?.parent, f.dialog());
+	assert.equal(f.svg.style.properties.size, 0);
 	f.button("Close").click();
-	assert.equal(f.figure.style.get("--ab-bg"), "#123456");
-	assert.equal(f.svg.style.size, 0);
+	assert.equal(root.parent, f.container);
+	assert.equal(f.svg.style.properties.size, 0);
+});
+
+test("a drag from content into the backdrop gutter does not close the view", t => {
+	const f = setup(t);
+	f.mount.expand();
+	f.find("abp-caption").fire("pointerdown");
+	f.dialog().click();
+	assert.equal(f.dialog().open, true);
+	f.dialog().fire("pointerdown"); f.find("abp-content").click();
+	assert.equal(f.dialog().open, true);
+	f.dialog().fire("pointerdown"); f.dialog().click();
+	assert.equal(f.dialog(), undefined);
+});
+
+test("expanded playback bypasses viewport pausing but retains lifecycle guards and inline visibility after close", t => {
+	const f = setup(t, { autoplay: true, pauseWhenOffscreen: true });
+	f.doc.viewport.show(false);
+	f.player.play(); assert.equal(f.player.state.status, "idle");
+	f.mount.expand();
+	f.player.play(); f.tick(40);
+	f.doc.viewport.show(false); f.tick(59);
+	assert.equal(f.player.state.status, "playing");
+	assert.equal(f.player.state.step, 0);
+	f.tick(1); assert.equal(f.player.state.step, 1);
+	f.doc.setHidden(true);
+	assert.equal(f.player.state.status, "paused");
+	f.doc.setHidden(false); f.doc.viewport.show(true);
+	assert.equal(f.player.state.status, "paused");
+	f.player.play(); f.button("Close").click();
+	f.doc.viewport.show(false);
+	assert.equal(f.player.state.status, "paused");
+	f.doc.viewport.show(true);
+	assert.equal(f.player.state.status, "playing");
+});
+
+test("expanded completion restores the full figure and clears caption, scroll and highlights before Replay", t => {
+	const f = setup(t);
+	f.player.select(1); f.mount.expand(); f.player.play();
+	f.find("abp-caption").scrollLeft = 90;
+	f.tick(300);
+	assert.deepEqual(f.player.state, { scenario: 1, step: -1, status: "ended" });
+	for (const cls of ["abp-counter", "abp-actor", "abp-caption", "abp-status"]) assert.equal(f.find(cls).textContent, "");
+	assert.equal(f.find("abp-caption").scrollLeft, 0);
+	assert.equal(f.svg.classList.contains("ab-in-progress"), false);
+	assert.equal(f.svg.classList.contains("ab-playing"), false);
+	assert.ok(f.svg.children.every(part => !part.className));
+	f.button("Close").click();
+	assert.equal(f.button("Replay").textContent, "Replay");
+	f.button("Replay").click();
+	assert.deepEqual(f.player.state, { scenario: 1, step: 0, status: "playing" });
+});
+
+test("expansion keeps the single-line caption and scroll position through same-step updates and restores side layout", t => {
+	const f = setup(t, { layout: "side", expand: true });
+	const root = f.find("ab-playback");
+	assert.equal(root.classList.contains("abp-side"), true);
+	const rows = f.container.all().filter(el => el.classList.contains("abp-row"));
+	f.player.next(); f.mount.expand();
+	assert.equal(root.classList.contains("abp-below"), true);
+	assert.ok(rows.every(row => !f.container.all().includes(row)));
+	const caption = f.find("abp-caption");
+	assert.equal(caption.tabIndex, 0);
+	assert.equal(caption.getAttribute("aria-label"), "Step caption");
+	caption.scrollLeft = 70;
+	f.player.play(); f.player.pause();
+	f.doc.resize.flush(); f.doc.frames.flush();
+	assert.equal(root.classList.contains("abp-below"), true);
+	assert.equal(caption.scrollLeft, 70);
+	f.button("Close").click();
+	assert.equal(root.classList.contains("abp-side"), true);
+	assert.ok(rows.every(row => f.container.all().includes(row)));
+	assert.equal(caption.scrollLeft, 70);
+	f.mount.expand(); f.player.next();
+	assert.equal(caption.scrollLeft, 0);
+});
+
+test("rebind while expanded retains dialog, controls and subscriptions, updates scheme/size and safely handles no timelines", t => {
+	const f = setup(t, { autoplay: true, expand: true, layout: "side" });
+	const player = f.player;
+	const states: unknown[] = [];
+	player.subscribe(state => states.push(state));
+	player.select(1); player.play(); f.mount.expand();
+	const dialog = f.dialog();
+	const caption = f.find("abp-caption");
+	const replacement = new El("svg", f.doc);
+	replacement.className = "ab ab-dark";
+	replacement.setAttribute("aria-label", "Updated figure");
+	replacement.setAttribute("width", "900"); replacement.setAttribute("height", "1100");
+	f.svg.replaceWith(replacement);
+	const data = [...timelines].reverse();
+	f.mount.update(replacement as unknown as SVGSVGElement, data);
+	assert.equal(f.mount.player, player);
+	assert.equal(f.dialog(), dialog);
+	assert.equal(dialog.getAttribute("aria-label"), "Updated figure");
+	assert.equal(dialog.classList.contains("ab-dark"), true);
+	assert.equal(f.find("abp-figure").style.properties.get("--abp-width"), "900px");
+	assert.equal(f.find("abp-figure").style.properties.get("--abp-height"), "1100px");
+	assert.equal(f.find("abp-caption"), caption);
+	assert.deepEqual(player.state, { scenario: 1, step: 0, status: "paused" });
+	f.doc.viewport.show(false); f.doc.viewport.show(true); f.tick(1000);
+	assert.equal(player.state.status, "paused");
+	assert.equal(states.at(-1), player.state);
+	f.find("abp-caption").focus();
+	assert.equal(f.find("abp-caption").fire("keydown", "Tab"), false);
+	f.button("Close").focus();
+	assert.equal(f.button("Close").fire("keydown", "Tab", { shiftKey: true }), true);
+	assert.equal(f.doc.activeElement?.type, "range");
+	f.mount.update(replacement as unknown as SVGSVGElement, []);
+	assert.equal(f.dialog(), undefined);
+	assert.equal(f.container.all().some(el => el.classList.contains("ab-playback")), false);
+	assert.equal(replacement.parent, f.figure);
+	f.mount.expand(); assert.equal(f.dialog(), undefined);
+	f.mount.update(replacement as unknown as SVGSVGElement, timelines);
+	f.mount.expand(); assert.equal(f.dialog().open, true);
+	f.button("Close").click();
+	f.mount.destroy();
+	assert.equal(replacement.parent, f.figure);
+});
+
+test("opening and closing restore caption scrolling after browser reparenting resets it", t => {
+	const f = setup(t);
+	f.player.next();
+	const root = f.find("ab-playback");
+	const caption = f.find("abp-caption");
+	const remove = root.remove.bind(root);
+	t.mock.method(root, "remove", () => { remove(); caption.scrollLeft = 0; });
+	caption.scrollLeft = 70;
+	f.mount.expand();
+	assert.equal(caption.scrollLeft, 70);
+	caption.scrollLeft = 120;
+	f.button("Close").click();
+	assert.equal(caption.scrollLeft, 120);
+	f.mount.expand(); f.player.next();
+	assert.equal(caption.scrollLeft, 0);
+	f.button("Close").click();
+	assert.equal(caption.scrollLeft, 0);
 });
