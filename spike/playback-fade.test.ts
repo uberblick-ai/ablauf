@@ -133,7 +133,7 @@ for (const mounted of [false, true]) {
 		f.player.next(); f.frame(5);
 		f.player.play();
 		t.mock.timers.tick(1800);
-		assert.equal(f.player.state.status, "ended"); f.frame(5);
+		assert.equal(f.player.state.status, "ended"); f.frame(-1);
 		f.player.play(); f.frame(0);
 		f.player.select(1); f.frame(0, 1);
 		f.player.seek(2); f.frame(2, 1);

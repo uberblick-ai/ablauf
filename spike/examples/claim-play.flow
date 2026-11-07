@@ -1,0 +1,51 @@
+sequence v0
+participant Creator
+participant Studio tone=system
+participant Backend tone=system
+participant RSSFeed "RSS feed" tone=system
+participant OwnerInbox "Owner's inbox"
+
+section "Claim"
+Creator --> Studio: Sign in, no show yet
+Studio -.-> Creator: Claim existing, Add via RSS, Start from scratch
+Creator --> Studio: Claim existing show
+Studio --> Backend: POST claim for show
+Backend --> RSSFeed: Fetch feed live
+RSSFeed -.-> Backend: itunes owner email
+# Messages 7–15 illustrate handshake details, not an agreed product protocol.
+Backend --> OwnerInbox: Send 6-digit code
+note over Backend: The code expires after 15 minutes
+OwnerInbox -.-> Creator: Email with the code
+section "Verify"
+Creator --> Studio: Enter code
+Studio --> Backend: POST verify code
+Backend --> Backend: Check code and expiry
+alt Code matches
+Backend -.-> Studio: Claim confirmed
+Studio -.-> Creator: The show is yours
+else Wrong or expired code
+Backend -.-> Studio: Rejected, attempts left
+Studio -.-> Creator: Try again or resend the code
+end
+
+play "Claim the show"
+  step 1 "Open the studio with no show yet"
+  step 2 "Offer the three ways to add a show"
+  step 3 "Choose the existing show"
+  step 4 "Ask the backend to start a claim"
+  step 5 "Read the feed as it is now"
+  step 6 "The feed names the owner's email"
+  step 7 "Mail a 6-digit code to that address"
+  step 8 "The owner reads the code"
+  step 9 "Type the code into the studio"
+  step 10 "Send it on for checking"
+  step 11 "Compare code and expiry"
+  step 12 "The code matches"
+  step 13 "The show now belongs to the creator"
+
+play "Wrong code"
+  step 9 "Type a code that no longer works"
+  step 10 "Send it on for checking"
+  step 11 "Compare code and expiry"
+  step 14 "Reject it and count the attempt"
+  step 15 "Offer another try or a new code"

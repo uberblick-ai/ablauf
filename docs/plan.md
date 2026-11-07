@@ -492,8 +492,9 @@ and `-.->` for a dashed response: one arrow means one line style in every
 ablauf kind. There are no Mermaid aliases; `->>` and `-->>` are malformed.
 Groups retain the clear UML terms `alt`, `opt`, `loop` and `group`;
 `note over` states placement on lifelines, and `section` matches flow's phase
-term. There are no compatibility aliases. Activation bars, async/lost messages,
-participant creation/destruction, autonumber and playback are outside v0.
+term. There are no compatibility aliases. Messages are numbered automatically,
+and shared play sections can name those numbers. Activation bars, async/lost
+messages, participant creation/destruction and configurable autonumber are outside v0.
 
 ### Syntax and recovery
 
@@ -597,8 +598,8 @@ participant creation/destruction, autonumber and playback are outside v0.
   Their labels use all remaining width to the right of that loop.
 - Message numbers are `01`, `02`, … in `--ab-muted` mono, level with the
   arrows in the gutter. Rejected source is not a message and is not numbered.
-  Annotation rows are not numbered; message numbers will serve
-  as playback steps later.
+  Annotation rows are not numbered. Playback steps name the drawn message
+  numbers; `9` and `09` both select message 9.
 - All text uses `fonts.mono`, including measured wrapping; `fonts.text` has
   no effect. The host-font contract above applies. As with fan-out, a glyph
   wider than its entire available slot is consumed alone to ensure progress;
@@ -646,9 +647,9 @@ trials are references only. No spike code or dependency ships.
 
 ## Playback
 
-Flow play sections, resolved timelines, SVG state styles and the headless
-browser player (#69), and built-in controls (#94) are implemented.
-Sequence/fan-out target resolution is still planned. This design records the
+Flow and sequence play sections, resolved timelines and SVG state styles,
+the headless browser player (#69), and built-in controls (#94) are implemented.
+Fan-out target resolution is still planned. This design records the
 smallest package feature that lets a host show several scenarios of one
 diagram. It does not change the existing flow, sequence or fan-out syntax or
 static rendering rules.
@@ -688,10 +689,9 @@ play "Tests failing"
 - Durations are `2.4s` or `800ms`, between 100 ms and 60 s; default tempo is
   1.6 s. Anything else is a diagnostic on its line and falls back to the tempo.
 - Unreadable lines are diagnostics on their line. The diagram always renders.
-- Until a diagram kind has a playback resolver, each play section produces
-  a diagnostic on its `play` line and `render()` returns `timelines: []`;
-  the static diagram still renders. This applies to sequence and fan-out in
-  v0.3.0, so splitting off play sections never silently discards them.
+- Fan-out has no playback resolver yet: each play section produces a
+  diagnostic on its `play` line and `render()` returns `timelines: []`;
+  the static diagram still renders, so play sections are never silently dropped.
 
 ### What a flow step lights
 
@@ -702,7 +702,33 @@ edge. An unknown target, or a step with no edge from the last successfully
 resolved step, is a diagnostic on that step's line and is skipped. A skipped
 step does not change that predecessor for later steps. Current and played
 labels never fade.
-Sequence and fan-out define their own lighting rules when they arrive.
+
+### What a sequence step lights
+
+A target is a positive decimal integer naming a message as drawn in the
+gutter. Leading zeroes are allowed: `9` and `09` resolve to target `"9"`.
+A participant id, zero, a number beyond the last drawn message or any other
+invalid token diagnoses the step's original source line and skips that step.
+The diagram still renders. Consecutive steps need no connection; a scenario
+may skip messages or branches, repeat messages or go backward.
+
+A step lights its complete message row (arrow, head, origin dot when present,
+label and number), both participants' header dots and titles (one header for
+a self-message), and attached annotations. By default the actor is
+`Sender → Receiver` using participant titles, or the title alone for a
+self-message; `actor=` overrides it.
+
+Attachment follows accepted diagram row order. Blank and comment lines and
+invisible `end` rows do not break adjacency. Every note in an uninterrupted
+run immediately after a message attaches to it. Every section, group-opening
+or `else` label in an uninterrupted run immediately before a message attaches
+to it. Other visible row kinds break the run: `section` + `alt` + message and
+`loop` + `alt` + message attach both labels, but a note between an opening
+label and a message prevents that label attaching. Every visible annotation
+and participant header is a part, even if no step lights it. Unattached parts
+fade while neither current nor played. Lifelines, lane tints, group backgrounds,
+dividers (including section rules) and rejected-source lines are never parts
+and remain fully visible.
 
 ### Timeline and browser contract
 
@@ -718,17 +744,18 @@ interface Timeline {
   steps: TimelineStep[];
 }
 interface TimelineStep {
-  target: string;           // as written, resolved for the diagram's kind
-  kind: string;             // box, pill, end, text, panel, decision; later message, outcome
-  actor: string;            // actor=, else the target's title
+  target: string;           // flow id as written; sequence message number without padding
+  kind: string;             // box, pill, end, text, panel, decision, message; later outcome
+  actor: string;            // actor=, else node title or sequence sender/receiver titles
   caption: string;          // "" when none
   ms: number;
   parts: string[];          // what this step lights
 }
 ```
 
-The player and controls use only `parts`, never `kind`: a new diagram
-kind needs a resolver, not a new player. The player lives in the browser entry
+The player uses only `parts`, never `kind`: a new diagram
+kind needs a resolver, not a new player. Controls use `kind: "message"` only to
+number sequence step-list rows by their message target. The player lives in the browser entry
 `@uberblick/ablauf/playback`; the core stays DOM-free. The player owns playback
 and scenario selection; the built-in controls supply buttons, scenario
 tabs and the caption so hosts do not need to recreate them.
@@ -741,29 +768,33 @@ styles only when a play section exists; otherwise its bytes are unchanged.
 Output remains deterministic and inert, with escaped source text and styles
 scoped under the SVG root class.
 
-The implemented SVG contract for #69 adds `data-ab-play` to the root, using
-the encoded `idPrefix` to scope state marker references when several figures
+The SVG contract adds `data-ab-play` to the root, using
+the encoded `idPrefix` to scope state styles when several figures
 share a page. Use distinct `idPrefix` values as with static SVG markers.
 There is `data-ab-part="node-N"` on each
 node's wrapper and `data-ab-part="edge-N"` on separate wrappers for an edge's
-stroke, head and label (when present). Indices are zero-based layout order,
-local to this SVG; consumers must use timeline `parts` rather than construct
-ids. Distinct edges, including parallel edges, have distinct part identities.
+stroke, head and label (when present). A sequence has `message-N` on each
+message row wrapper, `participant-N` on each header wrapper and `annotation-N`
+on each visible annotation wrapper. Sequence indices are zero-based accepted
+order within each category; invisible `end` rows and rejected source consume
+no identities. Flow indices are zero-based layout order. Identities are local
+to this SVG; consumers must use timeline `parts` rather than construct ids.
+Distinct edges, including parallel edges, have distinct part identities.
 Use `querySelectorAll('[data-ab-part="' + part + '"]')` within the SVG to
 find **all** fragments of a part. Apply `ab-current` or `ab-played` to every
 matching wrapper; current takes precedence if both are present. Remove both
 classes and the root's `ab-in-progress` and `ab-playing` classes for the full
 default figure.
 Hand-driven hosts set `ab-in-progress` on the SVG root exactly while a scenario
-step is shown (`step >= 0`), including paused and ended states. Remove it at
-idle (`step === -1`), for empty scenarios and after destruction.
+step is shown (`step >= 0`), including paused steps. Remove it at
+idle and completion (`step === -1`), for empty scenarios and after destruction.
 Hand-driven hosts also set `ab-playing` on the SVG root exactly while playing.
 Remove it on pause, end, manual navigation, scenario changes, idle, empty
 scenarios, the reduced-motion reset and destruction. `createPlayer` owns both
 root hooks, including when called through `mount.player` or built-in controls.
 
-All six node kinds and every edge stroke, head and label fragment take state
-colours. While `ab-in-progress` is present, unplayed shapes, edge strokes and
+All six flow node kinds and every edge stroke, head and label fragment keep
+their native tone colours. While `ab-in-progress` is present, unplayed shapes, edge strokes and
 arrowheads take `--ab-play-unreached-opacity`, default `0.3` in both schemes.
 CSS opacity numbers and percentages clamp to [0, 1]. Unplayed means neither
 current nor played. Node and edge label text never takes this fade, so built-in
@@ -771,37 +802,70 @@ label contrast stays at least 4.5:1 throughout the range. Fade applies to each
 shape, including decision label boxes with their existing 0.82 fill opacity,
 never to groups or text. Inline label backgrounds (`.gap` / `.gap-band`) and
 crossing knockouts retain opacity multiplier 1, including at fade 0. Current
-and played parts keep their state colours at full opacity, with current taking
-precedence. Inline gaps and crossing knockouts retain fully opaque canvas or
-band backgrounds, so underlying edges never show through them. Knockouts stay
-unfaded. Geometry and draw order never change. The scoped styles are embedded
+and played parts keep their native colours at full opacity, with current taking
+precedence. Underlying edges never show through gaps or knockouts. Geometry and
+draw order never change. The scoped styles are embedded
 in every playable SVG; hosts need no CSS. Navigation, scenario changes and
-looping recompute the faded parts. Idle, the reduced-motion reset, empty
+looping recompute the faded parts. Idle, completion, the reduced-motion reset, empty
 scenarios and destruction restore the full unfaded figure.
 
-Whenever a step is shown, including paused and ended frames, its current node
-outlines/decision shapes and incoming edge strokes have a soft glow and a
+Whenever a step is shown, including paused frames, its current node
+outlines/decision shapes and incoming flow edge strokes have a soft glow and a
 slightly heavier stroke. Played parts do not glow. Filters apply to individual
 shapes only, never groups, label text, inline gaps, crossing knockouts or the
-root. No state recolours a part: strokes, fills, dashes and arrowheads keep
+root. No flow state recolours a part: strokes, fills, dashes and arrowheads keep
 their tone colours. The glow uses `color-mix()` from `currentColor`, which is a
 toned outline's or edge's own tone, a pill's dot tone, and otherwise internal
 `--play`, following host `--ab-play` overrides in light and dark. Its blur size is `--ab-play-glow`,
 default `6px` in both schemes; the literal `--ab-play-glow: 0` removes the glow.
 
-Only while `ab-playing` is present, current incoming edge strokes run as moving
+Only while `ab-playing` is present, current incoming flow edge strokes run as moving
 dashes toward their targets, with a seamless loop; arrowheads stay put. The
 current step's timeline `parts` identify the incoming edges, including parallel
-edges. Steps without an incoming edge animate none. Paused and ended edges are
+edges. Steps without an incoming edge animate none. Paused edges are
 still. Fades ease over 0.35s only while playing; manual
 navigation and other non-playing changes are instant. Animation, transitions
 and keyframes are embedded in every playable SVG and scoped to its figure;
 distinct `idPrefix` values keep independently driven figures isolated, including
 in shadow roots. Reduced motion disables running dashes and all transitions;
-a manually shown current step may still glow. Idle and destruction remove all
+a manually shown current step may still glow. Idle, completion and destruction remove all
 glow, heavier strokes and running-edge overrides, restoring the default figure.
-Static SVG bytes stay identical; compared with the post-#112 baseline, playable
-idle SVGs change only by added playback styles and the colour defaults below.
+Static SVG bytes stay identical; playable idle figures add playback styles,
+the colour defaults below and hidden sequence overlays.
+
+Sequence parts fade to the same 0.3 opacity while neither current nor played;
+current and played parts stay fully visible. The current message gets the
+flow glow and 2.2px stroke. Its glow uses its own tone, or the play colour for
+untoned (`ink`/`muted`) and response arrows; stroke, fill and arrowhead colours
+retain their native tones. Its gutter number becomes bold in the play colour.
+Current sender and receiver header dots grow to 1.7 times their size and glow
+in their own tone, using the play colour for untoned headers, including `ink`
+and `muted`. Both message and header glows honour `--ab-play-glow` (default
+`6px`, literal `0` removes the glow).
+
+While playing, a newly current arrow draws from sender to receiver over 0.55s
+with ease-out timing. A small dot in the sender's tone rides the drawing tip,
+fading out on arrival; self-messages follow the whole loop. Response arrows
+draw solid, then regain their native dashes immediately after arrival; sequence
+dashes never run. The marker head stays at the receiver throughout drawing.
+Lengths are computed in user units at render time and emitted as `--seq-length`
+on each message wrapper; the browser never measures a path. The packet is a
+short round dash on a copy of that path, without CSS motion-path/offset.
+
+Playback emits no receiver activation bars, including for self-messages.
+A soft play-colour band at 0.1 opacity spans the figure behind the current row,
+from above its label to just below its arrow, including the self-message loop.
+Per-row bands cross-fade over 0.35s. Bands and packets never take pointer
+events or affect layout or figure size, and are emitted only with play sections.
+
+Fading (0.35s), header-dot growth (0.3s), drawing and packet travel ease only
+while playing. Paused and manually stepped states show
+the complete current arrow and band immediately, with no packet. Resuming
+restarts the current step and its drawing. Reduced motion disables all animation
+and transitions, retaining the band in manually shown states; the player's
+reduced-motion reset to idle is unchanged. Idle and completion show the full figure with no
+packets or bands. Sequences without play sections gain no playback
+attributes, styles or overlays and retain their exact SVG bytes.
 
 Playable SVGs define internal `--play` through the host's `--ab-play`
 override. Defaults are `#0a7a60` (light) and `#6ff0cf` (dark), each reaching
@@ -810,9 +874,14 @@ their defaults. These tokens are separate from the existing exported palette.
 
 ### Behaviour and theming
 
-- States are idle (full figure), paused, playing and ended. Previous, next,
-  seek and switching scenario pause. Play on ended replays. Stop on the last
-  step after its full duration; `loop` is opt-in. Resuming restarts the current
+- States are idle (full figure), paused, playing and ended (full figure).
+  After the last step's full duration, a non-looping flow or sequence changes
+  to `{ scenario, step: -1, status: "ended" }`, preserving the selected scenario
+  in `player.state` and `onChange`. It clears fading, current/played highlighting,
+  glow and both root classes. `loop` is opt-in. Previous, next, seek and
+  switching scenario pause. From ended, Next goes to step `0` paused and
+  Previous stays at `-1` paused. Play on ended replays from step `0`.
+  Pausing mid-scene retains the highlight and fade; resuming restarts the current
   step's full duration. Controls offer Replay.
 - Play on click is the default. Nothing starts unless the host calls play,
   the reader chooses a scenario tab (which plays it from its first step), or
@@ -828,34 +897,139 @@ their defaults. These tokens are separate from the existing exported palette.
   follows the existing host-override and light/dark default rules, and the
   existing palette stays unchanged.
 
-`createPlayer(svg, timelines, { loop?, onChange? }?)` exports the headless API;
-see [usage and navigation semantics](../README.md#play-an-inline-svg).
+`createPlayer(svg, timelines, { loop?, onChange?, pauseWhenOffscreen? }?)`
+exports the headless API; see [usage and navigation semantics](api.md#playback).
 Creation is idle at scenario `0`, step `-1`, without callbacks or timers.
-Only a changed scenario/step/status tuple notifies `onChange`, after state
-and SVG updates, with a stable snapshot. Destroy is silent and idempotent,
+`select(scenario: number | string): void` selects an index or exact `Timeline.slug`,
+pausing at the first step (`-1` when empty), including when reselecting.
+Unknown slugs and invalid indices are no-ops. `subscribe(fn: (state: PlayerState)
+=> void): () => void` adds an independent listener alongside `onChange` and returns
+an idempotent unsubscribe; registration does not notify. Only a changed
+scenario/step/status tuple notifies active listeners once, after state, SVG
+and built-in controls synchronize, with stable snapshots. Same-tuple updates
+and destruction do not notify. Destroy is silent and idempotent,
 clears highlighting, timers and listeners, preserves the scenario, and
-leaves idle at step `-1`; later methods do nothing. Both package entries are
+leaves idle at step `-1`; later methods/updates do nothing and subscriptions
+return inert unsubscribes. Both package entries are
 safe to import without browser globals, and core types need no DOM library.
+
+Both APIs check the SVG's `isConnected` and owning document's `hidden` and
+`visibilityState` before starting and at each step timer callback. A callback
+finding it disconnected or hidden pauses on the current frame without advancing
+or arming another timer. No mutation tracking: removal and reinsertion entirely
+between checks is not detected. An owning-document `visibilitychange` to hidden
+pauses immediately and cancels the timer. These checks apply in document and
+shadow roots. While hidden or disconnected, `play()` and scenario-tab activation
+are no-ops with no selection/reset or notification; manual `next`, `previous`,
+`seek` and `select` still work and pause as usual. Restoration or reconnection
+does not resume a lifecycle-paused player, including through autoplay; explicit
+Play or scenario activation must start it again.
+Lifecycle checks on idle or already viewport-paused players preserve first-view
+autoplay and pending viewport resume; a later half-visible viewport report
+can start them only while the document is visible and the SVG connected.
+
+`pauseWhenOffscreen?: boolean` defaults to false in both creation APIs. When
+enabled, an IntersectionObserver report of `isIntersecting === false` pauses
+on the current frame and cancels the timer. While known to be nonintersecting,
+playback cannot start or advance. Entry alone never starts a standalone player
+or a mount without autoplay. Without IntersectionObserver, viewport pausing
+and autoplay are unavailable; lifecycle guards remain.
+Scenario activation still selects while off screen, leaving the selection
+paused when viewport pausing blocks playback. Autoplay alone does not block
+explicit Play or scenario activation off screen.
 
 ### Built-in controls and lifetime
 
 The browser entry also exports
-`mountPlayback(container, svg, timelines, { loop?, autoplay? }?)`, returning
-`PlaybackMount { player: Player; destroy(): void }`. The host supplies an
-`HTMLElement` or `ShadowRoot` for controls below its inline SVG. Mounting starts
-idle with the full figure. With `autoplay: true` the mount observes the SVG and
-plays once half of it is in view, pauses it when it leaves and resumes it on
-return, unless the reader paused it meanwhile. Reduced motion, or a browser
+`mountPlayback(container, svg, timelines, { loop?, autoplay?, pauseWhenOffscreen?, layout?, expand? }?)`, returning
+`PlaybackMount { player: Player; update(svg: SVGSVGElement, timelines: Timeline[]): void; expand(): void; destroy(): void }`.
+The host supplies an
+`HTMLElement` or `ShadowRoot` for the inline SVG and its controls. Mounting starts
+idle with the full unfaded, unhighlighted figure and neither root class.
+Autoplay is off by default. With `autoplay: true` the mount stays idle until
+visibility starts playback: it observes the figure
+wrapper (so a sideways-scrolling SVG does not change the visibility threshold) and
+plays once `isIntersecting` and `intersectionRatio >= 0.5`, pauses it on no
+intersection (not merely below half visibility), and resumes viewport-caused
+pauses at half visibility. Manual pause/navigation cancels automatic resume,
+including a pause while already viewport-paused. The same rules apply with
+both autoplay and viewport pausing enabled, respecting lifecycle guards.
+Reduced motion, or a browser
 without `IntersectionObserver`, keeps it idle. Destroy disconnects the observer. No timelines adds no DOM or style.
 The mount uses the existing player contract for timing, navigation, looping
 and reduced motion, including changes made through the returned `player`.
+
+`expand: true` adds a native **Expand** button (visible text and accessible
+name), in a separate right-aligned row above the inline controls. It is off
+by default. Every mount also exposes `expand()` for host controls, even without
+that option. Both entry points open the same full-screen native modal `dialog`,
+labelled from the SVG's accessible name; repeated calls while open do nothing.
+With no timelines or after destruction, `expand()` does nothing.
+
+Expansion temporarily uses the below layout, even for a side-layout mount;
+closing restores the requested inline layout. The natural-size figure scrolls
+horizontally and vertically in its own region.
+Below that region, scenario tabs, counter, actor, caption, the three playback
+buttons and step navigation remain visible while the figure scrolls. A native
+**Close** button (visible text and accessible name) sits at the top right and
+receives initial focus. Tab and Shift+Tab wrap within the modal. Close, Escape
+and a click that starts and ends on the backdrop gutter close it; content clicks
+and drags into the gutter do not. Closing
+returns focus to the built-in Expand button or the previously focused host
+control, according to the entry point used. Zoom, pan, Fit and Copy remain
+host features.
+
+Expansion moves the existing SVG and controls into the dialog, then restores
+their original positions on close. One player owns the active view: its state,
+all methods, scenario selection and Play/Pause/Replay behavior stay live. Opening
+and closing preserve idle, paused, playing and ended states, including a playing
+step's remaining dwell. Viewport autoplay and off-screen pausing are suspended
+while expanded. Opening ends initial autoplay and pending automatic resume and
+never starts idle or paused playback. Closing re-observes inline visibility;
+later viewport exits can pause playing figures as usual. Reduced
+motion still stops and resets playing, permits manual stepping, and never
+starts playback when disabled. The dialog stays in the supplied container to
+retain host overrides and automatic or pinned schemes, including shadow roots.
+Rebinding refreshes the expanded figure, controls, accessible name and scheme
+while retaining the modal. Updating to no timelines closes it.
+
+`layout` accepts `"below"`, `"side"` or `"auto"` (the default), for every playable
+kind. Explicit layouts always select that layout. Auto selects side only when
+the SVG's natural height exceeds its natural width and the container leaves at
+least 320px beside that natural width, including the gap. Otherwise it selects
+below. Resize observation re-evaluates in both directions without changing the
+player state. Below retains the caption and controls described here and adds no
+step list.
+
+Side places the figure on the left and a column on the right: scenario tabs,
+the actions row and an ordered step list. It hides the single-caption block.
+The column sticks to the scrolling viewport's top and scrolls independently
+when taller than the viewport. A changed current step scrolls only this column
+enough to reveal its row; playback never scrolls the page or moves focus.
+
+The list contains every step of the selected scenario. Each row has its number,
+actor and caption. Sequence message steps use the message target, padded to at
+least two digits (`07`); other kinds use their one-based scenario position.
+Unplayed rows use muted text, played rows use ink, and the current row has a
+play-colour tint, bold caption and `aria-current="step"`. At `-1` no row is
+current or played. Native row buttons are keyboard-reachable with visible
+focus; pointer or keyboard activation seeks and pauses. Scenario changes show
+the corresponding list, including an empty list and “No playable steps” for an
+empty scenario. Controls are retained across playback updates.
 
 Multiple timelines have a labelled scenario tablist first, in source order
 using `Timeline.name`; one timeline has no tabs. Tabs have selected state,
 one tab stop and an associated labelled panel. Left/Right wrap focus and
 immediately activate the focused scenario; click, Enter and Space activate
 too. Activation calls `select`, pausing on step `0` (or `-1` when empty).
-Playback updates never move focus or recreate controls.
+Ordinary playback state changes never move focus or recreate controls.
+The panel is a visible-focus tab stop for one or multiple scenarios. Only
+keydown events targeting the panel itself, with no modifiers, handle Space
+for Play/Pause (Replay when ended), Left for `previous()` and Right for `next()`;
+handled keys prevent their browser default. Descendant controls retain native
+behavior, tabs retain activation, and editable targets including inherited
+contenteditable never trigger shortcuts. Keys are handled once and stay local
+to each independent document/shadow-root mount.
 
 Tabs are borderless monospace text on one rule, scrolling horizontally without
 wrapping. Selection uses the play colour, a 2px underline and a faint glow.
@@ -863,8 +1037,27 @@ Below tabs, an outlined rounded counter shows the one-based step/total (`3/7`)
 beside the current actor above the caption (remark). The counter is blank and
 visually hidden at `-1` and in empty scenarios, retaining its space. The actor
 occupies one monospace line in the play colour; the caption uses the body face
-at 16px. This row reserves at least two lines, even at idle, with no actor or
-when empty; longer captions wrap and grow the row without clipping.
+at 16px and reserves exactly one text line, including when blank. Captions never
+wrap or widen the figure: readers can scroll the complete text horizontally by
+pointer/touch or keyboard. The horizontal scrollbar space is reserved even for
+short or blank captions, including in browsers with non-overlay scrollbars.
+The actor and caption lines stay reserved at idle, without an actor and in empty
+scenarios, keeping the step-row height and action-button positions constant at
+a fixed figure width.
+
+The caption is always a tab stop (`tabindex="0"`) before Previous, with
+`role="region"` and the constant accessible name “Step caption” (`aria-label`).
+Its scoped `:focus-visible` outline does not change geometry. Playback
+shortcuts must not consume Left/Right, Home or End in the caption or switch
+steps or scenarios on them; the browser handles them natively. Left/Right
+scroll the caption horizontally. Browsers treat Home and End as vertical keys,
+so in a caption without vertical overflow they scroll the page instead, as
+they would in any horizontal scroller. Scenario/step changes reset the
+caption instantly to its beginning; pause and resume at the same step preserve
+the reader's scroll position. Completion restores the full figure at step `-1`,
+clearing the caption and resetting its scrolling. There is no automatic panning
+or scrolling animation, including under reduced motion. Scrolling never moves
+focus or announces text; the caption region is not a live region.
 
 Below the step line are exactly three native buttons: `<` (accessible name
 Previous), Play/Pause/Replay, and `>` (accessible name Next). They use monospace,
@@ -879,42 +1072,86 @@ native range remains focusable, with a visible outline around the bar when
 focused, covering `-1..last`, including the full figure at `-1`. Its native
 keyboard and screen reader navigation is preserved. Navigation pauses.
 
-Actor and caption are cleared at `-1`. One polite atomic status announces actor and remark
-when the scenario/step changes to a playable step; pause and end alone do not
-repeat it. All source strings are assigned with `textContent`. A selected
+Actor and caption are cleared at `-1`. Completion uses this full-figure controls
+presentation: blank counter, empty actor/caption, no current/played segments,
+and range `-1` with value text “Full figure”; the toggle reads Replay.
+One polite atomic status announces actor and remark when the scenario/step
+changes to a playable step. Pause does not repeat it; completion clears the
+region without re-announcing the last step. All source strings are assigned with `textContent`. A selected
 empty scenario shows “No playable steps” and disables buttons and range while
 leaving tabs usable; it never selects another scenario automatically.
 
 Each mount appends its own scoped style and controls root inside the supplied
-container, leaving other host content intact. Its scheme comes from the SVG
-root's `ab-auto`, `ab-light` or `ab-dark` class at mounting. Controls resolve
-existing `--ab-*` host overrides with their own matching light/dark defaults:
+container, leaving other host content intact. The SVG's `ab-light` or `ab-dark`
+class pins the controls at mounting and rebinding; `ab-auto` controls inherit
+the host's CSS `color-scheme`, including live changes. `light dark` lets the
+browser choose by user preference; `normal` keeps its default. Automatic SVGs
+keep their existing OS-based scheme contract. Controls resolve
+existing `--ab-*` host overrides with scheme-dependent `light-dark()` defaults:
 the SVG's internal variables cannot be inherited by sibling controls. Every
 selector is under `.ab-playback`, so document and shadow-root mounts do not
 style unrelated host elements. Focus is visible. All control colours derive
 from `--ab-play`, `--ab-line`, `--ab-muted`, `--ab-ink` and `--ab-bg`; muted play
 and glow shades use `color-mix()`. Every control glow honours the shared
 `--ab-play-glow` switch: literal `0` removes tab text and current-segment glows.
-Control body/caption/empty-state fonts use `--ab-font-text`, default
-`system-ui,sans-serif`; tabs, buttons, actor and counter use `--ab-font-mono`,
+The controls root has a transparent background on the host surface. All defaults
+are in the `ablauf-playback` cascade layer, so ordinary unlayered host selectors
+win regardless of stylesheet order, including pinned scheme and touch rules.
+Under `(any-pointer: coarse)`, every button (including tabs and side rows) and
+segment has minimum width and height 44px; action and segment rows wrap within
+available width, tabs retain horizontal scrolling. Fine-only pointers keep
+compact sizes. Host selectors must be in the shadow root for shadow mounts.
+Control body/caption/side-remark/empty-state fonts use `--ab-font-text`, default
+`system-ui,sans-serif`; tabs, buttons, actors and counters/numbers use `--ab-font-mono`,
 default `ui-monospace,monospace`. Defaults are identical in both schemes and
 independent of render `fonts`. Host overrides update existing controls through
 CSS inheritance, including in shadow roots. SVG text never reads these
 properties; they change neither static nor playable SVG bytes, metrics or geometry.
 The DOM-free `checkPalette(palette, { play, unreachedOpacity })` contract adds
-all control text states and current/played/unplayed flow text grounds to its
+tab, action-button, actor, counter, caption and empty-state text states and
+current/played/unplayed flow text grounds to its
 static pairs and text minimum. Ground multipliers include faded fills and
 label-box opacity; text only has its colour alpha. Decorative text-shadow/glow
 and non-text contrast are excluded. Hosts resolve effective values first;
 the input and composition contract is in the testing guide.
-An “All steps” list and scenario links remain host features.
+Scenario links remain a host feature; the side layout supplies the built-in
+all-steps list.
 
 Both `mount.destroy()` and `mount.player.destroy()` perform the same idempotent
-teardown: destroy the player and remove this mount's controls, style and
-listeners. The host destroys before replacing the SVG or changing timelines,
-then mounts again. Standalone `createPlayer` retains its silent teardown and
+teardown: close any expanded view, destroy the player, disconnect resize and visibility observations,
+remove this mount's controls, wrappers, style and listeners, and restore the
+current SVG's host position without changing host content.
+`mount.update(svg, timelines)` instead binds replacement SVG/data
+while retaining player identity and subscriptions. It keeps the selected
+scenario by exact slug after reordering, otherwise selects the first (scenario
+`0` with no timelines). It cancels playback and leaves paused at step `0`, or
+`-1` for an empty scenario or no timelines. It always refreshes tabs, counts,
+segments, range, actor, caption, side lists, announcements and scheme, even if the state
+tuple is unchanged. The old SVG loses all player state classes and observation;
+subsequent actions affect only the replacement, and stale callbacks are inert.
+The replacement moves into the existing figure wrapper; the outgoing SVG is
+removed if still inside it. A replacement already in that wrapper or supplied
+detached inherits the previous SVG's host position for teardown. A replacement
+in another parent retains that parent and position instead. The original
+`layout` option continues to apply, with auto reevaluating the current SVG's
+natural dimensions. Keep the existing resize observation and deferred layout
+work across populated updates; both operate on the current SVG and timelines.
+
+While controls remain, retain the panel, action buttons and range with their
+focus. A focused tab survives by slug after reorder; if removed or tabs disappear
+for one scenario, focus the panel. Side-list row buttons survive by scenario
+slug and step position, refreshing their contents and actions. A removed
+focused row, or a row hidden by switching below, focuses the panel. Otherwise
+update does not move focus. No timelines restores the current SVG and removes
+owned controls, wrappers, style and resize handling without focusing unrelated host
+content; later updates can add them. Updating never starts playback, even with
+autoplay: viewport events cannot start the new binding until explicit Play or
+scenario activation. Repeated updates add no duplicate controls, timers,
+listeners or observers. Both teardown paths clean up the current binding and
+mount; later updates, subscriptions and browser callbacks cannot mutate DOM,
+start timers or notify. Standalone `createPlayer` retains its silent teardown and
 adds no controls. No browser globals are touched at import time. The playground
-uses this mount on every render with timelines; the
+uses this mount with `layout: "auto"` on every render with timelines; the
 [browser review fixture](playground.md#playback-browser-review) exercises
 independent light DOM and shadow-root mounts, schemes and teardown.
 
@@ -925,14 +1162,20 @@ independent light DOM and shadow-root mounts, schemes and teardown.
   ([#69](https://github.com/uberblick-ai/ablauf/issues/69)), and built-in
   controls with scenario tabs
   ([#94](https://github.com/uberblick-ai/ablauf/issues/94)).
-- **v0.3.1, sequence diagrams:** the same play sections; a target is a
-  message number.
+- **v0.3.1, sequence diagrams:** implemented the same play sections, message
+  targets, timelines and SVG parts/states in
+  [#137](https://github.com/uberblick-ai/ablauf/issues/137), using the existing
+  player and controls. Built-in auto/side/below controls layouts and the side
+  step list are implemented in [#139](https://github.com/uberblick-ai/ablauf/issues/139).
+  Travel animation ([#138](https://github.com/uberblick-ai/ablauf/issues/138))
+  remains a separate change.
 - **v0.3.2, fan-outs:** [#68](https://github.com/uberblick-ai/ablauf/issues/68),
   the same play sections; a target is an outcome's text.
 
 Extras cut from v0.3.0 wait for real need. Frozen frames come later. Timelines
 from real ub-agents run logs and visual timeline editing are out of scope.
-The remaining browser and diagram-kind work belongs to those follow-up issues.
+The remaining travel and diagram-kind work belongs to those
+follow-up issues.
 This section follows the design from [#66](https://github.com/uberblick-ai/ablauf/issues/66) and the
 [maintainer's prototype summary](https://github.com/uberblick-ai/ablauf/issues/66#issuecomment-6554358304).
 Uberblick integration is

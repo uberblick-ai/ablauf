@@ -22,8 +22,13 @@ export function render(source: string, options: RenderOptions = {}) {
 	source = play.source;
 	const first = source.split("\n").find((line) => line.trim() && !line.trim().startsWith("#"));
 	const kind = /^(fan-out|sequence)(?:\s|$)/.exec(first?.trim() ?? "")?.[1];
-	if (kind) {
-		const result = kind === "fan-out" ? renderFanout(source, options) : renderSequence(source, options);
+	if (kind === "sequence") {
+		const result = renderSequence(source, options, play.scenarios);
+		result.diagnostics.push(...play.diagnostics);
+		return result;
+	}
+	if (kind === "fan-out") {
+		const result = renderFanout(source, options);
 		result.diagnostics.push(...play.diagnostics, ...play.scenarios.map(s => ({ line: s.line, severity: "error" as const, message: `${kind} playback is not supported yet` })));
 		return { ...result, timelines: [] as Timeline[] };
 	}

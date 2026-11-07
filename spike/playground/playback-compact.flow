@@ -1,0 +1,21 @@
+flow v0
+box a "Start"
+box b "Finish"
+a --> b
+
+play "Short captions"
+ step a actor="Author" "Start here"
+ step b actor="Reviewer" "Finish here"
+
+play "Single-line caption scrolling"
+ step a actor="Author" "A short caption first"
+ step b actor="Reviewer" "This deliberately long caption stays on one line at document width. Scroll horizontally to read every word using pointer, touch or keyboard. The actor and caption lines keep their space, and the buttons and segmented step bar stay stationary through short, overflowing and blank captions. This is the end of the caption."
+ step b ""
+
+play "Caption without an actor"
+ step a actor="" "The actor line still keeps its space"
+
+play "Another short scenario"
+ step b actor="Reviewer" "A short caption again"
+
+play "An empty scenario at the end of the overflowing tabs"

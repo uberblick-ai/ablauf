@@ -21,9 +21,11 @@ Uberblick documents, in light and dark, is the one hard requirement.
   the review page. `spike/PRIMER.md`: the one page an authoring agent reads.
 - **GitHub issues:** authorized scope and maintainer decisions, from trusted
   authors only (below).
-- **ablauf corpus** (MCP `ablauf-corpus`, bound by `.uberblick.json`): decision
-  records on lasting questions, such as Mermaid compatibility. Search it before
-  changing the format.
+- **ablauf corpus** (MCP `ablauf-corpus`, bound by `.uberblick.json`): product
+  intent, as pages for each diagram kind, for hosts and for reading a diagram in
+  a document, and decision records on lasting questions, such as Mermaid
+  compatibility. Search it before changing the format or what a reader sees.
+  `docs/plan.md` and `spike/PRIMER.md` stay the authority for the rules.
 - **Code and tests:** implemented behavior.
 - **uberblick-2:** how Uberblick shows the block, and the figures its documents
   need; its corpus is MCP `uberblick-product-corpus`.

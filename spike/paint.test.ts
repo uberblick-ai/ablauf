@@ -174,6 +174,16 @@ test("focused renders cover every tone, section ground, label mode, node/legend 
 	for (const paint of contract) assert.ok(seen.has(paint), `contract paint has no rendered witness: ${paint}`);
 });
 
+test("static paint inspection accepts idle sequence numbers and refuses active parts or changed state paints", () => {
+	const svg = render('sequence v0\nparticipant a\na --> a: Check\nplay\n step 1\n').svg;
+	covered(svg, "idle sequence playback");
+	assert.throws(() => inspect(svg.replace('class="m s11 muted seq-number"', 'class="m s11 muted seq-number ab-current"')), /static paint inspector cannot inspect current playback parts/);
+	assert.throws(() => inspect(svg.replace('fill:var(--play);font-weight:600', 'fill:var(--ink);font-weight:600')));
+	assert.throws(() => inspect(svg.replace('opacity:0;pointer-events:none', 'opacity:.1;pointer-events:none')));
+	assert.throws(() => inspect(svg.replace('--seq-length:', 'fill:red;--seq-length:')));
+	assert.throws(() => inspect(svg.replace('.seq-time-band{fill:var(--play)}', '.seq-time-band{fill:var(--play);opacity:.1}')));
+});
+
 test("coverage detects new text and ground paints from SVG CSS", () => {
 	const svg = render('flow v0\nbox a\n').svg;
 	assert.throws(() => covered(svg.replace("fill:var(--agent)", "fill:var(--line)"), "changed text paint"), /absent from contract/);

@@ -9,7 +9,9 @@ type Element = { tag: string; attrs: Record<string, string>; classes: string[] }
 export function inspect(svg: string, fade?: number) {
 	const css = svg.match(/<style>([\s\S]*?)<\/style>/)?.[1];
 	assert.ok(css);
-	const rules = [...css.matchAll(/([^{}]+)\{([^{}]+)\}/g)].flatMap(([, selector, body], order) => {
+	const idleCss = css.replace(/@keyframes [^{]+\{(?:[^{}]*\{[^{}]*\})+\}/g, "");
+	let hiddenSequenceOverlays = false;
+	const rules = [...idleCss.matchAll(/([^{}]+)\{([^{}]+)\}/g)].flatMap(([, selector, body], order) => {
 		const declarations = Object.fromEntries(body.split(";").filter(Boolean).map((d) => d.split(":")));
 		// Fade rules affect only a shown step. Refuse active roots rather than
 		// treating dimmed text as a static palette paint; playback-fade.test.ts
@@ -19,6 +21,34 @@ export function inspect(svg: string, fade?: number) {
 			assert.deepEqual(declarations, { opacity: "var(--ab-play-unreached-opacity,.3)" });
 			return [];
 		}
+		if (/^\.ab\[data-ab-play="[A-Za-z0-9_.-]+"\]\.ab-in-progress \[data-ab-part\]:not\(\.ab-current\):not\(\.ab-played\)(?::not\(:has\(\.gap\)\)|:has\(\.gap\) text)$/.test(selector.trim())) {
+			assert.doesNotMatch(svg, /class="[^"]*\bab-in-progress\b/, "static paint inspector cannot inspect active playback fading");
+			assert.deepEqual(declarations, { opacity: ".3" });
+			return [];
+		}
+		// Only the current sequence gutter number takes the playback colour.
+		// It is inactive in this static inspector; sequence-playback.test.ts
+		// checks its state rule. Keep refusing active figures and new paints.
+		if (/^\.ab\[data-ab-play="[A-Za-z0-9_.-]+"\] \[data-ab-part\]\.ab-current \.seq-number$/.test(selector.trim())) {
+			assert.doesNotMatch(svg, /class="[^"]*\bab-current\b/, "static paint inspector cannot inspect current playback parts");
+			assert.deepEqual(declarations, { fill: "var(--play)", "font-weight": "600" });
+			return [];
+		}
+		// These two shapes are invisible in idle and cannot add a ground
+		// paint. Recognize only their exact scoped rules, retaining fail-closed
+		// behavior for changed defaults and any new opacity or fill selector.
+		const overlay = /^\.ab\[data-ab-play="[A-Za-z0-9_.-]+"\](.*)$/.exec(selector.trim())?.[1];
+		if (overlay === " :is(.seq-packet,.seq-time-band)") {
+			assert.deepEqual(declarations, { opacity: "0", "pointer-events": "none" });
+			hiddenSequenceOverlays = true;
+			return [];
+		}
+		if (overlay === " .seq-time-band") { assert.deepEqual(declarations, { fill: "var(--play)" }); return []; }
+		if (overlay === " .seq-packet") { assert.equal(declarations.fill, "none"); assert.ok(!("opacity" in declarations)); return []; }
+		const overlayOpacity: Record<string, string> = {
+			".ab-in-progress [data-ab-part].ab-current .seq-time-band": ".1",
+		};
+		if (overlay && overlayOpacity[overlay]) { assert.deepEqual(declarations, { opacity: overlayOpacity[overlay] }); return []; }
 		assert.ok(!("opacity" in declarations), "inspector must handle new group/element opacity");
 		if (!("fill" in declarations) && !("fill-opacity" in declarations)) return [];
 		assert.match(selector.trim(), /^\.ab (?:text|(?:\.[\w-]+)+)$/);
@@ -52,7 +82,18 @@ export function inspect(svg: string, fade?: number) {
 			: stack.at(-1);
 		if (!match[0].endsWith("/>")) stack.push(state);
 		assert.ok(!el.attrs.transform, "inspector must handle new transforms");
-		assert.ok(!el.attrs.style && !el.attrs.opacity, "inspector must handle new inline styles/opacity");
+		if (el.attrs.style) {
+			assert.equal(el.tag, "g");
+			assert.match(el.attrs["data-ab-part"], /^message-\d+$/);
+			assert.match(el.attrs.style, /^--seq-length:\d+(?:\.\d+)?$/);
+		}
+		assert.ok(!el.attrs.opacity, "inspector must handle new inline opacity");
+		if (el.classes.some(c => ["seq-packet", "seq-time-band"].includes(c))) {
+			assert.ok(hiddenSequenceOverlays, "idle sequence overlays must be hidden");
+			assert.ok(["path", "rect"].includes(el.tag), "only overlay shapes may be omitted");
+			continue;
+		}
+
 		const p = paint(el);
 		if (p && state === "unplayed" && ["rect", "path", "circle", "line"].includes(el.tag) && !el.classes.includes("gap") && !el.classes.includes("knockout")) p.opacity *= fade ?? 1;
 		if (!p) {

@@ -43,7 +43,8 @@ test("mount starts idle; source-order tabs, labelled panel, native actions and r
 	t.mock.timers.enable({ apis: ["setTimeout"] });
 	const f = setup(t);
 	assert.deepEqual(f.player.state, { scenario: 0, step: -1, status: "idle" });
-	assert.deepEqual(f.cls("ab-playback").children.map(el => el.className), ["abp-tabs", "abp-panel", "abp-status"]);
+	assert.deepEqual(f.cls("ab-playback").children.map(el => el.className), ["abp-figure", "abp-controls"]);
+	assert.deepEqual(f.cls("abp-controls").children.map(el => el.className), ["abp-tabs", "abp-panel", "abp-status"]);
 	assert.deepEqual(f.role("tab").map(el => el.textContent), timelines.map(timeline => timeline.name));
 	assert.equal(f.role("tablist")[0].getAttribute("aria-label"), "Scenarios");
 	assert.equal(f.role("tabpanel")[0].getAttribute("aria-labelledby"), f.role("tab")[0].id);
@@ -166,7 +167,8 @@ test("one polite atomic status announces only scenario/step changes to playable 
 	assert.equal(status.textContent, "Second actor: Second remark");
 	count = status.writes;
 	t.mock.timers.tick(200);
-	assert.equal(status.writes, count);
+	assert.equal(status.textContent, "");
+	assert.equal(status.writes, count + 1, "completion clears the status without repeating the last step");
 	f.player.select(1);
 	assert.equal(status.textContent, "Other actor");
 	count = status.writes;
@@ -226,7 +228,7 @@ test("no timelines adds nothing; single and empty scenarios retain their own sel
 	assert.equal(empty.role("status")[0].textContent, "");
 });
 
-test("every CSS selector is scoped; all schemes have independent token defaults", t => {
+test("every CSS selector is scoped; fallback tokens follow the used scheme", t => {
 	for (const scheme of ["auto", "light", "dark"]) {
 		const f = setup(t, timelines, { scheme });
 		assert.ok(f.cls("ab-playback").classList.contains(`ab-${scheme}`));
@@ -235,10 +237,9 @@ test("every CSS selector is scoped; all schemes have independent token defaults"
 		assert.ok(selectors.length > 10);
 		for (const group of selectors) for (const selector of group.split(",")) assert.match(selector, /^\.ab-playback(?:[ .[:]|$)/);
 		for (const [token, light, dark] of [["bg", "#ffffff", "#171c24"], ["ink", "#17202c", "#e5e9ef"], ["muted", "#5a6575", "#98a2b0"], ["line", "#d3d9e2", "#2c3440"], ["play", "#0a7a60", "#6ff0cf"]]) {
-			assert.ok(css.includes(`var(--ab-${token},${light})`));
-			assert.ok(css.includes(`var(--ab-${token},${dark})`));
+			assert.ok(css.includes(`var(--ab-${token},light-dark(${light},${dark}))`));
 		}
-		assert.match(css, /prefers-color-scheme:dark/);
+		assert.doesNotMatch(css, /prefers-color-scheme/);
 		assert.match(css, /:focus-visible/);
 	}
 });
@@ -279,6 +280,8 @@ test("autoplay starts in view, pauses out of view and resumes unless the reader 
 	t.mock.timers.enable({ apis: ["setTimeout"] });
 	const f = setup(t, timelines, { autoplay: true });
 	assert.equal(f.doc.viewport.observers.size, 1);
+	const [watched] = [...f.doc.viewport.observers][0].targets;
+	assert.equal(watched, f.cls("abp-figure"), "the figure box, not a sideways-scrolling SVG, decides visibility");
 	assert.equal(f.player.state.status, "idle", "nothing plays before the figure is in view");
 	f.doc.viewport.show(true);
 	assert.deepEqual(f.player.state, { scenario: 0, step: 0, status: "playing" });

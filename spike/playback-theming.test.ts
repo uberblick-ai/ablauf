@@ -146,7 +146,7 @@ function controlPaint(el: El, css: string, hover: boolean, focus: boolean): { in
 	const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].flatMap(([, selectors, body], order) => {
 		const declarations = Object.fromEntries(body.split(";").filter(Boolean).map(d => [d.slice(0, d.indexOf(":")), d.slice(d.indexOf(":") + 1)]));
 		if (!("color" in declarations) && !("background" in declarations)) return [];
-		return selectors.split(",").filter(s => !s.includes("::")).map(selector => ({ selector: selector.trim(), declarations, order,
+		return selectors.split(",").filter(s => !s.includes("::") && !s.includes(".abp-row")).map(selector => ({ selector: selector.trim(), declarations, order,
 			specificity: (selector.match(/\.[\w-]+|\[[^\]]+\]|:[\w-]+/g)?.length ?? 0) * 10 + (selector.match(/\bbutton\b/g)?.length ?? 0) }));
 	});
 	function matches(node: El, selector: string): boolean {
@@ -183,7 +183,7 @@ function controlPaint(el: El, css: string, hover: boolean, focus: boolean): { in
 		const token = (value: string) => { const match = /^var\(--abp-(\w+)\)$/.exec(value); assert.ok(match, value); return match[1]; };
 		if (values.color) ink = token(values.color);
 		if (node.classList.contains("ab-playback")) {
-			assert.equal(values.background, "var(--abp-bg)", "controls canvas matches the contract bg");
+			assert.equal(values.background, "transparent", "host canvas supplies the contract bg");
 			rootGround = true;
 		}
 		if (values.background && values.background !== "none" && node.classList.contains("ab-playback") === false) ground.push(token(values.background));
@@ -237,7 +237,7 @@ test("mounted control text paints cover tabs, hover/selected/focus combinations,
 		verify(empty, "playback controls empty-state text on canvas");
 		assert.equal(witnessed.size, pairs.length);
 		assert.match(css, /font:14px\/1.5 var\(--ab-font-text,system-ui,sans-serif\)/);
-		assert.equal(css.match(/var\(--ab-font-mono,ui-monospace,monospace\)/g)?.length, 3);
+		assert.equal(css.match(/var\(--ab-font-mono,ui-monospace,monospace\)/g)?.length, 5);
 		assert.doesNotMatch(result.svg, /--ab-font-(text|mono)/);
 		mount.destroy();
 	}
