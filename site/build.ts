@@ -10,7 +10,7 @@
 // site/kinds.ts gets a generated page at /<id> with its examples. site/static
 // is copied as it is.
 //
-// Diagrams are rendered at build time from site/examples or spike/examples,
+// Diagrams are rendered at build time from site/examples or examples,
 // so the site always shows the current renderer. Each example is a pair of
 // tabs, Displayed and Source, like the block examples on uberblick.ai.
 // Placeholders in a page:
@@ -34,13 +34,13 @@ import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, write
 import { stripTypeScriptTypes } from "node:module";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { render } from "../spike/flow/index.ts";
+import { render } from "../src/index.ts";
 import { type Kind, kinds as defaultKinds } from "./kinds.ts";
 import { shell } from "./shell.ts";
 
 const ROOT = import.meta.dirname;
 // Site-only examples first, then the renderer's own.
-const EXAMPLES = [join(ROOT, "examples"), join(ROOT, "..", "spike", "examples")];
+const EXAMPLES = [join(ROOT, "examples"), join(ROOT, "..", "examples")];
 
 export interface BuildOptions {
 	out?: string;
@@ -69,7 +69,7 @@ export function build(options: BuildOptions = {}): BuildResult {
 	const source = (name: string) => {
 		if (!sources.has(name)) {
 			const file = EXAMPLES.map((dir) => join(dir, `${name}.flow`)).find((f) => existsSync(f));
-			if (!file) problems.push(`${name}.flow: not in site/examples or spike/examples`);
+			if (!file) problems.push(`${name}.flow: not in site/examples or examples`);
 			sources.set(name, file ? readFileSync(file, "utf8") : "");
 		}
 		return sources.get(name) ?? "";
@@ -154,7 +154,7 @@ ${items.join("\n")}`;
 	// Pages and the local server serve it without a TypeScript runtime.
 	mkdirSync(join(out, "playback"));
 	for (const name of ["playback", "controls", "player"]) {
-		const ts = readFileSync(join(ROOT, "..", "spike", "flow", `${name}.ts`), "utf8");
+		const ts = readFileSync(join(ROOT, "..", "src", `${name}.ts`), "utf8");
 		const js = stripTypeScriptTypes(ts).replace(/(from "\.\/\w+)\.ts"/g, '$1.js"');
 		writeFileSync(join(out, "playback", `${name}.js`), js);
 	}

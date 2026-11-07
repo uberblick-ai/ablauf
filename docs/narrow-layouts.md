@@ -7,9 +7,9 @@ records its own placement and routes, following the
 
 ## A worked pair
 
-- [approval-wide.flow](../spike/examples/approval-wide.flow) puts the human
+- [approval-wide.flow](../examples/approval-wide.flow) puts the human
   decision panel beside the checks on the main path.
-- [approval-narrow.flow](../spike/examples/approval-narrow.flow) stacks every
+- [approval-narrow.flow](../examples/approval-narrow.flow) stacks every
   node in one column, with the human decision panel between the checks and the
   final state. The direct `passed` edge goes around the panel on the right.
 
@@ -26,17 +26,19 @@ From the repository root, render the pair with the existing tooling:
 mise run render
 ```
 
-This writes [approval-wide.svg](../spike/out/approval-wide.svg) and
-[approval-narrow.svg](../spike/out/approval-narrow.svg) alongside the other
-generated examples, and reports diagnostics. To iterate on just one source:
+This writes [approval-wide.svg](../out/approval-wide.svg) and
+[approval-narrow.svg](../out/approval-narrow.svg) alongside the other
+generated examples in gitignored `out/`, and reports diagnostics. Generate
+these locally before opening the host below; PR CI also offers the SVGs as a
+downloadable artifact named for the checked head SHA. To iterate on one source:
 
 ```sh
-mise run check spike/examples/approval-narrow.flow
-mise run check spike/examples/approval-wide.flow
+mise run check examples/approval-narrow.flow
+mise run check examples/approval-wide.flow
 ```
 
 `check` writes an SVG beside its `.flow`; `render` refreshes the files in
-`spike/out/` used by the host below. Ship both refreshed SVGs together.
+`out/` used by the host below. Ship both refreshed SVGs together.
 
 The complete narrow SVG is **277 × 404 CSS px**, including edge labels, the
 outside route and the wrapped legend. It fits a 400 CSS px content area with
@@ -57,8 +59,8 @@ at the repository root, or open the file locally. Its figure and CSS are:
 </style>
 <figure class="approval-flow">
   <picture>
-    <source media="(min-width: 600px)" srcset="../spike/out/approval-wide.svg">
-    <img src="../spike/out/approval-narrow.svg"
+    <source media="(min-width: 600px)" srcset="../out/approval-wide.svg">
+    <img src="../out/approval-narrow.svg"
       alt="Ready triggers automated checks. Passed checks finish; blocked checks go to a person who resolves the blocked check so work can continue, then clears it to finish.">
   </picture>
   <figcaption>Automated checks with a path for a human decision.</figcaption>

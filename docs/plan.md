@@ -17,7 +17,7 @@ line number. It never moves anything to fix a problem; the author does that.
 
 ## Example
 
-The loop figure from the ub-agents explainer (hand-drawn: [spike/reference/loop.svg](../spike/reference/loop.svg)):
+The loop figure from the ub-agents explainer (hand-drawn: [reference/loop.svg](reference/loop.svg)):
 
 ```
 flow v0
@@ -102,7 +102,7 @@ there from the text and the diagnostics alone, without seeing the image.
 
 ## Format rules
 
-- [spike/PRIMER.md](../spike/PRIMER.md) is the self-contained authoring and
+- [PRIMER.md](PRIMER.md) is the self-contained authoring and
   editing guide; this plan also records renderer mechanics and host contracts.
 - The first line is `flow v0`. A newer version renders as the newest known one,
   with a warning, never an error.
@@ -234,7 +234,7 @@ as notes. Colours use `--ab-system` and `--ab-system-bg` host overrides. Like th
 other tones, `system` also works on edges and legend entries. A matching sample
 is `box tone=system "automated system step"` inside a `legend`.
 
-[system-steps.flow](../spike/examples/system-steps.flow) compares these styles
+[system-steps.flow](../examples/system-steps.flow) compares these styles
 in one small diagram for light/dark review in the playground's document column.
 
 ## Rendering rules
@@ -386,7 +386,7 @@ For example, to use IBM Plex Mono throughout, after making its regular and
 semibold faces available to the SVG (its glyph advance is 0.6em):
 
 ```ts
-import { render } from "./spike/flow/index.ts";
+import { render } from "./src/index.ts";
 
 const plexMono = {
   family: "IBM Plex Mono",
@@ -469,9 +469,9 @@ outcome "Edited since" reason="The input changed after the maintainer started it
   routed-flow nodes, routes and bands, so the grid overlay has nothing to draw.
   Save them as `.flow` files for the existing check, render and playground tools.
 
-See [approvals](../spike/examples/approvals.flow) and
-[run endings](../spike/examples/run-endings.flow) for the review examples, and
-[run endings as a ladder](../spike/examples/run-endings-ladder.flow).
+See [approvals](../examples/approvals.flow) and
+[run endings](../examples/run-endings.flow) for the review examples, and
+[run endings as a ladder](../examples/run-endings-ladder.flow).
 
 ## Sequence v0
 
@@ -632,7 +632,7 @@ messages, participant creation/destruction and configurable autonumber are outsi
   above. Save sequence sources as `.flow` files for the existing check and
   render tools.
 
-[Claim your podcast](../spike/examples/claim.flow) preserves the spike fixture's
+[Claim your podcast](../examples/claim.flow) preserves the spike fixture's
 five participant titles and all 15 directed messages, including its self-message.
 The Claim and Verify sections separate phases; a Backend note after message 7
 states that the code expires after 15 minutes. After message 11, `alt Code
@@ -1235,7 +1235,7 @@ as the hand-drawn figure, and when most trial agents reach zero diagnostics.
 
 ## After the spike
 
-1. Keep the authoring primer at the stable `spike/PRIMER.md` path and publish
+1. Keep the authoring primer at the stable `docs/PRIMER.md` path and publish
    `@uberblick/ablauf` 0.2.0. The npm name is ours; 0.1.0 was the old project.
 2. Add a ```` ```ablauf ```` code block to uberblick-2 with a rendered view, an
    MCP help topic pointing at the primer, and Markdown export as the fenced

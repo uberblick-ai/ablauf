@@ -22,10 +22,20 @@ Write acceptance criteria in terms of checks agents can run here, as applicable:
 SVG source. A criterion that needs a browser or a person's eye must explicitly
 say so; reading SVG source does not satisfy a visual review criterion.
 
-A change that affects rendering also runs `mise run render` and commits what it
-rewrites in `spike/out/` and `docs/images/`. A test covers only
-`spike/out/loop.svg`, so the reviewer and the integrator rerun `mise run render`
-at the candidate: it must report no diagnostics and leave `git status` clean.
+A change that affects rendering also runs `mise run render` and commits any
+changes in `docs/images/`. Generated example SVGs live in gitignored `out/`;
+CI uploads them as a downloadable artifact named for the checked head SHA.
+The reviewer and integrator rerun `mise run render` at the candidate: it must
+report no diagnostics and leave `git status` clean.
+
+The six committed renderer-output checks live in `test/golden/`: `loop.svg`,
+`deploy.svg` (including the legend test's comparison), and the four compressed
+compatibility fixtures. Normal rendering must never overwrite these files.
+For an intentional rendering change, explicitly copy the matching freshly
+rendered SVG from `out/` to `test/golden/`. The compressed fixtures remain
+historical captures: adjust expected strings in their tests rather than
+regenerating them. `docs/baseline/` and `docs/reference/` are comparison
+references, not renderer-output checks.
 
 ## Merging
 
@@ -41,7 +51,7 @@ The integrator squash-merges a PR when, at the head it merges:
 A PR that meets those gates is still a maintainer merge (`maintainer-merge`) when
 it:
 
-- changes a figure in `spike/out/` or `docs/images/`: no agent sees the render,
+- changes a figure in `test/golden/` or `docs/images/`: no agent sees the render,
   so a maintainer checks it in light and dark with `mise run playground`;
 - implements an issue with an acceptance criterion that needs a browser or a
   person's eye, even if the PR changes no figure;
@@ -78,7 +88,7 @@ Breaking a constraint in `AGENTS.md` is P1:
   nothing in the source is silently dropped;
 - any change to `examples/approvals.json`.
 
-Existing files in `spike/examples/` are reference figures. Changing one without
+Existing files in `examples/` are reference figures. Changing one without
 the issue asking is also P1; a new feature gets its own example.
 
 Also check:
@@ -87,5 +97,5 @@ Also check:
 - New behavior has tests that fail without the change.
 - No secrets, and no untrusted text reaching commands or output.
 - A change to the format or the renderer's rules updates `docs/plan.md`, and
-  `spike/PRIMER.md` when an authoring agent needs to know it.
+  `docs/PRIMER.md` when an authoring agent needs to know it.
 - The simplest working change wins; no dead code or speculative options.

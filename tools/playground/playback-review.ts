@@ -1,0 +1,208 @@
+import { render } from "../../src/index.ts";
+import { createPlayer, mountPlayback, type PlaybackMount } from "../../src/playback.ts";
+
+const scheme = document.getElementById("review-scheme") as HTMLSelectElement;
+const hostScheme = document.getElementById("review-host") as HTMLSelectElement;
+const documentWidth = document.getElementById("review-width") as HTMLSelectElement;
+const loop = document.getElementById("review-loop") as HTMLInputElement;
+const accent = document.getElementById("review-accent") as HTMLSelectElement;
+const zeroGlow = document.getElementById("review-zero-glow") as HTMLInputElement;
+const fadeOpacity = document.getElementById("review-fade") as HTMLSelectElement;
+const textFont = document.getElementById("review-font-text") as HTMLSelectElement;
+const monoFont = document.getElementById("review-font-mono") as HTMLSelectElement;
+const ink = document.getElementById("review-ink") as HTMLInputElement;
+const claimLayout = document.getElementById("review-claim-layout") as HTMLSelectElement;
+const cases = document.getElementById("review-cases") as HTMLElement;
+const mounts: { destroy(): void }[] = [];
+const figureCSS = ".review-figure svg{display:block;max-width:100%;height:auto}";
+
+function addCase(title: string, source: string, idPrefix: string, shadow = false, headless = false,
+	playbackOptions: { autoplay?: boolean; pauseWhenOffscreen?: boolean; layout?: "below" | "side" | "auto"; expand?: boolean } = {}) {
+	const section = document.createElement("section");
+	section.className = "review-document";
+	section.id = idPrefix;
+	if (idPrefix.startsWith("review-claim")) section.classList.add("review-wide");
+	const heading = document.createElement("h2");
+	heading.textContent = title;
+	const surface = document.createElement("div");
+	const container = shadow ? surface.attachShadow({ mode: "open" }) : surface;
+	const style = document.createElement("style");
+	style.textContent = figureCSS;
+	const figure = document.createElement("div");
+	figure.className = "review-figure";
+	const selectedScheme = scheme.value === "dark" ? "dark" : scheme.value === "light" ? "light" : undefined;
+	const result = render(source, { idPrefix, scheme: selectedScheme });
+	figure.innerHTML = result.svg;
+	const initialSvg = figure.querySelector("svg");
+	if (!initialSvg) throw new Error("Missing rendered SVG");
+	let svg = initialSvg;
+	let timelines = result.timelines;
+	const retained = document.createElement("p");
+	retained.className = "review-note";
+	retained.textContent = "Host content remains after either teardown entry point.";
+	container.append(style, figure, retained);
+	function makeMount(): Pick<PlaybackMount, "player" | "destroy"> & Partial<Pick<PlaybackMount, "update" | "expand" | "open" | "close" | "isOpen">> {
+		if (!headless) return mountPlayback(figure, svg, timelines, { loop: loop.checked, expand: true, ...playbackOptions });
+		const player = createPlayer(svg, timelines, { loop: loop.checked, pauseWhenOffscreen: playbackOptions.pauseWhenOffscreen });
+		return { player, destroy: () => player.destroy() };
+	}
+	let mount = makeMount();
+	let pending: ReturnType<typeof setTimeout> | undefined;
+	const cleanup = { destroy() { clearTimeout(pending); mount.destroy(); } };
+	mounts.push(cleanup);
+	const note = document.createElement("p");
+	note.className = "review-note";
+	note.textContent = playbackOptions.autoplay ? "Autoplay: waits for half visibility." : "Mounted, idle. No autoplay.";
+	const stateLine = document.createElement("p");
+	stateLine.className = "review-note";
+	const showState = () => {
+		const state = mount.player.state;
+		stateLine.textContent = `Controls: ${mount.isOpen === undefined ? "headless" : mount.isOpen ? "open" : "closed"}; scenario ${state.scenario}, step ${state.step}, ${state.status}; connected: ${svg.isConnected}; document: ${document.visibilityState}`;
+	};
+	const watch = () => { showState(); return mount.player.subscribe(showState); };
+	let unsubscribe = watch();
+	section.addEventListener("click", showState);
+	function button(label: string, action: () => void) {
+		const el = document.createElement("button");
+		el.type = "button";
+		el.textContent = label;
+		el.addEventListener("click", () => { action(); showState(); });
+		return el;
+	}
+	section.append(heading, surface,
+		button("mount.destroy()", () => { cleanup.destroy(); note.textContent = "Destroyed through mount."; }),
+		button("player.destroy()", () => { clearTimeout(pending); mount.player.destroy(); note.textContent = "Destroyed through player."; }),
+		button("Remount", () => {
+			cleanup.destroy(); unsubscribe();
+			mount = makeMount();
+			unsubscribe = watch();
+			note.textContent = "Remounted, idle. No duplicate controls.";
+		}),
+		button("Remove SVG", () => { svg.remove(); note.textContent = "SVG removed. Wait beyond the current dwell before reinserting."; }),
+		button("Reinsert SVG", () => { (figure.querySelector(".abp-figure") ?? figure).prepend(svg); note.textContent = "SVG reinserted. A lifecycle pause must wait for explicit Play."; }),
+		note, stateLine);
+	if (!headless) {
+		section.append(button("Host open()", () => mount.open?.()), button("Host close()", () => mount.close?.()),
+			button("Host expand()", () => mount.expand?.()), button("Host open(); play()", () => { mount.open?.(); mount.player.play(); }));
+		const editor = document.createElement("textarea"); editor.value = source;
+		editor.setAttribute("aria-label", `Source for ${title}`);
+		section.append(editor);
+		const mode = document.createElement("select");
+		mode.setAttribute("aria-label", `Replacement data for ${title}`);
+		for (const [value, text] of [
+			["reorder", "Reorder scenarios"], ["remove", "Remove selected scenario"],
+			["single", "Keep selected scenario only"], ["empty", "Empty selected scenario"],
+			["none", "No timelines"], ["refresh", "Refresh labels, counts and scheme"], ["restore", "Restore original data"], ["source", "Render edited source"],
+		]) {
+			const option = document.createElement("option"); option.value = value; option.textContent = text; mode.append(option);
+		}
+		let revision = 0;
+		const rebind = () => {
+			const fresh = render(mode.value === "source" ? editor.value : source, { idPrefix, scheme: selectedScheme });
+			const selected = timelines[mount.player.state.scenario];
+			let next = [...timelines];
+			if (mode.value === "reorder") next.reverse();
+			else if (mode.value === "remove") next = next.filter(timeline => timeline.slug !== selected?.slug);
+			else if (mode.value === "single") next = selected ? [selected] : [];
+			else if (mode.value === "empty") next = next.map(timeline => timeline === selected ? { ...timeline, steps: [] } : timeline);
+			else if (mode.value === "none") next = [];
+			else if (mode.value === "refresh") next = next.map(timeline => ({ ...timeline, name: `${timeline.name} · refreshed`,
+				steps: timeline.steps.slice(0, 1).map(step => ({ ...step, actor: "Refreshed actor", caption: "Refreshed caption" })) }));
+			else next = fresh.timelines;
+			const holder = document.createElement("div"); holder.innerHTML = fresh.svg;
+			const replacement = holder.querySelector("svg");
+			if (!replacement) throw new Error("Missing replacement SVG");
+			if (mode.value === "refresh") {
+				replacement.classList.remove("ab-auto", "ab-light", "ab-dark");
+				replacement.classList.add(++revision % 2 ? "ab-dark" : "ab-light");
+			}
+			if (svg.parentNode) svg.replaceWith(replacement); else figure.prepend(replacement);
+			svg = replacement; timelines = next;
+			mount.update?.(svg, timelines);
+			note.textContent = `Rebound: ${mode.selectedOptions[0].textContent}. Idle at -1; controls retain open/closed state. Viewport events cannot restart playback.`;
+			showState();
+		};
+		section.append(mode, button("Rebind now", rebind), button("Rebind in 2 seconds (focus a control)", () => {
+			clearTimeout(pending); pending = setTimeout(rebind, 2000);
+			note.textContent = "Rebinding in two seconds: focus a tab, panel, action button, range or side-list row now.";
+		}));
+	}
+	section.append(
+		button("Direct Play / Replay", () => mount.player.play()),
+		button("Direct Pause", () => mount.player.pause()),
+		button("Direct Previous", () => mount.player.previous()),
+		button("Direct Next", () => mount.player.next()),
+		button("Direct full figure", () => mount.player.seek(-1)),
+		button("Direct select empty", () => mount.player.select(timelines.findIndex(timeline => !timeline.steps.length))),
+	);
+	if (result.diagnostics.length) {
+		const diagnostics = document.createElement("p");
+		diagnostics.className = "review-note";
+		diagnostics.textContent = result.diagnostics.map(d => `Line ${d.line}: ${d.message}`).join("; ");
+		section.append(diagnostics);
+	}
+	cases.append(section);
+}
+
+async function load(path: string) {
+	const response = await fetch(path);
+	if (!response.ok) throw new Error(`Cannot load ${path}: ${response.status}`);
+	return response.text();
+}
+const [source, fade, crossings, claim, compact] = await Promise.all([
+	load("/api/flow/examples/loop-play"),
+	load("/api/flow/examples/playback-fade"),
+	load("/playground/playback-crossings.flow"),
+	load("/api/flow/examples/claim-play"),
+	load("/playground/playback-compact.flow"),
+]);
+const single = 'flow v0\nbox a "Start"\nbox b "Finish"\na --> b\nplay "One scenario"\n step a actor="Author" "Start here"\n step b "Finish here"\n';
+
+function draw() {
+	for (const mount of mounts) mount.destroy();
+	mounts.length = 0;
+	cases.replaceChildren();
+	const layout = claimLayout.value === "side" ? "side" : claimLayout.value === "below" ? "below" : "auto";
+	addCase("Claim · responsive side captions", claim, "review-claim", false, false, { layout });
+	addCase("Claim · side captions in shadow root", claim, "review-claim-shadow", true, false, { layout });
+	addCase("Loop · light DOM", source, "review-light-dom");
+	addCase("Loop · shadow root", source, "review-shadow", true);
+	addCase("Loop · host expand() only (no built-in Expand)", source, "review-host-expand", false, false, { expand: false });
+	addCase("Compact controls · overflowing tabs and single-line captions", compact, "review-compact");
+	addCase("Compact controls · shadow root", compact, "review-compact-shadow", true);
+	addCase("Fade · inline labels on canvas and band", fade, "review-fade");
+	addCase("Fade · inline labels · shadow root", fade, "review-fade-shadow", true);
+	addCase("Fade · crossing knockouts (two expected warnings)", crossings, "review-crossings");
+	addCase("Fade · crossing knockouts · shadow root", crossings, "review-crossings-shadow", true);
+	addCase("Single timeline · no tabs", single, "review-single");
+	addCase("Direct createPlayer · no built-in controls", single, "review-headless", false, true);
+	addCase("Tabbed · includes an empty scenario", `${single}play "Empty scenario"\n`, "review-empty");
+	addCase("Viewport pause only · manual start", compact, "review-viewport", false, false, { pauseWhenOffscreen: true });
+	addCase("Autoplay · half visibility", compact, "review-autoplay", false, false, { autoplay: true });
+	addCase("Autoplay and viewport pause · shadow root", compact, "review-both", true, false, { autoplay: true, pauseWhenOffscreen: true });
+	addCase("Direct createPlayer · viewport pause only", single, "review-direct-viewport", false, true, { pauseWhenOffscreen: true });
+}
+scheme.addEventListener("change", draw);
+loop.addEventListener("change", draw);
+claimLayout.addEventListener("change", draw);
+hostScheme.addEventListener("change", () => { document.body.dataset.host = hostScheme.value; });
+documentWidth.addEventListener("change", () => {
+	if (documentWidth.value) document.body.style.setProperty("--review-width", documentWidth.value);
+	else document.body.style.removeProperty("--review-width");
+});
+accent.addEventListener("change", () => {
+	if (accent.value) document.body.style.setProperty("--ab-play", accent.value);
+	else document.body.style.removeProperty("--ab-play");
+});
+zeroGlow.addEventListener("change", () => {
+	if (zeroGlow.checked) document.body.style.setProperty("--ab-play-glow", "0");
+	else document.body.style.removeProperty("--ab-play-glow");
+});
+// These mutate only inherited CSS; mounted players, focus and SVG bytes remain.
+for (const [control, property] of [[fadeOpacity, "--ab-play-unreached-opacity"], [textFont, "--ab-font-text"], [monoFont, "--ab-font-mono"], [ink, "--ab-ink"]] as const) {
+	control.addEventListener("input", () => {
+		if (control.value) document.body.style.setProperty(property, control.value);
+		else document.body.style.removeProperty(property);
+	});
+}
+draw();

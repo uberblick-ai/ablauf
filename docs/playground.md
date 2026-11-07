@@ -104,17 +104,17 @@ use the printed server URL with `/playback-review`. No build or setup script is
 needed beyond that command.
 
 The fixture shows two independently rendered copies of
-`spike/examples/loop-play.flow`, one in the light DOM and one inside a shadow
-root, using distinct `idPrefix` values. `spike/examples/playback-fade.flow` adds
+`examples/loop-play.flow`, one in the light DOM and one inside a shadow
+root, using distinct `idPrefix` values. `examples/playback-fade.flow` adds
 all six node kinds and inline label gaps on canvas and band backgrounds, with
-zero diagnostics. The playground-only `spike/playground/playback-crossings.flow`
+zero diagnostics. The playground-only `tools/playground/playback-crossings.flow`
 visibly exercises canvas and band knockouts; its two crossing warnings are
 intentional and shown on the page. It stays outside the rendered example set.
 The page also shows a single timeline without tabs, a direct `createPlayer`
 case without built-in controls, a tabbed case with an empty scenario, and a
 **Compact controls** case with overflowing tabs, successive short, horizontally
 overflowing and blank captions, an absent actor and an empty scenario at the end
-of the tab strip. Its source is `spike/playground/playback-compact.flow`, shared
+of the tab strip. Its source is `tools/playground/playback-compact.flow`, shared
 with the caption regression test and checkable with `mise run check`.
 Each mounted case has replacement-data controls and immediate/delayed rebinding;
 every case has SVG removal/reinsertion and a subscription state readout.
@@ -152,7 +152,7 @@ The review document adds 32px padding and the page has 48px margins, so the
 threshold here is a 1078px viewport. The SVG's natural size, rather than its
 scaled narrow-screen size, determines this choice. Source inspection and DOM
 fakes do not satisfy this visual review. The #137 dependency is now available
-as `spike/examples/claim-play.flow`.
+as `examples/claim-play.flow`.
 
 For #127, use a 720×680 browser viewport and open **Expand** on
 [Loop · light DOM](http://localhost:4620/playback-review#review-light-dom) or
@@ -480,7 +480,7 @@ line, and approve the examples that should become golden figures. Agents use
 
 Each step is one small PR:
 
-1. **Package skeleton.** Move `spike/flow` to `src/` and adopt wireframe-md's
+1. **Package skeleton.** Keep the renderer in `src/` and adopt wireframe-md's
    tooling (pnpm, Biome, tsc, the test runner, mise tasks). The examples
    become `examples/` and the tests run every example.
 2. **Playground core.** Copy wireframe-md's server, catalog, editor and
