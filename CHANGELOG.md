@@ -38,6 +38,10 @@
   callback. Clear step details and highlights in controls, with Replay starting
   at step `0`; Next from ended selects the first step paused and Previous keeps
   the full figure paused. Document default-off, opt-in autoplay. ([#145](https://github.com/uberblick-ai/ablauf/issues/145))
+- Keep below-figure playback captions on one horizontally scrollable line with
+  reserved scrollbar space and a focusable region named “Step caption”. Preserve
+  scrolling on same-step pause/resume; reset it on step/scenario changes and
+  completion. ([#146](https://github.com/uberblick-ai/ablauf/issues/146))
 
 ## 0.3.0 — 2026-11-02
 

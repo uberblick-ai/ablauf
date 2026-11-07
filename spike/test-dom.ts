@@ -122,6 +122,7 @@ export class El {
 	step = "";
 	value = "";
 	hidden = false;
+	scrollLeft = 0;
 	scrollTop = 0;
 	rect: { top: number; bottom: number; width: number } | undefined;
 	style = { properties: new Map<string, string>(), setProperty(name: string, value: string) { this.properties.set(name, value); } };

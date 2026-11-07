@@ -999,8 +999,24 @@ Below tabs, an outlined rounded counter shows the one-based step/total (`3/7`)
 beside the current actor above the caption (remark). The counter is blank and
 visually hidden at `-1` and in empty scenarios, retaining its space. The actor
 occupies one monospace line in the play colour; the caption uses the body face
-at 16px. This row reserves at least two lines, even at idle, with no actor or
-when empty; longer captions wrap and grow the row without clipping.
+at 16px and reserves exactly one text line, including when blank. Captions never
+wrap or widen the figure: readers can scroll the complete text horizontally by
+pointer/touch or keyboard. The horizontal scrollbar space is reserved even for
+short or blank captions, including in browsers with non-overlay scrollbars.
+The actor and caption lines stay reserved at idle, without an actor and in empty
+scenarios, keeping the step-row height and action-button positions constant at
+a fixed figure width.
+
+The caption is always a tab stop (`tabindex="0"`) before Previous, with
+`role="region"` and the constant accessible name “Step caption” (`aria-label`).
+Its scoped `:focus-visible` outline does not change geometry. Left/Right, Home
+and End in the caption retain native scrolling; playback shortcuts must not
+consume them or switch steps or scenarios. Scenario/step changes reset the
+caption instantly to its beginning; pause and resume at the same step preserve
+the reader's scroll position. Completion restores the full figure at step `-1`,
+clearing the caption and resetting its scrolling. There is no automatic panning
+or scrolling animation, including under reduced motion. Scrolling never moves
+focus or announces text; the caption region is not a live region.
 
 Below the step line are exactly three native buttons: `<` (accessible name
 Previous), Play/Pause/Replay, and `>` (accessible name Next). They use monospace,

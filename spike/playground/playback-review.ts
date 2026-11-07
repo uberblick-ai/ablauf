@@ -133,21 +133,14 @@ async function load(path: string) {
 	if (!response.ok) throw new Error(`Cannot load ${path}: ${response.status}`);
 	return response.text();
 }
-const [source, fade, crossings, claim] = await Promise.all([
+const [source, fade, crossings, claim, compact] = await Promise.all([
 	load("/api/flow/examples/loop-play"),
 	load("/api/flow/examples/playback-fade"),
 	load("/playground/playback-crossings.flow"),
 	load("/api/flow/examples/claim-play"),
+	load("/playground/playback-compact.flow"),
 ]);
 const single = 'flow v0\nbox a "Start"\nbox b "Finish"\na --> b\nplay "One scenario"\n step a actor="Author" "Start here"\n step b "Finish here"\n';
-const compact = [
-	'flow v0\nbox a "Start"\nbox b "Finish"\na --> b\n',
-	'play "Short captions"\n step a actor="Author" "Start here"\n step b actor="Reviewer" "Finish here"\n',
-	'play "Long caption wrapping"\n step a actor="Author" "This deliberately long caption wraps across several lines at document width. Every word should remain visible, and the controls should move down to accommodate it rather than clipping the text or overlapping the buttons and segmented step bar."\n',
-	'play "Caption without an actor"\n step a "The actor line still keeps its space"\n',
-	'play "Another short scenario"\n step b actor="Reviewer" "A short caption again"\n',
-	'play "An empty scenario at the end of the overflowing tabs"\n',
-].join("");
 
 function draw() {
 	for (const mount of mounts) mount.destroy();
@@ -158,7 +151,7 @@ function draw() {
 	addCase("Claim · side captions in shadow root", claim, "review-claim-shadow", true, false, { layout: "side" });
 	addCase("Loop · light DOM", source, "review-light-dom");
 	addCase("Loop · shadow root", source, "review-shadow", true);
-	addCase("Compact controls · overflowing tabs and wrapping captions", compact, "review-compact");
+	addCase("Compact controls · overflowing tabs and single-line captions", compact, "review-compact");
 	addCase("Fade · inline labels on canvas and band", fade, "review-fade");
 	addCase("Fade · crossing knockouts (two expected warnings)", crossings, "review-crossings");
 	addCase("Single timeline · no tabs", single, "review-single");
