@@ -33,7 +33,7 @@ export function createPlayer(svg: SVGSVGElement, timelines: Timeline[], options:
 export function createPlayerBinding(
 	svg: SVGSVGElement,
 	timelines: Timeline[],
-	options: PlayerOptions & { autoplay?: boolean; synchronize?: (state: PlayerState) => void; viewportTarget?: () => Element } = {},
+	options: PlayerOptions & { autoplay?: boolean; beforeChange?: () => void; synchronize?: (state: PlayerState) => void; viewportTarget?: () => Element } = {},
 ) {
 	let state: PlayerState = Object.freeze({ scenario: 0, step: -1, status: "idle" });
 	let destroyed = false;
@@ -78,8 +78,9 @@ export function createPlayerBinding(
 		unobserveMotion();
 	}
 	function manual() { initialAutoplay = false; pausedByView = false; }
-	function change(scenario: number, step: number, status: PlayerState["status"], refresh = false) {
+	function change(scenario: number, step: number, status: PlayerState["status"], refresh = false, reveal = true) {
 		const changed = state.scenario !== scenario || state.step !== step || state.status !== status;
+		if (changed && reveal) options.beforeChange?.();
 		if (changed) state = Object.freeze({ scenario, step, status });
 		if (changed || refresh) { paint(); options.synchronize?.(state); }
 		// Arm before notifying so a listener can pause, navigate or destroy safely.
@@ -118,7 +119,7 @@ export function createPlayerBinding(
 		else if (options.loop) change(state.scenario, 0, "playing");
 		else { unobserveMotion(); change(state.scenario, -1, "ended"); }
 	}
-	function reset() { manual(); cancel(); change(state.scenario, -1, "idle"); }
+	function reset() { manual(); cancel(); change(state.scenario, -1, "idle", false, false); }
 	function motionChanged(event: MediaQueryListEvent) {
 		if (!destroyed && state.status === "playing" && event.matches) reset();
 	}
@@ -200,6 +201,7 @@ export function createPlayerBinding(
 	paint(); bind();
 	return {
 		player, canActivate,
+		reset() { if (!destroyed) reset(); },
 		setExpanded(value: boolean) {
 			if (destroyed) return;
 			expanded = value;
@@ -216,7 +218,7 @@ export function createPlayerBinding(
 			svg = nextSvg; timelines = nextTimelines; offscreen = false;
 			const scenario = Math.max(0, timelines.findIndex(timeline => timeline.slug === slug));
 			bind();
-			change(scenario, timelines[scenario]?.steps.length ? 0 : -1, "paused", true);
+			change(scenario, -1, "idle", true, false);
 		},
 	};
 }

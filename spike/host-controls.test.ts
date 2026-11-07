@@ -90,6 +90,7 @@ function fixture(shadow: boolean, scheme: string) {
 	host.append(container);
 	const svg = new El("svg", doc); svg.className = `ab ab-${scheme}`; container.append(svg);
 	const mount = mountPlayback(container as unknown as HTMLElement, svg as unknown as SVGSVGElement, render(source).timelines, { layout: "side", expand: true });
+	mount.open();
 	const css = container.children.find(el => el.tag === "style")?.textContent ?? "";
 	const find = (name: string) => container.all().find(el => el.classList.contains(name)) as El;
 	return { host, container, svg, mount, css, find };

@@ -942,42 +942,73 @@ explicit Play or scenario activation off screen.
 
 The browser entry also exports
 `mountPlayback(container, svg, timelines, { loop?, autoplay?, pauseWhenOffscreen?, layout?, expand? }?)`, returning
-`PlaybackMount { player: Player; update(svg: SVGSVGElement, timelines: Timeline[]): void; expand(): void; destroy(): void }`.
+`PlaybackMount { player: Player; readonly isOpen: boolean; open(): void; close(): void; update(svg: SVGSVGElement, timelines: Timeline[]): void; expand(): void; destroy(): void }`.
 The host supplies an
 `HTMLElement` or `ShadowRoot` for the inline SVG and its controls. Mounting starts
-idle with the full unfaded, unhighlighted figure and neither root class.
-Autoplay is off by default. With `autoplay: true` the mount stays idle until
-visibility starts playback: it observes the figure
+closed and idle at step `-1`, with the full unfaded, unhighlighted figure and
+neither root class. Only a native Play button appears beneath it, with accessible
+name “Play diagram”, visible focus and a 44×44px minimum target under
+`(any-pointer: coarse)`. Native mouse, touch, Enter and Space activation opens
+controls, starts the selected scenario from its first step and focuses the panel;
+under reduced motion it opens idle. Closed controls, including tabs, captions,
+steps, navigation and Expand, are hidden without keyboard stops or a reserved
+side column, regardless of layout or `expand: true`.
+
+`open()` reveals controls idle from closed and preserves state while open. There
+is no start-open option: hosts call `open()`, or `open(); player.play()` to start.
+Stop and `close()` cancel playback, retain scenario selection and restore idle
+at step `-1`, immediately removing current/played highlights and `ab-in-progress`
+and `ab-playing` without fade or glow. They dismiss any modal and close controls.
+Focus returns to Play if it was inside controls or the modal; unrelated host
+focus stays put. Pause and natural completion leave controls open. Repeated
+open/close calls are safe; destroyed mounts report closed and are inert.
+
+A closed mount is always idle at step `-1`. With timelines, any mounted-player
+call changing the scenario/step/status tuple opens controls before exposing the
+change, including `previous()`, `seek(-1)` and selecting an empty scenario.
+Unchanged calls leave it closed, including idle `pause()`, lifecycle/viewport
+guarded `play()` and reduced-motion `play()` from idle. A closed figure cannot
+play or dim invisibly. Standalone `createPlayer` behavior is unchanged.
+Autoplay is off by default. With `autoplay: true` the mount stays closed until
+the first eligible visibility start opens controls and starts playback. It observes the figure
 wrapper (so a sideways-scrolling SVG does not change the visibility threshold) and
 plays once `isIntersecting` and `intersectionRatio >= 0.5`, pauses it on no
 intersection (not merely below half visibility), and resumes viewport-caused
 pauses at half visibility. Manual pause/navigation cancels automatic resume,
-including a pause while already viewport-paused. The same rules apply with
+including a pause while already viewport-paused. Stop/close also prevents
+viewport reopening or restarting until an explicit reader start. The same rules apply with
 both autoplay and viewport pausing enabled, respecting lifecycle guards.
 Reduced motion, or a browser
-without `IntersectionObserver`, keeps it idle. Destroy disconnects the observer. No timelines adds no DOM or style.
+without `IntersectionObserver`, keeps it idle and closed. Destroy disconnects the
+observer. No timelines adds no DOM or style, reports closed and makes mounted
+player actions inert; later timelines start closed.
 The mount uses the existing player contract for timing, navigation, looping
 and reduced motion, including changes made through the returned `player`.
 
 `expand: true` adds a native **Expand** button (visible text and accessible
-name), in a separate right-aligned row above the inline controls. It is off
+name), in a separate right-aligned row above the open inline controls. It is off
 by default. Every mount also exposes `expand()` for host controls, even without
 that option. Both entry points open the same full-screen native modal `dialog`,
 labelled from the SVG's accessible name; repeated calls while open do nothing.
-With no timelines or after destruction, `expand()` does nothing.
+From closed, host `expand()` opens controls idle and enters the modal. With no
+timelines or after destruction, `expand()` does nothing.
 
 Expansion temporarily uses the below layout, even for a side-layout mount;
 closing restores the requested inline layout. The natural-size figure scrolls
 horizontally and vertically in its own region.
-Below that region, scenario tabs, counter, actor, caption, the three playback
+Below that region, scenario tabs, counter, actor, caption, the four playback
 buttons and step navigation remain visible while the figure scrolls. A native
 **Close** button (visible text and accessible name) sits at the top right and
 receives initial focus. Tab and Shift+Tab wrap within the modal. Close, Escape
 and a click that starts and ends on the backdrop gutter close it; content clicks
-and drags into the gutter do not. Closing
+and drags into the gutter do not. These exits retain open inline controls. Closing
 returns focus to the built-in Expand button or the previously focused host
 control, according to the entry point used. Zoom, pan, Fit and Copy remain
-host features.
+host features. Modal focus order is Close, figure region, selected tab (when
+present), panel, caption, Previous, Play/Pause/Replay, Next, Stop, range. Disabled
+controls are skipped; Stop remains enabled for an empty scenario and becomes
+the last tab stop. Tab from the last stop wraps to Close; Shift+Tab from Close
+wraps to the last stop.
 
 Expansion moves the existing SVG and controls into the dialog, then restores
 their original positions on close. One player owns the active view: its state,
@@ -994,7 +1025,7 @@ Rebinding refreshes the expanded figure, controls, accessible name and scheme
 while retaining the modal. Updating to no timelines closes it.
 
 `layout` accepts `"below"`, `"side"` or `"auto"` (the default), for every playable
-kind. Explicit layouts always select that layout. Auto selects side only when
+kind when open. Explicit layouts select that layout. Auto selects side only when
 the SVG's natural height exceeds its natural width and the container leaves at
 least 320px beside that natural width, including the gap. Otherwise it selects
 below. Resize observation re-evaluates in both directions without changing the
@@ -1021,7 +1052,8 @@ Multiple timelines have a labelled scenario tablist first, in source order
 using `Timeline.name`; one timeline has no tabs. Tabs have selected state,
 one tab stop and an associated labelled panel. Left/Right wrap focus and
 immediately activate the focused scenario; click, Enter and Space activate
-too. Activation calls `select`, pausing on step `0` (or `-1` when empty).
+too. Activation selects and plays from step `0` (idle at `-1` when empty);
+under reduced motion it only selects, paused on step `0` or `-1` when empty.
 Ordinary playback state changes never move focus or recreate controls.
 The panel is a visible-focus tab stop for one or multiple scenarios. Only
 keydown events targeting the panel itself, with no modifiers, handle Space
@@ -1059,8 +1091,9 @@ clearing the caption and resetting its scrolling. There is no automatic panning
 or scrolling animation, including under reduced motion. Scrolling never moves
 focus or announces text; the caption region is not a live region.
 
-Below the step line are exactly three native buttons: `<` (accessible name
-Previous), Play/Pause/Replay, and `>` (accessible name Next). They use monospace,
+Below the step line are exactly four native buttons: `<` (accessible name
+Previous), Play/Pause/Replay, `>` (accessible name Next), and Stop. Stop follows
+Next before the segment bar in below, side and modal layouts. They use monospace,
 30px height and 8px corners; the main button has a 68px minimum width. A segmented
 bar fills the rest of the row, one segment per resolved step of the selected
 scenario. Earlier segments use a muted play colour, the current segment uses
@@ -1078,8 +1111,9 @@ and range `-1` with value text “Full figure”; the toggle reads Replay.
 One polite atomic status announces actor and remark when the scenario/step
 changes to a playable step. Pause does not repeat it; completion clears the
 region without re-announcing the last step. All source strings are assigned with `textContent`. A selected
-empty scenario shows “No playable steps” and disables buttons and range while
-leaving tabs usable; it never selects another scenario automatically.
+empty scenario shows “No playable steps” and disables Previous, Play/Pause/Replay,
+Next and range while leaving Stop and tabs usable; it never selects another
+scenario automatically.
 
 Each mount appends its own scoped style and controls root inside the supplied
 container, leaving other host content intact. The SVG's `ab-light` or `ab-dark`
@@ -1124,8 +1158,9 @@ current SVG's host position without changing host content.
 `mount.update(svg, timelines)` instead binds replacement SVG/data
 while retaining player identity and subscriptions. It keeps the selected
 scenario by exact slug after reordering, otherwise selects the first (scenario
-`0` with no timelines). It cancels playback and leaves paused at step `0`, or
-`-1` for an empty scenario or no timelines. It always refreshes tabs, counts,
+`0` with no timelines). It preserves open/closed state, cancels playback and
+leaves idle at step `-1` in either state, superseding #95's paused-at-first-step
+update rule. No timelines always closes. It always refreshes tabs, counts,
 segments, range, actor, caption, side lists, announcements and scheme, even if the state
 tuple is unchanged. The old SVG loses all player state classes and observation;
 subsequent actions affect only the replacement, and stale callbacks are inert.
@@ -1151,7 +1186,8 @@ listeners or observers. Both teardown paths clean up the current binding and
 mount; later updates, subscriptions and browser callbacks cannot mutate DOM,
 start timers or notify. Standalone `createPlayer` retains its silent teardown and
 adds no controls. No browser globals are touched at import time. The playground
-uses this mount with `layout: "auto"` on every render with timelines; the
+uses this mount with `layout: "auto"`, rebinding source edits with `update()` to
+preserve open/closed state; switching examples destroys the previous mount. The
 [browser review fixture](playground.md#playback-browser-review) exercises
 independent light DOM and shadow-root mounts, schemes and teardown.
 

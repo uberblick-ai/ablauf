@@ -163,6 +163,12 @@ declare const shadow: ShadowRoot;
 const mount: PlaybackMount = mountPlayback(element, svg, timelines, { loop: true, autoplay: true, pauseWhenOffscreen: true });
 const shadowMount: PlaybackMount = mountPlayback(shadow, svg, timelines);
 const mountedPlayer: Player = mount.player;
+const isOpen: boolean = mount.isOpen;
+mount.open(); mount.close(); shadowMount.open(); shadowMount.close();
+// @ts-expect-error Open state is readonly.
+mount.isOpen = true;
+// @ts-expect-error Hosts open explicitly, without a start-open option.
+mountPlayback(element, svg, timelines, { open: true });
 mount.update(svg, timelines); shadowMount.update(svg, []);
 const unsubscribe: () => void = mountedPlayer.subscribe((state: PlayerState) => { const step: number = state.step; });
 unsubscribe(); unsubscribe();

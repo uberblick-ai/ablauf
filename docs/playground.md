@@ -16,9 +16,9 @@ Open `#examples/neutral` for filled grey boxes and panels beside the
 surface-filled `ink` and `muted` variants, with matching neutral legend samples,
 pill dots and edges. Use the scheme toggle to review light and dark.
 
-Every render with timelines mounts the built-in playback controls with
-`layout: "auto"`; editing
-source or switching examples destroys the previous mount. Open
+The page mounts playback with `layout: "auto"`, initially closed with only Play.
+Editing source rebinds the same mount, preserving open/closed state and resetting
+idle at step `-1`; switching examples destroys the previous mount. Open
 `#examples/loop-play` for three scenario tabs. Examples without timelines keep
 their static presentation.
 
@@ -61,6 +61,42 @@ an agent role and a person panel. The legend includes matching samples.
 
 ## Playback browser review
 
+For #150, a maintainer must review `/playback-review` in a real browser in light
+and dark, at the 678px figure width, in light DOM and a shadow root. DOM fakes
+and SVG inspection do not satisfy this gate. Use the Loop and Claim cases for
+flows and sequences, and the Claim layout selector for Below, Side and Auto.
+
+- On initial load only Play appears beneath each plain, undimmed figure. No
+  tabs, caption, steps, navigation, Expand, reserved side column or hidden tab
+  stops appear. Activate Play with mouse, Enter, Space and touch emulation:
+  controls open, playback starts at the first step and focus reaches the panel.
+  Under reduced motion the controls open idle instead. Check visible focus and
+  at least 44×44 CSS-pixel Play/Stop targets with coarse-pointer emulation.
+- Stop follows Next before the segment bar in every layout and modal. It closes
+  controls, resets idle at `-1` with selection retained, and clears all dimming,
+  highlights and playing effects immediately. Pause and completion keep controls
+  open. Stop stays enabled in an empty scenario. Focus inside controls or the
+  modal returns to Play; **Host close()** preserves its own focus.
+- Repeat **Host open()**, **Host close()** and **Host open(); play()**. Open is idle
+  from closed and preserves an already-open state. From closed, **Direct Previous**,
+  **Direct full figure** and **Direct select empty** open controls; **Direct Pause**,
+  reduced-motion Play from idle and guarded Play stay closed. The state readout
+  reports open/closed alongside the player tuple.
+- In autoplay cases, scroll into half visibility: controls first open when
+  eligible playback starts. Close/Stop, then leave and reenter: it stays closed.
+  Rebind in either state and repeat: it stays idle and keeps that state. Explicit
+  Play can start again. Repeat with reduced motion and viewport pausing enabled.
+- Edit the per-case source textarea, select **Render edited source** and rebind
+  in both states: preserve the state, reset idle at `-1`, and do not restart on
+  scrolling. Repeat source edits in the main playground. **No timelines** removes
+  Play and controls; **Restore original data** starts closed. Open an empty
+  scenario to “No playable steps”, then Stop. Try both teardown buttons from
+  closed, inline open and modal states, then Remount.
+- **Host expand()** from closed opens idle in the modal. Close/Escape/backdrop
+  returns to inline open controls. Stop/Host close dismisses the modal and closes
+  controls. Repeat below/side/auto, with playback running, and with an empty
+  scenario. Modal focus wraps through Stop (the last stop when range is disabled).
+
 Run `mise run playground` and open
 [http://localhost:4620/playback-review](http://localhost:4620/playback-review),
 or follow **Playback browser review** from the playground. If port 4620 is busy,
@@ -94,8 +130,9 @@ with 16px side padding giving a 678px figure at full width. The first case,
 **Claim · responsive side captions**, uses `claim-play.flow` in a document up
 to 1088px wide. Its **Claim layout** selector offers Auto, Side and Below;
 other cases keep Auto.
-**Claim · side captions in shadow root** uses the same wide document, always
-uses Side and includes the same replacement-data controls. Use delayed rebinding in both Claim cases to review
+**Claim · side captions in shadow root** uses the same wide document, follows
+the same layout selector and includes the same replacement-data controls.
+Use delayed rebinding in both Claim cases to review
 row focus, alongside the below-layout flow cases.
 
 For #139, a maintainer must review in a real browser in **light and dark** at
@@ -128,8 +165,9 @@ The captured expanded loops are [light](images/playback/expanded-light.png),
 [shadow light](images/playback/expanded-shadow-light.png) and
 [shadow dark](images/playback/expanded-shadow-dark.png).
 
-- Expand appears in its own right-aligned row, separate from the three playback
-  buttons. Close is at the modal's top right and receives initial focus.
+- After Play or Host open(), Expand appears in its own right-aligned row,
+  separate from the four playback buttons. Close is at the modal's top right
+  and receives initial focus.
 - The loop retains its natural 786×780 size and overflows both axes in this
   viewport. Scroll the figure; tabs, counter, actor, caption and navigation stay
   below it without moving. Try a smaller figure too.
@@ -277,13 +315,13 @@ without host control CSS; the interactive checks below still need a maintainer.
   on the control during playback; use native range arrows, including `-1` for
   the full figure. The hidden native range must remain a tab stop with a visible
   outline around the segment bar; segments must add no tab stops or announced
-  controls. Verify the three buttons' accessible names are Previous,
-  Play/Pause/Replay and Next. Check announcements with a screen reader: actor
+  controls. Verify the four buttons' accessible names are Previous,
+  Play/Pause/Replay, Next and Stop. Check announcements with a screen reader: actor
   and remark announce once on step changes, pause does not repeat them, and
   completion clears the status without repeating the last step. The
   counter/segments add no announcements. Repeat in the shadow root.
-- Select the empty scenario: “No playable steps”, disabled buttons/range and
-  usable tabs, a blank reserved counter and no segments. Verify the single-timeline
+- Select the empty scenario: “No playable steps”, disabled Previous/toggle/Next/range,
+  enabled Stop and usable tabs, a blank reserved counter and no segments. Verify the single-timeline
   case has no tab row.
 - For document and shadow-root cases, choose **Reorder scenarios**, then
   **Rebind in 2 seconds** and focus a tab before it fires. Selection and focused
@@ -293,13 +331,13 @@ without host control CSS; the interactive checks below still need a maintainer.
   scenario. **Keep selected scenario only** removes tabs and focuses the panel
   if a tab had focus. Other host focus stays put. The panel remains a visible
   tab stop with a single scenario.
-- Use **Refresh labels, counts and scheme** twice while paused on step 0.
+- Use **Refresh labels, counts and scheme** twice while idle at step `-1`.
   Actor, caption, announcement, counter, range, segments, tab names and scheme
   refresh even when the state tuple is unchanged. **Empty selected scenario**
-  pauses at `-1` with no segments. **No timelines** removes controls/style;
-  **Restore original data** adds them again without duplicates. Focus must
-  never move to unrelated host content. Rebinding always pauses on step 0
-  (or `-1` when empty); scrolling cannot restart it, including autoplay cases,
+  stays idle at `-1` with no segments. **No timelines** removes controls/style;
+  **Restore original data** adds a closed mount again without duplicates. Focus must
+  never move to unrelated host content. Rebinding retains open/closed state and
+  resets idle at `-1`; scrolling cannot restart it, including autoplay cases,
   until Play or a scenario activation explicitly starts the new binding.
 - Repeat the rebinding cases in Claim with **Claim layout** set to Side and
   Below, and in **Claim · side captions in shadow root**. Side lists must follow

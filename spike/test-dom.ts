@@ -207,6 +207,7 @@ export class El {
 		if (root instanceof El) this.ownerDocument.activeElement = root;
 	}
 	all(): El[] { return [this, ...this.children.flatMap(el => el.all())]; }
+	contains(el: El): boolean { return this.all().includes(el); }
 	querySelectorAll(selector: string) {
 		assert.equal(selector, "[data-ab-part]");
 		return this.all().filter(el => el.attrs.has("data-ab-part"));

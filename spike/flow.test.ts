@@ -789,6 +789,7 @@ test("playground saves serialize requests and track only confirmed text", async 
 	const globals = {
 		document: {
 			getElementById: element,
+			createElement: () => new Element(),
 			querySelectorAll: () => [],
 			documentElement: { dataset: {} },
 		},

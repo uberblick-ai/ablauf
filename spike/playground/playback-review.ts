@@ -41,7 +41,7 @@ function addCase(title: string, source: string, idPrefix: string, shadow = false
 	retained.className = "review-note";
 	retained.textContent = "Host content remains after either teardown entry point.";
 	container.append(style, figure, retained);
-	function makeMount(): Pick<PlaybackMount, "player" | "destroy"> & Partial<Pick<PlaybackMount, "update" | "expand">> {
+	function makeMount(): Pick<PlaybackMount, "player" | "destroy"> & Partial<Pick<PlaybackMount, "update" | "expand" | "open" | "close" | "isOpen">> {
 		if (!headless) return mountPlayback(figure, svg, timelines, { loop: loop.checked, expand: true, ...playbackOptions });
 		const player = createPlayer(svg, timelines, { loop: loop.checked, pauseWhenOffscreen: playbackOptions.pauseWhenOffscreen });
 		return { player, destroy: () => player.destroy() };
@@ -55,15 +55,18 @@ function addCase(title: string, source: string, idPrefix: string, shadow = false
 	note.textContent = playbackOptions.autoplay ? "Autoplay: waits for half visibility." : "Mounted, idle. No autoplay.";
 	const stateLine = document.createElement("p");
 	stateLine.className = "review-note";
-	const watch = () => mount.player.subscribe(state => {
-		stateLine.textContent = `Scenario ${state.scenario}, step ${state.step}, ${state.status}; connected: ${svg.isConnected}; document: ${document.visibilityState}`;
-	});
+	const showState = () => {
+		const state = mount.player.state;
+		stateLine.textContent = `Controls: ${mount.isOpen === undefined ? "headless" : mount.isOpen ? "open" : "closed"}; scenario ${state.scenario}, step ${state.step}, ${state.status}; connected: ${svg.isConnected}; document: ${document.visibilityState}`;
+	};
+	const watch = () => { showState(); return mount.player.subscribe(showState); };
 	let unsubscribe = watch();
+	section.addEventListener("click", showState);
 	function button(label: string, action: () => void) {
 		const el = document.createElement("button");
 		el.type = "button";
 		el.textContent = label;
-		el.addEventListener("click", action);
+		el.addEventListener("click", () => { action(); showState(); });
 		return el;
 	}
 	section.append(heading, surface,
@@ -79,19 +82,23 @@ function addCase(title: string, source: string, idPrefix: string, shadow = false
 		button("Reinsert SVG", () => { (figure.querySelector(".abp-figure") ?? figure).prepend(svg); note.textContent = "SVG reinserted. A lifecycle pause must wait for explicit Play."; }),
 		note, stateLine);
 	if (!headless) {
-		section.append(button("Host expand()", () => mount.expand?.()));
+		section.append(button("Host open()", () => mount.open?.()), button("Host close()", () => mount.close?.()),
+			button("Host expand()", () => mount.expand?.()), button("Host open(); play()", () => { mount.open?.(); mount.player.play(); }));
+		const editor = document.createElement("textarea"); editor.value = source;
+		editor.setAttribute("aria-label", `Source for ${title}`);
+		section.append(editor);
 		const mode = document.createElement("select");
 		mode.setAttribute("aria-label", `Replacement data for ${title}`);
 		for (const [value, text] of [
 			["reorder", "Reorder scenarios"], ["remove", "Remove selected scenario"],
 			["single", "Keep selected scenario only"], ["empty", "Empty selected scenario"],
-			["none", "No timelines"], ["refresh", "Refresh labels, counts and scheme"], ["restore", "Restore original data"],
+			["none", "No timelines"], ["refresh", "Refresh labels, counts and scheme"], ["restore", "Restore original data"], ["source", "Render edited source"],
 		]) {
 			const option = document.createElement("option"); option.value = value; option.textContent = text; mode.append(option);
 		}
 		let revision = 0;
 		const rebind = () => {
-			const fresh = render(source, { idPrefix, scheme: selectedScheme });
+			const fresh = render(mode.value === "source" ? editor.value : source, { idPrefix, scheme: selectedScheme });
 			const selected = timelines[mount.player.state.scenario];
 			let next = [...timelines];
 			if (mode.value === "reorder") next.reverse();
@@ -112,19 +119,21 @@ function addCase(title: string, source: string, idPrefix: string, shadow = false
 			if (svg.parentNode) svg.replaceWith(replacement); else figure.prepend(replacement);
 			svg = replacement; timelines = next;
 			mount.update?.(svg, timelines);
-			note.textContent = `Rebound: ${mode.selectedOptions[0].textContent}. Paused until explicit Play or scenario activation, including with autoplay.`;
+			note.textContent = `Rebound: ${mode.selectedOptions[0].textContent}. Idle at -1; controls retain open/closed state. Viewport events cannot restart playback.`;
+			showState();
 		};
 		section.append(mode, button("Rebind now", rebind), button("Rebind in 2 seconds (focus a control)", () => {
 			clearTimeout(pending); pending = setTimeout(rebind, 2000);
 			note.textContent = "Rebinding in two seconds: focus a tab, panel, action button, range or side-list row now.";
 		}));
 	}
-	if (headless) section.append(
+	section.append(
 		button("Direct Play / Replay", () => mount.player.play()),
 		button("Direct Pause", () => mount.player.pause()),
 		button("Direct Previous", () => mount.player.previous()),
 		button("Direct Next", () => mount.player.next()),
 		button("Direct full figure", () => mount.player.seek(-1)),
+		button("Direct select empty", () => mount.player.select(timelines.findIndex(timeline => !timeline.steps.length))),
 	);
 	if (result.diagnostics.length) {
 		const diagnostics = document.createElement("p");
@@ -155,7 +164,7 @@ function draw() {
 	cases.replaceChildren();
 	const layout = claimLayout.value === "side" ? "side" : claimLayout.value === "below" ? "below" : "auto";
 	addCase("Claim · responsive side captions", claim, "review-claim", false, false, { layout });
-	addCase("Claim · side captions in shadow root", claim, "review-claim-shadow", true, false, { layout: "side" });
+	addCase("Claim · side captions in shadow root", claim, "review-claim-shadow", true, false, { layout });
 	addCase("Loop · light DOM", source, "review-light-dom");
 	addCase("Loop · shadow root", source, "review-shadow", true);
 	addCase("Loop · host expand() only (no built-in Expand)", source, "review-host-expand", false, false, { expand: false });

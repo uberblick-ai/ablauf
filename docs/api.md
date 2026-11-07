@@ -35,12 +35,15 @@ shadow root containing the inline SVG:
 import { mountPlayback } from "@uberblick/ablauf/playback";
 
 const mount = mountPlayback(figureContainer, svgElement, result.timelines);
-// Starts idle with the full figure. Play or a scenario tab starts it;
-// the host can also call mount.player.
+// Starts closed with the full figure and a Play button.
+mount.open(); // Optional host call: reveal controls idle.
+mount.open(); mount.player.play(); // Optional host start.
+mount.close(); // Stop, reset to idle at -1 and hide controls.
+console.log(mount.isOpen); // false; readonly.
 // After rendering changed source, replace only the old SVG in the host:
 svgElement.replaceWith(replacementSvg);
 mount.update(replacementSvg, replacementResult.timelines);
-// The same player and action controls remain. Update always leaves it paused.
+// Same player and controls; update preserves open/closed and resets idle at -1.
 const unsubscribe = mount.player.subscribe(state => console.log(state));
 mount.player.select("clean-merge"); // Exact Timeline.slug, or a numeric index.
 unsubscribe(); // Idempotent; other subscriptions and controls keep working.
@@ -51,7 +54,25 @@ mount.destroy();
 Autoplay is off by default. Opt in with `{ autoplay: true }` as the fourth
 argument: mounting still shows the full idle figure until half of it is in
 view. Playback then starts, pauses when it leaves and resumes when it returns,
-unless the reader paused it.
+unless the reader paused it. Controls stay closed until the first eligible start.
+Stop or `close()` cancels viewport restart until an explicit reader start.
+
+`readonly isOpen: boolean`, `open(): void` and `close(): void` expose the controls
+lifetime. There is no start-open option. Play (accessible name **Play diagram**)
+opens controls, starts the selected scenario at its first step and focuses the
+panel; reduced motion opens idle. Stop follows Next in the actions row and stays
+enabled for empty scenarios. Stop/close restores idle at step `-1`, retaining
+selection, and immediately clears SVG highlights and playing classes. Pause and
+completion keep controls open. Closing returns focus to Play when it was inside
+controls or the modal; unrelated host focus stays put. Repeated host calls are safe.
+
+A closed mount is always idle at `-1`. With timelines, any mounted-player call
+that changes scenario, step or status opens controls before exposing the changed
+state, including `previous()`, `seek(-1)` and selecting an empty scenario.
+Unchanged calls keep it closed: idle `pause()`, guarded `play()` and reduced-motion
+`play()` from idle. No timelines shows neither Play nor controls, reports closed
+and makes player actions inert; adding timelines later starts closed. Destroyed
+mounts report closed and subsequent calls/events are inert.
 
 `layout: "auto"` (the default) places captions beside a figure when its natural
 height exceeds its width and the container leaves at least 320px beside that
@@ -68,13 +89,15 @@ even if the SVG was nested or in another parent. Mount styles set the SVG to
 destroy removes those styles and restores the SVG's original parent and position.
 
 `expand: true` adds an **Expand** button in its own right-aligned row above the
-inline controls. Every mount also offers `mount.expand()` for host controls,
+open inline controls. Every mount also offers `mount.expand()` for host controls,
 with or without that option. Both open a full-screen native modal labelled from
 the figure, with initial focus on **Close** at the top right. The natural-size
 figure scrolls on both axes above the same tabs, counter, actor, single-line
 caption, playback buttons and step navigation. Expansion uses the below layout;
 closing restores the requested inline layout. Zoom, pan, Fit and Copy remain
-host features.
+host features. From closed, host `expand()` opens controls idle before entering
+the modal. Modal Close, Escape and backdrop return to inline open controls;
+Stop or `mount.close()` also dismisses the modal and restores the closed figure.
 
 The same `mount.player` reports and controls the active view, preserving scenario,
 step, playback status and remaining dwell in both directions. Opening never
@@ -102,7 +125,8 @@ observers, restore the current SVG's host position, and leave host content intac
 `mount.update(svg: SVGSVGElement, timelines: Timeline[]): void`
 rebinds an existing mount. It keeps the selected scenario by exact slug after
 reordering, otherwise chooses the first (index `0` with no timelines), cancels
-playback and pauses at step `0`, or `-1` for an empty scenario or no timelines.
+playback and resets idle at step `-1`, preserving open/closed state (except no
+timelines always closes). This supersedes the earlier paused-at-first-step rule.
 It refreshes all controls and the SVG's scheme even when the state tuple is
 unchanged. It clears the old SVG's player classes and stops observing it.
 The replacement moves into the existing figure wrapper. A replacement supplied

@@ -27,6 +27,7 @@ function setup(t: TestContext, options: { layout?: "below" | "side" | "auto"; wi
 	container.append(before, svg, after);
 	const original = [...container.children];
 	const mount = mountPlayback(container as unknown as HTMLElement, svg as unknown as SVGSVGElement, timelines, options);
+	mount.open();
 	t.after(() => mount.destroy());
 	const cls = (name: string) => container.all().find(el => el.classList.contains(name)) as El;
 	const lists = () => container.all().filter(el => el.tag === "ol");

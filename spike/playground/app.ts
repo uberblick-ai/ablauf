@@ -37,12 +37,17 @@ function setScheme(scheme: string) {
 }
 
 function draw() {
-	playback?.destroy();
-	playback = undefined;
 	const { svg, diagnostics, layout, timelines } = render(editor.value, { idPrefix: "pg" });
-	target.innerHTML = svg;
-	const svgEl = target.querySelector("svg");
-	if (svgEl && timelines.length) playback = mountPlayback(target, svgEl, timelines, { layout: "auto" });
+	const holder = document.createElement("div");
+	holder.innerHTML = svg;
+	const svgEl = holder.querySelector("svg");
+	if (svgEl) {
+		if (playback) { target.querySelector("svg")?.replaceWith(svgEl); playback.update(svgEl, timelines); }
+		else {
+			target.replaceChildren(svgEl);
+			playback = mountPlayback(target, svgEl, timelines, { layout: "auto" });
+		}
+	}
 	if (grid.checked && svgEl) {
 		// Built as elements, so an id in the source is only ever text.
 		const NS = "http://www.w3.org/2000/svg";

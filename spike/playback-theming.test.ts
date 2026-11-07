@@ -219,9 +219,10 @@ test("mounted control text paints cover tabs, hover/selected/focus combinations,
 		for (const disabled of [false, true]) {
 			mount.player.select(disabled ? 1 : 0);
 			for (const el of container.all().filter(el => el.tag === "button" && !el.getAttribute("role"))) {
-				assert.equal(el.disabled, disabled);
-				for (const hover of [false, true]) for (const focus of disabled ? [false] : [false, true]) verify(el,
-					`playback controls button ${disabled ? "disabled" : "enabled"}${hover ? " hover" : ""}${focus ? " keyboard-focused" : ""} on button background over canvas`, hover, focus);
+				const inactive = disabled && el.textContent !== "Stop" && !el.parent?.classList.contains("abp-entry");
+				assert.equal(el.disabled, inactive);
+				for (const hover of [false, true]) for (const focus of inactive ? [false] : [false, true]) verify(el,
+					`playback controls button ${inactive ? "disabled" : "enabled"}${hover ? " hover" : ""}${focus ? " keyboard-focused" : ""} on button background over canvas`, hover, focus);
 			}
 		}
 		mount.player.select(0); mount.player.seek(0);

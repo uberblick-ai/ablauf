@@ -36,21 +36,22 @@ function setup(t: TestContext, options: { expand?: boolean; autoplay?: boolean; 
 	const mount = mountPlayback(container as unknown as HTMLElement, svg as unknown as SVGSVGElement, data, options);
 	t.after(() => mount.destroy());
 	const find = (cls: string) => container.all().find(el => el.classList.contains(cls)) as El;
-	const button = (text: string) => container.all().find(el => el.tag === "button" && el.textContent === text) as El;
+	const button = (text: string) => container.all().find(el => el.tag === "button" && el.textContent === text && !el.parent?.hidden) as El;
 	const dialog = () => container.all().find(el => el.tag === "dialog") as El;
 	return { mount, player: mount.player, doc, container, host, figure, svg, original, find, button, dialog,
 		tick: (ms: number) => t.mock.timers.tick(ms) };
 }
 
-test("optional Expand row leaves the three actions intact; both entries open one labelled native dialog", t => {
+test("optional Expand row leaves the four actions intact; both entries open one labelled native dialog", t => {
 	const f = setup(t, { expand: true });
+	f.mount.open();
 	const controls = f.find("ab-playback");
 	const inlineFigure = f.svg.parent;
 	const expand = f.button("Expand");
 	assert.equal(expand.type, "button");
 	assert.equal(f.find("abp-controls").children[0], expand.parent);
 	assert.equal(expand.parent?.className, "abp-expand");
-	assert.deepEqual(f.find("abp-actions").children.slice(0, 3).map(el => el.getAttribute("aria-label") ?? el.textContent), ["Previous", "Play", "Next"]);
+	assert.deepEqual(f.find("abp-actions").children.slice(0, 4).map(el => el.getAttribute("aria-label") ?? el.textContent), ["Previous", "Play", "Next", "Stop"]);
 	expand.click();
 	const dialog = f.dialog();
 	assert.equal(dialog.open, true);
@@ -127,8 +128,8 @@ test("Tab and Shift+Tab wrap at the modal boundaries, including empty scenarios"
 	assert.equal(f.doc.activeElement, close);
 	f.player.select(2);
 	assert.equal(close.fire("keydown", "Tab", { shiftKey: true }), true);
-	assert.equal(f.doc.activeElement, f.find("abp-caption"));
-	assert.equal(f.find("abp-caption").fire("keydown", "Tab"), true);
+	assert.equal(f.doc.activeElement, f.button("Stop"));
+	assert.equal(f.button("Stop").fire("keydown", "Tab"), true);
 	assert.equal(f.doc.activeElement, close);
 });
 
@@ -292,6 +293,7 @@ test("expanded completion restores the full figure and clears caption, scroll an
 
 test("expansion keeps the single-line caption and scroll position through same-step updates and restores side layout", t => {
 	const f = setup(t, { layout: "side", expand: true });
+	f.mount.open();
 	const root = f.find("ab-playback");
 	assert.equal(root.classList.contains("abp-side"), true);
 	const rows = f.container.all().filter(el => el.classList.contains("abp-row"));
@@ -336,9 +338,9 @@ test("rebind while expanded retains dialog, controls and subscriptions, updates 
 	assert.equal(f.find("abp-figure").style.properties.get("--abp-width"), "900px");
 	assert.equal(f.find("abp-figure").style.properties.get("--abp-height"), "1100px");
 	assert.equal(f.find("abp-caption"), caption);
-	assert.deepEqual(player.state, { scenario: 1, step: 0, status: "paused" });
+	assert.deepEqual(player.state, { scenario: 1, step: -1, status: "idle" });
 	f.doc.viewport.show(false); f.doc.viewport.show(true); f.tick(1000);
-	assert.equal(player.state.status, "paused");
+	assert.equal(player.state.status, "idle");
 	assert.equal(states.at(-1), player.state);
 	f.find("abp-caption").focus();
 	assert.equal(f.find("abp-caption").fire("keydown", "Tab"), false);

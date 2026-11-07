@@ -143,11 +143,11 @@ for (const [kind, source] of Object.entries(sources)) for (const scheme of ["lig
 		const replacement = figure(source, scheme);
 		mount.update(replacement.svg as unknown as SVGSVGElement, [...replacement.result.timelines].reverse());
 		assert.equal(mount.player, player);
-		assert.deepEqual(player.state, { scenario: 0, step: 0, status: "paused" });
+		assert.deepEqual(player.state, { scenario: 0, step: -1, status: "idle" });
 		fullFigure(svg);
-		assert.ok(replacement.svg.children.some(el => el.classList.contains("ab-current")));
+		fullFigure(replacement.svg);
 		replacement.doc.viewport.show(true); t.mock.timers.tick(1000);
-		assert.deepEqual(player.state, { scenario: 0, step: 0, status: "paused" }, "rebinding revokes autoplay and the old timer");
+		assert.deepEqual(player.state, { scenario: 0, step: -1, status: "idle" }, "rebinding revokes autoplay and the old timer");
 		const changes: PlayerState[] = [];
 		player.subscribe(state => {
 			if (state.status === "ended") {

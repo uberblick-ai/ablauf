@@ -4,6 +4,11 @@
 
 ### Playback
 
+- Start mounted figures closed, with a native Play entry that opens controls.
+  Stop returns to the plain idle figure; hosts can use `isOpen`, `open()` and
+  `close()`. Rebinding preserves open/closed state and resets idle at step `-1`,
+  replacing the paused-at-first-step rule. The playground retains this state
+  across source edits. ([#150](https://github.com/uberblick-ai/ablauf/issues/150))
 - Built-in playback controls inherit the host's `color-scheme` in automatic mode,
   with live scheme-dependent fallback colours and a transparent surface. Reuse
   host text/mono font hooks throughout side captions and expanded controls.

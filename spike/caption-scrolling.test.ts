@@ -94,7 +94,7 @@ test("caption keeps its named region tab stop and controls across idle, short, l
 			const previous = f.all.find(el => el.getAttribute("aria-label") === "Previous") as El;
 			assert.ok(f.all.indexOf(f.caption) < f.all.indexOf(previous));
 			assert.deepEqual(f.cls("abp-step").children.map(el => el.className), ["abp-counter", "abp-actor", "abp-caption"]);
-			assert.equal(f.cls("abp-actions").all().filter(el => el.tag === "button").length, 3);
+			assert.equal(f.cls("abp-actions").all().filter(el => el.tag === "button").length, 4);
 			assert.equal(f.all.filter(el => el.type === "range").length, 1);
 		};
 		check(data[0].steps.length ? "" : "No playable steps");

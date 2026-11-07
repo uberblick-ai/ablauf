@@ -43,14 +43,14 @@ test("mount starts idle; source-order tabs, labelled panel, native actions and r
 	t.mock.timers.enable({ apis: ["setTimeout"] });
 	const f = setup(t);
 	assert.deepEqual(f.player.state, { scenario: 0, step: -1, status: "idle" });
-	assert.deepEqual(f.cls("ab-playback").children.map(el => el.className), ["abp-figure", "abp-controls"]);
+	assert.deepEqual(f.cls("ab-playback").children.map(el => el.className), ["abp-figure", "abp-entry", "abp-controls"]);
 	assert.deepEqual(f.cls("abp-controls").children.map(el => el.className), ["abp-tabs", "abp-panel", "abp-status"]);
 	assert.deepEqual(f.role("tab").map(el => el.textContent), timelines.map(timeline => timeline.name));
 	assert.equal(f.role("tablist")[0].getAttribute("aria-label"), "Scenarios");
 	assert.equal(f.role("tabpanel")[0].getAttribute("aria-labelledby"), f.role("tab")[0].id);
 	assert.ok(f.role("tab").every(tab => tab.type === "button" && tab.getAttribute("aria-controls") === f.role("tabpanel")[0].id));
 	assert.deepEqual(f.role("tab").map(tab => tab.tabIndex), [0, -1, -1]);
-	assert.deepEqual(f.actions().map(button => button.getAttribute("aria-label") ?? button.textContent), ["Previous", "Play", "Next"]);
+	assert.deepEqual(f.actions().map(button => button.getAttribute("aria-label") ?? button.textContent), ["Previous", "Play", "Next", "Stop"]);
 	assert.ok(f.actions().every(button => button.type === "button"));
 	assert.equal(f.range.parent?.tag, "label");
 	assert.ok(f.range.parent?.textContent.startsWith("Step"));
@@ -214,7 +214,7 @@ test("no timelines adds nothing; single and empty scenarios retain their own sel
 	assert.equal(single.role("tabpanel").length, 0);
 	const empty = setup(t, [timelines[2], timelines[0]]);
 	assert.equal(empty.cls("abp-caption").textContent, "No playable steps");
-	assert.ok([...empty.actions(), empty.range].every(el => el.disabled));
+	assert.ok([...empty.actions().slice(0, 3), empty.range].every(el => el.disabled));
 	assert.equal(empty.range.min, "-1");
 	assert.equal(empty.range.max, "-1");
 	assert.equal(empty.range.value, "-1");

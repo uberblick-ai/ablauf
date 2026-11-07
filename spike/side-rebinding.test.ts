@@ -29,6 +29,7 @@ function setup(t: TestContext, layout: "auto" | "side" | "below" = "side", shado
 	const before = new El("p", doc); const after = new El("p", doc);
 	const svg = image(doc); container.append(before, svg, after);
 	const mount = mountPlayback(container as unknown as HTMLElement, asSvg(svg), data, { layout, autoplay: true });
+	mount.open();
 	t.after(() => mount.destroy());
 	const cls = (name: string) => {
 		const found = container.all().find(el => el.classList.contains(name)); assert.ok(found, name); return found;
@@ -55,13 +56,13 @@ for (const shadow of [false, true]) for (const layout of ["side", "below"] as co
 		f.player.subscribe(() => {
 			calls++;
 			assert.equal(range.max, "1");
-			assert.equal(f.cls("abp-caption").textContent, "<b>New</b>\ncaption");
+			assert.equal(f.cls("abp-caption").textContent, "");
 			if (layout === "side") assert.deepEqual(f.rows().map(row => row.children.map(el => el.textContent)), [
 				["09", "<actor>", "<b>New</b>\ncaption"], ["104", "Receiver", "Reply"],
 			]);
 		});
 		f.mount.update(asSvg(replacement), [changed, data[0]]);
-		assert.deepEqual(f.player.state, { scenario: 0, step: 0, status: "paused" });
+		assert.deepEqual(f.player.state, { scenario: 0, step: -1, status: "idle" });
 		assert.equal(calls, 1); assert.equal(f.active(), tab);
 		assert.equal(f.cls("ab-playback"), root); assert.equal(f.cls("abp-figure"), figure);
 		assert.equal(f.cls("abp-controls"), column); assert.equal(f.cls("abp-panel"), panel);
@@ -70,10 +71,10 @@ for (const shadow of [false, true]) for (const layout of ["side", "below"] as co
 		assert.ok(f.svg.all().every(el => !el.classList.contains("ab-current") && !el.classList.contains("ab-playing")));
 		assert.equal(f.doc.resize.observers.size, 1); assert.equal(f.doc.viewport.observers.size, 1);
 		assert.ok([...f.doc.viewport.observers][0].targets.has(figure));
-		f.doc.viewport.show(true); t.mock.timers.tick(1000); assert.equal(f.player.state.status, "paused");
+		f.doc.viewport.show(true); t.mock.timers.tick(1000); assert.equal(f.player.state.status, "idle");
 		if (layout === "side") {
 			assert.deepEqual(f.lists().map(list => list.getAttribute("aria-label")), ["Renamed steps", "First steps"]);
-			assert.equal(f.rows()[0].getAttribute("aria-current"), "step");
+			assert.equal(f.rows()[0].getAttribute("aria-current"), null);
 		} else assert.equal(f.lists().length, 0);
 		range.focus(); f.mount.update(asSvg(replacement), [changed, data[0]]);
 		assert.equal(f.active(), range); assert.equal(calls, 1, "same-tuple refresh is silent");
@@ -91,7 +92,7 @@ for (const shadow of [false, true]) {
 		row.click(); assert.deepEqual(f.player.state, { scenario: 1, step: 1, status: "paused" });
 		f.mount.update(asSvg(f.svg), [data[1], { ...data[0], steps: [data[0].steps[0]] }]);
 		assert.equal(f.active(), f.cls("abp-panel"));
-		assert.equal(row.listeners.get("click")?.size, 0); row.click(); assert.equal(f.player.state.step, 0);
+		assert.equal(row.listeners.get("click")?.size, 0); row.click(); assert.equal(f.player.state.step, -1);
 		f.rows()[0].focus(); f.mount.update(asSvg(f.svg), [data[1]]);
 		assert.equal(f.active(), f.cls("abp-panel")); assert.equal(f.lists().length, 1);
 		const external = new El("button", f.doc); f.container.append(external); external.focus();

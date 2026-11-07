@@ -49,8 +49,8 @@ play "Tests failing"
   step merged
 ```
 
-In a page, one call adds the scenario tabs, the buttons, the step bar and the
-caption under the figure:
+In a page, one call adds the Play entry and manages the controls and playback
+lifetime:
 
 ```javascript
 import { render } from "@uberblick/ablauf";
@@ -59,13 +59,18 @@ import { mountPlayback } from "@uberblick/ablauf/playback";
 const { svg, timelines } = render(source, { idPrefix: "dependabot" });
 figure.innerHTML = svg;
 const mount = mountPlayback(figure, figure.querySelector("svg"), timelines);
+// mount.open(); // Reveal controls idle; add mount.player.play() to start.
+// mount.close(); // Stop and return to the plain figure, retaining scenario.
 // After replacing just the inline SVG with a freshly rendered one:
-// mount.update(replacementSvg, replacementTimelines); // Paused, same controls/player.
+// mount.update(replacementSvg, replacementTimelines); // Idle at -1, same open state/player.
 const unsubscribe = mount.player.subscribe(state => console.log(state));
 // unsubscribe(); mount.destroy(); // When these are no longer needed.
 ```
 
-The figure starts idle and fully visible. Play or a scenario tab starts playback;
+The figure starts closed and fully visible, with only a native Play button beneath
+it. Play opens controls and starts the selected scenario; Stop closes them and
+restores the full idle figure. Under reduced motion, Play opens controls idle.
+Once open, scenario tabs start playback;
 finishing restores the full figure. Autoplay is opt-in with `{ autoplay: true }`,
 which waits until half the figure is in view before starting.
 

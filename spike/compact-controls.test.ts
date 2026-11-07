@@ -112,7 +112,7 @@ test("pointer segments seek and pause without moving range focus or adding annou
 		}
 	}
 	assert.equal(f.all.filter(el => el.getAttribute("aria-live")).length, 1);
-	assert.equal(f.cls("abp-actions").all().filter(el => el.tag === "button").length, 3);
+	assert.equal(f.cls("abp-actions").all().filter(el => el.tag === "button").length, 4);
 	assert.equal(f.range.parent?.tag, "label");
 	assert.equal(f.range.parent?.textContent, "Step");
 	assert.equal(f.range.min, "-1");

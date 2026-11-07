@@ -66,11 +66,13 @@ test("the Sequence tabs preserve the complete source and mount its resolved play
 	});
 	await import(pathToFileURL(join(out, "playback.js")).href);
 	const find = (name: string) => figure.all().find(el => el.classList.contains(name)) as El;
-	assert.ok(find("ab-playback").classList.contains("abp-side"));
+	assert.equal(find("ab-playback").classList.contains("abp-side"), false);
+	assert.equal(find("abp-controls").hidden, true);
 	assert.equal(find("abp-toggle").textContent, "Play");
 	doc.viewport.show(true);
 	assert.equal(find("abp-toggle").textContent, "Play", "entering the viewport does not start playback");
-	find("abp-toggle").click();
+	find("abp-entry").children[0].click();
+	assert.ok(find("ab-playback").classList.contains("abp-side"));
 	assert.equal(find("abp-toggle").textContent, "Pause", "playback starts on the reader's Play");
 	find("abp-toggle").click();
 	assert.equal(find("abp-toggle").textContent, "Play");

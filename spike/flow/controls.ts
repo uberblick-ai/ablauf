@@ -3,6 +3,9 @@ import { createPlayerBinding, type Player, type PlayerState } from "./player.ts"
 
 export interface PlaybackMount {
 	player: Player;
+	readonly isOpen: boolean;
+	open(): void;
+	close(): void;
 	update(svg: SVGSVGElement, timelines: Timeline[]): void;
 	expand(): void;
 	destroy(): void;
@@ -45,6 +48,8 @@ const STYLE = `@layer ablauf-playback{
 .ab-playback .abp-figure{min-width:0}
 .ab-playback .abp-figure svg{display:block;max-width:100%;height:auto}
 .ab-playback .abp-controls{min-width:0}
+.ab-playback .abp-controls[hidden],.ab-playback .abp-entry[hidden]{display:none}
+.ab-playback .abp-entry{padding:6px 12px 0}
 .ab-playback.abp-side{display:grid;grid-template-columns:minmax(0,var(--abp-figure-width)) minmax(296px,1fr);gap:24px;align-items:start}
 .ab-playback.abp-side .abp-controls{position:sticky;top:0;max-height:100vh;max-height:100dvh;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-gutter:stable}
 .ab-playback.abp-side .abp-step{display:none}
@@ -102,15 +107,41 @@ export function mountPlayback(
 	let refreshExpanded = () => {};
 	let viewportTarget: Element | undefined;
 	let synchronize: (state: PlayerState) => void = () => {};
-	const binding = createPlayerBinding(svg, timelines, { ...options, synchronize: state => synchronize(state), viewportTarget: () => viewportTarget ?? svg });
+	let isOpen = false;
+	let showControls = () => {};
+	let focusEntry = () => {};
+	let controlsContainFocus = () => false;
+	let suppressModalFocus = false;
+	function open() {
+		if (destroyed || !timelines.length || isOpen) return;
+		isOpen = true;
+		showControls();
+	}
+	const binding = createPlayerBinding(svg, timelines, { ...options, beforeChange: open, synchronize: state => synchronize(state), viewportTarget: () => viewportTarget ?? svg });
 	const player = binding.player;
+	// An absent timeline has no playback entry or state to expose.
+	for (const key of ["play", "pause", "next", "previous", "seek", "select"] as const) {
+		const action = player[key] as (...args: never[]) => void;
+		player[key] = (...args: never[]) => { if (timelines.length) action(...args); };
+	}
 	let refresh = () => {};
 	let placeSvg = (_next: SVGSVGElement) => {};
 	const destroyPlayer = player.destroy;
 	let destroyed = false;
+	function close() {
+		if (destroyed) return;
+		const returnFocus = controlsContainFocus();
+		suppressModalFocus = true;
+		try { closeExpanded?.(); } finally { suppressModalFocus = false; }
+		isOpen = false;
+		binding.reset();
+		showControls();
+		if (returnFocus) focusEntry();
+	}
 	function destroy() {
 		if (destroyed) return;
 		destroyed = true;
+		isOpen = false;
 		closeExpanded?.();
 		destroyPlayer();
 		for (const remove of removers.splice(0)) remove();
@@ -120,7 +151,7 @@ export function mountPlayback(
 	player.destroy = destroy;
 	function update(nextSvg: SVGSVGElement, nextTimelines: Timeline[]) {
 		if (destroyed) return;
-		if (!nextTimelines.length) closeExpanded?.();
+		if (!nextTimelines.length) { closeExpanded?.(); isOpen = false; }
 		if (root) placeSvg(nextSvg);
 		svg = nextSvg;
 		timelines = nextTimelines;
@@ -135,7 +166,7 @@ export function mountPlayback(
 		binding.update(svg, timelines);
 	}
 	if (timelines.length) { buildControls(); binding.refreshViewport(); }
-	return { player, update, expand: () => { if (!destroyed && root) openExpanded(); }, destroy };
+	return { player, get isOpen() { return isOpen; }, open, close, update, expand: () => { if (!destroyed && root) { open(); openExpanded(); } }, destroy };
 
 	function buildControls() {
 		let live = true;
@@ -162,7 +193,26 @@ export function mountPlayback(
 		const figure = make("div", "abp-figure");
 		viewportTarget = figure;
 		const column = make("div", "abp-controls");
-		root.append(figure, column);
+		const entry = make("div", "abp-entry");
+		const play = button("Play", () => {
+			open();
+			binding.reset();
+			player.play();
+			if (!destroyed && isOpen) panel.focus({ preventScroll: true });
+		});
+		play.setAttribute("aria-label", "Play diagram");
+		entry.append(play);
+		root.append(figure, entry, column);
+		focusEntry = () => play.focus({ preventScroll: true });
+		controlsContainFocus = () => {
+			const active = (column.getRootNode() as Document | ShadowRoot).activeElement;
+			return !!active && (column.contains(active) || !!closeExpanded && !!root?.parentElement?.parentElement?.contains(active));
+		};
+		showControls = () => {
+			column.hidden = !isOpen;
+			entry.hidden = isOpen;
+			updateLayout();
+		};
 		const expandRow = make("div", "abp-expand");
 		const expandButton = button("Expand", () => expand(expandButton));
 		if (options.expand) { expandRow.append(expandButton); column.append(expandRow); }
@@ -214,6 +264,7 @@ export function mountPlayback(
 		const toggle = button("Play", () => player.state.status === "playing" ? player.pause() : player.play(), "abp-toggle");
 		const next = button(">", () => player.next());
 		next.setAttribute("aria-label", "Next");
+		const stop = button("Stop", close);
 		const navigation = make("div", "abp-navigation");
 		const rangeLabel = make("label", "abp-range", "Step");
 		const range = make("input");
@@ -224,7 +275,7 @@ export function mountPlayback(
 		rangeLabel.append(range);
 		navigation.append(rangeLabel);
 		let tracks: { track: HTMLDivElement; segments: HTMLSpanElement[] }[] = [];
-		actions.append(previous, toggle, next, navigation);
+		actions.append(previous, toggle, next, stop, navigation);
 		const stepLine = make("div", "abp-step");
 		const counter = make("span", "abp-counter");
 		counter.setAttribute("aria-hidden", "true");
@@ -410,7 +461,7 @@ export function mountPlayback(
 			const height = Number(svg.getAttribute("height")) || viewBox[3] || 0;
 			root.style.setProperty("--abp-figure-width", `${width || 678}px`);
 			const selected = options.layout ?? "auto";
-			side = !closeExpanded && (selected === "side" || (selected === "auto" && height > width && width > 0 && root.getBoundingClientRect().width - width >= 320));
+			side = isOpen && !closeExpanded && (selected === "side" || (selected === "auto" && height > width && width > 0 && root.getBoundingClientRect().width - width >= 320));
 			root.classList.toggle("abp-side", side);
 			root.classList.toggle("abp-below", !side);
 			if (side) {
@@ -476,7 +527,7 @@ export function mountPlayback(
 				dialog.remove();
 				binding.setExpanded(false);
 				updateLayout();
-				opener?.focus?.();
+				if (!suppressModalFocus) opener?.focus?.();
 				caption.scrollLeft = captionScroll;
 			};
 			const cancel = (event: Event) => { event.preventDefault(); finish(); };
@@ -486,7 +537,7 @@ export function mountPlayback(
 			const containFocus = (event: KeyboardEvent) => {
 				if (event.key !== "Tab") return;
 				const focusable = [close, figure, ...tabs.filter(tab => tab.tabIndex === 0), panel, caption,
-					...[previous, toggle, next, range].filter(el => !el.disabled)];
+					...[previous, toggle, next, stop, range].filter(el => !el.disabled)];
 				const last = focusable[focusable.length - 1];
 				const active = scope.activeElement ?? doc.activeElement;
 				if (event.shiftKey && active === close) { event.preventDefault(); last.focus(); }
@@ -537,6 +588,7 @@ export function mountPlayback(
 		if (svg.parentNode === container) container.insertBefore(root, svg); else container.append(root);
 		placeSvg(svg);
 		refresh();
+		showControls();
 		if (player.state.status === "idle") synchronize(player.state);
 	}
 }

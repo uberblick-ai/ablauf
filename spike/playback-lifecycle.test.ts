@@ -229,24 +229,24 @@ test("rebind retains player, panel and actions; slug tabs survive reorder with f
 	const observed: PlayerState[] = [];
 	player.subscribe(state => {
 		observed.push(state);
-		assert.equal(f.cls("abp-actor").textContent, "New actor");
-		assert.equal(f.cls("abp-caption").textContent, "New caption");
+		assert.equal(f.cls("abp-actor").textContent, "");
+		assert.equal(f.cls("abp-caption").textContent, "");
 	});
 	const changed = { ...data[1], name: "Renamed beta", steps: [{ ...data[1].steps[0], actor: "New actor", caption: "New caption", parts: ["a"] }] };
 	f.mount.update(asSvg(replacement), [changed, data[0], data[2]]);
 	assert.equal(f.mount.player, player); assert.equal(f.cls("abp-panel"), panel);
 	assert.deepEqual(f.cls("abp-actions").all().filter(el => el.tag === "button" || el.type === "range"), actions.filter(el => el.tag === "button" || el.type === "range"));
 	assert.equal(f.tabs()[0], beta); assert.equal(f.doc.activeElement, beta); assert.equal(beta.textContent, "Renamed beta");
-	assert.deepEqual(player.state, { scenario: 0, step: 0, status: "paused" });
-	assert.equal(f.cls("abp-status").textContent, "New actor: New caption");
+	assert.deepEqual(player.state, { scenario: 0, step: -1, status: "idle" });
+	assert.equal(f.cls("abp-status").textContent, "");
 	assert.ok(f.cls("ab-playback").classList.contains("ab-dark"));
 	assert.ok(f.image.all().every(el => !el.classList.contains("ab-current") && !el.classList.contains("ab-played") && !el.classList.contains("ab-playing")));
-	f.doc.viewport.show(true); t.mock.timers.tick(1000); assert.equal(player.state.status, "paused");
+	f.doc.viewport.show(true); t.mock.timers.tick(1000); assert.equal(player.state.status, "idle");
 	assert.equal(observed.length, 1);
 });
 
 test("same-tuple rebind refreshes all controls silently and retains action focus", t => {
-	const f = setup(t); f.player.select(0);
+	const f = setup(t); f.mount.open();
 	const range = f.host.all().find(el => el.type === "range"); assert.ok(range); range.focus();
 	const snapshot = f.player.state;
 	let calls = 0; f.player.subscribe(() => calls++);
@@ -255,10 +255,10 @@ test("same-tuple rebind refreshes all controls silently and retains action focus
 	f.mount.update(asSvg(replacement), [changed]);
 	assert.equal(f.player.state, snapshot); assert.equal(calls, 0);
 	assert.equal(f.doc.activeElement, range); assert.equal(f.cls("abp-panel").tabIndex, 0);
-	assert.equal(f.tabs().length, 0); assert.equal(range.max, "0"); assert.equal(range.value, "0");
-	assert.equal(f.cls("abp-counter").textContent, "1/1");
-	assert.equal(f.cls("abp-actor").textContent, "Changed"); assert.equal(f.cls("abp-caption").textContent, "Changed caption");
-	assert.equal(f.cls("abp-status").textContent, "Changed: Changed caption");
+	assert.equal(f.tabs().length, 0); assert.equal(range.max, "0"); assert.equal(range.value, "-1");
+	assert.equal(f.cls("abp-counter").textContent, "");
+	assert.equal(f.cls("abp-actor").textContent, ""); assert.equal(f.cls("abp-caption").textContent, "");
+	assert.equal(f.cls("abp-status").textContent, "");
 	assert.equal(f.host.all().filter(el => el.classList.contains("abp-segment")).length, 1);
 	assert.ok(f.cls("ab-playback").classList.contains("ab-light"));
 });
@@ -279,11 +279,11 @@ test("empty bindings remove owned DOM and can be populated without duplicate res
 	const panel = f.cls("abp-panel"); panel.focus();
 	const old = f.host.all().filter(el => el !== f.image && el !== retained && el !== f.host);
 	f.mount.update(asSvg(f.image), []);
-	assert.deepEqual(f.player.state, { scenario: 0, step: -1, status: "paused" });
+	assert.deepEqual(f.player.state, { scenario: 0, step: -1, status: "idle" });
 	assert.deepEqual(f.host.children, [f.image, retained]); assert.notEqual(f.doc.activeElement, retained);
 	assert.ok(old.every(el => [...el.listeners.values()].every(listeners => listeners.size === 0)));
 	for (let i = 0; i < 4; i++) f.mount.update(asSvg(f.image), [data[2], data[0]]);
-	assert.deepEqual(f.player.state, { scenario: 0, step: -1, status: "paused" });
+	assert.deepEqual(f.player.state, { scenario: 0, step: -1, status: "idle" });
 	assert.equal(f.host.all().filter(el => el.tag === "style").length, 1);
 	assert.equal(f.host.all().filter(el => el.classList.contains("ab-playback")).length, 1);
 	assert.equal(f.doc.viewport.observers.size, 1); assert.equal(f.doc.listeners.get("visibilitychange")?.size, 1);
