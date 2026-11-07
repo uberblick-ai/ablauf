@@ -197,8 +197,10 @@ without host control CSS; the interactive checks below still need a maintainer.
   positions stay constant. Long text stays on one line within the figure. Read
   all of it by pointer/touch and keyboard scrolling; confirm the ending is reachable.
   Tab to the “Step caption” region before Previous in short, blank, idle and empty
-  states too. Check its visible focus outline, and that Left/Right, Home and End
-  scroll natively without changing playback state, step or scenario.
+  states too. Check its visible focus outline, and that Left/Right scroll the
+  caption without changing playback state, step or scenario. Home and End are
+  left to the browser, which scrolls the page with them; they must not change
+  playback state, step or scenario either.
   Scroll partway through the long caption: pause/resume preserves that position,
   while a scenario or step change resets instantly to the beginning. Make the
   document narrow enough to scroll the last caption of **Short captions**, scroll
