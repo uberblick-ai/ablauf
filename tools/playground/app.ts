@@ -42,7 +42,7 @@ function draw() {
 	const { svg, diagnostics, layout, timelines } = render(editor.value, { idPrefix: "pg" });
 	target.innerHTML = svg;
 	const svgEl = target.querySelector("svg");
-	if (svgEl && timelines.length) playback = mountPlayback(target, svgEl, timelines);
+	if (svgEl && timelines.length) playback = mountPlayback(target, svgEl, timelines, { layout: "auto" });
 	if (grid.checked && svgEl) {
 		// Built as elements, so an id in the source is only ever text.
 		const NS = "http://www.w3.org/2000/svg";

@@ -49,6 +49,9 @@ jobs:
       - if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: mise run test
       - if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        name: Package JavaScript size budget
+        run: mise run size
+      - if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         name: Packed consumer on minimum Node 22.18
         run: mise exec node@22.18.0 -- pnpm -s test:package
       - if: ${{ !cancelled() && steps.install.outcome == 'success' }}

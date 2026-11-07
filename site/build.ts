@@ -31,6 +31,7 @@
 // https://ablauf.uberblick.ai); SITE_NOINDEX, set to anything, keeps search
 // engines off a preview host.
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { stripTypeScriptTypes } from "node:module";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { render } from "../src/index.ts";
@@ -93,7 +94,9 @@ export function build(options: BuildOptions = {}): BuildResult {
 	const example = (name: string, options: { editOf?: string; style?: string; fenced?: boolean } = {}) => {
 		const { editOf, style, fenced } = options;
 		const text = source(name);
-		const { svg, diagnostics } = render(text, { idPrefix: style ? `${name}-${style}` : name });
+		const { svg, diagnostics, timelines } = render(text, { idPrefix: style ? `${name}-${style}` : name });
+		const playback = timelines.length ? ` data-timelines="${esc(JSON.stringify(timelines))}"` : "";
+		const script = playback ? '\n<script type="module" src="/playback.js"></script>' : "";
 		for (const d of diagnostics) problems.push(`${name}.flow:${d.line} ${d.severity}: ${d.message}`);
 		const base = editOf ? new Set(source(editOf).split("\n")) : null;
 		const lines = text.replace(/\n$/, "").split("\n").map((line) => {
@@ -105,7 +108,7 @@ export function build(options: BuildOptions = {}): BuildResult {
 			lines.push("```");
 		}
 		const panels: [string, string][] = [
-			["Displayed", `<div class="ex-pic">${style ? `<div class="${style}">${svg}</div>` : svg}</div>`],
+			["Displayed", `<div class="ex-pic"${playback}>${style ? `<div class="${style}">${svg}</div>` : svg}</div>`],
 			[fenced ? "Markdown" : base ? "Source · changes marked" : "Source", `<pre><code>${lines.join("\n")}</code></pre>`],
 		];
 		if (style) {
@@ -113,9 +116,9 @@ export function build(options: BuildOptions = {}): BuildResult {
 			if (!existsSync(file)) problems.push(`site/styles/${style}.css: missing`);
 			const css = existsSync(file) ? readFileSync(file, "utf8").replace(/\n$/, "") : "";
 			panels.push(["CSS", `<pre><code>${esc(css)}</code></pre>`]);
-			return `<style>${css}</style>\n${tabs(`${name} with ${style}.css`, panels)}`;
+			return `<style>${css}</style>\n${tabs(`${name} with ${style}.css`, panels)}${script}`;
 		}
-		return tabs(`${name} example`, panels);
+		return tabs(`${name} example`, panels) + script;
 	};
 
 	const kindList = () =>
@@ -147,6 +150,14 @@ ${items.join("\n")}`;
 
 	rmSync(out, { recursive: true, force: true });
 	cpSync(join(ROOT, "static"), out, { recursive: true });
+	// Emit the browser-only module graph with JavaScript specifiers so both
+	// Pages and the local server serve it without a TypeScript runtime.
+	mkdirSync(join(out, "playback"));
+	for (const name of ["playback", "controls", "player"]) {
+		const ts = readFileSync(join(ROOT, "..", "src", `${name}.ts`), "utf8");
+		const js = stripTypeScriptTypes(ts).replace(/(from "\.\/\w+)\.ts"/g, '$1.js"');
+		writeFileSync(join(out, "playback", `${name}.js`), js);
+	}
 	const pagesDir = join(ROOT, "pages");
 	const built = new Set<string>();
 	const hrefs = new Map<string, string>();

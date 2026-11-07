@@ -111,7 +111,7 @@ assert.match(core.render("flow v0\\nbox a\\n").svg, /^<svg /);
 	// the installed tarball, with no repository types or source imports.
 	writeFileSync(join(consumer, "types.mts"), `
 import { render, type RenderOptions, type Diagnostic, type FontsOptions,
-  type FontOptions, type TextStyle, TOKENS, type Token, type Palette, LIGHT, checkPalette } from "@uberblick/ablauf";
+  type FontOptions, type TextStyle, TOKENS, type Token, type Palette, type PlaybackContrast, LIGHT, checkPalette } from "@uberblick/ablauf";
 const measureText = (text: string, { fontSize }: TextStyle) => text.length * fontSize;
 const font: FontOptions = { family: "Host Mono", measureText };
 const fonts: FontsOptions = { mono: font, text: font };
@@ -124,6 +124,12 @@ const tokens: readonly Token[] = TOKENS;
 const palette: Palette = { ...LIGHT };
 const token: Token = TOKENS[0];
 const resultPalette: { minimum: number; pairs: { ink: Token; ground: Token[]; opacity?: number; ratio: number; where: string }[] } = checkPalette(palette);
+const playbackContrast: PlaybackContrast = { play: "#0a7a60", unreachedOpacity: "30%" };
+const playbackInk: Token | "play" = checkPalette(palette, playbackContrast).pairs[0].ink;
+// @ts-expect-error Playback text ink also permits play, without widening static calls.
+const onlyStaticInk: Token = checkPalette(palette, playbackContrast).pairs[0].ink;
+// @ts-expect-error Both playback fields are required.
+checkPalette(palette, { play: "#0a7a60" });
 // @ts-expect-error TOKENS is a readonly tuple.
 TOKENS.push("ink");
 // @ts-expect-error Only supported public tokens are assignable.
@@ -154,22 +160,25 @@ declare const svg: SVGSVGElement;
 declare const timelines: Timeline[];
 declare const element: HTMLElement;
 declare const shadow: ShadowRoot;
-const mount: PlaybackMount = mountPlayback(element, svg, timelines, { loop: true });
+const mount: PlaybackMount = mountPlayback(element, svg, timelines, { loop: true, autoplay: true, pauseWhenOffscreen: true });
 const shadowMount: PlaybackMount = mountPlayback(shadow, svg, timelines);
 const mountedPlayer: Player = mount.player;
+mount.update(svg, timelines); shadowMount.update(svg, []);
+const unsubscribe: () => void = mountedPlayer.subscribe((state: PlayerState) => { const step: number = state.step; });
+unsubscribe(); unsubscribe();
 mount.destroy(); mountedPlayer.destroy(); shadowMount.destroy();
 // @ts-expect-error The container must be an HTML element or shadow root.
 mountPlayback(svg, svg, timelines);
-// @ts-expect-error Mount options only configure looping.
+// @ts-expect-error Mount options do not accept onChange.
 mountPlayback(element, svg, timelines, { onChange() {} });
-const player: Player = createPlayer(svg, timelines, { loop: true, onChange(state: PlayerState) {
+const player: Player = createPlayer(svg, timelines, { loop: true, pauseWhenOffscreen: true, onChange(state: PlayerState) {
   const scenario: number = state.scenario;
   const step: number = state.step;
   const status: "idle" | "paused" | "playing" | "ended" = state.status;
 } });
 const minimal: Player = createPlayer(svg, timelines);
 const state: PlayerState = player.state;
-player.play(); player.pause(); player.next(); player.previous(); player.seek(-1); player.select(0); player.destroy();
+player.play(); player.pause(); player.next(); player.previous(); player.seek(-1); player.select(0); player.select("exact-slug"); player.destroy();
 // @ts-expect-error Player state is a readonly property.
 player.state = state;
 // @ts-expect-error Seek takes a numeric step index.

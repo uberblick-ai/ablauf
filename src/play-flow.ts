@@ -1,5 +1,6 @@
 import type { Layout } from "./grid.ts";
 import type { Scenario, Timeline } from "./play.ts";
+import { nameTimelines } from "./play-timelines.ts";
 
 // Index-based identities avoid ambiguity in arbitrary node ids and distinguish
 // parallel edges. Each edge's stroke, head and label share one part identity.
@@ -8,13 +9,8 @@ export const edgePart = (index: number) => `edge-${index}`;
 
 export function resolveFlow(scenarios: Scenario[], layout: Layout): Timeline[] {
 	const nodes = new Map(layout.nodes.map((p, i) => [p.node.id, { node: p.node, part: nodePart(i) }]));
-	const used = new Set<string>();
-	return scenarios.map(scenario => {
-		const base = scenario.name.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "scenario";
-		let slug = base;
-		for (let n = 2; used.has(slug); n++) slug = `${base}-${n}`;
-		used.add(slug);
-		const timeline: Timeline = { name: scenario.name, slug, steps: [] };
+	return nameTimelines(scenarios).map((timeline, index) => {
+		const scenario = scenarios[index];
 		let previous: string | undefined;
 		for (const step of scenario.steps) {
 			const resolved = nodes.get(step.target);

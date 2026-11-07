@@ -3,8 +3,8 @@
 You choose placement; the renderer sizes and draws without moving nodes or
 rerouting edges. Save as `.flow`. [Renderer details](plan.md).
 
-[Flows support play sections and timelines](plan.md#playback).
-The browser player and controls are still planned.
+[Flows and sequences support play sections and timelines](plan.md#playback).
+The browser player and built-in controls play either kind.
 
 ## Flow syntax and nodes
 
@@ -170,9 +170,10 @@ are allowed too. Diagram strings above keep their original syntax. Durations
 use seconds or milliseconds (`2.4s`, `800ms`), from 100ms to 60s; default
 tempo is 1.6s. Invalid durations diagnose and use the tempo. Omitted actors
 use the node's title; omitted captions are empty. `render()` returns the
-resolved `timelines` and a full static SVG with parts a host can highlight.
-Sequence and fan-out playback are not supported yet and diagnose on each
-`play` line. See [loop-play.flow](../examples/loop-play.flow) for three scenarios.
+resolved `timelines` and a full static SVG with parts the existing browser
+player and controls can highlight. Fan-out playback is not supported yet and
+diagnoses on each `play` line. See [loop-play.flow](../examples/loop-play.flow)
+for three flow scenarios, and the sequence form below.
 
 ## Fan-out
 
@@ -248,3 +249,56 @@ source and leave the group/phase state unchanged. Unclosed groups draw to EOF
 and diagnose their opening lines. The claim example demonstrates Claim and
 Verify phases, an expiry note and the two verification branches; its messages
 7–15 remain illustrative handshake details.
+
+### Sequence playback
+
+Append the same `play` sections to a sequence. Targets are positive decimal
+message numbers as drawn in the gutter: `9` and `09` both select message 9.
+Participant ids, zero, numbers beyond the last message and other invalid
+tokens diagnose their original step lines and skip those steps. Consecutive
+steps may skip messages or branches and need no connection. For example:
+
+```text
+sequence v0
+participant Creator
+participant Studio tone=system
+section "Check"
+Creator --> Studio: Enter code
+Studio --> Studio: Check code and expiry
+alt Code matches
+Studio -.-> Creator: The show is yours
+else Wrong code
+Studio -.-> Creator: Try again
+end
+
+play "Correct code"
+  tempo 1.8s
+  step 01 "Type the code"
+  step 2
+  step 3
+play "Wrong code"
+  step 1
+  step 2 actor="Verifier" "Compare code and expiry"
+  step 4
+```
+
+The default actor uses participant titles as `Sender → Receiver`, or the title
+alone for a self-message; `actor=` overrides it. Durations, captions, names
+and JSON quoting follow the shared grammar above.
+
+Each step lights its complete message row, both participant headers and
+attached annotations. Every note in an uninterrupted run immediately after
+a message attaches to it; every section, group-opening or `else` label in an
+uninterrupted run immediately before a message attaches to it. Blank/comment
+lines and invisible `end` rows do not break adjacency. Other visible row kinds
+break the run: `section` + `alt` + message attaches both labels, but a note
+between a heading and a message prevents that heading attaching.
+
+Parts neither current nor played fade, including unused headers and unattached
+annotations. Structural lines/backgrounds and rejected source stay visible.
+Current message strokes glow and thicken while preserving their tone and dash
+pattern; their numbers become bold in the play colour. Current header dots
+grow and glow. Sequences do not run dashes. Only fading and dot growth ease
+while playing; manual steps are instant and reduced motion removes transitions.
+Idle shows the full figure. See [claim-play.flow](../examples/claim-play.flow)
+for both complete claim scenarios.

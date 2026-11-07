@@ -1,5 +1,5 @@
-The five renderer-output checks in this directory are `loop.svg`, `deploy.svg`
-and the three compressed compatibility fixtures. `mise run ci` reads them
+The six renderer-output checks in this directory are `loop.svg`, `deploy.svg`
+and the four compressed compatibility fixtures. `mise run ci` reads them
 without needing `out/`. `mise run render` writes generated examples to ignored
 `out/` and refreshes `docs/images/`; it never writes here.
 
@@ -24,3 +24,8 @@ palette value, updates the expected strings in the test, not this file.
 `claim.flow` is a sequence diagram, which playback does not touch. Its entry
 was re-rendered when the sequence spacing was tightened (#108); the 15 flow
 examples keep their `04b1458` strings.
+
+`pre-sequence-playback.json.gz` captures all 19 examples at
+`3751cb9c22ae8c9682b645c2b396427fee2d692a`, before sequence playback (#141).
+`test/sequence-playback.test.ts` and `test/sequence-travel.test.ts` compare
+these historical SVG strings with their documented test-side adjustments.

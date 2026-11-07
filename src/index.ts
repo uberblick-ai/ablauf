@@ -11,7 +11,7 @@ export type { Diagnostic } from "./parse.ts";
 export type { Timeline, TimelineStep } from "./play.ts";
 export type { FontOptions, FontsOptions, TextStyle } from "./fonts.ts";
 export { DARK, LIGHT } from "./svg.ts";
-export { TOKENS, checkPalette, type Token, type Palette } from "./paint.ts";
+export { TOKENS, checkPalette, type Token, type Palette, type PlaybackContrast } from "./paint.ts";
 
 export interface RenderOptions extends SvgOptions {
 	fonts?: FontsOptions;
@@ -22,8 +22,13 @@ export function render(source: string, options: RenderOptions = {}) {
 	source = play.source;
 	const first = source.split("\n").find((line) => line.trim() && !line.trim().startsWith("#"));
 	const kind = /^(fan-out|sequence)(?:\s|$)/.exec(first?.trim() ?? "")?.[1];
-	if (kind) {
-		const result = kind === "fan-out" ? renderFanout(source, options) : renderSequence(source, options);
+	if (kind === "sequence") {
+		const result = renderSequence(source, options, play.scenarios);
+		result.diagnostics.push(...play.diagnostics);
+		return result;
+	}
+	if (kind === "fan-out") {
+		const result = renderFanout(source, options);
 		result.diagnostics.push(...play.diagnostics, ...play.scenarios.map(s => ({ line: s.line, severity: "error" as const, message: `${kind} playback is not supported yet` })));
 		return { ...result, timelines: [] as Timeline[] };
 	}

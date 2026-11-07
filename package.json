@@ -39,11 +39,13 @@
     "render": "node tools/render.ts",
     "check": "node tools/check.ts",
     "measure": "node tools/measure.ts",
+    "size": "node tools/size-budget-command.ts",
     "playground": "node tools/playground/server.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.9",
     "@types/node": "^26.6.5",
+    "esbuild": "0.28.2",
     "typescript": "^5.9.3"
   }
 }

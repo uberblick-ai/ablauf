@@ -7,8 +7,8 @@ export const TOKENS = Object.freeze([
 export type Token = (typeof TOKENS)[number];
 export type Palette = Record<Token, string>;
 
-interface Paint {
-	ink: Token;
+interface Paint<Ink extends Token | "play" = Token> {
+	ink: Ink;
 	/** Back to front, starting with the host canvas bg. */
 	ground: Token[];
 	/** Multiplies the alpha of the last ground layer only. */
@@ -16,6 +16,54 @@ interface Paint {
 	/** Per-layer alpha multipliers, including 1 for bg; exclusive with opacity. */
 	groundOpacities?: number[];
 	where: string;
+}
+
+/** Effective playback values, resolved by the host before checking. */
+export interface PlaybackContrast {
+	play: string;
+	unreachedOpacity: number | string;
+}
+
+function playbackPaints(fade: number): Paint<Token | "play">[] {
+	const result: Paint<Token | "play">[] = [];
+	// Focus outlines and decorative glows do not change text paints. Keep
+	// distinct state witnesses even where the CSS resolves to the same ink.
+	for (const selected of [false, true]) for (const hover of [false, true]) for (const focus of [false, true]) {
+		result.push({ ink: selected ? "play" : hover ? "ink" : "muted", ground: ["bg"],
+			where: `playback controls tab ${selected ? "selected" : "normal"}${hover ? " hover" : ""}${focus ? " keyboard-focused" : ""} on canvas` });
+	}
+	for (const disabled of [false, true]) for (const hover of [false, true]) for (const focus of disabled ? [false] : [false, true]) {
+		result.push({ ink: disabled ? "muted" : "ink", ground: ["bg", "bg"],
+			where: `playback controls button ${disabled ? "disabled" : "enabled"}${hover ? " hover" : ""}${focus ? " keyboard-focused" : ""} on button background over canvas` });
+	}
+	for (const [element, ink] of [["actor", "play"], ["counter", "muted"], ["caption", "ink"], ["empty-state text", "ink"]] as const) {
+		result.push({ ink, ground: ["bg"], where: `playback controls ${element} on canvas` });
+	}
+	for (const state of ["current", "played", "unplayed"] as const) for (const band of [false, true]) {
+		const canvas: Token[] = band ? ["bg", "band"] : ["bg"];
+		const place = band ? "band" : "canvas";
+		const opacity = state === "unplayed" ? fade : 1;
+		const add = (ink: Token, layers: Token[], multipliers: number[], element: string, ground: string) => result.push({
+			ink, ground: [...canvas, ...layers], groundOpacities: [...canvas.map(() => 1), ...multipliers],
+			where: `playback SVG ${state} ${element} on ${ground} over ${place}`,
+		});
+		for (const tone of ["ink", "muted", ...tones] as const) {
+			const fill: Token = tone === "ink" || tone === "muted" ? "surface" : `${tone}-bg`;
+			const foreground = tone === "ink" ? "muted" : tone;
+			add("muted", [], [], `${tone} text node label`, place);
+			add("ink", ["surface"], [opacity], `${tone} pill label`, "pill surface");
+			add(foreground, [fill], [opacity], `${tone} box/end label`, fill);
+			add("muted", [fill], [opacity], `${tone} box subtitle`, fill);
+			for (const ink of ["ink", "muted"] as const) add(ink, [fill], [opacity], `${tone} panel ${ink} text`, fill);
+			add("ink", [fill, "surface"], [opacity, opacity], `${tone} panel pill label`, `${fill} and pill surface`);
+			for (const diamond of [false, true]) add(foreground, [...(diamond ? [fill] : []), "surface"], [...(diamond ? [opacity] : []), 0.82 * opacity],
+				`${tone} decision label`, `${diamond ? `${fill} diamond and ` : ""}surface label-box`);
+			add(tone, [], [], `${tone} edge label`, place);
+			// Untoned ordinary edge text uses ink; inline text uses muted.
+			add(foreground, [band ? "band" : "bg"], [1], `${tone} inline edge label`, "unfaded gap");
+		}
+	}
+	return result;
 }
 
 // A text paint contract, independent of any particular diagram. Keep the
@@ -76,7 +124,7 @@ for (const tinted of [false, true]) for (const depth of [0, 1, 2]) {
 type Colour = [number, number, number, number];
 const number = /^[+-]?(?:\d*\.\d+|\d+)(?:e[+-]?\d+)?$/i;
 
-function colour(value: string, token: Token): Colour {
+function colour(value: string, token: Token | "play"): Colour {
 	const fail = (): never => { throw new TypeError(`Invalid or unsupported colour for ${token}: ${String(value)}`); };
 	if (typeof value !== "string") return fail();
 	const text = value.trim().toLowerCase();
@@ -98,7 +146,9 @@ function colour(value: string, token: Token): Colour {
 	}
 	const comma = body.includes(",");
 	if (comma && (srgb || body.includes("/"))) return fail();
-	const parts = comma ? body.split(",").map((p) => p.trim()) : body.split(/\s*\/\s*/);
+	// Split the literal delimiter before trimming: an unanchored whitespace
+	// regex can retry an entire whitespace run at each position without a slash.
+	const parts = body.split(comma ? "," : "/").map((p) => p.trim());
 	let channels: string[];
 	let alpha: string;
 	if (comma) {
@@ -123,6 +173,19 @@ function colour(value: string, token: Token): Colour {
 	return [...channels.map((c) => component(c, srgb ? 1 : 255)), component(alpha, 1)] as Colour;
 }
 
+function unreachedOpacity(value: number | string): number {
+	const fail = (): never => { throw new TypeError("Invalid or unsupported unreachedOpacity"); };
+	if (typeof value === "string") {
+		const text = value.trim();
+		const percent = text.endsWith("%");
+		const digits = percent ? text.slice(0, -1) : text;
+		if (!number.test(digits) || !Number.isFinite(Number(digits))) return fail();
+		value = Number(digits) / (percent ? 100 : 1);
+	}
+	if (typeof value !== "number" || !Number.isFinite(value)) return fail();
+	return Math.max(0, Math.min(1, value));
+}
+
 // Source-over in gamma-encoded sRGB, followed by WCAG relative luminance.
 const over = (top: Colour, bottom: Colour, opacity = 1): Colour => {
 	const a = top[3] * opacity;
@@ -135,21 +198,32 @@ function luminance(c: Colour): number {
 
 /** Check every text paint the renderer can emit, without a DOM. Throws on
  * missing, invalid or unsupported colours; bg must be an opaque host canvas.
+ * Optional effective playback values add control/SVG text pairs to minimum.
+ * Decorative text-shadow/glow and non-text contrast are excluded.
  * See https://ablauf.uberblick.ai/guides/testing for accepted forms and layers.
  */
-export function checkPalette(palette: Palette): { minimum: number; pairs: (Paint & { ratio: number })[] } {
+export function checkPalette(palette: Palette): { minimum: number; pairs: (Paint & { ratio: number })[] };
+export function checkPalette(palette: Palette, playback: PlaybackContrast | undefined): { minimum: number; pairs: (Paint<Token | "play"> & { ratio: number })[] };
+export function checkPalette(palette: Palette, playback?: PlaybackContrast): { minimum: number; pairs: (Paint<Token | "play"> & { ratio: number })[] } {
 	if (!palette || typeof palette !== "object") throw new TypeError("Expected a complete palette");
 	const colours = Object.fromEntries(TOKENS.map((token) => {
 		if (!Object.hasOwn(palette, token)) throw new TypeError(`Missing palette colour: ${token}`);
 		return [token, colour(palette[token], token)];
 	})) as Record<Token, Colour>;
 	if (colours.bg[3] !== 1) throw new TypeError("bg must be an opaque host canvas colour");
-	const pairs = paints.map((paint) => {
+	let textPaints: Paint<Token | "play">[] = paints;
+	const inks: Record<Token | "play", Colour> = { ...colours, play: colours.ink };
+	if (playback !== undefined) {
+		if (!playback || typeof playback !== "object" || !Object.hasOwn(playback, "play") || !Object.hasOwn(playback, "unreachedOpacity")) throw new TypeError("Expected play and unreachedOpacity");
+		inks.play = colour(playback.play, "play");
+		textPaints = [...paints, ...playbackPaints(unreachedOpacity(playback.unreachedOpacity))];
+	}
+	const pairs = textPaints.map((paint) => {
 		let ground = colours.bg;
 		for (let i = 1; i < paint.ground.length; i++) {
 			ground = over(colours[paint.ground[i]], ground, paint.groundOpacities?.[i] ?? (i === paint.ground.length - 1 ? paint.opacity : 1));
 		}
-		const a = luminance(over(colours[paint.ink], ground));
+		const a = luminance(over(inks[paint.ink], ground));
 		const b = luminance(ground);
 		return { ...paint, ground: [...paint.ground], ...(paint.groundOpacities ? { groundOpacities: [...paint.groundOpacities] } : {}), ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) };
 	});

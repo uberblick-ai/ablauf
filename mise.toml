@@ -53,6 +53,11 @@ run = "pnpm -s render"
 description = "Show what moved between the loop and the loop with a role inserted"
 run = "pnpm -s measure"
 
+[tasks.size]
+description = "Build and measure playback and core JavaScript; enforce the playback gzip budget"
+depends = ["setup"]
+run = "pnpm -s size"
+
 [tasks.media]
 description = "Capture the README's PNG figures (needs Playwright and IBM Plex)"
 run = ["pnpm -s build", "node tools/media/capture.mjs"]

@@ -1,11 +1,18 @@
 import assert from "node:assert/strict";
 import { once } from "node:events";
-import { existsSync, readFileSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 import { createPlaygroundServer } from "../tools/playground/server.ts";
 
-test("playground and browser fixture serve complete module graphs inside the existing sandbox", async () => {
-	const server = createPlaygroundServer();
+test("playground and browser fixture serve complete module graphs inside the existing sandbox", async t => {
+	const root = mkdtempSync(join(process.env.UB_AGENTS_SCRATCH ?? tmpdir(), "ablauf-routes-"));
+	t.after(() => rmSync(root, { recursive: true, force: true }));
+	for (const path of ["src", "tools/playground", "examples", "docs/trials", "docs/reference"]) {
+		cpSync(new URL(`../${path}`, import.meta.url), join(root, path), { recursive: true });
+	}
+	const server = createPlaygroundServer(root);
 	try {
 		server.listen(0, "127.0.0.1");
 		await once(server, "listening");
@@ -42,19 +49,21 @@ test("playground and browser fixture serve complete module graphs inside the exi
 		for (const [path, file] of [
 			["/api/flow/examples/playback-fade", "../examples/playback-fade.flow"],
 			["/playground/playback-crossings.flow", "../tools/playground/playback-crossings.flow"],
+			["/playground/playback-compact.flow", "../tools/playground/playback-compact.flow"],
 		]) {
 			const response = await fetch(`${origin}${path}`);
 			assert.equal(response.status, 200, path);
 			assert.equal(await response.text(), readFileSync(new URL(file, import.meta.url), "utf8"));
 		}
 		assert.equal((await fetch(`${origin}/playground/playback-crossings.flow`, { method: "PUT", body: "no" })).status, 404);
+		assert.equal((await fetch(`${origin}/playground/playback-compact.flow`, { method: "PUT", body: "no" })).status, 404);
 		assert.equal(await (await fetch(`${origin}/reference/loop.svg`)).text(), readFileSync(new URL("../docs/reference/loop.svg", import.meta.url), "utf8"));
 		const catalog = await (await fetch(`${origin}/api/catalog`)).json();
 		assert.ok(catalog.flatMap((g: { flows: { folder: string; name: string }[] }) => g.flows).some((f: { folder: string; name: string }) => f.folder === "trials" && f.name === "edit-1"));
 		const trial = await fetch(`${origin}/api/flow/trials/edit-1`);
 		assert.equal(trial.status, 200);
 		assert.equal(await trial.text(), readFileSync(new URL("../docs/trials/edit-1.flow", import.meta.url), "utf8"));
-		const saved = new URL("../docs/trials/route-save-test.flow", import.meta.url);
+		const saved = join(root, "docs/trials/route-save-test.flow");
 		assert.equal(existsSync(saved), false);
 		try {
 			const source = "flow v0\nbox saved\n";

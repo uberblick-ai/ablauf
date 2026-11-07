@@ -38,6 +38,7 @@ button { font: inherit; }
 .pg-diagnostics button { width: 100%; text-align: left; font-size: 12.5px; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--bad); cursor: pointer; }
 .pg-renders { display: grid; gap: 16px; min-width: 0; }
 .pg-render { margin: 0; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); overflow-x: auto; }
+.pg-render:has(.ab-playback) { overflow: visible; }
 .pg-render.column #pg-render { max-width: 710px; }
 .pg-render svg, .pg-render img { display: block; max-width: 100%; height: auto; }
 .pg-reference figcaption { font-size: 12px; color: var(--muted); margin-bottom: 8px; }

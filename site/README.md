@@ -35,8 +35,10 @@ npm package.
 
 ## Deploying
 
-Cloudflare Pages builds the site on every push to `main` that touches `site/`,
-`src/` or `examples/`, and serves it at ablauf.uberblick.ai. The
+Cloudflare Pages serves the site at ablauf.uberblick.ai. Its build filters should
+include `site/*`, `src/*` and `examples/*` for pushes to `main`. A maintainer must
+update these filters alongside the repository move in #135; until then, changes
+only to the renderer or examples do not trigger a rebuild. The
 Pages project and the DNS record are Terraform in
 [uberblick-infra](https://github.com/uberblick-ai/uberblick-infra)
 (`cloudflare/ablauf.tf`, set up as in its `docs/website.md`), beside the

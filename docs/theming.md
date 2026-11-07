@@ -7,9 +7,9 @@ updates the existing SVG immediately; there is no need to render it again.
 
 ## Supported properties
 
-These are the supported properties and their built-in defaults. The last three
-apply only to playable SVGs; playback colours are separate from the exported
-static `Palette` and `checkPalette` contract.
+These are the supported properties and their built-in defaults. Playback
+properties stay separate from the 18-colour `TOKENS`/`Palette`; the optional
+second argument to `checkPalette` adds playback text checks.
 
 | Property | Use | Light | Dark |
 | --- | --- | --- | --- |
@@ -32,7 +32,10 @@ static `Palette` and `checkPalette` contract.
 | `--ab-stop` | Stop tone foreground | `#815f5a` | `#ac8c88` |
 | `--ab-stop-bg` | Stop tone background | `#ede6e5` | `#2b2221` |
 | `--ab-play` | Glow of untoned current parts; controls accent | `#0a7a60` | `#6ff0cf` |
-| `--ab-play-glow` | Current outlines' and incoming strokes' glow blur; literal `0` removes glow | `6px` | `6px` |
+| `--ab-play-glow` | Glow blur; literal `0` removes glow | `6px` SVG; `10px` selected tab; `8px` current segment | `6px` SVG; `10px` selected tab; `8px` current segment |
+| `--ab-play-unreached-opacity` | Unplayed flow shapes, strokes and arrowheads; CSS number or percentage, clamped to [0, 1] | `0.3` | `0.3` |
+| `--ab-font-text` | Controls body, caption, side-list remark and empty-state face | `system-ui,sans-serif` | `system-ui,sans-serif` |
+| `--ab-font-mono` | Controls tabs, buttons, actors and counters/numbers | `ui-monospace,monospace` | `ui-monospace,monospace` |
 
 A tone foreground colours box/end text and outlines, pill dots, edges,
 arrowheads, edge labels and legend samples. Its background colours box, end
@@ -51,6 +54,54 @@ while keeping the heavier outline. Only playing figures run incoming edge dashes
 and ease fades; paused and ended figures stay still. Reduced motion disables animation and transitions, while manual
 stepping can still show the glow. Built-in controls have matching current-colour
 defaults and honour the same host override in automatic and pinned schemes.
+
+In flows, unplayed means neither current nor played while a step is shown. Only its
+shapes fade: node and edge label text never takes this opacity. Inline label
+gaps and crossing knockouts retain opacity multiplier 1 (host colour alpha
+still applies). Current and played shapes stay at full opacity in their own
+tones. The built-in text stays at least 4.5:1 for every fade from 0 to 1.
+
+Control font defaults are independent of render `fonts`. These properties
+update mounted controls immediately through normal CSS inheritance, including
+across shadow hosts. Set overrides on a common ancestor of SVG and controls.
+SVG text never reads either control-font property: changing them changes no
+static or playable SVG bytes, metrics or geometry. Check caption wrapping,
+tab overflow and font loading with the actual host fonts in a browser.
+
+Map the host faces once on a common ancestor; per-mount font rules are unnecessary:
+
+```css
+:root {
+  --ab-font-text: var(--font-sans);
+  --ab-font-mono: var(--font-mono);
+}
+```
+
+Automatic controls inherit the host's CSS `color-scheme`. Their fallback colours
+use `light-dark()` and update while mounted: a host pinned light wins over an
+OS-dark preference, and vice versa. With inherited `light dark`, the browser
+chooses using the user's preference; `normal` keeps its default. Controls from
+a pinned-light/dark SVG keep that scheme. Host `--ab-*` overrides win in every
+mode. This changes only automatic controls: automatic SVGs still follow the OS,
+so set SVG colour properties as well when pinning the whole page theme.
+The controls root is transparent and sits on the host surface; set `--ab-bg`
+to that surface for opaque button backgrounds and SVG knockouts.
+
+On devices matching `(any-pointer: coarse)`, including mixed fine/coarse devices,
+every button (tabs and side-list rows included) and step segment is at least
+44px wide and tall. Actions and segments wrap; tabs keep horizontal scrolling.
+Fine-only pointers keep compact sizing. All defaults live in the
+`ablauf-playback` cascade layer, so ordinary unlayered scoped rules win even if
+the host stylesheet precedes the injected style:
+
+```css
+.ab-playback { color-scheme: dark; }
+.ab-playback button { min-height: 48px; }
+.ab-playback .abp-segment { min-width: 48px; }
+```
+
+In a shadow mount, put selectors in that shadow root. Scheme and font/colour
+properties inherit through its host; document selectors do not cross the boundary.
 
 ## Complete host CSS
 
@@ -81,6 +132,9 @@ keep the whole palette consistent when the system and page themes disagree.
   --ab-stop-bg: #ede6e5;
   --ab-play: #0a7a60;
   --ab-play-glow: 6px;
+  --ab-play-unreached-opacity: 0.3;
+  --ab-font-text: system-ui,sans-serif;
+  --ab-font-mono: ui-monospace,monospace;
 }
 
 :root[data-theme="dark"] {
@@ -104,6 +158,9 @@ keep the whole palette consistent when the system and page themes disagree.
   --ab-stop-bg: #2b2221;
   --ab-play: #6ff0cf;
   --ab-play-glow: 6px;
+  --ab-play-unreached-opacity: 0.3;
+  --ab-font-text: system-ui,sans-serif;
+  --ab-font-mono: ui-monospace,monospace;
 }
 ```
 
@@ -132,3 +189,18 @@ Use the exported `TOKENS`, `Token`, `Palette` and DOM-free `checkPalette`
 paint contract. [Test your integration](https://ablauf.uberblick.ai/guides/testing)
 shows how to resolve effective colours inside an inline SVG, including a shadow
 root, and documents accepted colour forms, composited grounds, font and CSP checks.
+
+`checkPalette(palette, { play, unreachedOpacity })` retains every static pair
+and adds controls and current/played/unplayed SVG text pairs to `minimum`.
+Resolve effective automatic/pinned defaults and CSS overrides before calling:
+`play` is the effective `--ab-play` colour (the same colour forms and alpha as
+palette colours), and `unreachedOpacity` is a finite number or trimmed CSS
+numeric/percentage string, such as `0.3`, `"0.3"` or `"30%"`. Finite values
+outside [0, 1] clamp; missing fields, non-finite values, invalid syntax and
+unsupported forms throw `TypeError`. Extra keys are ignored. Fonts and glow
+size are not inputs. Playback pairs may use `ink: "play"`; grounds still use
+palette tokens. Text alpha composites over the layered ground, with no text
+opacity multiplier. Decorative glow/text-shadow is excluded from ratios.
+Focus rings, progress segments and faded shapes need separate browser
+non-text review; they do not enter the text minimum. One-argument calls retain
+their existing types, pairs, ratios, minimum and colour validation.

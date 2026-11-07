@@ -1,5 +1,64 @@
 # Changelog
 
+## Unreleased
+
+### Playback
+
+- Built-in playback controls inherit the host's `color-scheme` in automatic mode,
+  with live scheme-dependent fallback colours and a transparent surface. Reuse
+  host text/mono font hooks throughout side captions and expanded controls.
+  Coarse-pointer buttons and segments have 44px targets with wrapping; ordinary
+  host rules override defaults through the `ablauf-playback` cascade layer.
+  ([#151](https://github.com/uberblick-ai/ablauf/issues/151))
+- Add configurable unplayed shape opacity with unfaded labels, live control-font
+  overrides, and optional playback text contrast checks through
+  `checkPalette(palette, { play, unreachedOpacity })`. Static palettes, SVG bytes
+  and one-argument checks stay unchanged. ([#96](https://github.com/uberblick-ai/ablauf/issues/96))
+- Add optional `mountPlayback(..., { expand: true })` and host-called `mount.expand()`:
+  a full-screen native modal keeps natural-size figure scrolling above persistent
+  playback controls and single-line captions, preserves the active player and dwell,
+  retains themes and reduced motion, and restores focus and inline layout on close.
+  Rebinding works while expanded; no timelines or teardown closes the modal.
+  ([#127](https://github.com/uberblick-ai/ablauf/issues/127))
+- Play sequence messages by number in named `play` scenarios, with captions and
+  current/played message and participant highlights. ([#137](https://github.com/uberblick-ai/ablauf/issues/137))
+- Animate the current message travelling to its receiver and highlight its row
+  with a band; manual navigation and reduced motion show the completed message.
+  ([#138](https://github.com/uberblick-ai/ablauf/issues/138))
+- Add auto, side and below layouts to `mountPlayback`. Tall figures can show
+  captions in a sticky column with a keyboard-accessible step list, while auto
+  switches layouts as the container resizes. ([#139](https://github.com/uberblick-ai/ablauf/issues/139))
+- **Host migration from 0.3.0:** pass a container holding the inline SVG, rather
+  than a separate controls container below it. `mountPlayback` now moves the SVG
+  into mount-owned wrappers inside that container, including pulling it out of
+  another parent when necessary. Mount styles give it `display: block`,
+  `max-width: 100%` and `height: auto` on the controls' background. Either destroy
+  entry restores its original parent and position and removes the mount styles.
+  The default is now `layout: "auto"`, so existing tall figures may switch to side
+  captions without opting in; choose `layout: "below"` to keep captions below.
+
+- Add playback rebinding through `mount.update`, exact-slug scenario selection,
+  independent subscriptions and panel-local keyboard shortcuts. Preserve controls
+  and focus while refreshing SVG/data and clear the old binding. Rebinding also
+  refreshes side step lists, retains row focus by scenario slug and step position,
+  and keeps auto/side/below layout and deferred resize handling working; teardown
+  restores the current SVG and removes all mount-owned wrappers and resources.
+- Pause hidden/disconnected players and optionally off-screen players, preserving
+  first-view autoplay and viewport resume across lifecycle checks that find no
+  playback to pause. Autoplay alone still allows explicit off-screen playback;
+  viewport pausing blocks playback while allowing scenario selection. Extend the
+  maintainer browser fixture for rebinding, lifecycle, viewport and keyboard review.
+  ([#95](https://github.com/uberblick-ai/ablauf/issues/95))
+- Restore the full unfaded figure after a non-looping flow or sequence finishes,
+  preserving the scenario with step `-1` and status `ended` in the player and its
+  callback. Clear step details and highlights in controls, with Replay starting
+  at step `0`; Next from ended selects the first step paused and Previous keeps
+  the full figure paused. Document default-off, opt-in autoplay. ([#145](https://github.com/uberblick-ai/ablauf/issues/145))
+- Keep below-figure playback captions on one horizontally scrollable line with
+  reserved scrollbar space and a focusable region named “Step caption”. Preserve
+  scrolling on same-step pause/resume; reset it on step/scenario changes and
+  completion. ([#146](https://github.com/uberblick-ai/ablauf/issues/146))
+
 ## 0.3.0 — 2026-11-02
 
 ### Playback

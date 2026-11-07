@@ -3,6 +3,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { checkPalette, DARK, LIGHT, type Palette, render, TOKENS, type Token } from "../src/index.ts";
+import { inspect } from "./inspect-paints.ts";
 import { TONES } from "../src/parse.ts";
 import { catalog, FOLDERS } from "../tools/playground/catalog.ts";
 
@@ -17,7 +18,7 @@ const pair = (palette: Palette, ink: Token, ground: Token[], opacity?: number) =
 
 test("TOKENS follows the static theming rows; documented playback tokens stay outside both palettes", () => {
 	const table = readFileSync(join(root, "../docs/theming.md"), "utf8");
-	assert.deepEqual([...TOKENS, "play", "play-glow"], [...table.matchAll(/^\| `--ab-([^`]+)`/gm)].map((m) => m[1]));
+	assert.deepEqual([...TOKENS, "play", "play-glow", "play-unreached-opacity", "font-text", "font-mono"], [...table.matchAll(/^\| `--ab-([^`]+)`/gm)].map((m) => m[1]));
 	assert.equal(new Set(TOKENS).size, TOKENS.length);
 	assert.ok(Object.isFrozen(TOKENS));
 	for (const palette of [LIGHT, DARK]) assert.deepEqual(Object.keys(palette).sort(), [...TOKENS].sort());
@@ -121,94 +122,6 @@ test("stacked lane, two group fills and note preserve exact translucent host col
 	}
 });
 
-// This small SVG inspector reads the *emitted* cascade and paint geometry. It
-// does not import a second class/paint table from production or the tests.
-// Unsupported selectors, fill values and filled shapes fail closed, so extending
-// the renderer requires teaching this inspector how to observe the new paint.
-type Element = { tag: string; attrs: Record<string, string>; classes: string[] };
-function inspect(svg: string) {
-	const css = svg.match(/<style>([\s\S]*?)<\/style>/)?.[1];
-	assert.ok(css);
-	const rules = [...css.matchAll(/([^{}]+)\{([^{}]+)\}/g)].flatMap(([, selector, body], order) => {
-		const declarations = Object.fromEntries(body.split(";").filter(Boolean).map((d) => d.split(":")));
-		// Fade rules affect only a shown step. Refuse active roots rather than
-		// treating dimmed text as a static palette paint; playback-fade.test.ts
-		// checks these rules, their opaque backgrounds and the root lifecycle.
-		if (/^\.ab\[data-ab-play="[A-Za-z0-9_.-]+"\]\.ab-in-progress \[data-ab-part\]:not\(\.ab-current\):not\(\.ab-played\)(?::not\(:has\(\.gap\)\)|:has\(\.gap\) text)$/.test(selector.trim())) {
-			assert.doesNotMatch(svg, /class="[^"]*\bab-in-progress\b/, "static paint inspector cannot inspect active playback fading");
-			assert.deepEqual(declarations, { opacity: ".3" });
-			return [];
-		}
-		assert.ok(!("opacity" in declarations), "inspector must handle new group/element opacity");
-		if (!("fill" in declarations) && !("fill-opacity" in declarations)) return [];
-		assert.match(selector.trim(), /^\.ab (?:text|(?:\.[\w-]+)+)$/);
-		const classes = [...selector.matchAll(/\.([\w-]+)/g)].slice(1).map((m) => m[1]);
-		return [{ classes, text: selector.trim() === ".ab text", declarations, specificity: classes.length * 10 + (selector.trim() === ".ab text" ? 1 : 0), order }];
-	});
-	const paint = (el: Element) => {
-		const values: Record<string, string> = {};
-		for (const r of rules.filter((r) => (!r.text || el.tag === "text") && r.classes.every((c) => el.classes.includes(c))).sort((a, b) => a.specificity - b.specificity || a.order - b.order)) Object.assign(values, r.declarations);
-		Object.assign(values, Object.fromEntries(Object.entries(el.attrs).filter(([k]) => k === "fill" || k === "fill-opacity")));
-		if (!values.fill) {
-			assert.ok(["svg", "g", "line"].includes(el.tag), `unsupported implicit fill on ${el.tag}`);
-			return null;
-		}
-		if (values.fill === "none") return null;
-		const token = /^var\(--([\w-]+)\)$/.exec(values.fill)?.[1];
-		assert.ok(TOKENS.includes(token as Token), `unsupported emitted fill ${values.fill}`);
-		return { token: token as Token, opacity: Number(values["fill-opacity"] ?? 1) };
-	};
-	const shapes: { element: Element; token: Token; opacity: number; contains: (x: number, y: number) => boolean }[] = [];
-	const observations: { ink: Token; ground: Token[]; groundOpacities: number[]; classes: string }[] = [];
-	const body = svg.replace(/<style>[\s\S]*?<\/style>|<defs>[\s\S]*?<\/defs>/g, "");
-	for (const match of body.matchAll(/<(\w+)\b([^>]*)>/g)) {
-		const el: Element = { tag: match[1], attrs: Object.fromEntries([...match[2].matchAll(/([\w-]+)="([^"]*)"/g)].map((m) => [m[1], m[2]])), classes: [] };
-		el.classes = (el.attrs.class ?? "").split(" ");
-		assert.ok(!el.attrs.transform, "inspector must handle new transforms");
-		assert.ok(!el.attrs.style && !el.attrs.opacity, "inspector must handle new inline styles/opacity");
-		const p = paint(el);
-		if (!p) {
-			assert.notEqual(el.tag, "text", "every text must have a resolved ink");
-			continue;
-		}
-		const n = (attr: string) => Number(el.attrs[attr]);
-		if (el.tag === "text") {
-			assert.equal(p.opacity, 1, "inspector must handle new text opacity");
-			const x = n("x"), y = n("y") - 4;
-			const top = shapes.findLast((s) => s.contains(x, y));
-			// A decision's label rectangle straddles its diamond. Observe both
-			// centre and side of that actual rectangle, regardless of label length.
-			const points = top && top.opacity !== 1 && top.element.tag === "rect"
-				? [x, Number(top.element.attrs.x) + 2, Number(top.element.attrs.x) + Number(top.element.attrs.width) - 2]
-				: [x];
-			// Message text can cross lane and group boundaries. Sample the
-			// whole emitted run, including both sides of every fill boundary.
-			if (el.classes.includes("seq-label")) {
-				const content = body.slice((match.index ?? 0) + match[0].length).split("</text>")[0].replace(/&(?:amp|lt|gt|quot|apos);/g, "x");
-				const end = x + [...content].length * 7.2;
-				for (const shape of shapes.filter((s) => s.element.tag === "rect")) {
-					const left = Number(shape.element.attrs.x), right = left + Number(shape.element.attrs.width);
-					for (const boundary of [left, right]) for (const px of [boundary - 0.01, boundary + 0.01]) if (px > x && px < end) points.push(px);
-				}
-			}
-			for (const px of points) {
-				const layers = shapes.filter((s) => s.contains(px, y));
-				observations.push({ ink: p.token, ground: ["bg", ...layers.map((s) => s.token)], groundOpacities: [1, ...layers.map((s) => s.opacity)], classes: `${el.attrs.class} on ${layers.map((s) => s.element.attrs.class).join(" + ") || "canvas"}` });
-			}
-		} else if (el.tag === "rect") {
-			shapes.push({ element: el, ...p, contains: (x, y) => x >= n("x") && x <= n("x") + n("width") && y >= n("y") && y <= n("y") + n("height") });
-		} else if (el.tag === "path") {
-			const points = [...(el.attrs.d ?? "").matchAll(/[ML]([\d.-]+),([\d.-]+)/g)].map((m) => [Number(m[1]), Number(m[2])]);
-			assert.equal(points.length, 4, `unsupported filled path ${el.attrs.d}`);
-			const [top, right, bottom, left] = points;
-			const cx = (left[0] + right[0]) / 2, cy = (top[1] + bottom[1]) / 2;
-			shapes.push({ element: el, ...p, contains: (x, y) => Math.abs(x - cx) / (right[0] - cx) + Math.abs(y - cy) / (bottom[1] - cy) <= 1 });
-		} else if (el.tag === "circle") {
-			shapes.push({ element: el, ...p, contains: (x, y) => (x - n("cx")) ** 2 + (y - n("cy")) ** 2 <= n("r") ** 2 });
-		} else assert.fail(`unsupported filled element ${el.tag}`);
-	}
-	return observations;
-}
 
 const contract = new Set(checkPalette(LIGHT).pairs.map((p) => key(p.ink, p.ground, p.opacity, p.groundOpacities)));
 function covered(svg: string, name: string) {
@@ -262,13 +175,23 @@ test("focused renders cover every tone, section ground, label mode, node/legend 
 	for (const paint of contract) assert.ok(seen.has(paint), `contract paint has no rendered witness: ${paint}`);
 });
 
+test("static paint inspection accepts idle sequence numbers and refuses active parts or changed state paints", () => {
+	const svg = render('sequence v0\nparticipant a\na --> a: Check\nplay\n step 1\n').svg;
+	covered(svg, "idle sequence playback");
+	assert.throws(() => inspect(svg.replace('class="m s11 muted seq-number"', 'class="m s11 muted seq-number ab-current"')), /static paint inspector cannot inspect current playback parts/);
+	assert.throws(() => inspect(svg.replace('fill:var(--play);font-weight:600', 'fill:var(--ink);font-weight:600')));
+	assert.throws(() => inspect(svg.replace('opacity:0;pointer-events:none', 'opacity:.1;pointer-events:none')));
+	assert.throws(() => inspect(svg.replace('--seq-length:', 'fill:red;--seq-length:')));
+	assert.throws(() => inspect(svg.replace('.seq-time-band{fill:var(--play)}', '.seq-time-band{fill:var(--play);opacity:.1}')));
+});
+
 test("coverage detects new text and ground paints from SVG CSS", () => {
 	const svg = render('flow v0\nbox a\n').svg;
 	assert.throws(() => covered(svg.replace("fill:var(--agent)", "fill:var(--line)"), "changed text paint"), /absent from contract/);
 	assert.throws(() => covered(svg.replace("fill:var(--agent-bg)", "fill:var(--line)"), "changed ground paint"), /absent from contract/);
 	const playable = render('flow v0\nbox a\nplay\n step a\n').svg;
 	assert.throws(() => covered(playable.replace('class="ab ab-auto"', 'class="ab ab-auto ab-in-progress"'), "active fade"), /cannot inspect active playback fading/);
-	assert.throws(() => covered(playable.replaceAll("opacity:.3", "opacity:.4"), "unknown fade opacity"), /AssertionError/);
+	assert.throws(() => covered(playable.replaceAll("opacity:var(--ab-play-unreached-opacity,.3)", "opacity:.4"), "unknown fade opacity"), /AssertionError/);
 	assert.throws(() => covered(svg.replace(".ab text{", ".ab text{opacity:.3;"), "unconditional text opacity"), /must handle new group\/element opacity/);
 });
 
