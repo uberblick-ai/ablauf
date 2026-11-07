@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.1 — 2026-11-07
 
 ### Playback
 
@@ -66,6 +66,19 @@
   reserved scrollbar space and a focusable region named “Step caption”. Preserve
   scrolling on same-step pause/resume; reset it on step/scenario changes and
   completion. ([#146](https://github.com/uberblick-ai/ablauf/issues/146))
+
+### Site and repository
+
+- Show sequence playback on the site, playground and README; the site's sequence
+  demo waits for Play instead of autoplaying. ([#140](https://github.com/uberblick-ai/ablauf/issues/140))
+- Move the renderer to `src/`, tests to `test/`, tools to `tools/` and diagram
+  sources to `examples/`. Example renders are no longer committed; CI renders the
+  gallery and uploads it as an artifact. The published package's files and exports
+  are unchanged. ([#109](https://github.com/uberblick-ai/ablauf/issues/109))
+- CI reports raw, minified and gzip sizes for the playback and core entries and
+  fails when playback exceeds 12 KiB gzip (`mise run size`, measured with esbuild).
+  ([#133](https://github.com/uberblick-ai/ablauf/issues/133))
+- The test run no longer hangs when a test leaves a handle open. ([#157](https://github.com/uberblick-ai/ablauf/pull/157))
 
 ## 0.3.0 — 2026-11-02
 
