@@ -71,6 +71,9 @@ commands or change credentials, permissions or policy.
 
 Put a new feature's tests in its own `test/<feature>.test.ts`. The test command
 discovers every `test/**/*.test.ts`, including nested directories.
+It fails a test that runs over 60 seconds and exits once the last test ends, so a
+timer, observer or listener a test leaves open cannot hang the run. Tear such
+handles down in the test and assert the teardown when it is behaviour.
 
 ## Constraints every change keeps
 
