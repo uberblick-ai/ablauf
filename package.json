@@ -15,6 +15,10 @@
     "./playback": {
       "types": "./dist/playback.d.ts",
       "import": "./dist/playback.js"
+    },
+    "./viewer": {
+      "types": "./dist/viewer.d.ts",
+      "import": "./dist/viewer.js"
     }
   },
   "files": ["dist"],

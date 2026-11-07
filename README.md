@@ -74,6 +74,9 @@ documents and disconnected figures also pause; start them explicitly after
 returning. Focus the controls panel for Space and Left/Right shortcuts.
 See [rebinding, subscriptions and lifecycle behavior](docs/api.md#playback).
 
+`{ expand: true }` adds an Expand button, and `mount.expand()` does the same from
+host controls: both open the figure and its controls in the viewer below.
+
 Sequences use the same `play` sections, with each step targeting a message by
 its number. Fan-out playback is still to come.
 
@@ -89,6 +92,21 @@ play "Wrong code"
 ```
 
 <img alt="The podcast claim sequence playing with controls and captions beside the figure: messages travel between participants, the current message row is highlighted, and the Wrong code scenario ends with another try or a new code." src="https://raw.githubusercontent.com/uberblick-ai/ablauf/main/docs/images/sequence-playback.gif">
+
+## Viewer
+
+Any rendered figure, playable or not, can open in a full-window viewer with
+zoom, Fit, pinch and drag panning, an optional Copy of its source and host
+buttons:
+
+```javascript
+import { openViewer } from "@uberblick/ablauf/viewer";
+
+const viewer = openViewer(figure.querySelector("svg"), { source });
+// viewer.close(); // Also closes on Close, Escape or the backdrop.
+```
+
+See [the viewer API](docs/api.md#viewer).
 
 ## Install
 

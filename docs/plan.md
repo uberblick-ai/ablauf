@@ -941,8 +941,8 @@ explicit Play or scenario activation off screen.
 ### Built-in controls and lifetime
 
 The browser entry also exports
-`mountPlayback(container, svg, timelines, { loop?, autoplay?, pauseWhenOffscreen?, layout?, expand? }?)`, returning
-`PlaybackMount { player: Player; update(svg: SVGSVGElement, timelines: Timeline[]): void; expand(): void; destroy(): void }`.
+`mountPlayback(container, svg, timelines, { loop?, autoplay?, pauseWhenOffscreen?, layout?, expand?, viewer? }?)`, returning
+`PlaybackMount { player: Player; update(svg: SVGSVGElement, timelines: Timeline[]): void; expand(options?: ViewerOptions): Viewer | undefined; destroy(): void }`.
 The host supplies an
 `HTMLElement` or `ShadowRoot` for the inline SVG and its controls. Mounting starts
 idle with the full unfaded, unhighlighted figure and neither root class.
@@ -962,22 +962,26 @@ and reduced motion, including changes made through the returned `player`.
 `expand: true` adds a native **Expand** button (visible text and accessible
 name), in a separate right-aligned row above the inline controls. It is off
 by default. Every mount also exposes `expand()` for host controls, even without
-that option. Both entry points open the same full-screen native modal `dialog`,
-labelled from the SVG's accessible name; repeated calls while open do nothing.
-With no timelines or after destruction, `expand()` does nothing.
+that option. Both entry points open the [viewer](api.md#viewer) (`openViewer`'s
+full-window native modal `dialog`, labelled from the SVG's accessible name) and
+return its handle; repeated calls while open, through either `expand()` or
+`openViewer()`, return the open handle without resetting zoom or playback.
+`viewer` sets default viewer options and `expand(options)` overrides them per
+call. With no timelines or after destruction, `expand()` returns `undefined`.
+The mount adds no `isOpen`, `open()` or `close()`; hosts close the returned
+viewer, and there is no Stop-to-closed behaviour.
 
 Expansion temporarily uses the below layout, even for a side-layout mount;
-closing restores the requested inline layout. The natural-size figure scrolls
-horizontally and vertically in its own region.
-Below that region, scenario tabs, counter, actor, caption, the three playback
-buttons and step navigation remain visible while the figure scrolls. A native
-**Close** button (visible text and accessible name) sits at the top right and
-receives initial focus. Tab and Shift+Tab wrap within the modal. Close, Escape
-and a click that starts and ends on the backdrop gutter close it; content clicks
-and drags into the gutter do not. Closing
-returns focus to the built-in Expand button or the previously focused host
-control, according to the entry point used. Zoom, pan, Fit and Copy remain
-host features.
+closing restores the requested inline layout. The figure's own region is the
+viewer's drawing region: it zooms, pans and scrolls on both axes, and playback
+overlays (packets, bands, fades) scale and pan with it because they live inside
+the SVG. Below that region, scenario tabs, counter, actor, caption, the three
+playback buttons and step navigation stay visible and usable at every zoom,
+below the viewer's persistent top toolbar. Tab and Shift+Tab wrap from Close
+through the toolbar, the drawing region and the controls. Close, Escape and a
+click that starts and ends on the backdrop close it; content clicks and drags
+into the backdrop do not. Closing returns focus to the built-in Expand button or
+the previously focused host control, according to the entry point used.
 
 Expansion moves the existing SVG and controls into the dialog, then restores
 their original positions on close. One player owns the active view: its state,

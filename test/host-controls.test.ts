@@ -137,10 +137,11 @@ test("coarse targets cover every mounted button and segment; preceding ordinary 
 		const f = fixture(shadow, scheme); t.after(() => f.mount.destroy());
 		for (const expanded of [false, true]) {
 			if (expanded) f.mount.expand();
-			const targets = f.container.all().filter(el => el.tag === "button" || el.classList.contains("abp-segment"));
+			// The viewer's own toolbar has always-on 44px targets; see viewer.test.ts.
+			const targets = f.container.all().filter(el => (el.tag === "button" && !el.parent?.classList.contains("abv-toolbar")) || el.classList.contains("abp-segment"));
 			if (!expanded) assert.ok(targets.some(el => el.classList.contains("abp-row")));
 			assert.ok(targets.some(el => el.getAttribute("role") === "tab"));
-			if (expanded) assert.ok(targets.some(el => el.textContent === "Close"));
+			if (expanded) assert.ok(f.container.all().some(el => el.textContent === "Close" && el.parent?.classList.contains("abv-toolbar")));
 			for (const el of targets) {
 				assert.equal(values(el, f.css, true)["min-height"], "44px");
 				assert.ok(Number.parseFloat(values(el, f.css, true)["min-width"]) >= 44);

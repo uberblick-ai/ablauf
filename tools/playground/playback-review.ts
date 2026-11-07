@@ -1,5 +1,6 @@
 import { render } from "../../src/index.ts";
 import { createPlayer, mountPlayback, type PlaybackMount } from "../../src/playback.ts";
+import { openViewer, type Viewer, type ViewerOptions } from "../../src/viewer.ts";
 
 const scheme = document.getElementById("review-scheme") as HTMLSelectElement;
 const hostScheme = document.getElementById("review-host") as HTMLSelectElement;
@@ -135,17 +136,88 @@ function addCase(title: string, source: string, idPrefix: string, shadow = false
 	cases.append(section);
 }
 
+// Viewer cases: one host wiring for static and playable figures. Opening pushes a
+// host history entry; Back closes the viewer, and onClose drops the entry for
+// every other close path. Ablauf itself never touches history.
+let historyViewer: Viewer | undefined;
+addEventListener("popstate", () => { const viewer = historyViewer; historyViewer = undefined; viewer?.close(); });
+function addViewerCase(title: string, source: string, idPrefix: string, { shadow = false, playable = false, wide = false } = {}) {
+	const section = document.createElement("section");
+	section.className = "review-document";
+	if (wide) section.classList.add("review-wide");
+	section.id = idPrefix;
+	const heading = document.createElement("h2");
+	heading.textContent = title;
+	const surface = document.createElement("div");
+	const container = shadow ? surface.attachShadow({ mode: "open" }) : surface;
+	const style = document.createElement("style");
+	style.textContent = `${figureCSS}.review-figure{cursor:zoom-in}`;
+	const figure = document.createElement("div");
+	figure.className = "review-figure";
+	const selectedScheme = scheme.value === "dark" ? "dark" : scheme.value === "light" ? "light" : undefined;
+	const result = render(source, { idPrefix, scheme: selectedScheme });
+	figure.innerHTML = result.svg;
+	const svg = figure.querySelector("svg");
+	if (!svg) throw new Error("Missing rendered SVG");
+	const editor = document.createElement("textarea");
+	editor.setAttribute("aria-label", `${title} source`);
+	editor.rows = 6; editor.cols = 60; editor.hidden = true; editor.value = source;
+	const note = document.createElement("p");
+	note.className = "review-note";
+	note.textContent = "Closed.";
+	container.append(style, figure, editor);
+	const options = (extra: ViewerOptions = {}): ViewerOptions => ({
+		source,
+		actions: [{ label: "Source", onClick: viewer => { viewer.close(); editor.hidden = false; editor.focus(); note.textContent = "Source action closed the viewer and opened the host editor."; } }],
+		onClose: () => {
+			if (historyViewer) { historyViewer = undefined; history.back(); }
+			note.textContent = `${note.textContent?.startsWith("Source") ? note.textContent : "Closed."} onClose fired.`;
+		},
+		...extra,
+	});
+	const mount = playable ? mountPlayback(figure, svg, result.timelines, { expand: true, viewer: options() }) : undefined;
+	if (mount) mounts.push(mount);
+	function opened(viewer: Viewer | undefined, how: string) {
+		if (!viewer || viewer === historyViewer) return;
+		history.pushState({ viewer: idPrefix }, "");
+		historyViewer = viewer;
+		note.textContent = `Opened by ${how} at ${Math.round(viewer.zoom * 100)}%. Back closes it.`;
+	}
+	const open = (how: string, extra?: ViewerOptions) => opened(mount ? mount.expand(extra) : openViewer(svg, options(extra)), how);
+	// A touch tap on the figure opens at Fit; mouse clicks use natural size.
+	figure.addEventListener("pointerup", event => {
+		if (event.target instanceof Element && event.target.closest(".abp-controls")) return;
+		if (figure.closest("dialog")) return;
+		open(event.pointerType === "touch" ? "touch tap" : "figure click", event.pointerType === "touch" ? { initialZoom: "fit" } : {});
+	});
+	const button = (label: string, action: () => void) => {
+		const el = document.createElement("button");
+		el.type = "button"; el.textContent = label;
+		el.addEventListener("click", action);
+		return el;
+	};
+	section.append(heading, surface,
+		button(mount ? "Host expand()" : "openViewer()", () => open("host button")),
+		button("Open at Fit", () => open("host button", { initialZoom: "fit" })),
+		note);
+	cases.append(section);
+}
+
 async function load(path: string) {
 	const response = await fetch(path);
 	if (!response.ok) throw new Error(`Cannot load ${path}: ${response.status}`);
 	return response.text();
 }
-const [source, fade, crossings, claim, compact] = await Promise.all([
+const [source, fade, crossings, claim, compact, wideFlow, narrowFlow, sequence, fanout] = await Promise.all([
 	load("/api/flow/examples/loop-play"),
 	load("/api/flow/examples/playback-fade"),
 	load("/playground/playback-crossings.flow"),
 	load("/api/flow/examples/claim-play"),
 	load("/playground/playback-compact.flow"),
+	load("/api/flow/examples/approval-wide"),
+	load("/api/flow/examples/approval-narrow"),
+	load("/api/flow/examples/claim"),
+	load("/api/flow/examples/run-endings"),
 ]);
 const single = 'flow v0\nbox a "Start"\nbox b "Finish"\na --> b\nplay "One scenario"\n step a actor="Author" "Start here"\n step b "Finish here"\n';
 
@@ -154,6 +226,12 @@ function draw() {
 	mounts.length = 0;
 	cases.replaceChildren();
 	const layout = claimLayout.value === "side" ? "side" : claimLayout.value === "below" ? "below" : "auto";
+	addViewerCase("Viewer · static wide flow", wideFlow, "review-viewer-wide", { wide: true });
+	addViewerCase("Viewer · static narrow flow", narrowFlow, "review-viewer-narrow");
+	addViewerCase("Viewer · static sequence · shadow root", sequence, "review-viewer-sequence", { shadow: true });
+	addViewerCase("Viewer · static fan-out", fanout, "review-viewer-fanout");
+	addViewerCase("Viewer · playable wide sequence", claim, "review-viewer-claim", { playable: true, wide: true });
+	addViewerCase("Viewer · playable narrow flow · shadow root", source, "review-viewer-loop", { playable: true, shadow: true });
 	addCase("Claim · responsive side captions", claim, "review-claim", false, false, { layout });
 	addCase("Claim · side captions in shadow root", claim, "review-claim-shadow", true, false, { layout: "side" });
 	addCase("Loop · light DOM", source, "review-light-dom");

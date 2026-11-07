@@ -1,9 +1,11 @@
 # API
 
-The package has two entry points: `@uberblick/ablauf` renders source to SVG,
-and `@uberblick/ablauf/playback` plays rendered flows in a browser. Both are
-ES modules, ship TypeScript declarations and are safe to import without browser
-globals.
+The package has three entry points: `@uberblick/ablauf` renders source to SVG,
+`@uberblick/ablauf/playback` plays rendered flows in a browser, and
+`@uberblick/ablauf/viewer` opens any rendered figure in a full-window zoomable
+viewer. All are ES modules, ship TypeScript declarations and are safe to import
+without browser globals. The viewer entry includes no playback code, and core
+includes neither.
 
 ## render
 
@@ -68,13 +70,15 @@ even if the SVG was nested or in another parent. Mount styles set the SVG to
 destroy removes those styles and restores the SVG's original parent and position.
 
 `expand: true` adds an **Expand** button in its own right-aligned row above the
-inline controls. Every mount also offers `mount.expand()` for host controls,
-with or without that option. Both open a full-screen native modal labelled from
-the figure, with initial focus on **Close** at the top right. The natural-size
-figure scrolls on both axes above the same tabs, counter, actor, single-line
-caption, playback buttons and step navigation. Expansion uses the below layout;
-closing restores the requested inline layout. Zoom, pan, Fit and Copy remain
-host features.
+inline controls. Every mount also offers `mount.expand(options?)` for host
+controls, with or without that option. Both open the [viewer](#viewer) with the
+figure's zoomable drawing region above the same tabs, counter, actor, single-line
+caption, playback buttons and step navigation. Playback overlays zoom and pan
+with the figure. Expansion uses the below layout; closing restores the requested
+inline layout. The mount option `viewer` sets default viewer options for both
+entries, and `expand(options)` overrides them key by key for that call.
+`expand()` returns the open `Viewer`, or `undefined` with no timelines or after
+destruction.
 
 The same `mount.player` reports and controls the active view, preserving scenario,
 step, playback status and remaining dwell in both directions. Opening never
@@ -88,10 +92,11 @@ Tab stays within the modal; content clicks and drags into the gutter do not clos
 it. Host `--ab-*` overrides and automatic or pinned schemes stay live, including
 in shadow roots.
 
-Repeated `expand()` calls while open do nothing, as do calls with no timelines
-or after destruction. `mount.update()` refreshes the expanded SVG, controls and
-scheme without closing; updating to no timelines closes the view. Both destroy
-entry points close any open dialog and restore the current SVG's host position.
+Repeated `expand()` or `openViewer()` calls for an open figure return the open
+viewer without resetting zoom or playback. `mount.update()` refreshes the
+expanded SVG, controls and scheme without closing; updating to no timelines
+closes the view. Both destroy entry points close any open viewer, firing its
+`onClose`, and restore the current SVG's host position.
 
 ### Playback details and the headless player
 
@@ -240,3 +245,53 @@ step `-1`, and makes later methods, updates and browser callbacks inert.
 Subscribing after destruction returns an inert unsubscribe. Both package entries can be imported
 in Node; only creating and using a player needs an SVG. `Player` and
 `PlayerState` types are exported from the playback entry.
+
+## Viewer
+
+`openViewer(svg, options?)` from `@uberblick/ablauf/viewer` opens any rendered
+inline SVG (flow, sequence, fan-out, playable or not) in a full-window native
+modal dialog and returns `Viewer { readonly zoom: number; readonly closed: boolean; close(): void }`.
+`close()` is idempotent. Opening an SVG that is already open, through either
+`openViewer` or a playback mount's `expand()`, returns the existing handle.
+`Viewer`, `ViewerOptions` and `ViewerAction` types are exported from both the
+viewer and playback entries.
+
+```ts
+import { openViewer } from "@uberblick/ablauf/viewer";
+
+const viewer = openViewer(svgElement, {
+  source,              // Optional: adds Copy, which copies exactly this string.
+  initialZoom: "auto", // Or "fit" to start at Fit even for a small figure.
+  actions: [{ label: "Source", onClick: viewer => { viewer.close(); openEditor(); } }],
+  onClose: () => syncHostHistory(),
+});
+// Ablauf never pushes or rewrites history. Close the viewer on the host's Back:
+addEventListener("popstate", () => viewer.close(), { once: true });
+```
+
+The SVG moves into the dialog and returns to its place on close. The dialog
+sits beside the figure, so host `--ab-*` overrides, fonts and automatic or
+pinned schemes apply, including in shadow roots. It is labelled from the SVG's
+accessible name, focuses **Close** first, keeps Tab inside, and closes on
+Close, Escape, native `close()`, a press and release on the backdrop, the
+handle or a playback mount's teardown. Focus returns to the element focused
+before opening. `onClose` runs once for every close path, after the SVG is back
+and the viewer's styles, listeners, observers and gestures are released. The
+page behind does not scroll while the viewer is open.
+
+A persistent toolbar holds Close, minus, the live zoom percentage, plus and Fit,
+then Copy (only when `source` is supplied, even as an empty string) and the
+host `actions`, all native buttons at least 44×44 CSS pixels. Action labels are
+plain text, never HTML. Copy announces "Copied source" or, when the clipboard is
+denied or missing, "Copy failed" in a polite status.
+
+The figure opens centred at natural size (100%) when it fits the drawing region,
+otherwise at Fit. Fit uses the smaller of the width and height ratios, capped at
+100% and floored at 25%, and recentres; overflow at the floor stays scrollable,
+and an active Fit follows resizes. Minus and plus change zoom by 25 percentage
+points around the region's centre. Zoom stays within 25%–400%, disabling the
+bound buttons. A two-finger pinch zooms around its midpoint, Cmd/Ctrl + wheel
+(and a trackpad pinch) around the pointer, and dragging pans; a plain wheel
+scrolls. Touch gestures stay in the drawing region. Zoom changes apply
+immediately, with or without reduced motion. Zoom resizes the SVG's box only,
+so layout, routes, playback overlays and player state are unchanged.

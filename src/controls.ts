@@ -1,10 +1,15 @@
 import type { Timeline } from "./play.ts";
 import { createPlayerBinding, type Player, type PlayerState } from "./player.ts";
+import { type HostedViewer, hostViewer, type Viewer, type ViewerOptions, viewerFor } from "./view.ts";
 
 export interface PlaybackMount {
 	player: Player;
 	update(svg: SVGSVGElement, timelines: Timeline[]): void;
-	expand(): void;
+	/**
+	 * Open the figure and its controls in the viewer, with per-call option overrides.
+	 * Returns the open viewer, or undefined with no timelines or after destroy.
+	 */
+	expand(options?: ViewerOptions): Viewer | undefined;
 	destroy(): void;
 }
 
@@ -63,14 +68,9 @@ const STYLE = `@layer ablauf-playback{
 .ab-playback .abp-row[aria-current="step"] .abp-remark{font-weight:600}
 .ab-playback .abp-row:focus-visible{outline-offset:-2px}
 .ab-playback .abp-empty{padding:12px;color:var(--abp-muted)}
-.ab-playback .abp-expand,.ab-playback .abp-close{display:flex;justify-content:flex-end;padding:6px 12px}
+.ab-playback .abp-expand{display:flex;justify-content:flex-end;padding:6px 12px}
 .ab-playback .abp-expand[hidden]{display:none}
-.ab-playback.abp-dialog{box-sizing:border-box;position:fixed;inset:0;width:100%;height:100%;max-width:none;max-height:none;margin:0;border:0;padding:8px;overflow:hidden}
-.ab-playback.abp-dialog::backdrop{background:var(--abp-bg)}
-.ab-playback .abp-content{display:flex;flex-direction:column;height:100%;min-height:0}
-.ab-playback.abp-expanded{display:flex;flex:1;flex-direction:column;min-height:0;padding:0;overflow:hidden}
-.ab-playback.abp-expanded>.abp-figure{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain}
-.ab-playback.abp-expanded>.abp-figure>svg{display:block;width:var(--abp-width)!important;height:var(--abp-height)!important;max-width:none!important;max-height:none!important;margin:0 auto}
+.ab-playback.abp-expanded{display:flex;flex:1;flex-direction:column;min-height:0;min-width:0;padding:0;overflow:hidden}
 .ab-playback.abp-expanded>.abp-controls{flex:none;position:static;max-height:50%;overflow:auto}
 @media (any-pointer:coarse){
 .ab-playback button,.ab-playback .abp-segment{box-sizing:border-box;min-width:44px;min-height:44px}
@@ -91,15 +91,17 @@ export function mountPlayback(
 	container: HTMLElement | ShadowRoot,
 	svg: SVGSVGElement,
 	timelines: Timeline[],
-	options: { loop?: boolean; autoplay?: boolean; pauseWhenOffscreen?: boolean; layout?: "below" | "side" | "auto"; expand?: boolean } = {},
+	options: { loop?: boolean; autoplay?: boolean; pauseWhenOffscreen?: boolean; layout?: "below" | "side" | "auto"; expand?: boolean; viewer?: ViewerOptions } = {},
 ): PlaybackMount {
 	const doc = container.ownerDocument;
 	const removers: (() => void)[] = [];
 	let root: HTMLDivElement | undefined;
 	let style: HTMLStyleElement | undefined;
-	let closeExpanded: (() => void) | undefined;
-	let openExpanded = () => {};
-	let refreshExpanded = () => {};
+	let viewer: HostedViewer | undefined;
+	let expanded = false;
+	const closeExpanded = () => viewer?.close();
+	let openExpanded = (_options?: ViewerOptions): Viewer | undefined => undefined;
+	const refreshExpanded = () => viewer?.refresh();
 	let viewportTarget: Element | undefined;
 	let synchronize: (state: PlayerState) => void = () => {};
 	const binding = createPlayerBinding(svg, timelines, { ...options, synchronize: state => synchronize(state), viewportTarget: () => viewportTarget ?? svg });
@@ -111,7 +113,7 @@ export function mountPlayback(
 	function destroy() {
 		if (destroyed) return;
 		destroyed = true;
-		closeExpanded?.();
+		closeExpanded();
 		destroyPlayer();
 		for (const remove of removers.splice(0)) remove();
 		root?.remove();
@@ -120,7 +122,7 @@ export function mountPlayback(
 	player.destroy = destroy;
 	function update(nextSvg: SVGSVGElement, nextTimelines: Timeline[]) {
 		if (destroyed) return;
-		if (!nextTimelines.length) closeExpanded?.();
+		if (!nextTimelines.length) closeExpanded();
 		if (root) placeSvg(nextSvg);
 		svg = nextSvg;
 		timelines = nextTimelines;
@@ -135,7 +137,7 @@ export function mountPlayback(
 		binding.update(svg, timelines);
 	}
 	if (timelines.length) { buildControls(); binding.refreshViewport(); }
-	return { player, update, expand: () => { if (!destroyed && root) openExpanded(); }, destroy };
+	return { player, update, expand: options => destroyed || !root ? undefined : openExpanded(options), destroy };
 
 	function buildControls() {
 		let live = true;
@@ -164,7 +166,7 @@ export function mountPlayback(
 		const column = make("div", "abp-controls");
 		root.append(figure, column);
 		const expandRow = make("div", "abp-expand");
-		const expandButton = button("Expand", () => expand(expandButton));
+		const expandButton = button("Expand", () => expand(undefined, expandButton));
 		if (options.expand) { expandRow.append(expandButton); column.append(expandRow); }
 		let mountedSvg: SVGSVGElement | undefined;
 		let svgParent: ParentNode | null = null;
@@ -410,7 +412,7 @@ export function mountPlayback(
 			const height = Number(svg.getAttribute("height")) || viewBox[3] || 0;
 			root.style.setProperty("--abp-figure-width", `${width || 678}px`);
 			const selected = options.layout ?? "auto";
-			side = !closeExpanded && (selected === "side" || (selected === "auto" && height > width && width > 0 && root.getBoundingClientRect().width - width >= 320));
+			side = !expanded && (selected === "side" || (selected === "auto" && height > width && width > 0 && root.getBoundingClientRect().width - width >= 320));
 			root.classList.toggle("abp-side", side);
 			root.classList.toggle("abp-below", !side);
 			if (side) {
@@ -426,86 +428,38 @@ export function mountPlayback(
 			}
 			if (sync) { synchronize(player.state); keepCurrentVisible(); }
 		}
-		openExpanded = () => expand();
-		function expand(opener?: HTMLElement) {
-			if (!live || destroyed || !root || closeExpanded) return;
+		openExpanded = options => expand(options);
+		// The viewer moves the same root, SVG, controls, player and timer into its
+		// dialog. Resize callbacks use the expanded below layout until it returns.
+		function expand(overrides?: ViewerOptions, opener?: HTMLElement) {
+			if (!live || destroyed || !root) return;
+			const open = viewer ?? viewerFor(svg);
+			if (open) return open;
 			const expandedRoot = root;
-			const captionScroll = caption.scrollLeft;
-			const scope = expandedRoot.getRootNode() as Document | ShadowRoot;
-			opener ??= (scope.activeElement ?? doc.activeElement) as HTMLElement | undefined;
-			const dialog = make("dialog", "ab-playback abp-dialog");
-			const content = make("div", "abp-content");
-			const header = make("div", "abp-close");
-			const close = make("button", "", "Close");
-			close.type = "button"; close.autofocus = true;
-			header.append(close);
-			const place = doc.createComment("ablauf playback");
-			expandedRoot.replaceWith(place);
-			content.append(header, expandedRoot);
-			dialog.append(content);
-			container.append(dialog);
-			expandedRoot.classList.toggle("abp-expanded", true);
-			expandRow.hidden = true;
-			figure.setAttribute("role", "region");
-			figure.setAttribute("aria-label", "Figure");
-			figure.tabIndex = 0;
-			refreshExpanded = () => {
-				dialog.setAttribute("aria-label", svg.getAttribute("aria-label") ?? "Figure");
-				for (const name of ["auto", "light", "dark"]) dialog.classList.toggle(`ab-${name}`, expandedRoot.classList.contains(`ab-${name}`));
-				figure.style.setProperty("--abp-width", `${svg.getAttribute("width")}px`);
-				figure.style.setProperty("--abp-height", `${svg.getAttribute("height")}px`);
-			};
-			// Keep the same SVG, controls, player and timer. Resize callbacks use
-			// the expanded below layout until the root returns to its placeholder.
-			const finish = () => {
-				if (!closeExpanded) return;
-				const captionScroll = caption.scrollLeft;
-				closeExpanded = undefined;
-				refreshExpanded = () => {};
-				close.removeEventListener("click", finish);
-				dialog.removeEventListener("close", finish);
-				dialog.removeEventListener("cancel", cancel);
-				dialog.removeEventListener("pointerdown", pointerdown);
-				dialog.removeEventListener("click", backdrop);
-				dialog.removeEventListener("keydown", containFocus);
-				if (dialog.open) dialog.close();
-				place.replaceWith(expandedRoot);
-				expandedRoot.classList.toggle("abp-expanded", false);
-				expandRow.hidden = false;
-				figure.removeAttribute("role"); figure.removeAttribute("aria-label"); figure.removeAttribute("tabindex");
-				dialog.remove();
-				binding.setExpanded(false);
-				updateLayout();
-				opener?.focus?.();
-				caption.scrollLeft = captionScroll;
-			};
-			const cancel = (event: Event) => { event.preventDefault(); finish(); };
-			let backdropPress = false;
-			const pointerdown = (event: Event) => { backdropPress = event.target === dialog; };
-			const backdrop = (event: Event) => { if (backdropPress && event.target === dialog) finish(); backdropPress = false; };
-			const containFocus = (event: KeyboardEvent) => {
-				if (event.key !== "Tab") return;
-				const focusable = [close, figure, ...tabs.filter(tab => tab.tabIndex === 0), panel, caption,
-					...[previous, toggle, next, range].filter(el => !el.disabled)];
-				const last = focusable[focusable.length - 1];
-				const active = scope.activeElement ?? doc.activeElement;
-				if (event.shiftKey && active === close) { event.preventDefault(); last.focus(); }
-				else if (!event.shiftKey && active === last) { event.preventDefault(); close.focus(); }
-			};
-			closeExpanded = finish;
-			refreshExpanded();
-			updateLayout();
-			close.addEventListener("click", finish);
-			dialog.addEventListener("close", finish);
-			dialog.addEventListener("cancel", cancel);
-			dialog.addEventListener("pointerdown", pointerdown);
-			dialog.addEventListener("click", backdrop);
-			dialog.addEventListener("keydown", containFocus);
-			binding.setExpanded(true);
-			dialog.showModal();
-			close.focus();
-			// Browsers reset scroll offsets when a subtree is detached and moved.
-			caption.scrollLeft = captionScroll;
+			let captionScroll = caption.scrollLeft;
+			const defaults = options.viewer ?? {};
+			viewer = hostViewer({
+				svg: () => svg, content: expandedRoot, canvas: figure, container, opener,
+				focusables: () => [...tabs.filter(tab => tab.tabIndex === 0), panel, caption, ...[previous, toggle, next, range].filter(el => !el.disabled)],
+				leaving: () => { captionScroll = caption.scrollLeft; },
+				moved: open => {
+					expanded = open;
+					if (open) {
+						expandedRoot.classList.toggle("abp-expanded", true);
+						expandRow.hidden = true;
+						binding.setExpanded(true);
+					} else {
+						viewer = undefined;
+						expandedRoot.classList.toggle("abp-expanded", false);
+						expandRow.hidden = false;
+						binding.setExpanded(false);
+					}
+					updateLayout();
+					// Browsers reset scroll offsets when a subtree is detached and moved.
+					caption.scrollLeft = captionScroll;
+				},
+			}, { ...defaults, ...overrides });
+			return viewer;
 		}
 		const view = doc.defaultView;
 		const Resize = view?.ResizeObserver;
