@@ -125,8 +125,15 @@ export class El {
 	hidden = false;
 	scrollLeft = 0;
 	scrollTop = 0;
+	clientWidth = 0;
+	clientHeight = 0;
 	rect: { top: number; bottom: number; width: number } | undefined;
-	style = { properties: new Map<string, string>(), setProperty(name: string, value: string) { this.properties.set(name, value); } };
+	style = {
+		properties: new Map<string, string>(),
+		overflow: "",
+		setProperty(name: string, value: string) { this.properties.set(name, value); },
+		removeProperty(name: string) { this.properties.delete(name); },
+	};
 	writes = 0;
 	open = false;
 	autofocus = false;

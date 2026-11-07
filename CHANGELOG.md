@@ -4,6 +4,14 @@
 
 ### Playback
 
+- Add `openViewer(svg, options?)` in `@uberblick/ablauf/viewer`: a full-window
+  modal for every rendered figure, playable or not, with zoom (25%–400%), Fit,
+  pinch, Cmd/Ctrl + wheel and drag panning, an optional exact-source Copy and
+  plain-text host toolbar actions. `onClose` fires once on every close path;
+  hosts synchronize their own history. `mountPlayback` expansion now opens this
+  viewer: `expand(options?)` returns the handle, and the `viewer` mount option
+  sets defaults. Playback state, controls and overlays carry over at every zoom.
+  ([#152](https://github.com/uberblick-ai/ablauf/issues/152))
 - Built-in playback controls inherit the host's `color-scheme` in automatic mode,
   with live scheme-dependent fallback colours and a transparent surface. Reuse
   host text/mono font hooks throughout side captions and expanded controls.

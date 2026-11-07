@@ -38,7 +38,7 @@ test("the Sequence tabs preserve the complete source and mount its resolved play
 		}
 	}
 	visit(join(out, "playback.js"));
-	assert.equal(visited.size, 4);
+	assert.equal(visited.size, 5);
 
 	// Execute the site's emitted entry with the real controls and player.
 	// These DOM fakes check wiring and interaction; a maintainer reviews CSS

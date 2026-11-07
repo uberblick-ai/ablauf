@@ -30,6 +30,7 @@ test("the packed package works for an isolated production consumer", (t) => {
 	assert.deepEqual(manifest.optionalDependencies ?? {}, {});
 	assert.deepEqual(manifest.peerDependencies ?? {}, {});
 	assert.deepEqual(manifest.exports["./playback"], { types: "./dist/playback.d.ts", import: "./dist/playback.js" });
+	assert.deepEqual(manifest.exports["./viewer"], { types: "./dist/viewer.d.ts", import: "./dist/viewer.js" });
 	assert.deepEqual(readdirSync(join(consumer, "node_modules")).sort(), [".package-lock.json", "@uberblick"]);
 	assert.deepEqual(readdirSync(installed).sort(), ["LICENSE", "README.md", "dist", "package.json"]);
 	assert.ok(readdirSync(join(installed, "dist")).every((name) => name.endsWith(".js") || name.endsWith(".d.ts")));
@@ -97,6 +98,11 @@ for (const name of ["window", "document", "matchMedia", "SVGSVGElement", "Elemen
 }
 const core = await import("@uberblick/ablauf");
 const playback = await import("@uberblick/ablauf/playback");
+const viewer = await import("@uberblick/ablauf/viewer");
+assert.deepEqual(Object.keys(viewer), ["openViewer"]);
+assert.equal(typeof viewer.openViewer, "function");
+assert.equal(core.openViewer, undefined);
+assert.equal(playback.openViewer, undefined);
 assert.equal(typeof core.render, "function");
 assert.equal(core.createPlayer, undefined);
 assert.deepEqual(Object.keys(playback), ["createPlayer", "mountPlayback"]);
@@ -155,12 +161,25 @@ const ms: number = step.ms;
 	run(process.execPath, [join(root, "node_modules/typescript/bin/tsc"), "--noEmit", "--strict", "--module", "nodenext", "--target", "es2023", "--lib", "es2023", "core-types.mts"]);
 	writeFileSync(join(consumer, "playback-types.mts"), `
 import type { Timeline } from "@uberblick/ablauf";
-import { createPlayer, mountPlayback, type PlaybackMount, type Player, type PlayerState } from "@uberblick/ablauf/playback";
+import { createPlayer, mountPlayback, type PlaybackMount, type Player, type PlayerState, type ViewerOptions as PlaybackViewerOptions } from "@uberblick/ablauf/playback";
+import { openViewer, type Viewer, type ViewerAction, type ViewerOptions } from "@uberblick/ablauf/viewer";
 declare const svg: SVGSVGElement;
 declare const timelines: Timeline[];
 declare const element: HTMLElement;
 declare const shadow: ShadowRoot;
-const mount: PlaybackMount = mountPlayback(element, svg, timelines, { loop: true, autoplay: true, pauseWhenOffscreen: true });
+const mount: PlaybackMount = mountPlayback(element, svg, timelines, { loop: true, autoplay: true, pauseWhenOffscreen: true, expand: true, viewer: { initialZoom: "fit", source: "" } });
+const expanded: Viewer | undefined = mount.expand({ source: "flow v0", actions: [{ label: "Source", onClick(viewer: Viewer) { viewer.close(); } }], onClose() {} });
+const zoom: number | undefined = expanded?.zoom;
+const opened: Viewer = openViewer(svg);
+const closed: boolean = opened.closed;
+opened.close();
+const options: ViewerOptions = { initialZoom: "auto" };
+const action: ViewerAction = { label: "Edit", onClick() {} };
+const typedFromPlayback: PlaybackViewerOptions = options;
+// @ts-expect-error Initial zoom is "auto" or "fit".
+openViewer(svg, { initialZoom: 2 });
+// @ts-expect-error Labels are plain text.
+openViewer(svg, { actions: [{ label: element, onClick() {} }] });
 const shadowMount: PlaybackMount = mountPlayback(shadow, svg, timelines);
 const mountedPlayer: Player = mount.player;
 mount.update(svg, timelines); shadowMount.update(svg, []);

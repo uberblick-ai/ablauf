@@ -153,7 +153,7 @@ ${items.join("\n")}`;
 	// Emit the browser-only module graph with JavaScript specifiers so both
 	// Pages and the local server serve it without a TypeScript runtime.
 	mkdirSync(join(out, "playback"));
-	for (const name of ["playback", "controls", "player"]) {
+	for (const name of ["playback", "controls", "player", "view"]) {
 		const ts = readFileSync(join(ROOT, "..", "src", `${name}.ts`), "utf8");
 		const js = stripTypeScriptTypes(ts).replace(/(from "\.\/\w+)\.ts"/g, '$1.js"');
 		writeFileSync(join(out, "playback", `${name}.js`), js);

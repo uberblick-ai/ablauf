@@ -58,10 +58,11 @@ test("optional Expand row leaves the three actions intact; both entries open one
 	assert.equal(f.doc.activeElement, f.button("Close"));
 	assert.equal(f.button("Close").autofocus, true);
 	assert.equal(f.find("abp-expand").hidden, true);
-	assert.equal(f.find("abp-content").children[1], controls);
+	assert.equal(dialog.children[2], controls);
 	assert.equal(f.svg.parent, f.find("abp-figure"));
-	assert.equal(f.find("abp-figure").style.properties.get("--abp-width"), "1200px");
-	assert.equal(f.find("abp-figure").style.properties.get("--abp-height"), "1500px");
+	// The fake drawing region has no size, so the figure opens at Fit's 25% floor.
+	assert.equal(f.find("abp-figure").style.properties.get("--abv-width"), "300px");
+	assert.equal(f.find("abp-figure").style.properties.get("--abv-height"), "375px");
 	f.mount.expand(); f.mount.expand();
 	assert.equal(f.container.all().filter(el => el.tag === "dialog").length, 1);
 	f.button("Close").click();
@@ -82,7 +83,7 @@ test("host expand works by default; Close, Escape, native close and backdrop ret
 	for (const path of ["button", "escape", "native", "backdrop"]) {
 		f.host.focus(); f.mount.expand();
 		const dialog = f.dialog();
-		f.find("abp-content").click();
+		f.find("ab-playback").click();
 		assert.equal(dialog.open, true);
 		if (path === "button") f.button("Close").click();
 		if (path === "escape") assert.equal(dialog.fire("cancel"), true);
@@ -233,7 +234,7 @@ test("expansion stays in the host theme scope and retains the same wrappers and 
 	assert.equal(f.dialog().parent, f.container);
 	assert.ok(f.dialog().classList.contains("ab-auto"));
 	assert.equal(f.find("abp-figure"), figure);
-	assert.equal(root.parent?.parent, f.dialog());
+	assert.equal(root.parent, f.dialog());
 	assert.equal(f.svg.style.properties.size, 0);
 	f.button("Close").click();
 	assert.equal(root.parent, f.container);
@@ -246,7 +247,7 @@ test("a drag from content into the backdrop gutter does not close the view", t =
 	f.find("abp-caption").fire("pointerdown");
 	f.dialog().click();
 	assert.equal(f.dialog().open, true);
-	f.dialog().fire("pointerdown"); f.find("abp-content").click();
+	f.dialog().fire("pointerdown"); f.find("ab-playback").click();
 	assert.equal(f.dialog().open, true);
 	f.dialog().fire("pointerdown"); f.dialog().click();
 	assert.equal(f.dialog(), undefined);
@@ -333,8 +334,8 @@ test("rebind while expanded retains dialog, controls and subscriptions, updates 
 	assert.equal(f.dialog(), dialog);
 	assert.equal(dialog.getAttribute("aria-label"), "Updated figure");
 	assert.equal(dialog.classList.contains("ab-dark"), true);
-	assert.equal(f.find("abp-figure").style.properties.get("--abp-width"), "900px");
-	assert.equal(f.find("abp-figure").style.properties.get("--abp-height"), "1100px");
+	assert.equal(f.find("abp-figure").style.properties.get("--abv-width"), "225px");
+	assert.equal(f.find("abp-figure").style.properties.get("--abv-height"), "275px");
 	assert.equal(f.find("abp-caption"), caption);
 	assert.deepEqual(player.state, { scenario: 1, step: 0, status: "paused" });
 	f.doc.viewport.show(false); f.doc.viewport.show(true); f.tick(1000);

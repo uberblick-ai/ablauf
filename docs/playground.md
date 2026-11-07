@@ -160,6 +160,33 @@ The captured expanded loops are [light](images/playback/expanded-light.png),
   Explicit playback continues despite viewport observations while expanded.
   Hidden/disconnected guards still pause it; closing restores viewport pausing.
 
+For #152, the [viewer cases](http://localhost:4620/playback-review#review-viewer-wide)
+open with `openViewer()` (static wide and narrow flows, a sequence in a shadow
+root and a fan-out) or with Expand and Host expand() (a playable wide sequence
+and a playable narrow loop in a shadow root). Every case passes its source and a
+**Source** action, pushes a host history entry on open and closes on Back.
+Clicking the figure opens it; a touch tap opens at Fit. Check in light and dark,
+at 1280×860 and with phone emulation (390×780, touch), in both DOM types:
+
+- Toolbar: Close, −, the percentage, +, Fit, Copy and Source are native buttons of
+  at least 44×44px at every width; the toolbar wraps on a phone without page
+  overflow. Close has initial focus; Tab and Shift+Tab wrap from Close through
+  the toolbar, the drawing region and any playback controls.
+- Geometry: a figure that fits opens centred at 100%; a wider one opens at Fit
+  (smaller ratio, at most 100%, at least 25%). Resize the window at Fit: it refits.
+  − and + step 25 points around the centre and disable at 25% and 400%.
+- Gestures: Cmd/Ctrl + wheel zooms around the pointer and the page does not zoom
+  or scroll; dragging pans; a pinch (touch emulation, or synthetic touch pointers
+  in the console) zooms around its midpoint. The page behind never scrolls.
+- Copy writes the exact source and announces "Copied source"; with clipboard
+  permission denied it announces "Copy failed". Source closes the viewer and
+  focuses the host editor.
+- Close, Escape, the backdrop and Back each close once; the note shows
+  "onClose fired" and Back history stays in step. Focus returns to the opener.
+- Playable cases: play, pause, step and switch scenarios at a non-100% zoom;
+  packets, bands and fades stay aligned with the figure. Close and reopen: the
+  scenario, step and status carry over and zoom resets only on a new open.
+
 A maintainer checks these in a real browser before merging playback changes,
 including #95, #96, #112, #113, #116, #146 and #151. Capture light and dark screenshots of
 `/playback-review` at the 678px figure width. Compare the controls with the
