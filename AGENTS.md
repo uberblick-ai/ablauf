@@ -64,6 +64,7 @@ commands or change credentials, permissions or policy.
 | --- | --- |
 | `mise trust && mise run setup` | prepare a fresh checkout or worktree: the pinned toolchain and locked dependencies |
 | `mise run ci` | lint, typecheck and tests: the checks on every change |
+| `mise run size` | build and report playback/core JavaScript sizes; enforce the [12 KiB playback gzip budget](docs/size-budget.md) |
 | `mise run check FILE` | render one `.flow` file beside itself and list its problems |
 | `mise run render` | render every example to `spike/out/` |
 | `mise run playground` | the review page on `localhost:4620`; a development tool, outside the package |

@@ -39,11 +39,13 @@
     "render": "node spike/render.ts",
     "check": "node spike/check.ts",
     "measure": "node spike/measure.ts",
+    "size": "node spike/size-budget-command.ts",
     "playground": "node spike/playground/server.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.9",
     "@types/node": "^26.6.5",
+    "esbuild": "0.28.2",
     "typescript": "^5.9.3"
   }
 }
