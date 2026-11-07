@@ -24,7 +24,7 @@ test("the packed package works for an isolated production consumer", (t) => {
 	run("npm", ["install", "--omit=dev", "--ignore-scripts", "--no-audit", "--no-fund", "--offline", join(consumer, tarballs[0])]);
 	const installed = join(consumer, "node_modules", "@uberblick", "ablauf");
 	const manifest = JSON.parse(readFileSync(join(installed, "package.json"), "utf8"));
-	assert.equal(manifest.version, "0.3.0");
+	assert.equal(manifest.version, "0.3.1");
 	assert.ok(!manifest.private);
 	assert.deepEqual(manifest.dependencies ?? {}, {});
 	assert.deepEqual(manifest.optionalDependencies ?? {}, {});
