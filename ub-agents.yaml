@@ -95,13 +95,28 @@ agents:
     kind: pr
     trigger: needs-review
     outcomes:
-      approved: {add: [ready-to-merge]}
+      # A Claude approval hands the PR to the Codex second review below.
+      approved: {add: [needs-codex-review]}
       changes-requested: {add: [needs-changes], max-rounds: 3}
     instructions: .agents/reviewer.md
     retrospectives: 9
     worktree: true
     agent-timeout-minutes: 180
     # Native GitHub approval requires an identity other than the PR author.
+
+  codex-reviewer:
+    # Second review on Codex at xhigh effort, after the Claude reviewer approves.
+    # It shares the implementer's model on purpose, so it does not set
+    # different-runtime-from; the Claude review above stays the independent one.
+    runtime: "codex:gpt-6.1-sol:xhigh"
+    kind: pr
+    trigger: needs-codex-review
+    outcomes:
+      approved: {add: [ready-to-merge]}
+      changes-requested: {add: [needs-changes], max-rounds: 3}
+    instructions: .agents/codex-reviewer.md
+    worktree: true
+    agent-timeout-minutes: 180
 
   integrator:
     runtime: "codex:gpt-6.1-sol:high"

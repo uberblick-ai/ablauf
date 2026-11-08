@@ -25,7 +25,7 @@ say so; reading SVG source does not satisfy a visual review criterion.
 A change that affects rendering also runs `mise run render` and commits any
 changes in `docs/images/`. Generated example SVGs live in gitignored `out/`;
 CI uploads them as a downloadable artifact named for the checked head SHA.
-The reviewer and integrator rerun `mise run render` at the candidate: it must
+The reviewer, codex-reviewer and integrator rerun `mise run render` at the candidate: it must
 report no diagnostics and leave `git status` clean.
 
 The six committed renderer-output checks live in `test/golden/`: `loop.svg`,
@@ -41,8 +41,8 @@ references, not renderer-output checks.
 
 The integrator squash-merges a PR when, at the head it merges:
 
-- the reviewer approved the candidate SHA (the integrator's own clean base merge
-  keeps that approval);
+- the reviewer and the codex-reviewer both approved the candidate SHA (the
+  integrator's own clean base merge keeps those approvals);
 - the `lint, typecheck and tests` check passed on GitHub for that head
   (`gh pr checks N --watch` waits for it);
 - `mise run ci` and `mise run render` pass as above;
