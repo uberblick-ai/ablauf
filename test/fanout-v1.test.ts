@@ -225,12 +225,24 @@ test("field errors keep boxes, first values and escaped raw source below the fig
 		assert.equal(boxes(result.svg).length, 3);
 		assert.match(boxes(result.svg)[1].text, />\[missing outcome\]<\/text>/);
 		assert.equal(boxes(result.svg)[2].x, 468);
+		assert.equal(description(result.svg), 'Fan-out: A. A leads to [missing outcome]. [missing outcome] leads to Child.');
 	}
 	const recovered = render(source('outcome reason="Why" destination="There"'));
 	assert.match(description(recovered.svg), /\(Why; There\)/);
 	const fields = render(source('outcome "B" reason=bare destination="There" tone="done"'));
 	assert.match(boxes(fields.svg)[1].text, />→ There<\/text>/);
 	assert.match(fields.svg, /class="k-done"/);
+});
+
+test("descriptions name the drawn step and outcome placeholders", () => {
+	const input = 'fan-out v1\nstep ""\noutcome\n  outcome "Child"\noutcome ""';
+	const expected = 'Fan-out: [missing step]. [missing step] leads to [missing outcome] [[missing step]] and [missing outcome] [[missing step]]. [missing outcome] [[missing step]] leads to Child.';
+	const { svg } = render(input);
+	assert.equal(description(svg), expected);
+	assert.match(boxes(svg)[0].text, />\[missing step\]<\/text>/);
+	const titled = render(input, { title: "Recovered figure", idPrefix: "recovered" });
+	assert.equal(description(titled.svg), "Recovered figure");
+	assert.ok(titled.svg.includes(`<desc id="recovered-desc">${expected}</desc>`));
 });
 
 test("over-depth subtrees are individually rejected and their ids never bind", () => {

@@ -215,11 +215,12 @@ export function renderFanoutV1(source: string, options: RenderOptions = {}) {
 
 	const levels = 1 + Math.max(...boxes.map(b => b.depth));
 	const width = Math.min(190, Math.floor((646 - 36 * (levels - 1)) / levels));
+	const displayText = (entry: Box) => entry.text.trim() ? entry.text : entry === root ? "[missing step]" : "[missing outcome]";
 	for (const entry of boxes) {
 		entry.x = 16 + entry.depth * (width + 36);
 		const block = (text: string, size: TextStyle["fontSize"], weight: TextStyle["fontWeight"], classes: string, bindPrefix = false) =>
 			wrap(text, width - 24, typography, size, weight, bindPrefix).map(text => ({ text, size, weight, classes }));
-		entry.blocks.push(block(entry.text.trim() ? entry.text : entry === root ? "[missing step]" : "[missing outcome]",
+		entry.blocks.push(block(displayText(entry),
 			entry === root ? 13 : 12, 600, entry === root ? "s13 b t-agent" : "s12 b"));
 		if (entry.reason) entry.blocks.push(block(entry.reason, 12, 400, "s12 muted"));
 		if (entry.destination) {
@@ -309,10 +310,10 @@ export function renderFanoutV1(source: string, options: RenderOptions = {}) {
 		bottom += 32 + lines.length * LEADING;
 	}
 	const layout: Layout = { width: WIDTH, height: bottom + 16, nodes: [], routes: [], bands: [], legend: null, diagnostics, typography };
-	const label = (entry: Box) => `${entry.text}${entry.parent && boxes.some(b => b !== entry && b.text === entry.text) ? ` [${entry.parent.text}]` : ""}`;
+	const label = (entry: Box) => `${displayText(entry)}${entry.parent && boxes.some(b => b !== entry && displayText(b) === displayText(entry)) ? ` [${displayText(entry.parent)}]` : ""}`;
 	const detail = (entry: Box) => `${label(entry)}${entry.reason || entry.destination ? ` (${[entry.reason, entry.destination].filter(Boolean).join("; ")})` : ""}`;
 	const list = (items: string[]) => items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`;
-	const sentences = [`Fan-out: ${root.text}.`];
+	const sentences = [`Fan-out: ${displayText(root)}.`];
 	for (const parent of boxes) {
 		if (parent.children.length) sentences.push(`${label(parent)} leads to ${list(parent.children.map(detail))}.`);
 		for (const ref of refs) if (ref.parent === parent && ref.target) sentences.push(`${label(parent)} also leads to ${detail(ref.target)}.`);

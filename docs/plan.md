@@ -643,7 +643,9 @@ outcome ref="ask"
 A v1 fan-out's `aria-label` is generated from the graph in source order:
 `Fan-out: STEP. STEP leads to A, B and C. A leads to D and E. …`, adding
 `(reason; destination)` where present and `B also leads to E` for each ref.
-A label repeated in the figure gets its parent's label in brackets. When
+A label repeated in the figure gets its parent's label in brackets. Missing
+text uses the drawn `[missing step]` or `[missing outcome]` placeholder in
+the description, including parent labels. When
 generating sentences, visit parents in declaration order, step first. Each
 parent's ref sentences follow its declared-child sentence immediately (or
 stand alone if it has no declared children), in ref source order. When
