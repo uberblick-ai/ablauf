@@ -243,3 +243,21 @@ test("both playback examples and the primer form are copyable with multiple scen
 	assert.deepEqual(render(form).diagnostics, []);
 	assert.equal(render(form).timelines.length, 2);
 });
+
+test("arbitrary fan-out text stays inert and malformed diagrams still return empty timelines", () => {
+	for (const style of styles) {
+		const target = '</text><script>alert("x")</script><g onload="evil"> & https://example.com';
+		const source = `fan-out v0\nstyle ${style}\nstep "Shared"\noutcome ${JSON.stringify(target)} reason="Why" destination="Next"\nplay ${JSON.stringify(target)}\n step ${JSON.stringify(target)} actor=${JSON.stringify(target)} ${JSON.stringify(target)}\n`;
+		const result = render(source, { idPrefix: target, title: target });
+		assert.deepEqual(result.diagnostics, []);
+		assert.equal(result.svg, render(source, { idPrefix: target, title: target }).svg);
+		assert.deepEqual(result.timelines[0].steps[0], { target, actor: target, caption: target, kind: "outcome", ms: 1600,
+			parts: ["fanout-step", ...(style === "ladder" ? ["fanout-rail"] : []), "outcome-0"] });
+		assert.doesNotMatch(result.svg, /<(?:script|foreignObject)\b|\sonload="|\shref=/i);
+		assert.ok(result.svg.includes("&lt;/text&gt;"));
+		const empty = render(`fan-out v0\nstyle ${style}\nplay "Empty"\n step "unknown"\nplay "Empty"\n`);
+		assert.deepEqual(empty.timelines.map(t => [t.slug, t.steps]), [["empty", []], ["empty-2", []]]);
+		assert.ok(empty.diagnostics.some(d => d.line === 4 && d.message.includes("unknown fan-out playback target")));
+		assert.match(empty.svg, /\[missing step\]/);
+	}
+});

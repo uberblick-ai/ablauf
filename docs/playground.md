@@ -22,6 +22,28 @@ source or switching examples destroys the previous mount. Open
 `#examples/loop-play` for three scenario tabs. Examples without timelines keep
 their static presentation.
 
+For fan-out playback, open `#examples/approvals-play` and
+`#examples/run-endings-ladder-play` with the 710px document column selected
+(678px figure). The [playback browser review](#playback-browser-review) page
+also mounts both as **Fan-out · approvals branches** and **Fan-out · run endings
+ladder**, with live shape/text-opacity and glow overrides.
+Before merging #68, a maintainer must review both examples with controls in a
+real browser, in light and dark at document width. Use the comparison scenarios
+to distinguish current from played outcomes, then a single-outcome scenario to
+check off-path fading. Branches: current outcome box and both arrows glow with
+2.2px strokes; only playing arrows run dashes. Ladder: only the current dot
+glows, without resizing; leaders stay still. Played outcomes keep native colours
+and full opacity without glow. Shared step boxes and the ladder rail never fade
+or glow. Check paused and ended frames, completion retaining the last step/path,
+actor and caption, Replay starting again, and range `-1` restoring the full
+figure. Reduced motion resets Replay to idle and disables dashes/transitions;
+manual navigation can still show the current glow.
+On `/playback-review`, set the text-opacity override to 0.2, then emulate
+`prefers-contrast: more` and `forced-colors: active` separately: either restores
+off-path text to full opacity despite the override. Removing the preference
+restores the override. SVG-source inspection and DOM fakes do not satisfy this
+maintainer visual review.
+
 For sequence playback, open `#examples/claim-play` and select the 710px
 document column (678px figure). Before merging #138, a maintainer must play
 both **Claim the show** and **Wrong code** in light and dark in a browser.
