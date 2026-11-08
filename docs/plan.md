@@ -1418,7 +1418,7 @@ independent light DOM and shadow-root mounts, schemes and teardown.
   [#162](https://github.com/uberblick-ai/ablauf/issues/162) then
   [#163](https://github.com/uberblick-ai/ablauf/issues/163), and their
   playback, [#166](https://github.com/uberblick-ai/ablauf/issues/166), as
-  planned in [Multi-step fan-out v1](#multi-step-fan-out-v1-planned).
+  described in [Multi-step fan-out v1](#multi-step-fan-out-v1).
 
 Extras cut from v0.3.0 wait for real need. Frozen frames come later. Timelines
 from real ub-agents run logs and visual timeline editing are out of scope.

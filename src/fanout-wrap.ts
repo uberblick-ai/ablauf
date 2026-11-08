@@ -10,7 +10,9 @@ export function wrap(text: string, width: number, typography: Typography,
 		: [...text].length <= limit;
 	const lines: string[] = [];
 	let line = "";
-	for (const word of text.split(bindPrefix ? /(?<!→)\s+/ : /\s+/).filter(Boolean)) {
+	const words = text.split(/\s+/).filter(Boolean);
+	if (bindPrefix && words.length > 1) words.splice(0, 2, `${words[0]} ${words[1]}`);
+	for (const word of words) {
 		if (line && !fits(`${line} ${word}`)) {
 			lines.push(line);
 			line = "";
