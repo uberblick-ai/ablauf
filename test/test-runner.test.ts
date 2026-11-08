@@ -76,6 +76,64 @@ test("never registered", () => {});
 	assert.match(result.output, /module initialization failed/);
 });
 
+test("top-level awaited tests run and report every result during module evaluation", t => {
+	const result = fixture(t, { "test/awaited.test.ts": `
+import {test} from "node:test";
+await test("first top-level awaited test", () => {});
+await test("second top-level awaited test", () => {});
+` }, 1000);
+	assert.equal(result.status, 0, result.output);
+	assert.match(result.output, /first top-level awaited test/);
+	assert.match(result.output, /second top-level awaited test/);
+	assert.match(result.output, /Test completeness: declared 2, reported 2, files 1; tests 2\./);
+});
+
+test("tests registered after an asynchronous import gap finish before teardown", t => {
+	const result = fixture(t, { "test/late.test.ts": `
+import assert from "node:assert/strict";
+import {test, after} from "node:test";
+await test("first", () => {});
+await new Promise(resolve => setTimeout(resolve, 20));
+let finished = false;
+test("later", async () => {
+  await new Promise(resolve => setTimeout(resolve, 40));
+  finished = true;
+});
+after(() => assert.equal(finished, true));
+` }, 1000);
+	assert.equal(result.status, 0, result.output);
+	assert.match(result.output, /Test completeness: declared 2, reported 2, files 1; tests 2\./);
+});
+
+test("an initialization error after an awaited test still fails with its exception", t => {
+	const result = fixture(t, { "test/awaited-error.test.ts": `
+import {test} from "node:test";
+await test("already passed", () => {});
+await new Promise(resolve => setTimeout(resolve, 20));
+throw new Error("initialization failed after await");
+` });
+	assert.equal(result.status, 1, result.output);
+	assert.match(result.output, /Test file initialization failed: .*awaited-error\.test\.ts/);
+	assert.match(result.output, /initialization failed after await/);
+});
+
+test("a file without declarations still terminates despite a leaked handle", t => {
+	const result = fixture(t, { "test/empty.test.ts": "setInterval(() => {}, 1000);" });
+	assert.equal(result.status, 0, result.output);
+	assert.match(result.output, /Test completeness: declared 1, reported 1, files 1; tests 1\./);
+});
+
+test("a nonzero exit after a complete receipt names the affected file", t => {
+	const result = fixture(t, { "test/exit-status.test.ts": `
+import {test} from "node:test";
+test("reported", () => {});
+process.on("exit", () => { process.exitCode = 7; });
+` });
+	assert.equal(result.status, 1, result.output);
+	assert.match(result.output, /Test file failed: .*exit-status\.test\.ts: exit status 7/);
+	assert.match(result.output, /Test completeness: declared 1, reported 1, files 1; tests 1\./);
+});
+
 test("pending module evaluation with a leaked handle fails within the load deadline", t => {
 	const result = fixture(t, { "test/pending-import.test.ts": `
 import {test} from "node:test";

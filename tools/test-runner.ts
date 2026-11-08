@@ -26,7 +26,7 @@ export async function runTests(files: string[], loadTimeout = 60_000): Promise<n
 		const scratch = mkdtempSync(join(process.env.UB_AGENTS_SCRATCH ?? tmpdir(), "ablauf-test-report-"));
 		const report = join(scratch, "report.txt");
 		const child = spawn(process.execPath, [
-			"--test", "--test-isolation=none", "--test-force-exit", "--test-timeout=60000",
+			"--test-force-exit", "--test-timeout=60000",
 			"--test-reporter", resolve(import.meta.dirname, "test-worker.ts"),
 			"--test-reporter-destination", report, resolve(import.meta.dirname, "test-entry.ts"),
 		], {
@@ -57,7 +57,14 @@ export async function runTests(files: string[], loadTimeout = 60_000): Promise<n
 		if (existsSync(report)) output += readFileSync(report, "utf8");
 		rmSync(scratch, { recursive: true, force: true });
 		await write(output);
-		if (status !== 0) failed = true;
+		if (status !== 0) {
+			failed = true;
+			console.error(`Test file failed: ${file}: ${status === null ? "terminated by a signal" : `exit status ${status}`}.`);
+		}
+		if (loading !== "loaded") {
+			failed = true;
+			console.error(`Test file initialization did not complete: ${file}`);
+		}
 		if (loadTimedOut) {
 			failed = true;
 			console.error(`Test file initialization timed out after ${loadTimeout} ms: ${file}`);
