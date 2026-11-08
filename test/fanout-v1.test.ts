@@ -194,7 +194,7 @@ const negatives: [string, string, number, RegExp][] = [
 ];
 for (const [name, text, line, message] of negatives) test(`v1 diagnoses ${name} on its source line and renders recovery`, () => {
 	const result = negative(text, line, message);
-	assert.doesNotMatch(result.svg, /<script|href=|onload=/);
+	assert.doesNotMatch(result.svg, /<script|href=|onload=/i);
 });
 
 test("structural missing declarations diagnose the header and the figure renders", () => {
@@ -316,16 +316,16 @@ test("descriptions follow parent declaration order with refs immediately after e
 });
 
 test("valid v1 text and descriptions escape markup and use deterministic, scoped theme options", () => {
-	const input = source('outcome "<script> & \\"quote\\"" reason="https://example.com" destination="javascript:alert(1)"');
+	const input = source('outcome "<ScRiPt> & \\"quote\\"" reason="https://example.com" destination="javascript:alert(1)"');
 	for (const scheme of ["auto", "light", "dark"] as const) {
 		const options = { scheme: scheme === "auto" ? undefined : scheme, title: '<title> & "quote"', idPrefix: '<unsafe> "prefix"' };
 		const result = render(input, options);
 		assert.deepEqual(result.diagnostics, []);
 		assert.equal(result.svg, render(input, options).svg);
-		assert.match(result.svg, /&lt;script&gt; &amp;/);
-		assert.match(result.svg, /<desc[^>]*>[^<]*&lt;script&gt;/);
+		assert.match(result.svg, /&lt;ScRiPt&gt; &amp;/);
+		assert.match(result.svg, /<desc[^>]*>[^<]*&lt;ScRiPt&gt;/);
 		assert.match(result.svg, new RegExp(`class="ab ab-${scheme}"`));
-		assert.doesNotMatch(result.svg, /<script|href=|onload=|<title>/);
+		assert.doesNotMatch(result.svg, /<script|href=|onload=|<title>/i);
 		assert.doesNotMatch(result.svg, /\.ab\s*\{\s*--/);
 		assert.ok(result.svg.includes('prefers-color-scheme') === (scheme === "auto"));
 	}
