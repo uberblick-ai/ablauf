@@ -72,6 +72,7 @@ export function renderFanout(source: string, options: RenderOptions = {}) {
 	const invalid: { line: number; text: string }[] = [];
 	let step = "";
 	let sawStep = false;
+	let rejectedStep = false;
 	let style: Style = "branches";
 	let sawStyle = false;
 	let headerLine = 1;
@@ -123,7 +124,10 @@ export function renderFanout(source: string, options: RenderOptions = {}) {
 		} else if (/^step\s/.test(rest)) {
 			rest = rest.slice(4).trimStart();
 			const value = quoted();
-			if (sawStep) error(line, "a fan-out names exactly one step");
+			if (sawStep) {
+				error(line, "a fan-out names exactly one step");
+				rejectedStep = true;
+			}
 			else {
 				step = value;
 				sawStep = true;
@@ -133,6 +137,11 @@ export function renderFanout(source: string, options: RenderOptions = {}) {
 			if (rest.trim()) error(line, "unexpected text after step");
 			if (diagnostics.length > before) invalid.push({ line, text });
 		} else if (/^outcome(?:\s|$)/.test(rest)) {
+			if (rejectedStep) {
+				error(line, "outcome after a second step is rejected");
+				invalid.push({ line, text });
+				continue;
+			}
 			rest = rest.slice(7).trimStart();
 			const entry: Entry = { outcome: quoted(), reason: "", destination: "", line, raw: "" };
 			const seen = new Set<string>();

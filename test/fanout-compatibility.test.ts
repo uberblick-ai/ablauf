@@ -18,6 +18,12 @@ const captures: Capture[] = JSON.parse(gunzipSync(readFileSync(new URL("golden/p
 test("pre-v1 fan-out SVG bytes remain historical", () => {
 	for (const capture of captures) {
 		const options = { ...capture.options, ...compatibilityOptions(capture.profile) };
-		assert.equal(render(capture.source, options).svg, capture.svg, `${capture.name} ${JSON.stringify(capture.options)} ${capture.profile}`);
+		// Only second-step sources intentionally change: outcomes after the
+		// second step now use the historical rejected-source presentation.
+		const recovery = capture.exception === "second-step" ? captures.find(c =>
+			c.name === `${capture.name}Recovery` && c.profile === capture.profile &&
+			JSON.stringify(c.options) === JSON.stringify(capture.options)) : undefined;
+		const expected = recovery ? recovery.svg.replaceAll("reject!", "outcome") : capture.svg;
+		assert.equal(render(capture.source, options).svg, expected, `${capture.name} ${JSON.stringify(capture.options)} ${capture.profile}`);
 	}
 });

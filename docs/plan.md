@@ -462,7 +462,9 @@ outcome "Edited since" reason="The input changed after the maintainer started it
   entries are diagnosed at the header. Partial entries show missing-field
   placeholders and their original source; other invalid lines are printed
   below the entries. The first step and first value of a duplicate field win,
-  with the rejected source still visible. All text is escaped.
+  with the rejected source still visible. A second step and every later
+  outcome are individually diagnosed and listed below as rejected source;
+  later outcomes never attach to the first step. All text is escaped.
 - Fan-outs share the flow SVG's scoped styles, `--ab-*` palettes and render
   options (`title`, `scheme`, `fonts`, and `idPrefix` for the branches' arrow marker).
   Their returned layout has canvas dimensions and diagnostics, with empty
