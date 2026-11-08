@@ -150,13 +150,13 @@ play
 	for (let i = 0; i < 4; i++) assert.equal(svg.match(new RegExp(`data-ab-part="edge-${i}"`, "g"))?.length, 2);
 });
 
-test("fan-out retains its static figure and diagnoses every unsupported section", () => {
+test("fan-out resolves sections independently and diagnoses unknown targets", () => {
 	for (const source of ['fan-out v0\nstep "Choose"\noutcome "Done" reason="Yes" destination="End"\n']) {
 		const result = render(`${source}play "First"\n step 1\nplay\n step "Done"\n`);
-		assert.deepEqual(result.timelines, []);
-		assert.equal(result.svg, render(source).svg);
-		assert.deepEqual(result.diagnostics.map(d => d.line), [source.split("\n").length, source.split("\n").length + 2]);
-		assert.ok(result.diagnostics.every(d => d.message.includes("playback is not supported")));
+		assert.deepEqual(result.timelines.map(t => t.steps.map(s => s.target)), [[], ["Done"]]);
+		assert.deepEqual(result.layout, { ...render(source).layout, diagnostics: result.diagnostics });
+		assert.deepEqual(result.diagnostics.map(d => d.line), [source.split("\n").length + 1]);
+		assert.ok(result.diagnostics.every(d => d.message.includes("unknown fan-out playback target")));
 	}
 });
 

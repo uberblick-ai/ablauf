@@ -57,7 +57,7 @@ test("pre-sequence examples retain SVG bytes apart from the separately tested fl
 	};
 	assert.equal(baseline.sha, "3751cb9c22ae8c9682b645c2b396427fee2d692a");
 	assert.equal(baseline.fixtures.length, 19);
-	assert.deepEqual(baseline.fixtures.map(f => f.file), readdirSync(new URL("../examples", import.meta.url)).filter(f => f.endsWith(".flow") && f !== "claim-play.flow").sort());
+	assert.deepEqual(baseline.fixtures.map(f => f.file), readdirSync(new URL("../examples", import.meta.url)).filter(f => f.endsWith(".flow") && !["claim-play.flow", "approvals-play.flow", "run-endings-ladder-play.flow"].includes(f)).sort());
 	for (const { file, outputs } of baseline.fixtures) {
 		for (const [i, scheme] of schemes.entries()) {
 			const actual = render(read(`../examples/${file}`), { scheme, idPrefix: file.slice(0, -5) }).svg;

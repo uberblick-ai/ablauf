@@ -4,7 +4,9 @@ import { type TextStyle, Typography } from "./fonts.ts";
 import { CHAR, type Layout } from "./grid.ts";
 import type { RenderOptions } from "./index.ts";
 import { type Diagnostic, type Tone, TONES } from "./parse.ts";
-import { esc, markerPrefix, svgStyle } from "./svg.ts";
+import type { Scenario } from "./play.ts";
+import { nameTimelines } from "./play-timelines.ts";
+import { esc, markerPrefix, playStyle, svgStyle } from "./svg.ts";
 
 interface Entry {
 	outcome: string;
@@ -13,6 +15,27 @@ interface Entry {
 	tone?: Tone;
 	line: number;
 	raw: string; // Keep malformed source visible, including unrecognised fields.
+}
+
+// Resolve the original text before any wrapping, retaining duplicate entries
+// in the figure while refusing to guess which one a play step means.
+function fanoutPlayback(scenarios: Scenario[], entries: Entry[], ladder: boolean, diagnostics: Diagnostic[]) {
+	const targets = new Map<string, number[]>();
+	entries.forEach((entry, i) => {
+		if (entry.outcome.trim()) targets.set(entry.outcome, [...(targets.get(entry.outcome) ?? []), i]);
+	});
+	return nameTimelines(scenarios).map((timeline, i) => {
+		for (const step of scenarios[i].steps) {
+			const matches = targets.get(step.target) ?? [];
+			if (matches.length !== 1) {
+				diagnostics.push({ line: step.line, severity: "error", message: `${matches.length ? "ambiguous" : "unknown"} fan-out playback target \`${step.target}\`; step skipped` });
+				continue;
+			}
+			timeline.steps.push({ target: step.target, kind: "outcome", actor: step.actor ?? entries[matches[0]].outcome,
+				caption: step.caption, ms: step.ms, parts: ["fanout-step", ...(ladder ? ["fanout-rail"] : []), `outcome-${matches[0]}`] });
+		}
+		return timeline;
+	});
 }
 
 const QUOTED = /^"(?:[^"\\]|\\.)*"/;
@@ -59,7 +82,7 @@ function wrap(text: string, width: number, typography: Typography,
 	return lines;
 }
 
-export function renderFanout(source: string, options: RenderOptions = {}) {
+export function renderFanout(source: string, options: RenderOptions = {}, scenarios: Scenario[] = []) {
 	const typography = new Typography(options.fonts);
 	const wrapped = (text: string, width: number, fontSize: TextStyle["fontSize"] = 12,
 		fontWeight: TextStyle["fontWeight"] = 400) => wrap(text, width, typography, fontSize, fontWeight);
@@ -170,6 +193,9 @@ export function renderFanout(source: string, options: RenderOptions = {}) {
 		lines.map((text, i) => `<text x="${x}" y="${y + i * LEADING}"${anchor ? ` text-anchor="${anchor}"` : ""} class="m ${classes}">${esc(text)}</text>`);
 	const id = `${markerPrefix(options)}-ink`;
 	const ladder = style === "ladder";
+	const timelines = fanoutPlayback(scenarios, entries, ladder, diagnostics);
+	const playable = scenarios.length > 0;
+	const part = (name: string) => playable ? ` data-ab-part="${name}"` : "";
 	let y = ladder ? drawLadder() : drawBranches();
 
 	function drawBranches(): number {
@@ -196,16 +222,18 @@ export function renderFanout(source: string, options: RenderOptions = {}) {
 		const stepTop = top + span / 2 - stepHeight / 2;
 		const stepMid = top + span / 2;
 
+		if (playable) body.push(`<g${part("fanout-step")}>`);
 		body.push(`<rect x="${STEP.x}" y="${stepTop}" width="${STEP.w}" height="${stepHeight}" rx="8" class="k-agent"/>`);
 		body.push(...textLines(stepLines, STEP.x + 16, stepTop + 26, "s13 b t-agent"));
+		if (playable) body.push("</g>");
 		let y = top;
-		for (const row of rows) {
+		for (const [i, row] of rows.entries()) {
 			const mid = y + row.box / 2;
 			const from = STEP.x + STEP.w;
 			const end = OUTCOME.x - 2 - LEAD;
 			const bend = (from + end) / 2;
 			const tone = row.entry.tone ? `k-${row.entry.tone}${row.entry.tone === "stop" ? " panel" : ""}` : "pill";
-			body.push(`<g data-line="${row.entry.line}">`);
+			body.push(`<g data-line="${row.entry.line}"${part(`outcome-${i}`)}>`);
 			body.push(`<path d="M${from},${stepMid} C${bend},${stepMid} ${bend},${mid} ${end},${mid} L${OUTCOME.x - 2},${mid}" class="e e-ink" marker-end="url(#${id})"/>`);
 			body.push(`<rect x="${OUTCOME.x}" y="${y}" width="${OUTCOME.w}" height="${row.box}" rx="8" class="${tone}"/>`);
 			body.push(...textLines(row.outcome, OUTCOME.x + 14, y + 22, "s12 b"));
@@ -224,17 +252,19 @@ export function renderFanout(source: string, options: RenderOptions = {}) {
 		const stepLines = wrapped(step.trim() ? step : "[missing step]", 614, 13, 600);
 		const stepWidth = Math.min(646, 32 + Math.max(...stepLines.map((l) => typography.width(l, "mono", 13, 600))));
 		const stepHeight = 24 + stepLines.length * LEADING;
+		if (playable) body.push(`<g${part("fanout-step")}>`);
 		body.push(`<rect x="${STEP.x}" y="16" width="${stepWidth}" height="${stepHeight}" rx="8" class="k-agent"/>`);
 		body.push(...textLines(stepLines, STEP.x + 16, 42, "s13 b t-agent"));
+		if (playable) body.push("</g>");
 		const rows: string[][] = [];
 		let y = 16 + stepHeight + 30;
 		let last = y;
-		for (const entry of entries) {
+		for (const [i, entry] of entries.entries()) {
 			const outcome = wrapped(entry.outcome.trim() ? entry.outcome : "[missing outcome]", LADDER.outcome, 12, 600);
 			const destination = wrapped(entry.destination.trim() ? entry.destination : "[missing destination]", LADDER.destination, 12, 600);
 			const reason = wrapped(entry.reason.trim() ? entry.reason : "[missing reason]", LADDER.reason);
 			const raw = entry.raw ? wrapped(`Line ${entry.line}: ${entry.raw}`, LADDER.right - LADDER.x) : [];
-			const row = [`<g data-line="${entry.line}">`];
+			const row = [`<g data-line="${entry.line}"${part(`outcome-${i}`)}>`];
 			row.push(`<circle cx="${RAIL}" cy="${y - 4}" r="6" class="t-${entry.tone ?? "muted"}"/>`);
 			row.push(...textLines(outcome, LADDER.x, y, "s12 b"));
 			row.push(...textLines(destination, LADDER.right, y, "s12 b", "end"));
@@ -250,7 +280,11 @@ export function renderFanout(source: string, options: RenderOptions = {}) {
 			last = y;
 			y += (left + reason.length + raw.length) * LEADING + (raw.length ? 8 : 0) + 22;
 		}
-		if (entries.length) body.push(`<path d="M${RAIL},${16 + stepHeight} L${RAIL},${last - 4}" class="e e-ink"/>`);
+		if (entries.length) {
+			if (playable) body.push(`<g${part("fanout-rail")}>`);
+			body.push(`<path d="M${RAIL},${16 + stepHeight} L${RAIL},${last - 4}" class="e e-ink"/>`);
+			if (playable) body.push("</g>");
+		}
 		for (const row of rows) body.push(...row);
 		return entries.length ? y - 22 - 12 : 16 + stepHeight;
 	}
@@ -265,6 +299,6 @@ export function renderFanout(source: string, options: RenderOptions = {}) {
 	// No routed-flow nodes or edges: the playground's grid overlay is empty.
 	const layout: Layout = { width: WIDTH, height: y + 16, nodes: [], routes: [], bands: [], legend: null, diagnostics, typography };
 	const description = `Fan-out: ${step}. ${entries.map((e) => `${e.outcome}: ${e.reason}; destination: ${e.destination}`).join(". ")}`;
-	const svg = `<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-${mode}" viewBox="0 0 ${WIDTH} ${layout.height}" width="${WIDTH}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? description)}">\n${svgStyle(mode, typography)}\n${defs}${body.join("\n")}\n</svg>\n`;
-	return { svg, diagnostics, layout };
+	const svg = `<svg xmlns="http://www.w3.org/2000/svg" class="ab ab-${mode}"${playable ? ` data-ab-play="${markerPrefix(options)}"` : ""} viewBox="0 0 ${WIDTH} ${layout.height}" width="${WIDTH}" height="${layout.height}" role="img" aria-label="${esc(options.title ?? description)}">\n${svgStyle(mode, typography, playable ? [playStyle(mode, markerPrefix(options), "fan-out")] : [])}\n${defs}${body.join("\n")}\n</svg>\n`;
+	return { svg, diagnostics, layout, timelines };
 }

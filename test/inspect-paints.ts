@@ -12,14 +12,14 @@ export function inspect(svg: string, fade?: number, textFade = 0.8, contrastPref
 	let guardedText = false;
 	const idleCss = css.replace(/@keyframes [^{]+\{(?:[^{}]*\{[^{}]*\})+\}/g, "")
 		.replace(/@media \(prefers-contrast:more\),\(forced-colors:active\)\{([^{}]+)\{opacity:1\}\}/g, (_, selector: string) => {
-			assert.match(selector, /^\.ab\[data-ab-play="[A-Za-z0-9_.-]+"\]\.ab-in-progress \[data-ab-part\]:where\(:not\(\.ab-current\):not\(\.ab-played\)\) text$/);
+			assert.match(selector, /^\.ab\[data-ab-play="[A-Za-z0-9_.-]+"\]\.ab-in-progress \[data-ab-part\](?:\[data-ab-part\^="outcome-"\])?:where\(:not\(\.ab-current\):not\(\.ab-played\)\) text$/);
 			guardedText = true;
 			return "";
 		});
 	let hiddenSequenceOverlays = false;
 	const rules = [...idleCss.matchAll(/([^{}]+)\{([^{}]+)\}/g)].flatMap(([, selector, body], order) => {
 		const declarations = Object.fromEntries(body.split(";").filter(Boolean).map((d) => d.split(":")));
-		if (/^\.ab\[data-ab-play="[A-Za-z0-9_.-]+"\]\.ab-in-progress \[data-ab-part\]:where\(:not\(\.ab-current\):not\(\.ab-played\)\) text$/.test(selector.trim())) {
+		if (/^\.ab\[data-ab-play="[A-Za-z0-9_.-]+"\]\.ab-in-progress \[data-ab-part\](?:\[data-ab-part\^="outcome-"\])?:where\(:not\(\.ab-current\):not\(\.ab-played\)\) text$/.test(selector.trim())) {
 			if (fade === undefined) assert.doesNotMatch(svg, /class="[^"]*\bab-in-progress\b/);
 			assert.deepEqual(declarations, { opacity: "var(--ab-play-unreached-text-opacity,.8)" });
 			assert.ok(guardedText);
@@ -28,7 +28,7 @@ export function inspect(svg: string, fade?: number, textFade = 0.8, contrastPref
 		// Fade rules affect only a shown step. Refuse active roots rather than
 		// treating dimmed text as a static palette paint; playback-fade.test.ts
 		// checks these rules, their opaque backgrounds and the root lifecycle.
-		if (/^\.ab\[data-ab-play="[A-Za-z0-9_.-]+"\]\.ab-in-progress \[data-ab-part\]:where\(:not\(\.ab-current\):not\(\.ab-played\)\) :is\(rect:not\(\.gap\),path:not\(\.knockout\),circle,line\)$/.test(selector.trim())) {
+		if (/^\.ab\[data-ab-play="[A-Za-z0-9_.-]+"\]\.ab-in-progress \[data-ab-part\](?:\[data-ab-part\^="outcome-"\])?:where\(:not\(\.ab-current\):not\(\.ab-played\)\) :is\(rect:not\(\.gap\),path:not\(\.knockout\),circle,line\)$/.test(selector.trim())) {
 			if (fade === undefined) assert.doesNotMatch(svg, /class="[^"]*\bab-in-progress\b/, "static paint inspector cannot inspect active playback fading");
 			assert.deepEqual(declarations, { opacity: "var(--ab-play-unreached-opacity,.3)" });
 			return [];
@@ -90,7 +90,7 @@ export function inspect(svg: string, fade?: number, textFade = 0.8, contrastPref
 		const el: Element = { tag: match[2], attrs: Object.fromEntries([...match[3].matchAll(/([\w-]+)="([^"]*)"/g)].map((m) => [m[1], m[2]])), classes: [] };
 		el.classes = (el.attrs.class ?? "").split(" ");
 		const state = el.attrs["data-ab-part"] && active
-			? el.classes.includes("ab-current") ? "current" : el.classes.includes("ab-played") ? "played" : "unplayed"
+			? el.attrs["data-ab-part"].startsWith("fanout-") ? "shared" : el.classes.includes("ab-current") ? "current" : el.classes.includes("ab-played") ? "played" : "unplayed"
 			: stack.at(-1);
 		if (!match[0].endsWith("/>")) stack.push(state);
 		assert.ok(!el.attrs.transform, "inspector must handle new transforms");
