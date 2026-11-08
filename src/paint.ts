@@ -15,8 +15,6 @@ interface Paint<Ink extends Token | "play" = Token> {
 	opacity?: number;
 	/** Per-layer alpha multipliers, including 1 for bg; exclusive with opacity. */
 	groundOpacities?: number[];
-	/** Multiplies text colour alpha, independently of the ground layers. */
-	inkOpacity?: number;
 	where: string;
 }
 
@@ -27,7 +25,11 @@ export interface PlaybackContrast {
 	unreachedTextOpacity?: number | string;
 }
 
-type PlaybackPaint = Paint<Token | "play"> & { threshold: 3 | 4.5 };
+type PlaybackPaint = Paint<Token | "play"> & {
+	/** Multiplies text colour alpha, independently of the ground layers. */
+	inkOpacity?: number;
+	threshold: 3 | 4.5;
+};
 type StaticResult = { minimum: number; pairs: (Paint & { ratio: number })[] };
 type PlaybackResult = { minimum: number; unreachedMinimum: number; pairs: (PlaybackPaint & { ratio: number })[] };
 
@@ -226,7 +228,7 @@ export function checkPalette(palette: Palette, playback?: PlaybackContrast) {
 		return [token, colour(palette[token], token)];
 	})) as Record<Token, Colour>;
 	if (colours.bg[3] !== 1) throw new TypeError("bg must be an opaque host canvas colour");
-	let textPaints: (Paint<Token | "play"> & { threshold?: 3 | 4.5 })[] = paints;
+	let textPaints: (Paint<Token | "play"> & { inkOpacity?: number; threshold?: 3 | 4.5 })[] = paints;
 	const inks: Record<Token | "play", Colour> = { ...colours, play: colours.ink };
 	if (playback !== undefined) {
 		if (!playback || typeof playback !== "object" || !Object.hasOwn(playback, "play") || !Object.hasOwn(playback, "unreachedOpacity")) throw new TypeError("Expected play and unreachedOpacity");

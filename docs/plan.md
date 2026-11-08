@@ -805,7 +805,8 @@ off-path text meets a checked 3:1 floor at these defaults. Under either
 even with a host text-opacity override. Opacity preserves the accessibility tree;
 captions and the polite status still describe the current position.
 Fade applies to individual shapes and text elements, including decision label
-boxes with their existing 0.82 fill opacity, never to groups. Inline label backgrounds (`.gap` / `.gap-band`) and
+boxes with their existing 0.82 fill opacity, never to groups.
+Inline label backgrounds (`.gap` / `.gap-band`) and
 crossing knockouts retain opacity multiplier 1, including at fade 0. Current
 and played parts keep their native colours at full opacity, with current taking
 precedence. Underlying edges never show through gaps or knockouts. Geometry and

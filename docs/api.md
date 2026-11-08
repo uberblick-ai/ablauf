@@ -184,6 +184,20 @@ Pausing mid-scene retains the current highlight and fade.
 `play()` replays from step `0`, or `{ loop: true }` loops the selected scenario.
 Repeated `play()` during playback leaves the timer alone.
 
+Off-path flow shapes use `--ab-play-unreached-opacity` (default 0.3); all node
+and edge text uses `--ab-play-unreached-text-opacity` (default 0.8), on individual
+elements. Both accept CSS numbers/percentages clamped to [0, 1]. Either
+`prefers-contrast: more` or `forced-colors: active` forces full text opacity even
+with a host override. Current/played parts keep their native colours and full
+opacity; gaps and knockouts stay unfaded. Sequence fade styling is unchanged.
+For host checks, `PlaybackContrast` adds optional `unreachedTextOpacity` defaulting
+to 0.8; `play` and `unreachedOpacity` remain required. Playback `checkPalette`
+results use per-pair `threshold: 3 | 4.5`, `minimum` for 4.5 pairs and
+`unreachedMinimum` for 3 pairs. Check every pair against its threshold. See
+[theming](theming.md) and the [host testing guide](https://ablauf.uberblick.ai/guides/testing)
+for resolving both opacity knobs and contrast preferences. Static one-argument
+checks retain their types, pairs, ratios, minimum and validation.
+
 After completion the built-in controls retain the last counter, actor, caption
 and its scroll position, current/played segments, step list and range value.
 The status region retains the current position without repeating it. The toggle

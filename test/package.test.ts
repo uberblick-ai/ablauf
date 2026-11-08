@@ -136,6 +136,15 @@ const playbackInk: Token | "play" = checkPalette(palette, playbackContrast).pair
 const onlyStaticInk: Token = checkPalette(palette, playbackContrast).pairs[0].ink;
 // @ts-expect-error Both playback fields are required.
 checkPalette(palette, { play: "#0a7a60" });
+const faded = checkPalette(palette, { play: "#0a7a60", unreachedOpacity: "30%", unreachedTextOpacity: "80%" });
+const threshold: 3 | 4.5 = faded.pairs[0].threshold;
+const unreachedMinimum: number = faded.unreachedMinimum;
+// @ts-expect-error Static results do not gain playback thresholds.
+checkPalette(palette).pairs[0].threshold;
+// @ts-expect-error Static paint types do not gain text opacity.
+checkPalette(palette).pairs[0].inkOpacity;
+// @ts-expect-error Static results have only their original minimum.
+checkPalette(palette).unreachedMinimum;
 // @ts-expect-error TOKENS is a readonly tuple.
 TOKENS.push("ink");
 // @ts-expect-error Only supported public tokens are assignable.
