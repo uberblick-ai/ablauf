@@ -478,8 +478,7 @@ See [approvals](../examples/approvals.flow) and
 Planned for v0.3.2 in [#162](https://github.com/uberblick-ai/ablauf/issues/162)
 and [#163](https://github.com/uberblick-ai/ablauf/issues/163). A fan-out
 may branch again from an outcome, share a destination between branches, and
-skip a step. The same source can be drawn as a mind map. Prototype images
-and source: `fan-out/multi-step/` in the project files.
+skip a step. The same source can be drawn as a mind map.
 
 ```
 fan-out v1
