@@ -420,8 +420,10 @@ outcome "Outside input" reason="The input has not been cleared by a maintainer" 
 outcome "Edited since" reason="The input changed after the maintainer started it" destination="Ask a maintainer" tone="stop"
 ```
 
-- The first non-blank, non-comment line is `fan-out v0`. A newer version
-  warns and renders as v0. Blank lines and whole-line `#` comments are ignored.
+- The first non-blank, non-comment line is `fan-out v0`. Use `fan-out v1`
+  for multi-step branches; versions v2 and later warn and draw as v1. A
+  malformed version header is diagnosed, listed as rejected source and draws
+  as v0. Blank lines and whole-line `#` comments are ignored.
 - An optional `style branches` or `style ladder` line comes before the step;
   `branches` is the default. A second, unknown or late style is diagnosed on
   its line and the diagram draws in the style already chosen.
@@ -507,8 +509,9 @@ outcome ref="ask"
 
 - **Header.** `fan-out v1`. `fan-out v2` and later warn and render as v1.
   A `fan-out v0` source keeps every v0 rule, and valid v0 sources keep their
-  exact bytes. The one deliberate v0 change is the second-step rule below; it
-  only changes sources that already carry that error.
+  exact bytes. Historical malformed sources have two deliberate compatibility
+  exceptions: the second-step rule below and newer-version headers, which now
+  fall back to v1. Each change is isolated in its own commit.
 - **Lines.** As in v0: blank lines and whole-line `#` comments are ignored and
   never affect structure, values are JSON strings, `style` comes before the
   step, and there is exactly one `step`.

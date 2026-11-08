@@ -67,6 +67,9 @@ export function renderFanoutV1(source: string, options: RenderOptions = {}) {
 			headerLine = line;
 			root.line = line;
 			sawHeader = true;
+			const version = /^fan-out\s+v(\d+)$/.exec(text)?.[1];
+			if (version && Number(version) > 1) diagnostics.push({ line, severity: "warning",
+				message: `fan-out v${version} is newer than this renderer; drawing it as v1` });
 			continue;
 		}
 		const before = diagnostics.length;

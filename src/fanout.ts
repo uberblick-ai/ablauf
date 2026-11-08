@@ -35,7 +35,8 @@ type Style = (typeof STYLES)[number];
 
 export function renderFanout(source: string, options: RenderOptions = {}) {
 	const first = source.split("\n").find(line => line.trim() && !line.trim().startsWith("#"))?.trim();
-	if (first === "fan-out v1") return renderFanoutV1(source, options);
+	const version = /^fan-out\s+v(\d+)$/.exec(first ?? "");
+	if (version && Number(version[1]) >= 1) return renderFanoutV1(source, options);
 	const typography = new Typography(options.fonts);
 	const wrapped = (text: string, width: number, fontSize: TextStyle["fontSize"] = 12,
 		fontWeight: TextStyle["fontWeight"] = 400) => wrap(text, width, typography, fontSize, fontWeight);
