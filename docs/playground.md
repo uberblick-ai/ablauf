@@ -148,8 +148,8 @@ The captured expanded loops are [light](images/playback/expanded-light.png),
 - In Compact controls, step through short, long and blank captions while expanded:
   the caption stays one horizontally scrollable line and reserves its scrollbar
   space. Same-step Pause/Play and opening/closing preserve caption scroll; changing
-  step/scenario or reaching ended resets it. Ended shows the full unfaded figure,
-  clears step details and offers Replay from step 0.
+  step/scenario resets it. Ended retains the completed path, step details and
+  caption scroll, and offers Replay from step 0.
 - Open a Claim side-layout case: expansion places the figure above the controls
   and shows the single-line caption. Closing restores Side and its step list.
   Use delayed rebinding while expanded to check the modal stays open and refreshes
@@ -257,8 +257,8 @@ without host control CSS; the interactive checks below still need a maintainer.
   Scroll partway through the long caption: pause/resume preserves that position,
   while a scenario or step change resets instantly to the beginning. Make the
   document narrow enough to scroll the last caption of **Short captions**, scroll
-  partway through it and let playback finish: the full figure returns, the caption
-  clears and its scrolling resets without animation or focus movement.
+  partway through it and let playback finish: the completed path, last caption
+  and its scroll position remain, without motion or focus movement.
   Playback must not move focus, pan automatically or announce scrolling;
   the complete actor and caption still announce once per
   playable-step change through the polite status. Repeat in light and dark, with
@@ -274,24 +274,31 @@ without host control CSS; the interactive checks below still need a maintainer.
   figures are still. Gaps and crossing knockouts have no glow or running dashes.
 - Open `#examples/loop-play` in the playground and disable looping. A maintainer
   must review it in a real browser in light and dark at initial idle, while
-  playing and after the scene ends. Idle and completion show the full unfaded
-  figure without current/played highlights or glow; pausing mid-scene keeps
-  the highlight and fade. Let the last step finish its full duration: the
-  counter becomes blank, actor/caption empty, all segments unhighlighted,
-  range `-1` with “Full figure”, and the toggle reads Replay. Replay starts
-  at the first step; from ended, Next shows the first step paused and Previous
-  stays at the full figure paused. SVG-source inspection does not satisfy this check.
+  playing and after the scene ends. Idle shows the full unfaded figure;
+  completion retains the last current step, earlier played parts, off-path
+  fading and glow, with motion stopped. Let the last step finish its full dwell:
+  counter, actor/caption, segments, step list and range keep the last position;
+  the toggle reads Replay. Reread the caption and use navigation. Replay starts
+  at the first step; from ended, Next clamps to the last step paused and Previous
+  goes to the preceding step paused (or full figure for a one-step scene).
+  Under reduced motion Replay resets to idle and the full figure.
+  SVG-source inspection does not satisfy this check.
 - Play two figures simultaneously, switch scenarios and navigate. Check that
   each counter, segment bar, caption, actor, range and Play/Pause/Replay label
   follows only its player.
   Enable looping and watch the last step return to the first.
 - In automatic and pinned light/dark at document width, in light DOM and shadow
   roots, play or manually step the **Fade · inline labels** figure. On the first
-  Request step, later shapes fade to 0.3; all node/edge labels stay unfaded and
-  readable. The source's first caption predates this unfaded-label rule.
+  Request step, the whole off-path flow is visibly dimmer: shapes fade to 0.3
+  and all node/edge text fades separately to 0.8. Check node titles, subtitles,
+  panel contents and edge labels. The reference caption predates this rule.
   Change opacity live through 0, 0.01 (low nonzero), 0.3/30% and 1 with defaults
   and colour/font overrides. Gaps must keep opaque canvas and band backgrounds
-  at every fade; current/played tones stay full strength. Pause, seek forward/backward,
+  at every fade; current/played tones stay full strength. Change the text knob
+  too, including a host override of 0.2. Emulate `prefers-contrast: more` and
+  `forced-colors: active` separately: each restores off-path text to full opacity
+  despite the override. Disable each preference and verify the override returns.
+  Pause, seek forward/backward,
   switch to Review only and loop: current/played parts stay fully opaque and
   the other parts fade. At range `-1` or Empty, the entire figure is unfaded.
 - In **Fade · crossing knockouts**, select each vertical and horizontal path.
@@ -307,7 +314,7 @@ without host control CSS; the interactive checks below still need a maintainer.
   controls. Verify the three buttons' accessible names are Previous,
   Play/Pause/Replay and Next. Check announcements with a screen reader: actor
   and remark announce once on step changes, pause does not repeat them, and
-  completion clears the status without repeating the last step. The
+  completion retains the status without repeating the last step. The
   counter/segments add no announcements. Repeat in the shadow root.
 - Select the empty scenario: “No playable steps”, disabled buttons/range and
   usable tabs, a blank reserved counter and no segments. Verify the single-timeline
@@ -334,8 +341,8 @@ without host control CSS; the interactive checks below still need a maintainer.
   actors and captions. Focus a row before delayed rebinding: it survives by
   scenario slug and step position, or falls back to the panel if removed.
   After rebinding from a playing or ended scene, play the replacement with
-  looping disabled and let it finish: the full figure returns, the side list
-  has no current or played row, controls and announcements clear, and Replay,
+  looping disabled and let it finish: the completed path and last side-list
+  position, controls and status remain, and Replay,
   Next and Previous behave as above. Repeat in light and dark in both layouts.
   Restore data, choose Auto and resize across the threshold after rebinding:
   layout still switches both ways using the replacement's natural size, with
@@ -394,7 +401,8 @@ For each browser/version, OS scheme, automatic/pinned scheme and DOM context,
 name the overrides (or defaults), fade and fonts; attach 678px captures and
 observations for labels, gaps/knockouts, caption wrapping, tab overflow and
 keyboard focus. Report non-text contrast separately from `checkPalette` text
-ratios and its 4.5 minimum: focus rings against each adjacent surface, current/
+ratios and its two minima (`minimum` for 4.5 pairs, `unreachedMinimum` for
+3 pairs): focus rings against each adjacent surface, current/
 played/future progress segments, and faded shapes on canvas/band. Record the
 resolved colours/composited surfaces, measured ratios and observed visibility,
 including when fade 0 intentionally hides shapes. Do not report a source-only

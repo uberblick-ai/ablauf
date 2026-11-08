@@ -18,7 +18,7 @@ const pair = (palette: Palette, ink: Token, ground: Token[], opacity?: number) =
 
 test("TOKENS follows the static theming rows; documented playback tokens stay outside both palettes", () => {
 	const table = readFileSync(join(root, "../docs/theming.md"), "utf8");
-	assert.deepEqual([...TOKENS, "play", "play-glow", "play-unreached-opacity", "font-text", "font-mono"], [...table.matchAll(/^\| `--ab-([^`]+)`/gm)].map((m) => m[1]));
+	assert.deepEqual([...TOKENS, "play", "play-glow", "play-unreached-opacity", "play-unreached-text-opacity", "font-text", "font-mono"], [...table.matchAll(/^\| `--ab-([^`]+)`/gm)].map((m) => m[1]));
 	assert.equal(new Set(TOKENS).size, TOKENS.length);
 	assert.ok(Object.isFrozen(TOKENS));
 	for (const palette of [LIGHT, DARK]) assert.deepEqual(Object.keys(palette).sort(), [...TOKENS].sort());

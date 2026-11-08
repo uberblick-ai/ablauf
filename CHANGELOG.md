@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased
+
+- Playback completion now retains `step >= 0` with status `ended`, the completed
+  path, last captions and controls, instead of restoring the full figure at
+  `step: -1`. Replay starts at the first step; reduced-motion Replay resets to
+  idle. Next/Previous navigate from the retained last step. Hand-driven hosts
+  must keep `ab-in-progress` at completion and remove `ab-playing`.
+- Off-path flow text now fades separately with
+  `--ab-play-unreached-text-opacity` (default 0.8); shapes stay at 0.3 and built-in
+  palettes are unchanged. Off-path text has a checked 3:1 floor; current/played,
+  static text and controls keep 4.5:1. `prefers-contrast: more` and
+  `forced-colors: active` force full off-path flow text opacity, including with
+  host overrides. Sequence fade styling is unchanged.
+- `PlaybackContrast` adds optional `unreachedTextOpacity` (default 0.8), preserving
+  legacy `{ play, unreachedOpacity }` calls. Two-argument `checkPalette` pairs now
+  carry `threshold: 3 | 4.5`; `minimum` covers only 4.5 pairs and new
+  `unreachedMinimum` covers 3 pairs. Hosts must replace hard-coded 4.5 comparisons
+  with each pair's threshold, report both minima, resolve both knobs through CSS
+  opacity and pass effective text opacity 1 under either contrast preference.
+  One-argument static checks are unchanged. ([#161](https://github.com/uberblick-ai/ablauf/issues/161))
+
 ## 0.3.1 — 2026-11-07
 
 ### Playback

@@ -176,21 +176,38 @@ Creation shows the full figure at `{ scenario: 0, step: -1, status: "idle" }`
 without a timer or callback. Call `play()` from a host interaction to start;
 `pause()` keeps the frame, and resuming restarts its full dwell. Each step,
 including the last, stays current for its `ms`. A non-looping scene then ends
-at `{ scenario, step: -1, status: "ended" }`, preserving the selected scenario
-in both `player.state` and `onChange`. The full figure returns without fading,
-current/played highlighting or glow; the SVG has neither `ab-in-progress` nor
-`ab-playing`. Pausing mid-scene retains the current highlight and fade.
+at `{ scenario, step: last, status: "ended" }`, preserving the selected scenario
+and last step in `player.state`, `onChange` and subscribers. The last step stays
+current, earlier visited parts stay played and off-path parts stay dimmed.
+The SVG retains `ab-in-progress` and removes `ab-playing`; motion stops.
+Pausing mid-scene retains the current highlight and fade.
 `play()` replays from step `0`, or `{ loop: true }` loops the selected scenario.
 Repeated `play()` during playback leaves the timer alone.
 
-After completion the built-in controls show a blank counter, empty actor and
-caption, no current/played segments, and range `-1` with value text “Full figure”.
-The status region clears without repeating the last step. The toggle reads
-“Replay” and starts at step `0`.
+Off-path flow shapes use `--ab-play-unreached-opacity` (default 0.3); all node
+and edge text uses `--ab-play-unreached-text-opacity` (default 0.8), on individual
+elements. Both accept CSS numbers/percentages clamped to [0, 1]. Either
+`prefers-contrast: more` or `forced-colors: active` forces full text opacity even
+with a host override. Current/played parts keep their native colours and full
+opacity; gaps and knockouts stay unfaded. Sequence fade styling is unchanged.
+For host checks, `PlaybackContrast` adds optional `unreachedTextOpacity` defaulting
+to 0.8; `play` and `unreachedOpacity` remain required. Playback `checkPalette`
+results use per-pair `threshold: 3 | 4.5`, `minimum` for 4.5 pairs and
+`unreachedMinimum` for 3 pairs. Check every pair against its threshold. See
+[theming](theming.md) and the [host testing guide](https://ablauf.uberblick.ai/guides/testing)
+for resolving both opacity knobs and contrast preferences. Static one-argument
+checks retain their types, pairs, ratios, minimum and validation.
+
+After completion the built-in controls retain the last counter, actor, caption
+and its scroll position, current/played segments, step list and range value.
+The status region retains the current position without repeating it. The toggle
+reads “Replay” and starts at step `0`. Under reduced motion Replay resets to idle
+and the full figure, as `play()` does.
 
 `next()`, `previous()` and `seek(step)` pause and clamp integer steps to
-`-1..last`; `-1` clears highlighting. From ended, `next()` goes to step `0`
-paused and `previous()` stays at `-1` paused. `select(scenario)` pauses on that
+`-1..last`; `-1` clears highlighting and shows the full figure. From ended,
+`next()` stays at the last step paused and `previous()` goes to the preceding
+step paused (or `-1` for a one-step scenario). `select(scenario)` pauses on that
 scenario's first step, including when reselecting it.
 `select(scenario: number | string): void` accepts a numeric index or exact
 `Timeline.slug`. Unknown slugs, invalid indices and non-integer indices are

@@ -135,7 +135,7 @@ export const markerPrefix = (options: SvgOptions) =>
 		(c) => `.${c.charCodeAt(0).toString(16).padStart(4, "0")}`,
 	);
 
-// Playback fades unplayed shapes, preserving text, gaps and knockouts.
+// Flow playback fades unplayed shapes and text, preserving gaps and knockouts.
 // Parts keep their own tone colours in every state; the current step stands
 // out by glow and a heavier stroke. Geometry and draw order never change.
 export function playStyle(mode: "auto" | "light" | "dark", id: string, kind: "flow" | "sequence" = "flow"): string {
@@ -144,13 +144,15 @@ export function playStyle(mode: "auto" | "light" | "dark", id: string, kind: "fl
 		? `.ab.ab-auto{${colors(false)}}@media (prefers-color-scheme:dark){.ab.ab-auto{${colors(true)}}}`
 		: `.ab.ab-${mode}{${colors(mode === "dark")}}`;
 	const unplayed = `.ab[data-ab-play="${id}"].ab-in-progress [data-ab-part]:where(:not(.ab-current):not(.ab-played))`;
-	// Fade individual shapes so text never inherits a group opacity. Opacity
+	// Fade individual elements so text never inherits a group opacity. Opacity
 	// accepts numbers/percentages and clamps in CSS; marker carriers fade heads.
 	// Sequence playback retains its existing group fade and overlay ordering.
 	const sequenceUnplayed = `.ab[data-ab-play="${id}"].ab-in-progress [data-ab-part]:not(.ab-current):not(.ab-played)`;
 	const fade = kind === "sequence"
 		? `${sequenceUnplayed}:not(:has(.gap)){opacity:.3}${sequenceUnplayed}:has(.gap) text{opacity:.3}`
-		: `${unplayed} ${FADE_SHAPES}{opacity:var(--ab-play-unreached-opacity,.3)}`;
+		: `${unplayed} ${FADE_SHAPES}{opacity:var(--ab-play-unreached-opacity,.3)}`
+			+ `${unplayed} text{opacity:var(--ab-play-unreached-text-opacity,.8)}`
+			+ `@media (prefers-contrast:more),(forced-colors:active){${unplayed} text{opacity:1}}`;
 	return `${defaults}${fade}\n${kind === "sequence" ? sequencePlayEffects(id) : playEffects(id)}`;
 }
 

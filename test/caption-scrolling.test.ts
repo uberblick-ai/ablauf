@@ -109,7 +109,7 @@ test("caption keeps its named region tab stop and controls across idle, short, l
 	}
 });
 
-test("step/scenario changes and completion reset caption scrolling; same-step pause and resume preserve it", t => {
+test("step/scenario changes reset caption scrolling; completion, pause and resume preserve it", t => {
 	t.mock.timers.enable({ apis: ["setTimeout"] });
 	const f = setup(t);
 	f.caption.focus();
@@ -133,10 +133,8 @@ test("step/scenario changes and completion reset caption scrolling; same-step pa
 	f.player.play();
 	t.mock.timers.tick(100);
 	assert.equal(f.player.state.status, "ended");
-	// Completion restores the full figure (#147): the caption empties and its
-	// scrolling resets with it.
-	assert.equal(f.caption.scrollLeft, 0);
-	assert.equal(f.caption.textContent, "");
+	assert.equal(f.caption.scrollLeft, 120);
+	assert.equal(f.caption.textContent, long);
 	f.player.select(0);
 	assert.equal(f.caption.scrollLeft, 0);
 	f.player.seek(0);

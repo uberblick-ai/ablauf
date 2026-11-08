@@ -165,7 +165,7 @@ for (const action of ["api", "button", "space", "tab click", "tab key"]) {
 		assert.deepEqual(f.player.state, { scenario: tab ? 1 : 0, step: 0, status: "playing" });
 		t.mock.timers.tick(100);
 		assert.equal(f.player.state.status, tab ? "ended" : "playing");
-		assert.equal(f.player.state.step, tab ? -1 : 1);
+		assert.equal(f.player.state.step, tab ? 0 : 1);
 	});
 }
 
@@ -305,10 +305,10 @@ for (const entry of ["player", "mount"] as const) {
 		assert.deepEqual(f.player.state, { scenario: 0, step: 0, status: "playing" });
 		assert.ok(nextImage.children[1].classList.contains("ab-current"));
 		t.mock.timers.tick(1);
-		assert.deepEqual(f.player.state, { scenario: 0, step: -1, status: "ended" });
-		assert.equal(nextImage.classList.contains("ab-in-progress"), false);
+		assert.deepEqual(f.player.state, { scenario: 0, step: 0, status: "ended" });
+		assert.equal(nextImage.classList.contains("ab-in-progress"), true);
 		assert.equal(nextImage.classList.contains("ab-playing"), false);
-		assert.ok(nextImage.children.every(el => !el.classList.contains("ab-current") && !el.classList.contains("ab-played")));
+		assert.ok(nextImage.children[1].classList.contains("ab-current"));
 		const controls = f.cls("ab-playback").all();
 		const currentObserver = [...nextDoc.viewport.observers][0];
 		let calls = 0; f.player.subscribe(() => calls++);

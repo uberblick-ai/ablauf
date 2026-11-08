@@ -34,6 +34,7 @@ second argument to `checkPalette` adds playback text checks.
 | `--ab-play` | Glow of untoned current parts; controls accent | `#0a7a60` | `#6ff0cf` |
 | `--ab-play-glow` | Glow blur; literal `0` removes glow | `6px` SVG; `10px` selected tab; `8px` current segment | `6px` SVG; `10px` selected tab; `8px` current segment |
 | `--ab-play-unreached-opacity` | Unplayed flow shapes, strokes and arrowheads; CSS number or percentage, clamped to [0, 1] | `0.3` | `0.3` |
+| `--ab-play-unreached-text-opacity` | Unplayed flow text; CSS number or percentage, clamped to [0, 1]; contrast preferences force full opacity | `0.8` | `0.8` |
 | `--ab-font-text` | Controls body, caption, side-list remark and empty-state face | `system-ui,sans-serif` | `system-ui,sans-serif` |
 | `--ab-font-mono` | Controls tabs, buttons, actors and counters/numbers | `ui-monospace,monospace` | `ui-monospace,monospace` |
 
@@ -55,11 +56,20 @@ and ease fades; paused and ended figures stay still. Reduced motion disables ani
 stepping can still show the glow. Built-in controls have matching current-colour
 defaults and honour the same host override in automatic and pinned schemes.
 
-In flows, unplayed means neither current nor played while a step is shown. Only its
-shapes fade: node and edge label text never takes this opacity. Inline label
-gaps and crossing knockouts retain opacity multiplier 1 (host colour alpha
-still applies). Current and played shapes stay at full opacity in their own
-tones. The built-in text stays at least 4.5:1 for every fade from 0 to 1.
+In flows, unplayed means neither current nor played while a step is shown,
+including after completion. Shapes fade independently with the shape knob;
+all node titles, subtitles, panel contents and edge labels fade with the text
+knob. Opacity applies to individual shapes and text elements, never groups.
+Inline label gaps and crossing knockouts retain opacity multiplier 1 (host
+colour alpha still applies). Current and played parts stay fully opaque in
+their own tones. Built-in palettes are unchanged: with defaults 0.3/0.8,
+off-path text meets a checked 3:1 floor (minima about 3.15 light / 3.94 dark);
+static/full-figure text, current/played text and controls keep the 4.5:1 bar.
+Under either `prefers-contrast: more` or `forced-colors: active`, off-path flow
+text stays fully opaque even with a host text-opacity override. Opacity does
+not remove text from the accessibility tree; captions and the polite status
+continue to describe the current position. Sequence fading keeps its existing
+styling; the two flow knobs and text preference guards do not change it.
 
 Control font defaults are independent of render `fonts`. These properties
 update mounted controls immediately through normal CSS inheritance, including
@@ -133,6 +143,7 @@ keep the whole palette consistent when the system and page themes disagree.
   --ab-play: #0a7a60;
   --ab-play-glow: 6px;
   --ab-play-unreached-opacity: 0.3;
+  --ab-play-unreached-text-opacity: 0.8;
   --ab-font-text: system-ui,sans-serif;
   --ab-font-mono: ui-monospace,monospace;
 }
@@ -159,6 +170,7 @@ keep the whole palette consistent when the system and page themes disagree.
   --ab-play: #6ff0cf;
   --ab-play-glow: 6px;
   --ab-play-unreached-opacity: 0.3;
+  --ab-play-unreached-text-opacity: 0.8;
   --ab-font-text: system-ui,sans-serif;
   --ab-font-mono: ui-monospace,monospace;
 }
@@ -190,17 +202,27 @@ paint contract. [Test your integration](https://ablauf.uberblick.ai/guides/testi
 shows how to resolve effective colours inside an inline SVG, including a shadow
 root, and documents accepted colour forms, composited grounds, font and CSP checks.
 
-`checkPalette(palette, { play, unreachedOpacity })` retains every static pair
-and adds controls and current/played/unplayed SVG text pairs to `minimum`.
-Resolve effective automatic/pinned defaults and CSS overrides before calling:
-`play` is the effective `--ab-play` colour (the same colour forms and alpha as
-palette colours), and `unreachedOpacity` is a finite number or trimmed CSS
-numeric/percentage string, such as `0.3`, `"0.3"` or `"30%"`. Finite values
-outside [0, 1] clamp; missing fields, non-finite values, invalid syntax and
-unsupported forms throw `TypeError`. Extra keys are ignored. Fonts and glow
-size are not inputs. Playback pairs may use `ink: "play"`; grounds still use
-palette tokens. Text alpha composites over the layered ground, with no text
-opacity multiplier. Decorative glow/text-shadow is excluded from ratios.
-Focus rings, progress segments and faded shapes need separate browser
-non-text review; they do not enter the text minimum. One-argument calls retain
-their existing types, pairs, ratios, minimum and colour validation.
+`checkPalette(palette, { play, unreachedOpacity, unreachedTextOpacity })` retains
+every static pair and adds controls and current/played/unplayed flow text pairs.
+`play` and `unreachedOpacity` remain required. Optional `unreachedTextOpacity`
+defaults to 0.8 when omitted or undefined, preserving legacy two-field callers.
+Both opacities accept finite numbers or trimmed CSS numeric/percentage strings,
+clamped to [0, 1]. Invalid/non-finite/unresolved forms throw `TypeError`; extra
+keys are ignored. Resolve both knobs through CSS `opacity`, using fallbacks 0.3
+and 0.8. Check the media queries: pass effective text opacity **1** when either
+contrast preference matches, otherwise the resolved text knob. Reading the
+custom property alone misses the guard. `play` is the effective colour with the
+same accepted forms and alpha as palette colours. Fonts and glow are not inputs.
+
+Every playback pair has `threshold: 3 | 4.5`. Ordinary off-path flow pairs use 3;
+static/full-figure, current/played and controls pairs use 4.5. Separate full-opacity
+off-path preference witnesses also use 4.5, identified in `where` by
+`(full-opacity contrast preference witness)`. Both sets remain when effective
+text opacity is 1. Playback `minimum` is the lowest unrounded ratio among 4.5
+pairs; `unreachedMinimum` is the lowest among 3 pairs. Hosts must replace hard-coded
+4.5 comparisons with `pair.ratio >= pair.threshold` and report both minima.
+Playback pairs may use `ink: "play"`; grounds still use palette tokens.
+`inkOpacity` multiplies text alpha over the actual layered ground, independently
+of faded fills. Decorative glow/text-shadow is excluded. Focus rings, progress
+segments and faded shapes need separate browser non-text review. One-argument
+calls retain their existing types, pairs, ratios, minimum and colour validation.
