@@ -7,7 +7,7 @@ import type { Completion } from "./test-runner.ts";
 // from a file process. Its destination is a file: Node waits for that file to
 // close before force exit, while a stdout pipe can still have buffered writes.
 export default async function* report(source: AsyncIterable<TestEvent>) {
-	const file = process.argv[1];
+	const file = process.env.ABLAUF_TEST_FILE;
 	const declared = new Set<number>();
 	const reported = new Set<number>();
 	let summary = false;

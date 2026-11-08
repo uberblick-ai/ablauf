@@ -80,7 +80,9 @@ test("the real command builds exported JavaScript and publishes sizes and isolat
 	const command = spawnSync(process.execPath, ["tools/size-budget-command.ts"], {
 		cwd: build,
 		encoding: "utf8",
-		env: { ...process.env, GITHUB_STEP_SUMMARY: summary },
+		// The fixture shares Git metadata, but status must never refresh the
+		// checkout's index with the copied worktree's stat information.
+		env: { ...process.env, GITHUB_STEP_SUMMARY: summary, GIT_OPTIONAL_LOCKS: "0" },
 	});
 	assert.ifError(command.error);
 	assert.equal(command.status, 0, command.stdout + command.stderr);

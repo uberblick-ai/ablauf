@@ -4,10 +4,11 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { test, type TestContext } from "node:test";
+import { pathToFileURL } from "node:url";
 
 const runner = resolve(import.meta.dirname, "../tools/test-runner.ts");
 
-function fixture(t: TestContext, files: Record<string, string>) {
+function fixture(t: TestContext, files: Record<string, string>, loadTimeout?: number) {
 	const cwd = mkdtempSync(join(process.env.UB_AGENTS_SCRATCH ?? tmpdir(), "ablauf-runner-"));
 	t.after(() => rmSync(cwd, { recursive: true, force: true }));
 	writeFileSync(join(cwd, "package.json"), '{"type":"module"}');
@@ -19,7 +20,16 @@ function fixture(t: TestContext, files: Record<string, string>) {
 	// this test worker. The parent's NODE_TEST_CONTEXT must not follow it.
 	const env = { ...process.env };
 	delete env.NODE_TEST_CONTEXT;
-	const result = spawnSync(process.execPath, [runner], { cwd, env, encoding: "utf8", timeout: 10_000 });
+	let entry = runner;
+	if (loadTimeout !== undefined) {
+		entry = join(cwd, "run.ts");
+		writeFileSync(entry, `
+import {runTests} from ${JSON.stringify(pathToFileURL(runner).href)};
+import {globSync} from "node:fs";
+process.exitCode = await runTests(globSync("test/**/*.test.ts").sort(), ${loadTimeout});
+`);
+	}
+	const result = spawnSync(process.execPath, [entry], { cwd, env, encoding: "utf8", timeout: 10_000 });
 	assert.ifError(result.error);
 	return { ...result, output: result.stdout + result.stderr };
 }
@@ -52,6 +62,71 @@ test("a file exiting before registration cannot masquerade as a passing file", t
 	const result = fixture(t, { "test/early.test.ts": "process.exit(0);" });
 	assert.equal(result.status, 1, result.output);
 	assert.match(result.output, /Incomplete test file: .*early\.test\.ts: missing completion receipt/);
+});
+
+test("a module initialization error after a declaration fails with its filename and exception", t => {
+	const result = fixture(t, { "test/import-error.test.ts": `
+import {test} from "node:test";
+test("registered before error", () => {});
+throw new Error("module initialization failed");
+test("never registered", () => {});
+` });
+	assert.equal(result.status, 1, result.output);
+	assert.match(result.output, /Test file initialization failed: .*import-error\.test\.ts/);
+	assert.match(result.output, /module initialization failed/);
+});
+
+test("pending module evaluation with a leaked handle fails within the load deadline", t => {
+	const result = fixture(t, { "test/pending-import.test.ts": `
+import {test} from "node:test";
+test("declared before pending import", () => {});
+setInterval(() => {}, 1000);
+await new Promise(() => {});
+` }, 1000);
+	assert.equal(result.status, 1, result.output);
+	assert.match(result.output, /Test file initialization timed out after 1000 ms: .*pending-import\.test\.ts/);
+});
+
+test("synchronous module evaluation cannot block the parent's load deadline", t => {
+	const result = fixture(t, { "test/blocked-import.test.ts": "while (true) {}" }, 1000);
+	assert.equal(result.status, 1, result.output);
+	assert.match(result.output, /Test file initialization timed out after 1000 ms: .*blocked-import\.test\.ts/);
+});
+
+test("successful module evaluation clears the load deadline while tests keep running", t => {
+	const result = fixture(t, { "test/loaded.test.ts": `
+import {test} from "node:test";
+test("longer than load deadline", async () => {
+  await new Promise(resolve => setTimeout(resolve, 1200));
+});
+` }, 1000);
+	assert.equal(result.status, 0, result.output);
+	assert.match(result.output, /Test completeness: declared 1, reported 1, files 1; tests 1\./);
+});
+
+test("a malformed receipt fails with its filename without losing another file's report", t => {
+	const result = fixture(t, {
+		"test/malformed.test.ts": `
+import {writeFileSync} from "node:fs";
+writeFileSync(3, "not JSON");
+process.exit(0);
+`,
+		"test/passing.test.ts": 'import {test} from "node:test"; test("still reported", () => {});',
+	});
+	assert.equal(result.status, 1, result.output);
+	assert.match(result.output, /Incomplete test file: .*malformed\.test\.ts: invalid completion receipt/);
+	assert.match(result.output, /still reported/);
+	assert.match(result.output, /Test completeness: declared 1, reported 1, files 2; tests 1\./);
+});
+
+test("the parent rejects mismatched receipt counts even after a zero exit", t => {
+	const result = fixture(t, { "test/mismatch.test.ts": `
+import {writeFileSync} from "node:fs";
+writeFileSync(3, JSON.stringify({declared: 2, reported: 1, tests: 1}));
+process.exit(0);
+` });
+	assert.equal(result.status, 1, result.output);
+	assert.match(result.output, /Incomplete test file: .*mismatch\.test\.ts: declared 2, reported 1/);
 });
 
 test("a file with sixteen unreported declarations fails with its filename", t => {

@@ -14,7 +14,9 @@ async function write(text: string): Promise<void> {
 	await new Promise<void>((done, reject) => process.stdout.write(text, error => error ? reject(error) : done()));
 }
 
-export async function runTests(files: string[]): Promise<number> {
+// The shorter load deadline is injectable for regression fixtures. Each test
+// retains Node's separate 60-second timeout after module evaluation completes.
+export async function runTests(files: string[], loadTimeout = 60_000): Promise<number> {
 	let failed = files.length === 0;
 	let declared = 0;
 	let reported = 0;
@@ -26,9 +28,21 @@ export async function runTests(files: string[]): Promise<number> {
 		const child = spawn(process.execPath, [
 			"--test", "--test-isolation=none", "--test-force-exit", "--test-timeout=60000",
 			"--test-reporter", resolve(import.meta.dirname, "test-worker.ts"),
-			"--test-reporter-destination", report, resolve(file),
+			"--test-reporter-destination", report, resolve(import.meta.dirname, "test-entry.ts"),
 		], {
-			stdio: ["ignore", "pipe", "pipe", "pipe"],
+			env: { ...process.env, ABLAUF_TEST_FILE: resolve(file) },
+			stdio: ["ignore", "pipe", "pipe", "pipe", "pipe"],
+		});
+		let loadTimedOut = false;
+		const deadline = setTimeout(() => {
+			loadTimedOut = true;
+			child.kill("SIGKILL");
+		}, loadTimeout);
+		let loading = "";
+		const loadChannel = child.stdio[4];
+		if (loadChannel && "on" in loadChannel) loadChannel.on("data", chunk => {
+			loading += chunk;
+			if (loading === "loaded") clearTimeout(deadline);
 		});
 		let output = "";
 		let receipt = "";
@@ -39,11 +53,15 @@ export async function runTests(files: string[]): Promise<number> {
 		const status = await new Promise<number | null>((done, reject) => {
 			child.on("error", reject);
 			child.on("close", done);
-		});
+		}).finally(() => clearTimeout(deadline));
 		if (existsSync(report)) output += readFileSync(report, "utf8");
 		rmSync(scratch, { recursive: true, force: true });
 		await write(output);
 		if (status !== 0) failed = true;
+		if (loadTimedOut) {
+			failed = true;
+			console.error(`Test file initialization timed out after ${loadTimeout} ms: ${file}`);
+		}
 		// The worker writes this after consuming the terminal summary and
 		// checking every declaration. Process close also guarantees the report
 		// destination has closed, so all its text is available above.
@@ -53,7 +71,20 @@ export async function runTests(files: string[]): Promise<number> {
 			console.error(`Incomplete test file: ${file}: missing completion receipt.`);
 			return;
 		}
-		const completion: Completion = JSON.parse(receipt);
+		let completion: Completion;
+		try {
+			completion = JSON.parse(receipt);
+			if (!completion || ![completion.declared, completion.reported, completion.tests]
+				.every(value => Number.isSafeInteger(value) && value >= 0)) throw new Error("Invalid counts");
+		} catch {
+			failed = true;
+			console.error(`Incomplete test file: ${file}: invalid completion receipt.`);
+			return;
+		}
+		if (completion.declared !== completion.reported) {
+			failed = true;
+			console.error(`Incomplete test file: ${file}: declared ${completion.declared}, reported ${completion.reported}.`);
+		}
 		declared += completion.declared;
 		reported += completion.reported;
 		tests += completion.tests;
