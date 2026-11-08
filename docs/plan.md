@@ -473,6 +473,201 @@ See [approvals](../examples/approvals.flow) and
 [run endings](../examples/run-endings.flow) for the review examples, and
 [run endings as a ladder](../examples/run-endings-ladder.flow).
 
+### Multi-step fan-out v1 (planned)
+
+Planned in [#162](https://github.com/uberblick-ai/ablauf/issues/162)
+(grammar and `branches`), [#163](https://github.com/uberblick-ai/ablauf/issues/163)
+(`style map`) and [#166](https://github.com/uberblick-ai/ablauf/issues/166)
+(playback), in that order. A fan-out may branch again from an outcome, let
+two branches reach the same outcome, and skip a step. The same source can
+also be drawn as a mind map. Every rule below keeps the shared constraints:
+the source alone fixes placement, nothing is moved or rerouted to avoid a
+problem, each problem is a diagnostic on its line, and nothing is dropped
+silently.
+
+```
+fan-out v1
+step "Run ended"
+outcome "Success" reason="Checks passed" tone="done"
+  outcome "Approved" reason="Reviewer accepts"
+    outcome "Healthy" destination="Live" tone="done"
+    outcome "Failing" destination="Roll back" tone="rework"
+  outcome "Changes" reason="Reviewer wants fixes" destination="Fix it" tone="rework"
+outcome "Crash" reason="Process died" tone="rework"
+  outcome "Retries left" destination="Retry the run" tone="rework"
+  outcome "None left" reason="Budget used up" destination="Ask a maintainer" tone="stop" id="ask"
+outcome "Blocked" reason="Needs a decision" tone="stop"
+outcome ref="ask"
+```
+
+#### Grammar
+
+- **Header.** `fan-out v1`. `fan-out v2` and later warn and render as v1.
+  A `fan-out v0` source keeps every v0 rule, and valid v0 sources keep their
+  exact bytes. The one deliberate v0 change is the second-step rule below; it
+  only changes sources that already carry that error.
+- **Lines.** As in v0: blank lines and whole-line `#` comments are ignored and
+  never affect structure, values are JSON strings, `style` comes before the
+  step, and there is exactly one `step`.
+- **Indentation.** Only leading ASCII spaces count; a tab in the indent is a
+  diagnostic and counts as two spaces. `level = floor(spaces / 2)`, and an odd
+  count is a diagnostic. `style` and `step` lines must be at level 0
+  (diagnostic otherwise; they still apply). The parser keeps a stack of
+  accepted outcome boxes, with the step at depth 0. An outcome at level n
+  becomes a child of the stack entry at depth n and is pushed at depth n + 1,
+  dropping deeper entries. A level above the stack's current depth is a
+  diagnostic and is clamped to it, so the first outcome is always a child of
+  the step. Refs and rejected lines never enter the stack.
+- **Second step.** In v0 and v1, a second `step` line is a diagnostic, and it
+  and every later `outcome` line are drawn as rejected source (each also
+  diagnosed). They never attach to the first step.
+- **Fields.** `outcome "text"` takes `reason=`, `destination=`, `tone=` and
+  `id=` in any order, once each. A repeated field keeps its first value and is
+  a diagnostic with the raw source shown, as in v0; unknown fields likewise.
+  `reason=` and `destination=` are optional in v1; an explicitly empty value
+  is a diagnostic and counts as omitted. The outcome text is required.
+- **Ids.** `id=` matches `^[a-z][a-z0-9-]{0,39}$` and compares exactly. Ids
+  never show. A malformed id is a diagnostic and the box draws without one. A
+  repeated id keeps its first binding; the later box still draws, without the
+  id, and the diagnostic names both lines.
+- **Refs.** `outcome ref="id"` takes no text and no other field; anything else
+  on the line rejects it. Its parent comes from its indentation like an
+  outcome's. A ref adds an edge from its parent to the named outcome, and no
+  box. The target may be declared earlier or later, but its depth must be
+  greater than its parent's depth. Every edge therefore points right, so the
+  figure has no cycles and no backward or same-column edges. A ref is rejected
+  when its id is unknown or unbound, when the target is not deeper than the
+  parent (this covers self, sibling, ancestor and backward refs), when the
+  target is already the parent's declared child, or when the same parent
+  already refs it.
+- **Rejected source.** Every rejected line (refs included) is drawn below the
+  figure as escaped, line-numbered source, as v0 does, and carries a
+  diagnostic. A rejected ref draws no edge.
+- **Depth.** `branches` draws the step and up to three levels of outcomes;
+  `map` draws two. A deeper outcome is a diagnostic and is drawn as rejected
+  source together with its whole subtree (each line listed); ids inside it do
+  not bind, so refs to them are unknown refs. Switching a source between
+  styles can therefore change what is rejected, and a test covers that.
+- **Style.** `style branches` (default) or `style map`. `style ladder` in v1 is
+  a diagnostic and draws as `branches`.
+
+#### `branches` geometry
+
+- **Canvas.** 678 px wide, 16 px margins, 36 px column gaps. With L drawn
+  levels (step plus deepest outcome level, 1 to 4), every column is
+  `w = min(190, floor((646 - 36 × (L − 1)) / L))` px wide; column d starts at
+  `16 + d × (w + 36)`. Four levels give 136 px columns.
+- **Boxes.** All text is mono (`fonts.mono` as in v0): the outcome in
+  12 px/600, the step in 13 px/600, a reason in 12 px/400 muted, a destination
+  as `→ ` plus its text in 12 px/600 after a dotted rule. Leading is 18 px,
+  horizontal padding 12 px, so the text area is `w − 24`; wrapping, long-word
+  splitting and the overwide-glyph rule are v0's, and the `→ ` prefix wraps
+  with the first word. Box height is `16 + 18 × lines`, plus 10 px when there
+  is a destination. Tone classes are v0's (`stop` dashed); no tone is a plain
+  box; the step uses `agent`.
+- **Vertical placement** is computed bottom up from declared children only;
+  refs never count, so a box whose only edges are refs is a leaf. A leaf's
+  envelope is its box height. A parent stacks its children's envelopes in
+  source order with 10 px between siblings (18 px between the step's
+  children); its envelope is the larger of that span and its own box height,
+  and the children's block sits centred in it. The parent's box is centred on
+  the midpoint between its first and last child's box centres, then clamped
+  inside its envelope. The step's envelope starts at y = 16. Coordinates are
+  rounded to whole pixels at the end; the canvas height is the step's envelope
+  plus 32 px, plus rejected source.
+- **Tree edges** are v0's curve: from the parent's right edge at its vertical
+  centre, a cubic bending at the middle of the gap, then a 14 px straight run
+  into the child's left edge at its centre, with an arrowhead.
+- **Ref edges** leave from the same parent port. Into a target, the tree edge
+  takes the centre, and refs take `centre + 8k` for k = 1, 2, … in source
+  order. A slot closer than 6 px to the box's bottom is a diagnostic on that
+  ref line; the edge still draws at its slot. A ref into the next column is a
+  tree-edge curve into its slot. A ref that skips columns curves within the
+  first gap to its slot's height and then runs straight to the target.
+- **Checks**, each a diagnostic on the responsible line, never a change of
+  geometry: a straight run passing within 4 px of a box it does not connect
+  (ref line); two straight runs overlapping at the same height (the later ref
+  line); text that does not fit (the outcome line). Curves stay inside gaps,
+  where nothing else is drawn, and shared start points or slots are expected.
+  The renderer never moves a box; the author reorders outcomes.
+
+#### `style map` geometry
+
+- **Sides.** Accepted top-level outcome boxes, N of them, are split by source
+  order: the first `ceil(N / 2)` go right and the rest left. Refs and rejected
+  lines do not count. Descendants keep their ancestor's side.
+- **Columns.** The step is a 128 px box centred on the canvas. Each side has
+  two 26 px gaps and two columns of `floor((678 − 32 − 128 − 4 × 26) / 4)` =
+  103 px. Left-side coordinates mirror right-side ones; text is never
+  mirrored and aligns away from the centre.
+- **Shapes.** Level-1 outcomes are rounded boxes (radius `min(h / 2, 12)`)
+  with centred text. Level-2 outcomes are text on a 2 px underline as wide as
+  their longest line. Reasons and destinations draw under the text as in
+  `branches`.
+- **Tones.** The cycle is `agent, done, rework, system, stop, neutral`. Each
+  accepted level-1 box takes the next position in source order across both
+  sides, whether or not it names a tone, so adding a tone never recolours a
+  sibling. A box's effective tone is its own `tone=` or its position's tone.
+  Descendants inherit their parent's effective tone unless they name their
+  own, which then applies to their own subtree. Edges and underlines use the
+  child's effective tone.
+- **Vertical placement** uses the `branches` envelope rule per side (22 px
+  between level-1 subtrees, 8 px between siblings below). Both sides and the
+  step centre on a common line, half the taller side's envelope.
+- **Edges** are 2 px curves at 0.75 opacity with no arrowheads: from the
+  step's side, or a level-1 box's outer side, at its centre, to a box's inner
+  side at its centre or an underline's inner end.
+- **Ref arcs** are dashed in the target's effective tone. From the source's
+  outer port (s = its side's sign) to the target's inner port (t = its side's
+  sign): `M sx,sy C sx + 40s,sy  ex − 40t,ey  ex,ey`, with incoming refs to
+  one target offset by 6 px each in source order. Arcs count toward the
+  canvas bounds; any part outside the canvas, or within 4 px of a box or
+  underline it does not connect (tested at 32 evenly spaced points), is a
+  diagnostic on the ref line.
+
+#### Description
+
+A v1 fan-out's `aria-label` is generated from the graph in source order:
+`Fan-out: STEP. STEP leads to A, B and C. A leads to D and E. …`, adding
+`(reason; destination)` where present and `B also leads to E` for each ref.
+A label repeated in the figure gets its parent's label in brackets. When
+`title` is supplied it becomes the `aria-label` and the generated text moves
+to a `<desc>` referenced by `aria-describedby`, using the `idPrefix`. v0
+descriptions are unchanged.
+
+#### Playback
+
+Fan-out playback for v0 is [#68](https://github.com/uberblick-ai/ablauf/issues/68).
+v1 playback ([#166](https://github.com/uberblick-ai/ablauf/issues/166)) uses
+the same play sections and the shared parser, with these additions.
+
+- **Targets.** A target first matches an `id`, then an outcome's exact text
+  when exactly one outcome has it. An ambiguous text is a diagnostic on the
+  step line that names the conflicting declaration lines; give one an id.
+  Duplicate labels are allowed in v1. The step itself is the target `step`.
+- **Traversal.** Each scenario starts at the step. A step must reach its
+  target over one edge from the previous accepted target, tree edge or ref;
+  that edge and the target light. Repeating the current target needs no edge.
+  A step with no such edge is a diagnostic and is skipped, keeping the
+  predecessor. This tells A → E apart from A → B → E.
+- **Parts.** Every box (with its text, reason, rule and destination), every
+  underline and every edge is its own part with a stable identity in accepted
+  source order, so a shared outcome and each of its incoming edges fade and
+  light independently. The step is a part. Rejected source is never a part
+  and never fades.
+- **Fade and completion** follow the shared playback rules as amended by
+  [#161](https://github.com/uberblick-ai/ablauf/issues/161).
+
+#### Tests and review
+
+- Before any renderer change, golden SVGs of the current v0 output are
+  committed: both styles, every example, the malformed fixtures, both schemes,
+  custom fonts, `title` and `idPrefix`. They stay byte-identical, except the
+  second-step fixtures, which change once, in their own commit.
+- Each diagnostic above has a negative fixture asserting its line and that the
+  figure still renders. Valid examples render with zero diagnostics.
+- Each style ships one example reviewed by a person in light and dark.
+
 ## Sequence v0
 
 ```text
@@ -1195,7 +1390,12 @@ independent light DOM and shadow-root mounts, schemes and teardown.
   Travel animation ([#138](https://github.com/uberblick-ai/ablauf/issues/138))
   remains a separate change.
 - **v0.3.2, fan-outs:** [#68](https://github.com/uberblick-ai/ablauf/issues/68),
-  the same play sections; a target is an outcome's text.
+  the same play sections for v0 fan-outs, where a target is an outcome's
+  text. The same release adds multi-step fan-outs and mind maps,
+  [#162](https://github.com/uberblick-ai/ablauf/issues/162) then
+  [#163](https://github.com/uberblick-ai/ablauf/issues/163), and their
+  playback, [#166](https://github.com/uberblick-ai/ablauf/issues/166), as
+  planned in [Multi-step fan-out v1](#multi-step-fan-out-v1-planned).
 
 Extras cut from v0.3.0 wait for real need. Frozen frames come later. Timelines
 from real ub-agents run logs and visual timeline editing are out of scope.
