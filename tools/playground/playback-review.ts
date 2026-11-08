@@ -9,6 +9,7 @@ const loop = document.getElementById("review-loop") as HTMLInputElement;
 const accent = document.getElementById("review-accent") as HTMLSelectElement;
 const zeroGlow = document.getElementById("review-zero-glow") as HTMLInputElement;
 const fadeOpacity = document.getElementById("review-fade") as HTMLSelectElement;
+const textFadeOpacity = document.getElementById("review-text-fade") as HTMLSelectElement;
 const textFont = document.getElementById("review-font-text") as HTMLSelectElement;
 const monoFont = document.getElementById("review-font-mono") as HTMLSelectElement;
 const ink = document.getElementById("review-ink") as HTMLInputElement;
@@ -268,7 +269,7 @@ zeroGlow.addEventListener("change", () => {
 	else document.body.style.removeProperty("--ab-play-glow");
 });
 // These mutate only inherited CSS; mounted players, focus and SVG bytes remain.
-for (const [control, property] of [[fadeOpacity, "--ab-play-unreached-opacity"], [textFont, "--ab-font-text"], [monoFont, "--ab-font-mono"], [ink, "--ab-ink"]] as const) {
+for (const [control, property] of [[fadeOpacity, "--ab-play-unreached-opacity"], [textFadeOpacity, "--ab-play-unreached-text-opacity"], [textFont, "--ab-font-text"], [monoFont, "--ab-font-mono"], [ink, "--ab-ink"]] as const) {
 	control.addEventListener("input", () => {
 		if (control.value) document.body.style.setProperty(property, control.value);
 		else document.body.style.removeProperty(property);

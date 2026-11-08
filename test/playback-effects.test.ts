@@ -92,7 +92,7 @@ for (const mode of ["headless", "mounted", "controls"] as const) {
 		f.action("play");
 		f.tick(100); f.tick(100);
 		assert.equal(f.player.state.status, "ended");
-		assert.ok(!f.svg.classList.contains("ab-in-progress"));
+		assert.ok(f.svg.classList.contains("ab-in-progress"));
 		f.action("play");
 		assert.equal(f.player.state.step, 0);
 		f.player.seek(-1); f.check();
@@ -167,6 +167,8 @@ test("post-112 idle SVG bytes change only by playback styles, colour substitutio
 			const expected = withoutRecolouring(outputs[i].replaceAll("#2869b8", "#0a7a60").replaceAll("#88baff", "#6ff0cf"))
 				.replace(/\.ab\[data-ab-play="[^"]+"\]\.ab-in-progress [^{}]+\{opacity:\.3\}/g, "");
 			const actual = render(input, { scheme, idPrefix: file.slice(0, -5) }).svg
+				.replace(/@media \(prefers-contrast:more\),\(forced-colors:active\)\{[^{}]+\{opacity:1\}\}/g, "")
+				.replace(/\.ab\[data-ab-play="[^"]+"\]\.ab-in-progress [^{}]+\{opacity:var\(--ab-play-unreached-text-opacity,\.8\)\}/g, "")
 				.replace(/\.ab\[data-ab-play="[^"]+"\]\.ab-in-progress [^{}]+\{opacity:var\(--ab-play-unreached-opacity,\.3\)\}/g, "");
 			const originalStyle = expected.match(/<style>([\s\S]*?)<\/style>/)?.[1];
 			const newStyle = actual.match(/<style>([\s\S]*?)<\/style>/)?.[1];

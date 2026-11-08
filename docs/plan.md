@@ -786,8 +786,8 @@ matching wrapper; current takes precedence if both are present. Remove both
 classes and the root's `ab-in-progress` and `ab-playing` classes for the full
 default figure.
 Hand-driven hosts set `ab-in-progress` on the SVG root exactly while a scenario
-step is shown (`step >= 0`), including paused steps. Remove it at
-idle and completion (`step === -1`), for empty scenarios and after destruction.
+step is shown (`step >= 0`), including paused and ended steps. Remove it at
+idle or explicit `seek(-1)`, for empty scenarios and after destruction.
 Hand-driven hosts also set `ab-playing` on the SVG root exactly while playing.
 Remove it on pause, end, manual navigation, scenario changes, idle, empty
 scenarios, the reduced-motion reset and destruction. `createPlayer` owns both
@@ -797,16 +797,22 @@ All six flow node kinds and every edge stroke, head and label fragment keep
 their native tone colours. While `ab-in-progress` is present, unplayed shapes, edge strokes and
 arrowheads take `--ab-play-unreached-opacity`, default `0.3` in both schemes.
 CSS opacity numbers and percentages clamp to [0, 1]. Unplayed means neither
-current nor played. Node and edge label text never takes this fade, so built-in
-label contrast stays at least 4.5:1 throughout the range. Fade applies to each
-shape, including decision label boxes with their existing 0.82 fill opacity,
-never to groups or text. Inline label backgrounds (`.gap` / `.gap-band`) and
+current nor played. All off-path node text (titles, subtitles and panel contents)
+and edge labels take `--ab-play-unreached-text-opacity`, default `0.8` in both
+schemes, also accepting CSS numbers/percentages clamped to [0, 1]. Built-in
+off-path text meets a checked 3:1 floor at these defaults. Under either
+`prefers-contrast: more` or `forced-colors: active`, text stays at full opacity,
+even with a host text-opacity override. Opacity preserves the accessibility tree;
+captions and the polite status still describe the current position.
+Fade applies to individual shapes and text elements, including decision label
+boxes with their existing 0.82 fill opacity, never to groups. Inline label backgrounds (`.gap` / `.gap-band`) and
 crossing knockouts retain opacity multiplier 1, including at fade 0. Current
 and played parts keep their native colours at full opacity, with current taking
 precedence. Underlying edges never show through gaps or knockouts. Geometry and
 draw order never change. The scoped styles are embedded
 in every playable SVG; hosts need no CSS. Navigation, scenario changes and
-looping recompute the faded parts. Idle, completion, the reduced-motion reset, empty
+looping recompute the faded parts. Completion retains the path. Idle, explicit
+`seek(-1)`, the reduced-motion reset, empty
 scenarios and destruction restore the full unfaded figure.
 
 Whenever a step is shown, including paused frames, its current node
@@ -828,7 +834,7 @@ navigation and other non-playing changes are instant. Animation, transitions
 and keyframes are embedded in every playable SVG and scoped to its figure;
 distinct `idPrefix` values keep independently driven figures isolated, including
 in shadow roots. Reduced motion disables running dashes and all transitions;
-a manually shown current step may still glow. Idle, completion and destruction remove all
+a manually shown current step may still glow. Idle, explicit `seek(-1)` and destruction remove all
 glow, heavier strokes and running-edge overrides, restoring the default figure.
 Static SVG bytes stay identical; playable idle figures add playback styles,
 the colour defaults below and hidden sequence overlays.
@@ -863,8 +869,11 @@ while playing. Paused and manually stepped states show
 the complete current arrow and band immediately, with no packet. Resuming
 restarts the current step and its drawing. Reduced motion disables all animation
 and transitions, retaining the band in manually shown states; the player's
-reduced-motion reset to idle is unchanged. Idle and completion show the full figure with no
-packets or bands. Sequences without play sections gain no playback
+reduced-motion reset to idle is unchanged. Completion retains the current band
+and completed path, with no packet. Idle shows the full figure with no
+packets or bands. Sequence fading retains its existing styling and is separate
+from the flow text-opacity knob and contrast preference guards.
+Sequences without play sections gain no playback
 attributes, styles or overlays and retain their exact SVG bytes.
 
 Playable SVGs define internal `--play` through the host's `--ab-play`
@@ -874,13 +883,15 @@ their defaults. These tokens are separate from the existing exported palette.
 
 ### Behaviour and theming
 
-- States are idle (full figure), paused, playing and ended (full figure).
+- States are idle (full figure), paused, playing and ended (completed path).
   After the last step's full duration, a non-looping flow or sequence changes
-  to `{ scenario, step: -1, status: "ended" }`, preserving the selected scenario
-  in `player.state` and `onChange`. It clears fading, current/played highlighting,
-  glow and both root classes. `loop` is opt-in. Previous, next, seek and
-  switching scenario pause. From ended, Next goes to step `0` paused and
-  Previous stays at `-1` paused. Play on ended replays from step `0`.
+  to `{ scenario, step: last, status: "ended" }`, preserving the selected scenario
+  and last step in `player.state` and notifications. It retains current/played
+  highlighting, glow, off-path fading and `ab-in-progress`, removes `ab-playing`
+  and stops motion. `loop` is opt-in. Previous, next, seek and switching scenario
+  pause. From ended, Next clamps to the last step paused and Previous goes to
+  the preceding step paused, clamping to `-1..last`. Play on ended replays from
+  step `0`; under reduced motion Replay resets to idle and the full figure.
   Pausing mid-scene retains the highlight and fade; resuming restarts the current
   step's full duration. Controls offer Replay.
 - Play on click is the default. Nothing starts unless the host calls play,
@@ -1058,8 +1069,8 @@ scroll the caption horizontally. Browsers treat Home and End as vertical keys,
 so in a caption without vertical overflow they scroll the page instead, as
 they would in any horizontal scroller. Scenario/step changes reset the
 caption instantly to its beginning; pause and resume at the same step preserve
-the reader's scroll position. Completion restores the full figure at step `-1`,
-clearing the caption and resetting its scrolling. There is no automatic panning
+the reader's scroll position. Completion retains the last caption and its
+scroll position so it can be reread. There is no automatic panning
 or scrolling animation, including under reduced motion. Scrolling never moves
 focus or announces text; the caption region is not a live region.
 
@@ -1076,12 +1087,12 @@ native range remains focusable, with a visible outline around the bar when
 focused, covering `-1..last`, including the full figure at `-1`. Its native
 keyboard and screen reader navigation is preserved. Navigation pauses.
 
-Actor and caption are cleared at `-1`. Completion uses this full-figure controls
-presentation: blank counter, empty actor/caption, no current/played segments,
-and range `-1` with value text “Full figure”; the toggle reads Replay.
+Actor and caption are cleared at `-1`. Completion retains the final counter,
+actor/caption, current/played segments, side step list and range value; the
+toggle reads Replay.
 One polite atomic status announces actor and remark when the scenario/step
-changes to a playable step. Pause does not repeat it; completion clears the
-region without re-announcing the last step. All source strings are assigned with `textContent`. A selected
+changes to a playable step. Pause and completion retain the region without
+re-announcing the same step. All source strings are assigned with `textContent`. A selected
 empty scenario shows “No playable steps” and disables buttons and range while
 leaving tabs usable; it never selects another scenario automatically.
 
@@ -1111,13 +1122,22 @@ default `ui-monospace,monospace`. Defaults are identical in both schemes and
 independent of render `fonts`. Host overrides update existing controls through
 CSS inheritance, including in shadow roots. SVG text never reads these
 properties; they change neither static nor playable SVG bytes, metrics or geometry.
-The DOM-free `checkPalette(palette, { play, unreachedOpacity })` contract adds
-tab, action-button, actor, counter, caption and empty-state text states and
-current/played/unplayed flow text grounds to its
-static pairs and text minimum. Ground multipliers include faded fills and
-label-box opacity; text only has its colour alpha. Decorative text-shadow/glow
-and non-text contrast are excluded. Hosts resolve effective values first;
-the input and composition contract is in the testing guide.
+The DOM-free `checkPalette(palette, { play, unreachedOpacity, unreachedTextOpacity })`
+contract adds controls and current/played/unplayed flow text pairs to the static
+pairs. `play` and `unreachedOpacity` remain required; optional text opacity defaults
+to `0.8` when omitted or undefined and validates/clamps like shape opacity.
+Every playback result pair has `threshold: 3 | 4.5`: ordinary off-path flow text
+uses 3; static, current/played text, controls and separately labelled full-opacity
+contrast preference witnesses use 4.5. Both pair sets remain when effective text
+opacity is 1. `minimum` is the lowest unrounded ratio among 4.5 pairs;
+`unreachedMinimum` is the lowest among 3 pairs. Passing requires every pair to
+meet its own threshold. One-argument static types, pairs, ratios, minimum and
+validation are unchanged. Ground multipliers include faded fills and label-box
+opacity; `inkOpacity` multiplies text colour alpha over those grounds.
+Decorative text-shadow/glow and non-text contrast are excluded. Hosts resolve
+both opacity knobs through CSS `opacity` (fallbacks 0.3 and 0.8) and pass effective
+text opacity 1 if either contrast preference matches, otherwise the resolved
+text knob. The input and composition contract is in the testing guide.
 Scenario links remain a host feature; the side layout supplies the built-in
 all-steps list.
 

@@ -6,13 +6,25 @@ import { TOKENS, type Token } from "../src/index.ts";
 // Unsupported selectors, fill values and filled shapes fail closed, so extending
 // the renderer requires teaching this inspector how to observe the new paint.
 type Element = { tag: string; attrs: Record<string, string>; classes: string[] };
-export function inspect(svg: string, fade?: number) {
+export function inspect(svg: string, fade?: number, textFade = 0.8, contrastPreference = false) {
 	const css = svg.match(/<style>([\s\S]*?)<\/style>/)?.[1];
 	assert.ok(css);
-	const idleCss = css.replace(/@keyframes [^{]+\{(?:[^{}]*\{[^{}]*\})+\}/g, "");
+	let guardedText = false;
+	const idleCss = css.replace(/@keyframes [^{]+\{(?:[^{}]*\{[^{}]*\})+\}/g, "")
+		.replace(/@media \(prefers-contrast:more\),\(forced-colors:active\)\{([^{}]+)\{opacity:1\}\}/g, (_, selector: string) => {
+			assert.match(selector, /^\.ab\[data-ab-play="[A-Za-z0-9_.-]+"\]\.ab-in-progress \[data-ab-part\]:where\(:not\(\.ab-current\):not\(\.ab-played\)\) text$/);
+			guardedText = true;
+			return "";
+		});
 	let hiddenSequenceOverlays = false;
 	const rules = [...idleCss.matchAll(/([^{}]+)\{([^{}]+)\}/g)].flatMap(([, selector, body], order) => {
 		const declarations = Object.fromEntries(body.split(";").filter(Boolean).map((d) => d.split(":")));
+		if (/^\.ab\[data-ab-play="[A-Za-z0-9_.-]+"\]\.ab-in-progress \[data-ab-part\]:where\(:not\(\.ab-current\):not\(\.ab-played\)\) text$/.test(selector.trim())) {
+			if (fade === undefined) assert.doesNotMatch(svg, /class="[^"]*\bab-in-progress\b/);
+			assert.deepEqual(declarations, { opacity: "var(--ab-play-unreached-text-opacity,.8)" });
+			assert.ok(guardedText);
+			return [];
+		}
 		// Fade rules affect only a shown step. Refuse active roots rather than
 		// treating dimmed text as a static palette paint; playback-fade.test.ts
 		// checks these rules, their opaque backgrounds and the root lifecycle.
@@ -69,7 +81,7 @@ export function inspect(svg: string, fade?: number) {
 		return { token: token as Token, opacity: Number(values["fill-opacity"] ?? 1) };
 	};
 	const shapes: { element: Element; token: Token; opacity: number; contains: (x: number, y: number) => boolean }[] = [];
-	const observations: { ink: Token; ground: Token[]; groundOpacities: number[]; classes: string; state?: string }[] = [];
+	const observations: { ink: Token; inkOpacity: number; ground: Token[]; groundOpacities: number[]; classes: string; state?: string }[] = [];
 	const stack: (string | undefined)[] = [];
 	const active = /class="[^"]*\bab-in-progress\b/.test(svg);
 	const body = svg.replace(/<style>[\s\S]*?<\/style>|<defs>[\s\S]*?<\/defs>/g, "");
@@ -103,6 +115,7 @@ export function inspect(svg: string, fade?: number) {
 		const n = (attr: string) => Number(el.attrs[attr]);
 		if (el.tag === "text") {
 			assert.equal(p.opacity, 1, "inspector must handle new text opacity");
+			const inkOpacity = state === "unplayed" ? contrastPreference ? 1 : textFade : 1;
 			const x = n("x"), y = n("y") - 4;
 			const top = shapes.findLast((s) => s.contains(x, y));
 			// A decision's label rectangle straddles its diamond. Observe both
@@ -122,7 +135,7 @@ export function inspect(svg: string, fade?: number) {
 			}
 			for (const px of points) {
 				const layers = shapes.filter((s) => s.contains(px, y));
-				observations.push({ ink: p.token, ground: ["bg", ...layers.map((s) => s.token)], groundOpacities: [1, ...layers.map((s) => s.opacity)], state, classes: `${el.attrs.class} on ${layers.map((s) => s.element.attrs.class).join(" + ") || "canvas"}` });
+				observations.push({ ink: p.token, inkOpacity, ground: ["bg", ...layers.map((s) => s.token)], groundOpacities: [1, ...layers.map((s) => s.opacity)], state, classes: `${el.attrs.class} on ${layers.map((s) => s.element.attrs.class).join(" + ") || "canvas"}` });
 			}
 		} else if (el.tag === "rect") {
 			shapes.push({ element: el, ...p, contains: (x, y) => x >= n("x") && x <= n("x") + n("width") && y >= n("y") && y <= n("y") + n("height") });
@@ -138,4 +151,3 @@ export function inspect(svg: string, fade?: number) {
 	}
 	return observations;
 }
-

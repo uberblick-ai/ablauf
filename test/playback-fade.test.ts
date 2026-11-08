@@ -40,7 +40,7 @@ function setup(mounted: boolean, idPrefix = "fade", loop = false, doc = new Doc(
 	return { ...result, container, svg, doc, player, mount, frame };
 }
 
-test("embedded fade rules scope to each figure, fade only shapes and exempt text, gaps and knockouts", () => {
+test("embedded fade rules scope to each figure, fade shapes and text separately, exempt gaps and knockouts, and guard reader preferences", () => {
 	for (const scheme of [undefined, "light", "dark"] as const) {
 		for (const idPrefix of ["first", "second"]) {
 			const { svg, diagnostics } = render(example, { scheme, idPrefix });
@@ -50,7 +50,10 @@ test("embedded fade rules scope to each figure, fade only shapes and exempt text
 			const fadeRules = styles.match(/[^{}]+\{opacity:[^}]+\}/g);
 			assert.deepEqual(fadeRules, [
 				`${selector} :is(rect:not(.gap),path:not(.knockout),circle,line){opacity:var(--ab-play-unreached-opacity,.3)}`,
+				`${selector} text{opacity:var(--ab-play-unreached-text-opacity,.8)}`,
+				`${selector} text{opacity:1}`,
 			]);
+			assert.ok(styles.includes(`@media (prefers-contrast:more),(forced-colors:active){${selector} text{opacity:1}}`));
 			assert.match(styles, /\.ab \.gap\{fill:var\(--bg\)\}\.ab \.gap-band\{fill:var\(--band\)\}/);
 			assert.match(styles, /\.ab-playing/);
 			assert.doesNotMatch(svg.match(/<svg[^>]*>/)?.[0] ?? "", /ab-in-progress/);
@@ -77,7 +80,9 @@ test("pre-fade drawing and style bytes survive added fade/effects CSS and playba
 	// its scope and guards and compares the complete post-112 baseline.
 	const styles = after.match(/<style>([\s\S]*?)<\/style>/)?.[1];
 	assert.ok(styles);
-	const withoutEffects = after.replace(styles, styles.split("\n").slice(0, -1).join("\n"));
+	const withoutEffects = after.replace(styles, styles.split("\n").slice(0, -1).join("\n"))
+		.replace(/@media \(prefers-contrast:more\),\(forced-colors:active\)\{[^{}]+\{opacity:1\}\}/g, "")
+		.replace(/\.ab\[data-ab-play="[^"]+"\]\.ab-in-progress [^{}]+\{opacity:var\(--ab-play-unreached-text-opacity,\.8\)\}/g, "");
 	assert.equal(withoutEffects.replace(rules, ""), before);
 });
 
@@ -133,7 +138,7 @@ for (const mounted of [false, true]) {
 		f.player.next(); f.frame(5);
 		f.player.play();
 		t.mock.timers.tick(1800);
-		assert.equal(f.player.state.status, "ended"); f.frame(-1);
+		assert.equal(f.player.state.status, "ended"); f.frame(5);
 		f.player.play(); f.frame(0);
 		f.player.select(1); f.frame(0, 1);
 		f.player.seek(2); f.frame(2, 1);

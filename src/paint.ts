@@ -15,6 +15,8 @@ interface Paint<Ink extends Token | "play" = Token> {
 	opacity?: number;
 	/** Per-layer alpha multipliers, including 1 for bg; exclusive with opacity. */
 	groundOpacities?: number[];
+	/** Multiplies text colour alpha, independently of the ground layers. */
+	inkOpacity?: number;
 	where: string;
 }
 
@@ -22,31 +24,41 @@ interface Paint<Ink extends Token | "play" = Token> {
 export interface PlaybackContrast {
 	play: string;
 	unreachedOpacity: number | string;
+	unreachedTextOpacity?: number | string;
 }
 
-function playbackPaints(fade: number): Paint<Token | "play">[] {
-	const result: Paint<Token | "play">[] = [];
+type PlaybackPaint = Paint<Token | "play"> & { threshold: 3 | 4.5 };
+type StaticResult = { minimum: number; pairs: (Paint & { ratio: number })[] };
+type PlaybackResult = { minimum: number; unreachedMinimum: number; pairs: (PlaybackPaint & { ratio: number })[] };
+
+function playbackPaints(fade: number, textFade: number): PlaybackPaint[] {
+	const result: PlaybackPaint[] = [];
 	// Focus outlines and decorative glows do not change text paints. Keep
 	// distinct state witnesses even where the CSS resolves to the same ink.
 	for (const selected of [false, true]) for (const hover of [false, true]) for (const focus of [false, true]) {
-		result.push({ ink: selected ? "play" : hover ? "ink" : "muted", ground: ["bg"],
+		result.push({ threshold: 4.5, ink: selected ? "play" : hover ? "ink" : "muted", ground: ["bg"],
 			where: `playback controls tab ${selected ? "selected" : "normal"}${hover ? " hover" : ""}${focus ? " keyboard-focused" : ""} on canvas` });
 	}
 	for (const disabled of [false, true]) for (const hover of [false, true]) for (const focus of disabled ? [false] : [false, true]) {
-		result.push({ ink: disabled ? "muted" : "ink", ground: ["bg", "bg"],
+		result.push({ threshold: 4.5, ink: disabled ? "muted" : "ink", ground: ["bg", "bg"],
 			where: `playback controls button ${disabled ? "disabled" : "enabled"}${hover ? " hover" : ""}${focus ? " keyboard-focused" : ""} on button background over canvas` });
 	}
 	for (const [element, ink] of [["actor", "play"], ["counter", "muted"], ["caption", "ink"], ["empty-state text", "ink"]] as const) {
-		result.push({ ink, ground: ["bg"], where: `playback controls ${element} on canvas` });
+		result.push({ threshold: 4.5, ink, ground: ["bg"], where: `playback controls ${element} on canvas` });
 	}
 	for (const state of ["current", "played", "unplayed"] as const) for (const band of [false, true]) {
 		const canvas: Token[] = band ? ["bg", "band"] : ["bg"];
 		const place = band ? "band" : "canvas";
 		const opacity = state === "unplayed" ? fade : 1;
-		const add = (ink: Token, layers: Token[], multipliers: number[], element: string, ground: string) => result.push({
-			ink, ground: [...canvas, ...layers], groundOpacities: [...canvas.map(() => 1), ...multipliers],
-			where: `playback SVG ${state} ${element} on ${ground} over ${place}`,
-		});
+		const add = (ink: Token, layers: Token[], multipliers: number[], element: string, ground: string) => {
+			const paint = {
+				ink, ground: [...canvas, ...layers], groundOpacities: [...canvas.map(() => 1), ...multipliers],
+				where: `playback SVG ${state} ${element} on ${ground} over ${place}`,
+			};
+			result.push({ ...paint, inkOpacity: state === "unplayed" ? textFade : 1, threshold: state === "unplayed" ? 3 : 4.5 });
+			if (state === "unplayed") result.push({ ...paint, inkOpacity: 1, threshold: 4.5,
+				where: `${paint.where} (full-opacity contrast preference witness)` });
+		};
 		for (const tone of ["ink", "muted", ...tones] as const) {
 			const fill: Token = tone === "ink" || tone === "muted" ? "surface" : `${tone}-bg`;
 			const foreground = tone === "ink" ? "muted" : tone;
@@ -173,8 +185,8 @@ function colour(value: string, token: Token | "play"): Colour {
 	return [...channels.map((c) => component(c, srgb ? 1 : 255)), component(alpha, 1)] as Colour;
 }
 
-function unreachedOpacity(value: number | string): number {
-	const fail = (): never => { throw new TypeError("Invalid or unsupported unreachedOpacity"); };
+function unreachedOpacity(value: number | string, field = "unreachedOpacity"): number {
+	const fail = (): never => { throw new TypeError(`Invalid or unsupported ${field}`); };
 	if (typeof value === "string") {
 		const text = value.trim();
 		const percent = text.endsWith("%");
@@ -198,34 +210,42 @@ function luminance(c: Colour): number {
 
 /** Check every text paint the renderer can emit, without a DOM. Throws on
  * missing, invalid or unsupported colours; bg must be an opaque host canvas.
- * Optional effective playback values add control/SVG text pairs to minimum.
+ * Playback results separate the 4.5:1 minimum from the 3:1 unreachedMinimum;
+ * callers must check every pair against its threshold.
  * Decorative text-shadow/glow and non-text contrast are excluded.
  * See https://ablauf.uberblick.ai/guides/testing for accepted forms and layers.
  */
-export function checkPalette(palette: Palette): { minimum: number; pairs: (Paint & { ratio: number })[] };
-export function checkPalette(palette: Palette, playback: PlaybackContrast | undefined): { minimum: number; pairs: (Paint<Token | "play"> & { ratio: number })[] };
-export function checkPalette(palette: Palette, playback?: PlaybackContrast): { minimum: number; pairs: (Paint<Token | "play"> & { ratio: number })[] } {
+export function checkPalette(palette: Palette): StaticResult;
+export function checkPalette(palette: Palette, playback: undefined): StaticResult;
+export function checkPalette(palette: Palette, playback: PlaybackContrast): PlaybackResult;
+export function checkPalette(palette: Palette, playback: PlaybackContrast | undefined): StaticResult | PlaybackResult;
+export function checkPalette(palette: Palette, playback?: PlaybackContrast) {
 	if (!palette || typeof palette !== "object") throw new TypeError("Expected a complete palette");
 	const colours = Object.fromEntries(TOKENS.map((token) => {
 		if (!Object.hasOwn(palette, token)) throw new TypeError(`Missing palette colour: ${token}`);
 		return [token, colour(palette[token], token)];
 	})) as Record<Token, Colour>;
 	if (colours.bg[3] !== 1) throw new TypeError("bg must be an opaque host canvas colour");
-	let textPaints: Paint<Token | "play">[] = paints;
+	let textPaints: (Paint<Token | "play"> & { threshold?: 3 | 4.5 })[] = paints;
 	const inks: Record<Token | "play", Colour> = { ...colours, play: colours.ink };
 	if (playback !== undefined) {
 		if (!playback || typeof playback !== "object" || !Object.hasOwn(playback, "play") || !Object.hasOwn(playback, "unreachedOpacity")) throw new TypeError("Expected play and unreachedOpacity");
 		inks.play = colour(playback.play, "play");
-		textPaints = [...paints, ...playbackPaints(unreachedOpacity(playback.unreachedOpacity))];
+		const textFade = playback.unreachedTextOpacity === undefined ? 0.8 : unreachedOpacity(playback.unreachedTextOpacity, "unreachedTextOpacity");
+		textPaints = [...paints.map(p => ({ ...p, threshold: 4.5 as const })), ...playbackPaints(unreachedOpacity(playback.unreachedOpacity), textFade)];
 	}
 	const pairs = textPaints.map((paint) => {
 		let ground = colours.bg;
 		for (let i = 1; i < paint.ground.length; i++) {
 			ground = over(colours[paint.ground[i]], ground, paint.groundOpacities?.[i] ?? (i === paint.ground.length - 1 ? paint.opacity : 1));
 		}
-		const a = luminance(over(inks[paint.ink], ground));
+		const a = luminance(over(inks[paint.ink], ground, paint.inkOpacity));
 		const b = luminance(ground);
 		return { ...paint, ground: [...paint.ground], ...(paint.groundOpacities ? { groundOpacities: [...paint.groundOpacities] } : {}), ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) };
 	});
-	return { minimum: Math.min(...pairs.map((p) => p.ratio)), pairs };
+	if (playback === undefined) return { minimum: Math.min(...pairs.map(p => p.ratio)), pairs };
+	return {
+		minimum: Math.min(...pairs.filter(p => p.threshold === 4.5).map(p => p.ratio)),
+		unreachedMinimum: Math.min(...pairs.filter(p => p.threshold === 3).map(p => p.ratio)), pairs,
+	};
 }

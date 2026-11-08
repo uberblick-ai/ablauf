@@ -274,17 +274,17 @@ test("expanded playback bypasses viewport pausing but retains lifecycle guards a
 	assert.equal(f.player.state.status, "playing");
 });
 
-test("expanded completion restores the full figure and clears caption, scroll and highlights before Replay", t => {
+test("expanded completion retains caption, scroll and highlights before Replay", t => {
 	const f = setup(t);
 	f.player.select(1); f.mount.expand(); f.player.play();
 	f.find("abp-caption").scrollLeft = 90;
 	f.tick(300);
-	assert.deepEqual(f.player.state, { scenario: 1, step: -1, status: "ended" });
-	for (const cls of ["abp-counter", "abp-actor", "abp-caption", "abp-status"]) assert.equal(f.find(cls).textContent, "");
-	assert.equal(f.find("abp-caption").scrollLeft, 0);
-	assert.equal(f.svg.classList.contains("ab-in-progress"), false);
+	assert.deepEqual(f.player.state, { scenario: 1, step: 0, status: "ended" });
+	for (const [cls, text] of [["abp-counter", "1/1"], ["abp-actor", "Other actor"], ["abp-caption", "Other remark"], ["abp-status", "Other actor: Other remark"]]) assert.equal(f.find(cls).textContent, text);
+	assert.equal(f.find("abp-caption").scrollLeft, 90);
+	assert.equal(f.svg.classList.contains("ab-in-progress"), true);
 	assert.equal(f.svg.classList.contains("ab-playing"), false);
-	assert.ok(f.svg.children.every(part => !part.className));
+	assert.ok(f.svg.children[1].classList.contains("ab-current"));
 	f.button("Close").click();
 	assert.equal(f.button("Replay").textContent, "Replay");
 	f.button("Replay").click();

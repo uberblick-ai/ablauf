@@ -31,17 +31,27 @@ function fullFigure(svg: El) {
 	assert.ok(svg.children.every(el => !el.classList.contains("ab-current") && !el.classList.contains("ab-played")), "no current glow or played highlights");
 }
 
+function completedPath(svg: El) {
+	assert.ok(svg.classList.contains("ab-in-progress"));
+	assert.equal(svg.classList.contains("ab-playing"), false);
+	assert.ok(svg.children.some(el => el.classList.contains("ab-current")));
+	assert.ok(svg.children.some(el => el.classList.contains("ab-played")));
+	assert.ok(svg.children.some(el => !el.className), "off-path parts remain dimmed");
+}
+
 function endedControls(container: El) {
 	const cls = (name: string) => {
 		const el = container.all().find(el => el.classList.contains(name));
 		assert.ok(el, name);
 		return el;
 	};
-	for (const name of ["abp-counter", "abp-actor", "abp-caption", "abp-status"]) assert.equal(cls(name).textContent, "", name);
+	for (const [name, text] of [["abp-counter", "2/2"], ["abp-actor", "Finish"], ["abp-caption", "Done"], ["abp-status", "Finish: Done"]]) assert.equal(cls(name).textContent, text, name);
 	assert.equal(cls("abp-toggle").textContent, "Replay");
-	assert.equal(cls("abp-range").children[0].value, "-1");
-	assert.equal(cls("abp-range").children[0].getAttribute("aria-valuetext"), "Full figure");
-	assert.ok(container.all().every(el => !el.classList.contains("abp-current") && !el.classList.contains("abp-played") && !el.getAttribute("aria-current")));
+	assert.equal(cls("abp-range").children[0].value, "1");
+	assert.equal(cls("abp-range").children[0].getAttribute("aria-valuetext"), "Step 2 of 2");
+	assert.ok(container.all().some(el => el.classList.contains("abp-current")));
+	assert.ok(container.all().some(el => el.classList.contains("abp-played")));
+	if (container.all().some(el => el.tag === "ol")) assert.ok(container.all().some(el => el.getAttribute("aria-current") === "step"));
 }
 
 for (const [kind, source] of Object.entries(sources)) for (const scheme of ["light", "dark"] as const) {
@@ -67,14 +77,14 @@ for (const [kind, source] of Object.entries(sources)) for (const scheme of ["lig
 		}
 	});
 
-	for (const api of ["headless", "below", "side"] as const) test(`${kind}, ${scheme}, ${api}: completion restores the full figure and navigation starts from -1`, t => {
+	for (const api of ["headless", "below", "side"] as const) test(`${kind}, ${scheme}, ${api}: completion retains the path and navigation starts from the last step`, t => {
 		t.mock.timers.enable({ apis: ["setTimeout"] });
 		const { result, container, svg } = figure(source, scheme);
 		const changes: PlayerState[] = [];
 		const mount = api === "headless" ? undefined : mountPlayback(container as unknown as HTMLElement, svg as unknown as SVGSVGElement, result.timelines, { layout: api });
 		const player = mount?.player ?? createPlayer(svg as unknown as SVGSVGElement, result.timelines, { onChange: state => {
 			assert.deepEqual(player.state, state);
-			if (state.status === "ended") fullFigure(svg);
+			if (state.status === "ended") completedPath(svg);
 			changes.push(state);
 		} });
 		t.after(() => player.destroy());
@@ -85,8 +95,8 @@ for (const [kind, source] of Object.entries(sources)) for (const scheme of ["lig
 			button.click();
 		}
 		function ended() {
-			assert.deepEqual(player.state, { scenario: 1, step: -1, status: "ended" });
-			fullFigure(svg);
+			assert.deepEqual(player.state, { scenario: 1, step: 1, status: "ended" });
+			completedPath(svg);
 			if (!mount) {
 				assert.deepEqual(changes.at(-1), player.state);
 				return;
@@ -119,16 +129,18 @@ for (const [kind, source] of Object.entries(sources)) for (const scheme of ["lig
 		t.mock.timers.tick(100); t.mock.timers.tick(200);
 		ended();
 		action("Next", () => player.next());
-		assert.deepEqual(player.state, { scenario: 1, step: 0, status: "paused" });
+		assert.deepEqual(player.state, { scenario: 1, step: 1, status: "paused" });
 		action("Play", () => player.play());
 		t.mock.timers.tick(100); t.mock.timers.tick(200);
 		ended();
 		action("Previous", () => player.previous());
+		assert.deepEqual(player.state, { scenario: 1, step: 0, status: "paused" });
+		player.seek(-1);
 		assert.deepEqual(player.state, { scenario: 1, step: -1, status: "paused" });
 		fullFigure(svg);
 	});
 
-	for (const layout of ["below", "side"] as const) for (const status of ["playing", "ended"] as const) test(`${kind}, ${scheme}, ${layout}: rebind from ${status} completes with a full replacement figure`, t => {
+	for (const layout of ["below", "side"] as const) for (const status of ["playing", "ended"] as const) test(`${kind}, ${scheme}, ${layout}: rebind from ${status} retains the replacement's completed path`, t => {
 		t.mock.timers.enable({ apis: ["setTimeout"] });
 		const { result, container, svg } = figure(source, scheme);
 		const mount = mountPlayback(container as unknown as HTMLElement, svg as unknown as SVGSVGElement, result.timelines, { layout, autoplay: true });
@@ -137,7 +149,7 @@ for (const [kind, source] of Object.entries(sources)) for (const scheme of ["lig
 		player.select("selected"); player.play();
 		if (status === "ended") {
 			t.mock.timers.tick(100); t.mock.timers.tick(200);
-			fullFigure(svg); endedControls(container);
+			completedPath(svg); endedControls(container);
 		}
 		assert.equal(player.state.status, status);
 		const replacement = figure(source, scheme);
@@ -151,7 +163,7 @@ for (const [kind, source] of Object.entries(sources)) for (const scheme of ["lig
 		const changes: PlayerState[] = [];
 		player.subscribe(state => {
 			if (state.status === "ended") {
-				fullFigure(replacement.svg);
+				completedPath(replacement.svg);
 				endedControls(container);
 			}
 			changes.push(state);
@@ -160,9 +172,9 @@ for (const [kind, source] of Object.entries(sources)) for (const scheme of ["lig
 		assert.deepEqual(player.state, { scenario: 0, step: 1, status: "playing" });
 		assert.ok(replacement.svg.children.some(el => el.classList.contains("ab-current")));
 		t.mock.timers.tick(1);
-		assert.deepEqual(player.state, { scenario: 0, step: -1, status: "ended" });
+		assert.deepEqual(player.state, { scenario: 0, step: 1, status: "ended" });
 		assert.deepEqual(changes.at(-1), player.state);
-		fullFigure(replacement.svg); endedControls(container);
+		completedPath(replacement.svg); endedControls(container);
 		fullFigure(svg);
 		t.mock.timers.tick(1000);
 		assert.equal(changes.length, 3);

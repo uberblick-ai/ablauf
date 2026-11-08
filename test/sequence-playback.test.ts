@@ -278,7 +278,7 @@ for (const scheme of schemes) for (const mode of ["headless", "mounted", "contro
 		if (mode === "controls") click("Previous"); else player.previous();
 		frame(1);
 		player.seek(2); player.play(); t.mock.timers.tick(99); frame(2);
-		t.mock.timers.tick(1); frame(-1);
+		t.mock.timers.tick(1); frame(2);
 		assert.equal(player.state.status, "ended");
 		if (mode === "controls") click("Replay"); else player.play();
 		frame(0);

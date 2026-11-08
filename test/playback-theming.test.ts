@@ -7,8 +7,8 @@ import { mountPlayback } from "../src/playback.ts";
 import { inspect } from "./inspect-paints.ts";
 import { Doc, El } from "./test-dom.ts";
 
-const key = (p: { ink: string; ground: string[]; opacity?: number; groundOpacities?: number[] }) =>
-	`${p.ink}/${p.ground.join("+")}/${(p.groundOpacities ?? p.ground.map((_, i) => i === p.ground.length - 1 ? p.opacity ?? 1 : 1)).join(",")}`;
+const key = (p: { ink: string; inkOpacity?: number; ground: string[]; opacity?: number; groundOpacities?: number[] }) =>
+	`${p.ink}/${p.inkOpacity ?? 1}/${p.ground.join("+")}/${(p.groundOpacities ?? p.ground.map((_, i) => i === p.ground.length - 1 ? p.opacity ?? 1 : 1)).join(",")}`;
 const defaults = [[LIGHT, "#0a7a60"], [DARK, "#6ff0cf"]] as const;
 
 test("one-argument results preserve exact pre-96 JSON, including all ratios and validation", () => {
@@ -17,7 +17,7 @@ test("one-argument results preserve exact pre-96 JSON, including all ratios and 
 		const before = checkPalette(palette);
 		assert.equal(createHash("sha256").update(JSON.stringify(before)).digest("hex"), hash);
 		const after = checkPalette(palette, { play: "#000", unreachedOpacity: 0.3 });
-		assert.deepEqual(after.pairs.slice(0, before.pairs.length), before.pairs);
+		assert.deepEqual(after.pairs.slice(0, before.pairs.length), before.pairs.map(p => ({ ...p, threshold: 4.5 })));
 		assert.throws(() => checkPalette({ ...palette, line: "invalid" }, { play: "#000", unreachedOpacity: 0.3 }), TypeError);
 	}
 	// Compile-time compatibility: static ink remains Token, playback adds play.
@@ -58,7 +58,7 @@ test("play colours share palette syntax/alpha, and failing host text counts towa
 		assert.ok(result.minimum < 4.5);
 		assert.ok(result.pairs.some(p => p.ratio < 4.5 && /controls tab selected/.test(p.where)));
 		assert.ok(result.pairs.some(p => p.ratio < 4.5 && /controls actor/.test(p.where)));
-		assert.equal(result.minimum, Math.min(...result.pairs.map(p => p.ratio)));
+		assert.equal(result.minimum, Math.min(...result.pairs.filter(p => p.threshold === 4.5).map(p => p.ratio)));
 	}
 	const svgFailures = checkPalette({ ...LIGHT, agent: "#fff" }, { play: "#0a7a60", unreachedOpacity: 0 });
 	assert.ok(svgFailures.pairs.some(p => p.ratio < 4.5 && /SVG unplayed agent box\/end/.test(p.where)));
@@ -76,15 +76,16 @@ test("palette and playback colour parsing handles long whitespace runs without d
 	}
 });
 
-test("built-in playback text meets 4.5 at boundaries, low fades and intermediate values", () => {
+test("built-in playback text meets each threshold at shape fade boundaries and intermediate values", () => {
 	for (const [palette, play] of defaults) for (const unreachedOpacity of [0, 0.001, 0.01, ...Array.from({ length: 101 }, (_, i) => i / 100)]) {
 		const result = checkPalette(palette, { play, unreachedOpacity });
 		assert.ok(result.minimum >= 4.5, `${play}/${unreachedOpacity}: ${result.minimum}`);
-		assert.ok(result.pairs.every(p => p.ratio >= 4.5));
+		assert.ok(result.unreachedMinimum >= 3);
+		assert.ok(result.pairs.every(p => p.ratio >= p.threshold));
 	}
 });
 
-test("faded decision and nested pill grounds multiply fill opacity and colour alpha, never text", () => {
+test("faded decision and nested pill grounds multiply fill opacity and colour alpha independently of text", () => {
 	const palette: Palette = { ...LIGHT, bg: "#000", "agent-bg": "rgb(255 255 255 / .4)", surface: "rgb(255 255 255 / .5)", agent: "rgb(0 0 0 / .8)", ink: "rgb(0 0 0 / .8)" };
 	const pairs = checkPalette(palette, { play: "#fff8", unreachedOpacity: 0.3 }).pairs;
 	const decision = pairs.find(p => p.where === "playback SVG unplayed agent decision label on agent-bg diamond and surface label-box over canvas");
@@ -95,14 +96,14 @@ test("faded decision and nested pill grounds multiply fill opacity and colour al
 	assert.deepEqual(pill.groundOpacities, [1, 0.3, 0.3]);
 	const luminance = (c: number) => c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
 	for (const [pair, ground] of [[decision, 0.12 * (1 - 0.123) + 0.123], [pill, 0.12 * 0.85 + 0.15]] as const) {
-		const expected = (luminance(ground) + 0.05) / (luminance(ground * 0.2) + 0.05);
+		const expected = (luminance(ground) + 0.05) / (luminance(ground * (1 - 0.8 * 0.8)) + 0.05);
 		assert.ok(Math.abs(pair.ratio - expected) < 1e-12);
 	}
 	const gap = pairs.find(p => /SVG unplayed agent inline edge label.*over band/.test(p.where));
 	assert.deepEqual(gap?.ground, ["bg", "band", "band"]);
 	assert.deepEqual(gap?.groundOpacities, [1, 1, 1]);
 	for (const p of pairs) {
-		assert.ok(!("inkOpacity" in p));
+		if (p.where.startsWith("playback SVG")) assert.equal(p.inkOpacity, p.threshold === 3 ? 0.8 : 1);
 		if (p.groundOpacities) assert.equal(p.ground.length, p.groundOpacities.length);
 	}
 	decision.groundOpacities[1] = 0;
@@ -125,17 +126,18 @@ test("actual emitted SVG paints and layered grounds are covered in every playbac
 				for (const state of ["current", "played", "unplayed"]) {
 					const svg = result.svg.replace('class="ab ab-auto"', 'class="ab ab-auto ab-in-progress"')
 						.replaceAll(/<g data-ab-part="([^"]+)">/g, `<g data-ab-part="$1" class="${state === "unplayed" ? "" : `ab-${state}`}">`);
-					for (const p of inspect(svg, fade).filter(p => p.state)) {
+					for (const preference of [false, true]) for (const p of inspect(svg, fade, 0.8, preference).filter(p => p.state)) {
 						assert.equal(p.state, state);
-						assert.ok(pairs.some(pair => pair.where.startsWith(`playback SVG ${state} `) && key(pair) === key(p)), `${state}: ${p.classes}: ${key(p)}`);
-						seen.add(`${state}/${key(p)}`);
+						const threshold = state === "unplayed" && !preference ? 3 : 4.5;
+						assert.ok(pairs.some(pair => pair.threshold === threshold && pair.where.startsWith(`playback SVG ${state} `) && key(pair) === key(p)), `${state}: ${p.classes}: ${key(p)}`);
+						seen.add(`${state}/${threshold}/${key(p)}`);
 					}
 				}
 			}
 		}
 		for (const pair of pairs.filter(p => p.where.startsWith("playback SVG"))) {
 			const state = pair.where.split(" ")[2];
-			assert.ok(seen.has(`${state}/${key(pair)}`), `no rendered witness for ${pair.where}: ${key(pair)}`);
+			assert.ok(seen.has(`${state}/${pair.threshold}/${key(pair)}`), `no rendered witness for ${pair.where}: ${key(pair)}`);
 		}
 	}
 });
