@@ -66,8 +66,9 @@ const unsubscribe = mount.player.subscribe(state => console.log(state));
 ```
 
 The figure starts idle and fully visible. Play or a scenario tab starts playback;
-finishing restores the full figure. Autoplay is opt-in with `{ autoplay: true }`,
-which waits until half the figure is in view before starting.
+finishing keeps the completed path and last caption. Replay starts again from the
+first step, or resets to idle under reduced motion. Autoplay is opt-in with
+`{ autoplay: true }`, which waits until half the figure is in view before starting.
 
 `pauseWhenOffscreen: true` pauses manual playback outside the viewport. Hidden
 documents and disconnected figures also pause; start them explicitly after
