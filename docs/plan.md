@@ -1369,11 +1369,12 @@ independent light DOM and shadow-root mounts, schemes and teardown.
   Travel animation ([#138](https://github.com/uberblick-ai/ablauf/issues/138))
   remains a separate change.
 - **v0.3.2, fan-outs:** [#68](https://github.com/uberblick-ai/ablauf/issues/68),
-  the same play sections for v0 fan-outs; a target is an outcome's text.
-- **Multi-step fan-outs:** [#162](https://github.com/uberblick-ai/ablauf/issues/162),
-  then [#163](https://github.com/uberblick-ai/ablauf/issues/163) and
-  [#166](https://github.com/uberblick-ai/ablauf/issues/166), as planned in
-  [Multi-step fan-out v1](#multi-step-fan-out-v1-planned).
+  the same play sections for v0 fan-outs, where a target is an outcome's
+  text. The same release adds multi-step fan-outs and mind maps,
+  [#162](https://github.com/uberblick-ai/ablauf/issues/162) then
+  [#163](https://github.com/uberblick-ai/ablauf/issues/163), and their
+  playback, [#166](https://github.com/uberblick-ai/ablauf/issues/166), as
+  planned in [Multi-step fan-out v1](#multi-step-fan-out-v1-planned).
 
 Extras cut from v0.3.0 wait for real need. Frozen frames come later. Timelines
 from real ub-agents run logs and visual timeline editing are out of scope.
