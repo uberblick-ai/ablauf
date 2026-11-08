@@ -3,7 +3,7 @@
 You choose placement; the renderer sizes and draws without moving nodes or
 rerouting edges. Save as `.flow`. [Renderer details](plan.md).
 
-[Flows and sequences support play sections and timelines](plan.md#playback).
+[Flows, sequences and fan-outs support play sections and timelines](plan.md#playback).
 The browser player and built-in controls play either kind.
 
 ## Flow syntax and nodes
@@ -171,9 +171,8 @@ use seconds or milliseconds (`2.4s`, `800ms`), from 100ms to 60s; default
 tempo is 1.6s. Invalid durations diagnose and use the tempo. Omitted actors
 use the node's title; omitted captions are empty. `render()` returns the
 resolved `timelines` and a full static SVG with parts the existing browser
-player and controls can highlight. Fan-out playback is not supported yet and
-diagnoses on each `play` line. See [loop-play.flow](../examples/loop-play.flow)
-for three flow scenarios, and the sequence form below.
+player and controls can highlight. See [loop-play.flow](../examples/loop-play.flow)
+for three flow scenarios, and the fan-out and sequence forms below.
 
 ## Fan-out
 
@@ -196,6 +195,32 @@ matching destinations. Before the step, choose `style branches` (default:
 step left, branches to outcomes, arrows to destinations with reasons below)
 or `style ladder` (step above, rail of dots, reasons below outcomes,
 destinations right-aligned, no arrows).
+
+Append play sections to either style, targeting the exact parsed outcome text
+(case and whitespace included). This complete form is copyable:
+
+```text
+fan-out v0
+style branches
+step "Record the result"
+outcome "Success" reason="Checks passed" destination="Review" tone="done"
+outcome "Blocked" reason="A decision is needed" destination="Ask a person" tone="stop"
+
+play "Compare outcomes"
+  tempo 2.4s
+  step "Success" "The work is ready for review"
+  step "Blocked" actor="Maintainer" "Resolve the decision"
+play "Successful run"
+  step "Success"
+```
+
+Unknown or duplicate-text ambiguous targets diagnose the play step's line and
+skip it. Missing/whitespace-only outcomes and their synthetic placeholders are
+not targets. Actors default to outcome text. Each step lights its complete
+outcome and effect; the shared step and ladder rail always stay visible.
+Outcomes are independent, with no path qualification; use a routed flow for
+multi-hop branching. See [approvals-play.flow](../examples/approvals-play.flow)
+and [run-endings-ladder-play.flow](../examples/run-endings-ladder-play.flow).
 
 ## Sequence
 

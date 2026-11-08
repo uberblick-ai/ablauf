@@ -842,9 +842,9 @@ trials are references only. No spike code or dependency ships.
 
 ## Playback
 
-Flow and sequence play sections, resolved timelines and SVG state styles,
+Flow, sequence and fan-out play sections, resolved timelines and SVG state styles,
 the headless browser player (#69), and built-in controls (#94) are implemented.
-Fan-out target resolution is still planned. This design records the
+This design records the
 smallest package feature that lets a host show several scenarios of one
 diagram. It does not change the existing flow, sequence or fan-out syntax or
 static rendering rules.
@@ -884,9 +884,6 @@ play "Tests failing"
 - Durations are `2.4s` or `800ms`, between 100 ms and 60 s; default tempo is
   1.6 s. Anything else is a diagnostic on its line and falls back to the tempo.
 - Unreadable lines are diagnostics on their line. The diagram always renders.
-- Fan-out has no playback resolver yet: each play section produces a
-  diagnostic on its `play` line and `render()` returns `timelines: []`;
-  the static diagram still renders, so play sections are never silently dropped.
 
 ### What a flow step lights
 
@@ -925,12 +922,57 @@ fade while neither current nor played. Lifelines, lane tints, group backgrounds,
 dividers (including section rules) and rejected-source lines are never parts
 and remain fully visible.
 
+### What a fan-out v0 step lights
+
+A target matches parsed outcome text exactly, including case and whitespace,
+before layout wrapping, with no normalization or path qualification. Empty or
+whitespace-only outcomes and their synthetic `[missing outcome]` placeholders
+are never targets. Unknown or duplicate-text ambiguous targets diagnose the play
+step's original line and skip only that step; all entries still draw. A real
+non-empty outcome named `[missing outcome]` is ordinary target text. The default
+actor is the parsed outcome text; `actor=` overrides it. Outcomes are independent:
+a scenario can compare, repeat or skip them without requiring connections.
+Multi-hop branching belongs in a routed flow.
+
+Every step includes the shared step box and text (`fanout-step`); a ladder also
+includes its shared rail (`fanout-rail`). Each entry is an `outcome-N` part in
+source order. In branches, it contains the branch, outcome box/text and complete
+effect: arrow, destination and reason. In a ladder, it contains the dot and
+complete row: outcome text, reason, destination and dotted leader when present.
+Rejected source printed within a partial entry belongs to that entry. Invalid
+lines below the entries are never parts and remain fully visible.
+
+Shared step/rail parts never fade or receive current emphasis. While playing,
+paused or ended, off-path outcomes fade element by element with the flow shape
+and text opacity rules below (defaults 0.3 and 0.8), including attached rejected
+source. Current and played parts retain native colours and full opacity.
+The current branch, outcome box and effect arrow have the flow glow and 2.2px
+stroke even while paused or ended; played outcomes do not glow. The glow uses
+the outcome tone (the native muted paint for `ink`/`muted`), or `--play`
+(honouring `--ab-play`) when untoned. A current ladder dot glows in its native
+tone without resizing; its leader stays still. Only while playing do current
+branch and effect arrows run flow-style dashes. Reduced motion disables dashes
+and all transitions. Idle and explicit full-figure navigation remove emphasis
+and fading. Completion retains the last step, path, actor and caption; Replay
+starts from the first step, or resets to idle/full figure under reduced motion.
+
+Fan-out text is covered by `checkPalette` at the checked 3:1 off-path floor and
+4.5:1 static/current/played and full-opacity preference-witness thresholds over
+the actual independently faded backgrounds. Both `prefers-contrast: more` and
+`forced-colors: active` force off-path text opacity to 1 despite host overrides;
+opacity preserves the accessibility tree. Without play sections, SVG bytes stay
+identical and `timelines` stays `[]`. Custom `fonts.mono` metrics still apply.
+See [approvals playback](../examples/approvals-play.flow) and
+[run endings ladder playback](../examples/run-endings-ladder-play.flow).
+A maintainer must review both examples with controls in a real browser, light
+and dark at Uberblick document width: current versus played, completion/Replay,
+and both contrast preferences with a host text-opacity override. SVG-source
+inspection does not satisfy this review.
+
 ### Timeline and browser contract
 
 `render()` adds `timelines: Timeline[]` without changing its other results:
-for a kind with a playback resolver, one timeline per section in source order;
-`[]` without play sections or when the kind has no resolver yet, as diagnosed
-above.
+one timeline per section in source order, or `[]` without play sections.
 
 ```ts
 interface Timeline {
@@ -939,9 +981,9 @@ interface Timeline {
   steps: TimelineStep[];
 }
 interface TimelineStep {
-  target: string;           // flow id as written; sequence message number without padding
-  kind: string;             // box, pill, end, text, panel, decision, message; later outcome
-  actor: string;            // actor=, else node title or sequence sender/receiver titles
+  target: string;           // flow id; unpadded sequence number; exact fan-out outcome text
+  kind: string;             // box, pill, end, text, panel, decision, message, outcome
+  actor: string;            // actor=, else node title, sender/receiver titles or outcome text
   caption: string;          // "" when none
   ms: number;
   parts: string[];          // what this step lights
@@ -1319,10 +1361,10 @@ independent of render `fonts`. Host overrides update existing controls through
 CSS inheritance, including in shadow roots. SVG text never reads these
 properties; they change neither static nor playable SVG bytes, metrics or geometry.
 The DOM-free `checkPalette(palette, { play, unreachedOpacity, unreachedTextOpacity })`
-contract adds controls and current/played/unplayed flow text pairs to the static
+contract adds controls and current/played/unplayed flow and fan-out text pairs to the static
 pairs. `play` and `unreachedOpacity` remain required; optional text opacity defaults
 to `0.8` when omitted or undefined and validates/clamps like shape opacity.
-Every playback result pair has `threshold: 3 | 4.5`: ordinary off-path flow text
+Every playback result pair has `threshold: 3 | 4.5`: ordinary off-path flow/fan-out text
 uses 3; static, current/played text, controls and separately labelled full-opacity
 contrast preference witnesses use 4.5. Both pair sets remain when effective text
 opacity is 1. `minimum` is the lowest unrounded ratio among 4.5 pairs;
@@ -1382,16 +1424,17 @@ independent light DOM and shadow-root mounts, schemes and teardown.
   ([#69](https://github.com/uberblick-ai/ablauf/issues/69)), and built-in
   controls with scenario tabs
   ([#94](https://github.com/uberblick-ai/ablauf/issues/94)).
-- **v0.3.1, sequence diagrams:** implemented the same play sections, message
+- **v0.3.0, sequence diagrams:** implemented the same play sections, message
   targets, timelines and SVG parts/states in
   [#137](https://github.com/uberblick-ai/ablauf/issues/137), using the existing
   player and controls. Built-in auto/side/below controls layouts and the side
   step list are implemented in [#139](https://github.com/uberblick-ai/ablauf/issues/139).
   Travel animation ([#138](https://github.com/uberblick-ai/ablauf/issues/138))
   remains a separate change.
-- **v0.3.2, fan-outs:** [#68](https://github.com/uberblick-ai/ablauf/issues/68),
-  the same play sections for v0 fan-outs, where a target is an outcome's
-  text. The same release adds multi-step fan-outs and mind maps,
+- **v0.3.2, fan-outs:** implemented in [#68](https://github.com/uberblick-ai/ablauf/issues/68),
+  the same play sections for v0 fan-outs, exact outcome-text targets and both
+  styles' parts, current emphasis, fading and shared completion/Replay behavior.
+  The same release plans multi-step fan-outs and mind maps,
   [#162](https://github.com/uberblick-ai/ablauf/issues/162) then
   [#163](https://github.com/uberblick-ai/ablauf/issues/163), and their
   playback, [#166](https://github.com/uberblick-ai/ablauf/issues/166), as

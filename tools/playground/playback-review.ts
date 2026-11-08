@@ -209,7 +209,7 @@ async function load(path: string) {
 	if (!response.ok) throw new Error(`Cannot load ${path}: ${response.status}`);
 	return response.text();
 }
-const [source, fade, crossings, claim, compact, wideFlow, narrowFlow, sequence, fanout] = await Promise.all([
+const [source, fade, crossings, claim, compact, wideFlow, narrowFlow, sequence, fanout, approvalsPlay, ladderPlay] = await Promise.all([
 	load("/api/flow/examples/loop-play"),
 	load("/api/flow/examples/playback-fade"),
 	load("/playground/playback-crossings.flow"),
@@ -219,6 +219,8 @@ const [source, fade, crossings, claim, compact, wideFlow, narrowFlow, sequence, 
 	load("/api/flow/examples/approval-narrow"),
 	load("/api/flow/examples/claim"),
 	load("/api/flow/examples/run-endings"),
+	load("/api/flow/examples/approvals-play"),
+	load("/api/flow/examples/run-endings-ladder-play"),
 ]);
 const single = 'flow v0\nbox a "Start"\nbox b "Finish"\na --> b\nplay "One scenario"\n step a actor="Author" "Start here"\n step b "Finish here"\n';
 
@@ -235,6 +237,8 @@ function draw() {
 	addViewerCase("Viewer · playable narrow flow · shadow root", source, "review-viewer-loop", { playable: true, shadow: true });
 	addCase("Claim · responsive side captions", claim, "review-claim", false, false, { layout });
 	addCase("Claim · side captions in shadow root", claim, "review-claim-shadow", true, false, { layout: "side" });
+	addCase("Fan-out · approvals branches", approvalsPlay, "review-fanout-branches");
+	addCase("Fan-out · run endings ladder", ladderPlay, "review-fanout-ladder");
 	addCase("Loop · light DOM", source, "review-light-dom");
 	addCase("Loop · shadow root", source, "review-shadow", true);
 	addCase("Loop · host expand() only (no built-in Expand)", source, "review-host-expand", false, false, { expand: false });

@@ -2,7 +2,7 @@ import { renderFanout } from "./fanout.ts";
 import type { FontsOptions } from "./fonts.ts";
 import { grid } from "./grid.ts";
 import { parse } from "./parse.ts";
-import { splitPlay, type Timeline } from "./play.ts";
+import { splitPlay } from "./play.ts";
 import { resolveFlow } from "./play-flow.ts";
 import { renderSequence } from "./sequence.ts";
 import { type SvgOptions, toSvg } from "./svg.ts";
@@ -28,9 +28,9 @@ export function render(source: string, options: RenderOptions = {}) {
 		return result;
 	}
 	if (kind === "fan-out") {
-		const result = renderFanout(source, options);
-		result.diagnostics.push(...play.diagnostics, ...play.scenarios.map(s => ({ line: s.line, severity: "error" as const, message: `${kind} playback is not supported yet` })));
-		return { ...result, timelines: [] as Timeline[] };
+		const result = renderFanout(source, options, play.scenarios);
+		result.diagnostics.push(...play.diagnostics);
+		return result;
 	}
 	const { model, diagnostics } = parse(source);
 	const layout = grid(model, diagnostics, options.fonts);

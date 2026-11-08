@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Play fan-out outcomes by their exact text in both branches and ladder styles,
+  with shared scenarios, controls, completion/Replay, current outcome glow and
+  separate off-path shape/text fading. Ambiguous or unknown targets diagnose
+  their play step and are skipped. Static fan-out SVG bytes stay unchanged.
+  ([#68](https://github.com/uberblick-ai/ablauf/issues/68))
+
 - Playback completion now retains `step >= 0` with status `ended`, the completed
   path, last captions and controls, instead of restoring the full figure at
   `step: -1`. Replay starts at the first step; reduced-motion Replay resets to
