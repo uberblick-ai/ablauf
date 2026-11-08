@@ -39,7 +39,7 @@
     "lint": "biome lint --error-on-warnings .",
     "typecheck": "tsc --noEmit",
     "test": "node tools/test-runner.ts",
-    "test:package": "node tools/test-runner.ts test/package.test.ts",
+    "test:package": "node --test --test-force-exit --test-timeout=60000 test/package.test.ts",
     "render": "node tools/render.ts",
     "check": "node tools/check.ts",
     "measure": "node tools/measure.ts",
