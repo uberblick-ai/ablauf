@@ -98,7 +98,7 @@ export function renderFanout(source: string, options: RenderOptions = {}) {
 			else style = value as Style;
 			sawStyle = true;
 			if (diagnostics.length > before) invalid.push({ line, text });
-		} else if (/^step\s/.test(rest) || (sawStep && rest === "step")) {
+		} else if (/^step(?:\s|$)/.test(rest)) {
 			rest = rest.slice(4).trimStart();
 			const value = quoted();
 			if (sawStep) {

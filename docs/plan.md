@@ -526,7 +526,8 @@ outcome ref="ask"
   the step. Refs and rejected lines never enter the stack.
 - **Second step.** In v0 and v1, a second `step` line is a diagnostic, and it
   and every later `outcome` line are drawn as rejected source (each also
-  diagnosed). They never attach to the first step.
+  diagnosed). They never attach to the first step. A bare first `step` counts
+  as the first declaration, even though its missing text is diagnosed.
 - **Fields.** `outcome "text"` takes `reason=`, `destination=`, `tone=` and
   `id=` in any order, once each. A repeated field keeps its first value and is
   a diagnostic; unknown fields likewise. An otherwise accepted outcome with

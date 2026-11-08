@@ -23,3 +23,20 @@ test("a bare second step also starts rejection in both versions", () => {
 		assert.doesNotMatch(svg, /<g data-line="5">/);
 	}
 });
+
+test("a bare first step still rejects the second step and every later outcome", () => {
+	for (const header of ["fan-out v0\nstyle branches", "fan-out v0\nstyle ladder", "fan-out v1\nstyle branches"]) {
+		const { svg, diagnostics } = render(`${header}\nstep\nstep "Second"\noutcome "Late" reason="Why" destination="Here"\n  outcome\nstep "Third"\noutcome "Last"`);
+		assert.ok(diagnostics.some(d => d.line === 3 && /quoted/.test(d.message)));
+		for (const line of [4, 7]) {
+			assert.ok(diagnostics.some(d => d.line === line && /exactly one step/.test(d.message)));
+		}
+		for (const line of [5, 6, 8]) {
+			assert.ok(diagnostics.some(d => d.line === line && /second step/.test(d.message)));
+			assert.doesNotMatch(svg, new RegExp(`<g data-line="${line}">`));
+		}
+		for (const line of [3, 4, 5, 6, 7, 8]) assert.match(svg, new RegExp(`>Line ${line}:`));
+		assert.match(svg, /^<svg /);
+		assert.doesNotMatch(svg, /NaN|Infinity/);
+	}
+});
