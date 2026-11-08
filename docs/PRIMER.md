@@ -185,7 +185,7 @@ outcome "Success" reason="Checks passed" destination="Review" tone="done"
 outcome "Blocked" reason="A decision is needed" destination="Ask a person" tone="stop"
 ```
 
-Declare one non-empty `step`, then at least one outcome with required
+For v0, declare one non-empty `step`, then at least one outcome with required
 non-empty text, `reason=` and `destination=`; optional `tone=` accepts every
 flow tone, defaulting to a plain box. Fields may appear in any order, once
 each. All values are double-quoted JSON strings: escape quotes as `\"`,
@@ -196,6 +196,36 @@ matching destinations. Before the step, choose `style branches` (default:
 step left, branches to outcomes, arrows to destinations with reasons below)
 or `style ladder` (step above, rail of dots, reasons below outcomes,
 destinations right-aligned, no arrows).
+
+Use v1 to branch again, share an outcome or skip a step:
+
+```text
+fan-out v1
+step "A"
+outcome "B"
+  outcome "D"
+  outcome "E" id="e"
+outcome "C"
+outcome ref="e"
+```
+
+Indent by two ASCII spaces per level. An outcome belongs to the preceding
+box one level above it; top-level outcomes belong to the step. `branches`
+is the default and supports three outcome levels. Reasons and destinations
+are optional in v1 and draw inside the outcome box. An optional `id=` uses
+one lowercase letter followed by up to 39 lowercase letters, digits or
+hyphens. `outcome ref="id"` adds an edge without another box; it may name
+an earlier or later outcome, but the target must be deeper than the parent.
+It cannot repeat a declared child or the same parent's ref. Here E draws
+once, reached through B and directly from A. Refs never change placement.
+
+Every second step and all subsequent outcomes are rejected in either
+version. Rejected lines draw below the figure with their source line.
+Field errors in v1 retain the box and show the raw source below; missing or
+invalid outcome text draws `[missing outcome]`, with children still attached.
+Over-depth subtrees and invalid refs draw no boxes or edges. Reorder outcomes
+to fix slot-clearance or skip-run diagnostics; the renderer never moves them.
+`style ladder` is v0 only; v1 `style map` and playback are planned separately.
 
 ## Sequence
 

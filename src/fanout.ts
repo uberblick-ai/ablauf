@@ -1,10 +1,12 @@
 // One step branching to its ordered outcomes. The author writes no edges:
 // every entry gets its own branch from the step to its destination.
 import { type TextStyle, Typography } from "./fonts.ts";
-import { CHAR, type Layout } from "./grid.ts";
+import type { Layout } from "./grid.ts";
 import type { RenderOptions } from "./index.ts";
 import { type Diagnostic, type Tone, TONES } from "./parse.ts";
 import { esc, markerPrefix, svgStyle } from "./svg.ts";
+import { renderFanoutV1 } from "./fanout-multi.ts";
+import { wrap } from "./fanout-wrap.ts";
 
 interface Entry {
 	outcome: string;
@@ -31,35 +33,10 @@ const LADDER = { x: 60, outcome: 260, reason: 400, destination: 220, right: 662 
 const STYLES = ["branches", "ladder"] as const;
 type Style = (typeof STYLES)[number];
 
-// Unlike flow labels, these cells have a fixed width. Break long words too.
-function wrap(text: string, width: number, typography: Typography,
-	fontSize: TextStyle["fontSize"] = 12, fontWeight: TextStyle["fontWeight"] = 400): string[] {
-	// Retain the historical character limit exactly for the default font.
-	const limit = Math.floor(width / CHAR[`mono${fontSize}`]);
-	const fits = (text: string) => typography.mono
-		? typography.width(text, "mono", fontSize, fontWeight) <= width
-		: [...text].length <= limit;
-	const lines: string[] = [];
-	let line = "";
-	for (const word of text.split(/\s+/).filter(Boolean)) {
-		if (line && !fits(`${line} ${word}`)) {
-			lines.push(line);
-			line = "";
-		}
-		const chars = [...word];
-		while (chars.length && !fits(chars.join(""))) {
-			// Always consume a glyph, even if it alone exceeds the area.
-			let count = 1;
-			while (count < chars.length && fits(chars.slice(0, count + 1).join(""))) count++;
-			lines.push(chars.splice(0, count).join(""));
-		}
-		if (chars.length) line = line ? `${line} ${chars.join("")}` : chars.join("");
-	}
-	if (line || !lines.length) lines.push(line);
-	return lines;
-}
-
 export function renderFanout(source: string, options: RenderOptions = {}) {
+	const first = source.split("\n").find(line => line.trim() && !line.trim().startsWith("#"))?.trim();
+	const version = /^fan-out\s+v(\d+)$/.exec(first ?? "");
+	if (version && Number(version[1]) >= 1) return renderFanoutV1(source, options);
 	const typography = new Typography(options.fonts);
 	const wrapped = (text: string, width: number, fontSize: TextStyle["fontSize"] = 12,
 		fontWeight: TextStyle["fontWeight"] = 400) => wrap(text, width, typography, fontSize, fontWeight);
@@ -72,6 +49,7 @@ export function renderFanout(source: string, options: RenderOptions = {}) {
 	const invalid: { line: number; text: string }[] = [];
 	let step = "";
 	let sawStep = false;
+	let rejectedStep = false;
 	let style: Style = "branches";
 	let sawStyle = false;
 	let headerLine = 1;
@@ -120,10 +98,13 @@ export function renderFanout(source: string, options: RenderOptions = {}) {
 			else style = value as Style;
 			sawStyle = true;
 			if (diagnostics.length > before) invalid.push({ line, text });
-		} else if (/^step\s/.test(rest)) {
+		} else if (/^step(?:\s|$)/.test(rest)) {
 			rest = rest.slice(4).trimStart();
 			const value = quoted();
-			if (sawStep) error(line, "a fan-out names exactly one step");
+			if (sawStep) {
+				error(line, "a fan-out names exactly one step");
+				rejectedStep = true;
+			}
 			else {
 				step = value;
 				sawStep = true;
@@ -133,6 +114,11 @@ export function renderFanout(source: string, options: RenderOptions = {}) {
 			if (rest.trim()) error(line, "unexpected text after step");
 			if (diagnostics.length > before) invalid.push({ line, text });
 		} else if (/^outcome(?:\s|$)/.test(rest)) {
+			if (rejectedStep) {
+				error(line, "outcome after a second step is rejected");
+				invalid.push({ line, text });
+				continue;
+			}
 			rest = rest.slice(7).trimStart();
 			const entry: Entry = { outcome: quoted(), reason: "", destination: "", line, raw: "" };
 			const seen = new Set<string>();

@@ -1,5 +1,5 @@
-The six renderer-output checks in this directory are `loop.svg`, `deploy.svg`
-and the four compressed compatibility fixtures. `mise run ci` reads them
+The seven renderer-output checks in this directory are `loop.svg`, `deploy.svg`
+and the five compressed compatibility fixtures. `mise run ci` reads them
 without needing `out/`. `mise run render` writes generated examples to ignored
 `out/` and refreshes `docs/images/`; it never writes here.
 
@@ -9,6 +9,17 @@ Changes to these goldens or `docs/images/` require maintainer figure review in
 light and dark under the [loop policy](../../.agents/ub_agents.md#merging).
 Keep compressed fixtures as historical captures and adjust expected strings
 in their tests instead of regenerating them.
+
+`pre-fanout-v1.json.gz` captures 552 exact SVG strings at
+`f1d6631d820a9026ae1e065ad972c1e4bfc77e9c`, before #162 renderer changes.
+It includes all three v0 fan-out examples, both styles, malformed fields,
+headers (including newer versions), second steps, missing and late declarations,
+and rejected source. Each source has default and custom mono metrics, auto,
+light and dark schemes, and both untitled/default-prefix and titled/custom-prefix
+options. `test/fanout-v0-cases.ts` documents the capture inputs;
+`test/fanout-compatibility.test.ts` compares the historical bytes. The second-step
+and newer-version-header changes are the only permitted test-side exceptions;
+the compressed capture is immutable.
 
 `pre-playback.json.gz` contains the exact SVG strings rendered from all 16
 examples on main at `04b1458a9b801e4f30c83896b78c183e86fe2c76`, the last
