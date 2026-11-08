@@ -473,6 +473,67 @@ See [approvals](../examples/approvals.flow) and
 [run endings](../examples/run-endings.flow) for the review examples, and
 [run endings as a ladder](../examples/run-endings-ladder.flow).
 
+### Multi-step fan-out v1 (planned)
+
+Planned for v0.3.2 in [#162](https://github.com/uberblick-ai/ablauf/issues/162)
+and [#163](https://github.com/uberblick-ai/ablauf/issues/163). A fan-out
+may branch again from an outcome, share a destination between branches, and
+skip a step. The same source can be drawn as a mind map. Prototype images
+and source: `fan-out/multi-step/` in the project files.
+
+```
+fan-out v1
+step "Run ended"
+outcome "Success" reason="Checks passed" tone="done"
+  outcome "Approved" reason="Reviewer accepts"
+    outcome "Healthy" destination="Live" tone="done"
+    outcome "Failing" destination="Roll back" tone="rework"
+  outcome "Changes" reason="Reviewer wants fixes" destination="Fix it" tone="rework"
+outcome "Crash" reason="Process died" tone="rework"
+  outcome "Retries left" destination="Retry the run" tone="rework"
+  outcome "None left" reason="Budget used up" destination="Ask a maintainer" tone="stop" id="ask"
+outcome "Blocked" reason="Needs a decision" tone="stop"
+outcome ref="ask"
+```
+
+- The header is `fan-out v1`. A `fan-out v0` source keeps its v0 rules and
+  exact bytes; indentation stays optional and meaningless there.
+- In v1, indentation is structure: an `outcome` indented two spaces more than
+  the outcome above it branches from that outcome. An indent that is not a
+  multiple of two, or that jumps more than one level, is a diagnostic on its
+  line, and the entry attaches to the nearest valid parent so it still draws.
+- There is still exactly one `step`: the root. `reason=` and `destination=`
+  become optional, so a mind map can be plain text. A destination draws as
+  `→ text` under a rule inside the outcome's box.
+- `id="name"` names an outcome. Ids are unique within the fan-out, use the
+  flow id alphabet and never show. `outcome ref="name"` makes the outcome it
+  sits under (or the step, when unindented) also lead to the named outcome.
+  It adds an edge, not a box, and takes no other fields. A ref may point
+  forward or back in the source, but not to the outcome's own ancestor, so the
+  figure stays left to right with no cycles. Unknown, duplicate or cyclic
+  refs are diagnostics on their lines and draw nothing.
+- An outcome is drawn once, where it is declared. Its declaring parent gets
+  the tree branch; every ref parent gets an extra branch. When the target sits
+  more than one column to the right, the extra branch curves in the first gap
+  and runs straight at the target's height through the columns between,
+  entering the target just below its tree branch. That is a skipped step.
+- Layout is the source: one column per depth, leaves top to bottom in source
+  order, each parent centred on its children. Column width shares the 678 px
+  canvas; four levels (the step plus three hops) fit. A deeper fan-out, or a
+  skip line that would cross a box, is a diagnostic on the line responsible.
+  The renderer never moves a box or reroutes a branch to avoid it; the
+  author reorders outcomes.
+- `style branches` (default) draws boxes with arrowheads. `style map` draws a
+  mind map: the step in the centre, the first half of its outcomes to the
+  right and the rest mirrored to the left. Each first-level outcome is a
+  rounded box whose tone (its own, or the next in a fixed cycle) colours its
+  whole branch; deeper outcomes are text on an underline in that colour; no
+  arrowheads; refs draw as dashed arcs. `style ladder` stays v0-only, and a
+  v1 ladder is a diagnostic that falls back to `branches`.
+- Playback ([#68](https://github.com/uberblick-ai/ablauf/issues/68)) targets
+  an outcome by `id`, or by its text when that text is unique. A step after a
+  ref lights the ref's branch.
+
 ## Sequence v0
 
 ```text
@@ -1174,7 +1235,10 @@ independent light DOM and shadow-root mounts, schemes and teardown.
   Travel animation ([#138](https://github.com/uberblick-ai/ablauf/issues/138))
   remains a separate change.
 - **v0.3.2, fan-outs:** [#68](https://github.com/uberblick-ai/ablauf/issues/68),
-  the same play sections; a target is an outcome's text.
+  the same play sections; a target is an outcome's id, or its text when
+  unique. Multi-step fan-outs and the mind-map style ship in the same release
+  ([#162](https://github.com/uberblick-ai/ablauf/issues/162),
+  [#163](https://github.com/uberblick-ai/ablauf/issues/163)).
 
 Extras cut from v0.3.0 wait for real need. Frozen frames come later. Timelines
 from real ub-agents run logs and visual timeline editing are out of scope.
