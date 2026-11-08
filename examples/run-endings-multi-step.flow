@@ -1,0 +1,12 @@
+fan-out v1
+step "Run ended"
+outcome "Success" reason="Checks passed" tone="done"
+  outcome "Approved" reason="Reviewer accepts"
+    outcome "Healthy" destination="Live" tone="done"
+    outcome "Failing" destination="Roll back" tone="rework"
+  outcome "Changes" reason="Reviewer wants fixes" destination="Fix it" tone="rework"
+outcome "Crash" reason="Process died" tone="rework"
+  outcome "Retries left" destination="Retry the run" tone="rework"
+  outcome "None left" reason="Budget used up" destination="Ask a maintainer" tone="stop" id="ask"
+outcome "Blocked" reason="Needs a decision" tone="stop"
+outcome ref="ask"

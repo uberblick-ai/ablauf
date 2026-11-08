@@ -475,12 +475,13 @@ See [approvals](../examples/approvals.flow) and
 [run endings](../examples/run-endings.flow) for the review examples, and
 [run endings as a ladder](../examples/run-endings-ladder.flow).
 
-### Multi-step fan-out v1 (planned)
+### Multi-step fan-out v1
 
-Planned in [#162](https://github.com/uberblick-ai/ablauf/issues/162)
-(grammar and `branches`), [#163](https://github.com/uberblick-ai/ablauf/issues/163)
-(`style map`) and [#166](https://github.com/uberblick-ai/ablauf/issues/166)
-(playback), in that order. A fan-out may branch again from an outcome, let
+Grammar and `branches` are implemented by
+[#162](https://github.com/uberblick-ai/ablauf/issues/162).
+`style map` is planned in [#163](https://github.com/uberblick-ai/ablauf/issues/163)
+and playback in [#166](https://github.com/uberblick-ai/ablauf/issues/166),
+in that order. A fan-out may branch again from an outcome, let
 two branches reach the same outcome, and skip a step. The same source can
 also be drawn as a mind map. Every rule below keeps the shared constraints:
 the source alone fixes placement, nothing is moved or rerouted to avoid a
@@ -525,9 +526,14 @@ outcome ref="ask"
   diagnosed). They never attach to the first step.
 - **Fields.** `outcome "text"` takes `reason=`, `destination=`, `tone=` and
   `id=` in any order, once each. A repeated field keeps its first value and is
-  a diagnostic with the raw source shown, as in v0; unknown fields likewise.
+  a diagnostic; unknown fields likewise. An otherwise accepted outcome with
+  a field error still draws its box, and its escaped, line-numbered raw source
+  is listed below the figure (not inside the box).
   `reason=` and `destination=` are optional in v1; an explicitly empty value
-  is a diagnostic and counts as omitted. The outcome text is required.
+  is a diagnostic and counts as omitted. Missing, empty or invalid quoted
+  outcome text draws `[missing outcome]` and enters the indentation stack as
+  an accepted box, so indented children attach to it. These recovery rules
+  do not accept lines rejected by the second-step, depth or ref rules.
 - **Ids.** `id=` matches `^[a-z][a-z0-9-]{0,39}$` and compares exactly. Ids
   never show. A malformed id is a diagnostic and the box draws without one. A
   repeated id keeps its first binding; the later box still draws, without the
@@ -546,19 +552,20 @@ outcome ref="ask"
   figure as escaped, line-numbered source, as v0 does, and carries a
   diagnostic. A rejected ref draws no edge.
 - **Depth.** `branches` draws the step and up to three levels of outcomes;
-  `map` draws two. A deeper outcome is a diagnostic and is drawn as rejected
+  the planned `map` draws two. A deeper outcome is a diagnostic and is drawn as rejected
   source together with its whole subtree (each line listed); ids inside it do
   not bind, so refs to them are unknown refs. Switching a source between
-  styles can therefore change what is rejected, and a test covers that.
-- **Style.** `style branches` (default) or `style map`. `style ladder` in v1 is
-  a diagnostic and draws as `branches`.
+  styles can therefore change what is rejected; the same-source comparison
+  follows in #163.
+- **Style.** `style branches` (default); `style map` follows in #163.
+  `style ladder` in v1 is a diagnostic and draws as `branches`.
 
 #### `branches` geometry
 
 - **Canvas.** 678 px wide, 16 px margins, 36 px column gaps. With L drawn
   levels (step plus deepest outcome level, 1 to 4), every column is
   `w = min(190, floor((646 - 36 × (L − 1)) / L))` px wide; column d starts at
-  `16 + d × (w + 36)`. Four levels give 136 px columns.
+  `16 + d × (w + 36)`. Four levels give 134 px columns; the formula governs.
 - **Boxes.** All text is mono (`fonts.mono` as in v0): the outcome in
   12 px/600, the step in 13 px/600, a reason in 12 px/400 muted, a destination
   as `→ ` plus its text in 12 px/600 after a dotted rule. Leading is 18 px,
@@ -633,6 +640,9 @@ A v1 fan-out's `aria-label` is generated from the graph in source order:
 `Fan-out: STEP. STEP leads to A, B and C. A leads to D and E. …`, adding
 `(reason; destination)` where present and `B also leads to E` for each ref.
 A label repeated in the figure gets its parent's label in brackets. When
+generating sentences, visit parents in declaration order, step first. Each
+parent's ref sentences follow its declared-child sentence immediately (or
+stand alone if it has no declared children), in ref source order. When
 `title` is supplied it becomes the `aria-label` and the generated text moves
 to a `<desc>` referenced by `aria-describedby`, using the `idPrefix`. v0
 descriptions are unchanged.
@@ -663,12 +673,20 @@ the same play sections and the shared parser, with these additions.
 #### Tests and review
 
 - Before any renderer change, golden SVGs of the current v0 output are
-  committed: both styles, every example, the malformed fixtures, both schemes,
-  custom fonts, `title` and `idPrefix`. They stay byte-identical, except the
-  second-step fixtures, which change once, in their own commit.
+  committed in the immutable historical `test/golden/pre-fanout-v1.json.gz`:
+  both styles, every v0 example, malformed fixtures, both schemes, custom
+  fonts, `title` and `idPrefix`. Its capture SHA and coverage are in
+  `test/golden/README.md`. They stay byte-identical except second-step and
+  newer-header fixtures; each intentional change has its own commit and
+  explicit test-side adjustment.
 - Each diagnostic above has a negative fixture asserting its line and that the
   figure still renders. Valid examples render with zero diagnostics.
-- Each style ships one example reviewed by a person in light and dark.
+- `branches` ships [A/B/C/D/E](../examples/fanout-shared.flow) and
+  [three-hop run endings with a skip](../examples/run-endings-multi-step.flow).
+  Both require a person's light/dark playground review at maintainer merge;
+  generated SVG inspection does not satisfy that visual review.
+- The text-fit negative fixture supplies `fonts.mono.measureText` with an
+  overwide glyph, since default metrics wrap all ordinary glyphs to fit.
 
 ## Sequence v0
 

@@ -1,10 +1,12 @@
 // One step branching to its ordered outcomes. The author writes no edges:
 // every entry gets its own branch from the step to its destination.
 import { type TextStyle, Typography } from "./fonts.ts";
-import { CHAR, type Layout } from "./grid.ts";
+import type { Layout } from "./grid.ts";
 import type { RenderOptions } from "./index.ts";
 import { type Diagnostic, type Tone, TONES } from "./parse.ts";
 import { esc, markerPrefix, svgStyle } from "./svg.ts";
+import { renderFanoutV1 } from "./fanout-multi.ts";
+import { wrap } from "./fanout-wrap.ts";
 
 interface Entry {
 	outcome: string;
@@ -31,35 +33,9 @@ const LADDER = { x: 60, outcome: 260, reason: 400, destination: 220, right: 662 
 const STYLES = ["branches", "ladder"] as const;
 type Style = (typeof STYLES)[number];
 
-// Unlike flow labels, these cells have a fixed width. Break long words too.
-function wrap(text: string, width: number, typography: Typography,
-	fontSize: TextStyle["fontSize"] = 12, fontWeight: TextStyle["fontWeight"] = 400): string[] {
-	// Retain the historical character limit exactly for the default font.
-	const limit = Math.floor(width / CHAR[`mono${fontSize}`]);
-	const fits = (text: string) => typography.mono
-		? typography.width(text, "mono", fontSize, fontWeight) <= width
-		: [...text].length <= limit;
-	const lines: string[] = [];
-	let line = "";
-	for (const word of text.split(/\s+/).filter(Boolean)) {
-		if (line && !fits(`${line} ${word}`)) {
-			lines.push(line);
-			line = "";
-		}
-		const chars = [...word];
-		while (chars.length && !fits(chars.join(""))) {
-			// Always consume a glyph, even if it alone exceeds the area.
-			let count = 1;
-			while (count < chars.length && fits(chars.slice(0, count + 1).join(""))) count++;
-			lines.push(chars.splice(0, count).join(""));
-		}
-		if (chars.length) line = line ? `${line} ${chars.join("")}` : chars.join("");
-	}
-	if (line || !lines.length) lines.push(line);
-	return lines;
-}
-
 export function renderFanout(source: string, options: RenderOptions = {}) {
+	const first = source.split("\n").find(line => line.trim() && !line.trim().startsWith("#"))?.trim();
+	if (first === "fan-out v1") return renderFanoutV1(source, options);
 	const typography = new Typography(options.fonts);
 	const wrapped = (text: string, width: number, fontSize: TextStyle["fontSize"] = 12,
 		fontWeight: TextStyle["fontWeight"] = 400) => wrap(text, width, typography, fontSize, fontWeight);
