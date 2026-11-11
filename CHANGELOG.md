@@ -6,7 +6,8 @@
   into one decision's top port without an overlap diagnostic. Static flows
   stroke that portion once with one arrowhead; playable flows retain each
   complete incoming edge and arrowhead for independent highlighting. Earlier
-  overlaps and mismatched styles remain diagnosed.
+  overlaps and mismatched styles remain diagnosed. Crossing knockouts follow
+  the painted portions so omitted shared tails cannot erase a crossing.
   ([#172](https://github.com/uberblick-ai/ablauf/issues/172))
 
 - Play fan-out outcomes by their exact text in both branches and ladder styles,

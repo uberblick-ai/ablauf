@@ -297,6 +297,9 @@ in one small diagram for light/dark review in the playground's document column.
   authored. In static output (no `play` section), shared portions are stroked
   once in the matching style, with one arrowhead in that tone at the port;
   earlier matching inputs own the already-stroked portion and its arrowhead.
+  Crossing knockouts follow those painted portions in source order: a later
+  input's omitted suffix creates no knockout, and a crossing edge meets the
+  shared portion only once, at its earlier owner's position in the draw order.
   Playable output applies the same diagnostic exception but keeps every input's
   complete stroke and arrowhead in its own playback part, so either path fades,
   emphasises and animates independently with the existing moving-dash behavior.

@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { render } from "../src/index.ts";
 import { type Point, type Route, segments } from "../src/grid.ts";
 import { createPlayer } from "../src/playback.ts";
+import { toSvg } from "../src/svg.ts";
 import { Doc, El } from "./test-dom.ts";
 
 const source = `flow v0
@@ -28,6 +29,18 @@ play "Second input"
   step second
   step check
   step done`;
+
+const crossingSource = `flow v0
+columns outerleft left middle right outerright
+box first col=left gap=100 "First input"
+box second col=right row=first "Second input"
+decision check col=middle "Allowed?"
+box crossleft col=outerleft row=first span=2 "Cross left"
+box crossright col=outerright row=first span=2 "Cross right"
+
+first --> check from=bottom to=top
+crossleft --> crossright from=right to=left tone=stop
+second --> check from=bottom to=top`;
 
 const path = (points: Point[]) => points.map(([x, y], i) => `${i ? "L" : "M"}${x},${y}`).join(" ");
 const stroke = (r: Route) => `<path d="${path(r.points)}" class="e e-${r.tone}${r.edge.dashed ? " dash" : ""}"/>`;
@@ -103,6 +116,84 @@ test("matching dashed inputs with equal final segments also paint the tail once"
 	assertStrokedOnce(svg, layout.routes);
 	assert.equal(headsAt(svg, layout.routes[0].points.at(-1) as Point).length, 1);
 	assert.equal([...svg.matchAll(/class="e e-ink dash"/g)].length, 2);
+});
+
+test("shared static tails emit crossing knockouts only for the strokes that paint them", () => {
+	const edges = crossingSource.split("\n").slice(-3);
+	for (const order of [[0, 1, 2], [1, 0, 2], [0, 2, 1]]) {
+		for (const scheme of ["light", "dark"] as const) {
+			for (const dashed of [false, true]) {
+				const text = [...crossingSource.split("\n").slice(0, -3), ...order.map(i => edges[i])].join("\n")
+					.replaceAll("--> check", dashed ? "-.-> check" : "--> check");
+				const { svg, diagnostics, layout } = render(text, { scheme, idPrefix: "inputs" });
+				assert.deepEqual(diagnostics, order[0] === 1 ? [
+					{ line: 10, severity: "warning", message: "edge first → check crosses crossleft → crossright" },
+					{ line: 11, severity: "warning", message: "edge second → check crosses crossleft → crossright" },
+				] : order[1] === 1 ? [
+					{ line: 10, severity: "warning", message: "edge crossleft → crossright crosses first → check" },
+					{ line: 11, severity: "warning", message: "edge second → check crosses crossleft → crossright" },
+				] : [
+					{ line: 11, severity: "warning", message: "edge crossleft → crossright crosses first → check" },
+					{ line: 11, severity: "warning", message: "edge crossleft → crossright crosses second → check" },
+				]);
+				const incoming = layout.routes.filter(r => r.edge.to === "check");
+				assert.deepEqual(incoming.map(r => r.points), [
+					[[342, 62], [342, 112], [563, 112], [563, 162]],
+					[[784, 62], [784, 112], [563, 112], [563, 162]],
+				]);
+				assertStrokedOnce(svg, layout.routes);
+				assert.equal(headsAt(svg, [563, 162]).length, 1);
+				const gaps = [...svg.matchAll(/<path d="([^"]+)" class="knockout"\/>/g)];
+				assert.deepEqual(gaps.map(m => m[1]), [order[0] === 1 ? "M563,120 L563,132" : "M557,126 L569,126"]);
+				// Every knockout is followed by the visible stroke that fills it.
+				const upper = order[0] === 1 ? incoming[0] : layout.routes.find(r => r.tone === "stop") as Route;
+				assert.ok(gaps[0].index < svg.indexOf(stroke(upper)));
+				assert.equal(svg, render(text, { scheme, idPrefix: "inputs" }).svg);
+			}
+		}
+	}
+});
+
+test("interleaved playable inputs retain both full strokes and their crossing knockouts", () => {
+	for (const scheme of ["light", "dark"] as const) {
+		const text = `${crossingSource}\n\nplay "First"\n  step first\n  step check\nplay "Second"\n  step second\n  step check`;
+		const { svg, layout, diagnostics } = render(text, { scheme, idPrefix: "inputs" });
+		assert.deepEqual(diagnostics.map(d => d.line), [10, 11]);
+		assert.deepEqual([...svg.matchAll(/<path d="([^"]+)" class="knockout"\/>/g)].map(m => m[1]), [
+			"M557,126 L569,126", "M563,120 L563,132",
+		]);
+		for (const i of [0, 2]) {
+			assert.ok(svg.includes(`<g data-ab-part="edge-${i}">${stroke(layout.routes[i])}</g>`));
+			assert.ok(svg.includes(`<g data-ab-part="edge-${i}">${head(layout.routes[i])}</g>`));
+		}
+		assert.equal(headsAt(svg, [563, 162]).length, 2);
+	}
+});
+
+test("a later input still owns knockouts on its unshared tail extension", () => {
+	const { layout } = render(crossingSource);
+	layout.routes[0].points = [[463, 112], [563, 112], [563, 162]];
+	layout.routes[1].points = [[553, 100], [573, 100]];
+	layout.routes[2].points = [[663, 90], [563, 90], [563, 162]];
+	const authored = structuredClone(layout.routes.map(r => r.points));
+	for (const scheme of ["light", "dark"] as const) {
+		const svg = toSvg(layout, { scheme, idPrefix: "inputs" });
+		const gap = '<path d="M563,94 L563,106" class="knockout"/>';
+		assert.equal([...svg.matchAll(/class="knockout"/g)].length, 1);
+		assert.ok(svg.indexOf(gap) > svg.indexOf(stroke(layout.routes[1])));
+		assert.ok(svg.indexOf(gap) < svg.indexOf('<path d="M663,90 L563,90 L563,112" class="e e-ink"/>'));
+		assertStrokedOnce(svg, layout.routes);
+		assert.equal(headsAt(svg, [563, 162]).length, 1);
+		assert.deepEqual(layout.routes.map(r => r.points), authored);
+	}
+});
+
+test("a fully covered straight input emits no empty stroke", () => {
+	const text = 'flow v0\nbox first\ndecision check\nfirst --> check\nfirst --> check';
+	const { svg, layout } = render(text, { idPrefix: "inputs" });
+	assertStrokedOnce(svg, layout.routes);
+	assert.equal([...svg.matchAll(/class="e e-ink"/g)].length, 1);
+	assert.equal(headsAt(svg, layout.routes[0].points.at(-1) as Point).length, 1);
 });
 
 test("three inputs stroke the union of unequal terminal segments once", () => {
