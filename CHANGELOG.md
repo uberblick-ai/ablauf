@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Allow matching-tone, matching-dash inputs to share the final straight portion
+  into one decision's top port without an overlap diagnostic. Static flows
+  stroke that portion once with one arrowhead; playable flows retain each
+  complete incoming edge and arrowhead for independent highlighting. Earlier
+  overlaps and mismatched styles remain diagnosed.
+  ([#172](https://github.com/uberblick-ai/ablauf/issues/172))
+
 - Play fan-out outcomes by their exact text in both branches and ladder styles,
   with shared scenarios, controls, completion/Replay, current outcome glow and
   separate off-path shape/text fading. Ambiguous or unknown targets diagnose

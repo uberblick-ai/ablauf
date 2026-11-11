@@ -63,6 +63,15 @@ Unnumbered entries use available slots in source order, favouring the side
 facing their other node when a main edge reserves the centre.
 Decisions have one midpoint port per side: omit slot numbers.
 
+Inputs to one decision's top port may share only the coincident portion of
+their final straight segments entering from above, including unequal-length
+segments, when their tone and solid/dashed style match. Earlier overlaps on
+those paths, other targets or ports, and mismatched styles still diagnose.
+Static figures stroke the shared portion once with one matching arrowhead;
+with `play` sections, each incoming edge keeps its complete stroke and
+arrowhead in its own playback part, so either path highlights independently.
+Placement, routes and labels stay as authored; no extra syntax is needed.
+
 `label=start` (default) sits beside the source segment; `label=end` beside
 the target segment. `label=inline` makes a gap on the longest segment; use
 it for decision answers.
