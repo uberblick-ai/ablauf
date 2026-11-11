@@ -6,6 +6,7 @@ import { join, resolve } from "node:path";
 import { test } from "node:test";
 import { version } from "esbuild";
 import { ENTRIES, measureEntry, PLAYBACK_LIMIT, publishReport, type SizeReport, violations } from "../tools/size-budget.ts";
+import { buildFixture } from "./build-fixture.ts";
 
 const root = resolve(import.meta.dirname, "..");
 
@@ -71,14 +72,17 @@ test("local and CI invoke the same build-and-measure command with pinned esbuild
 });
 
 test("the real command builds exported JavaScript and publishes sizes and isolation evidence", async t => {
+	const build = buildFixture(t);
 	const scratch = mkdtempSync(join(process.env.UB_AGENTS_SCRATCH ?? tmpdir(), "ablauf-size-"));
 	t.after(() => rmSync(scratch, { recursive: true, force: true }));
 	const summary = join(scratch, "summary.md");
 	writeFileSync(summary, "Existing summary\n");
 	const command = spawnSync(process.execPath, ["tools/size-budget-command.ts"], {
-		cwd: root,
+		cwd: build,
 		encoding: "utf8",
-		env: { ...process.env, GITHUB_STEP_SUMMARY: summary },
+		// The fixture shares Git metadata, but status must never refresh the
+		// checkout's index with the copied worktree's stat information.
+		env: { ...process.env, GITHUB_STEP_SUMMARY: summary, GIT_OPTIONAL_LOCKS: "0" },
 	});
 	assert.ifError(command.error);
 	assert.equal(command.status, 0, command.stdout + command.stderr);
@@ -86,7 +90,7 @@ test("the real command builds exported JavaScript and publishes sizes and isolat
 	assert.match(command.stdout, /Git revision: [a-f0-9]{40}/);
 	assert.ok(command.stdout.includes(`esbuild ${version}`));
 	assert.match(command.stdout, /gzip: minified bundle, level 9/);
-	const sizes = await Promise.all(ENTRIES.map(entry => measureEntry(root, entry)));
+	const sizes = await Promise.all(ENTRIES.map(entry => measureEntry(build, entry)));
 	assert.deepEqual(violations(sizes), []);
 	assert.ok(sizes[0].gzip <= PLAYBACK_LIMIT);
 	for (const size of sizes) {
