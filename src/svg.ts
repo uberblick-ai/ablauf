@@ -20,6 +20,7 @@ import {
 	panelLines,
 	segments,
 	segSeg,
+	sharedDecisionTail,
 	wrap,
 } from "./grid.ts";
 import type { Tone } from "./parse.ts";
@@ -267,14 +268,31 @@ export function toSvg(layout: Layout, options: SvgOptions = {}, playable = false
 	}
 	out.push("</defs>");
 	const part = (name: string, svg: string) => playable ? `<g data-ab-part="${name}">${svg}</g>` : svg;
+	// Earlier matching inputs already stroke a suffix and own its arrowhead.
+	// Keep the full authored routes in layout and in every playback part.
+	const tails = layout.routes.map((r, i) => playable ? [] : layout.routes.slice(0, i)
+		.flatMap(other => {
+			const start = sharedDecisionTail(r, other, layout.nodes);
+			return start ? [start] : [];
+		}));
+	const strokes = layout.routes.map((r, i) => {
+		let points = r.points;
+		if (tails[i].length) {
+			const start = tails[i].reduce((a, b) => a[1] < b[1] ? a : b);
+			points = r.points.slice(0, -1);
+			if (start[1] > (points.at(-1) as Point)[1]) points.push(start);
+		}
+		return { ...r, points };
+	});
 	for (const b of layout.bands) out.push(band(b, layout.width));
-	for (let i = 0; i < layout.routes.length; i++) {
-		const r = layout.routes[i];
-		out.push(...knockouts(r, layout.routes.slice(0, i), layout.bands));
-		out.push(part(edgePart(i), route(r)));
+	for (const [i, r] of strokes.entries()) {
+		// Only painted segments participate: an omitted suffix must neither
+		// erase a crossing nor receive a second knockout from a later edge.
+		out.push(...knockouts(r, strokes.slice(0, i), layout.bands));
+		if (r.points.length > 1) out.push(part(edgePart(i), route(r)));
 	}
 	// Knockouts affect edge strokes only; all foreground content follows them.
-	for (const [i, r] of layout.routes.entries()) out.push(part(edgePart(i), arrow(r, id)));
+	for (const [i, r] of layout.routes.entries()) if (!tails[i].length) out.push(part(edgePart(i), arrow(r, id)));
 	for (const b of layout.bands)
 		out.push(`<text x="20" y="${b.y + 22}" class="cap">${esc(b.label.toUpperCase())}</text>`);
 	for (const [i, p] of layout.nodes.entries()) out.push(part(nodePart(i), node(p, layout.typography)));

@@ -91,7 +91,8 @@ needs it.
 
 Diagnostics never throw and always name a source line:
 
-- an edge crossing or overlapping another edge
+- an edge crossing or overlapping another edge, except the matching-style
+  shared final portion entering one decision's top port (below)
 - an edge running through a node
 - a label overlapping a node, an edge or another label
 - two nodes overlapping
@@ -286,6 +287,22 @@ in one small diagram for light/dark review in the playground's document column.
 - Crossing diagnostics and their source lines stay unchanged. Shared endpoints
   and collinear overlaps get no knockout. A visible break does not make a
   crossing acceptable: fix every diagnostic before calling the diagram done.
+- Incoming edges to the same decision's top port may share the coincident
+  portion of their final straight segments ending at that port, including a
+  shorter final segment coinciding with the end of a longer one. Both segments
+  must enter from above and have the same tone and solid/dashed style. Only
+  that terminal overlap is exempt from diagnostics; earlier overlaps on the
+  same paths, other targets or ports, and mismatched tones or dash styles
+  remain diagnosed at their source lines. Placement, routes and labels stay
+  authored. In static output (no `play` section), shared portions are stroked
+  once in the matching style, with one arrowhead in that tone at the port;
+  earlier matching inputs own the already-stroked portion and its arrowhead.
+  Crossing knockouts follow those painted portions in source order: a later
+  input's omitted suffix creates no knockout, and a crossing edge meets the
+  shared portion only once, at its earlier owner's position in the draw order.
+  Playable output applies the same diagnostic exception but keeps every input's
+  complete stroke and arrowhead in its own playback part, so either path fades,
+  emphasises and animates independently with the existing moving-dash behavior.
 - Panel widths are sized automatically from their contents, with a bounded
   preferred text width so long notes grow downwards. Text-derived widths round
   up to whole pixels so the line that sets the width still fits. Panel `text`,
