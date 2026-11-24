@@ -784,11 +784,14 @@ test("playground saves serialize requests and track only confirmed text", async 
 		}
 		return el;
 	};
-	const page = new EventTarget();
+	const page = Object.assign(new EventTarget(), {
+		matchMedia: () => Object.assign(new EventTarget(), { matches: false }),
+	});
 	const location = { hash: "#examples/loop" };
 	const globals = {
 		document: {
 			getElementById: element,
+			querySelector: () => ({ value: "auto" }),
 			querySelectorAll: () => [],
 			documentElement: { dataset: {} },
 		},
