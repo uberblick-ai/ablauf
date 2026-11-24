@@ -1,0 +1,7 @@
+fan-out v1
+step "A"
+outcome "B"
+  outcome "D"
+  outcome "E" id="e"
+outcome "C"
+outcome ref="e"

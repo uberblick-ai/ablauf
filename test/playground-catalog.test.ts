@@ -44,7 +44,7 @@ test("the real examples include all three kinds, with claim only under Sequence"
 	const groups = catalog(join(import.meta.dirname, ".."));
 	assert.deepEqual(groups.map((g) => g.kind), ["Flow", "Fan-out", "Sequence"]);
 	const fanouts = groups[1].flows.map((f) => f.name);
-	for (const name of ["approvals", "run-endings", "run-endings-ladder"]) assert.ok(fanouts.includes(name), name);
+	for (const name of ["approvals", "run-endings", "run-endings-ladder", "fanout-shared", "run-endings-multi-step"]) assert.ok(fanouts.includes(name), name);
 	assert.deepEqual(groups.flatMap((g) => g.flows.filter((f) => f.name === "claim").map((f) => ({ kind: g.kind, ...f }))), [
 		{ kind: "Sequence", folder: "examples", name: "claim" },
 	]);

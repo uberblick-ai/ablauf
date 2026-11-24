@@ -50,7 +50,7 @@ test("broken fan-out entries report their lines and keep the rejected source vis
 		assert.ok(!svg.includes("NaN"));
 	}
 	const { svg, diagnostics } = render('fan-out v0\nstep "First"\nstep "Second"\nnot-an-entry "Visible"\noutcome "Good" reason="Why" destination="There"');
-	assert.deepEqual(diagnostics.map((d) => d.line), [3, 4]);
+	assert.deepEqual(diagnostics.map((d) => d.line), [3, 4, 5, 1]);
 	assert.ok(svg.includes("Second") && svg.includes("Visible") && svg.includes("Good"));
 });
 

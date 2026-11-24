@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Draw `fan-out v1` with up to three outcome levels, shared outcomes and
+  skipped steps. Indented declarations fix placement; refs add edges to one
+  drawn outcome. Invalid source stays visible with line-numbered diagnostics.
+  v0 playback remains supported; v1 playback follows separately.
+  ([#162](https://github.com/uberblick-ai/ablauf/issues/162))
+
 - Allow matching-tone, matching-dash inputs to share the final straight portion
   into one decision's top port without an overlap diagnostic. Static flows
   stroke that portion once with one arrowhead; playable flows retain each

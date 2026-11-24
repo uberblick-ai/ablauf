@@ -28,8 +28,8 @@ CI uploads them as a downloadable artifact named for the checked head SHA.
 The reviewer, codex-reviewer and integrator rerun `mise run render` at the candidate: it must
 report no diagnostics and leave `git status` clean.
 
-The six committed renderer-output checks live in `test/golden/`: `loop.svg`,
-`deploy.svg` (including the legend test's comparison), and the four compressed
+The seven committed renderer-output checks live in `test/golden/`: `loop.svg`,
+`deploy.svg` (including the legend test's comparison), and the five compressed
 compatibility fixtures. Normal rendering must never overwrite these files.
 For an intentional rendering change, explicitly copy the matching freshly
 rendered SVG from `out/` to `test/golden/`. The compressed fixtures remain
