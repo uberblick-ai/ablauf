@@ -22,6 +22,7 @@ const problems = $<HTMLUListElement>("pg-diagnostics");
 const save = $<HTMLButtonElement>("pg-save");
 const status = $<HTMLSpanElement>("pg-status");
 const grid = $<HTMLInputElement>("pg-grid");
+const systemScheme = window.matchMedia("(prefers-color-scheme: dark)");
 
 let current: Flow | null = null;
 let saved = "";
@@ -30,7 +31,9 @@ let saveAgain: Flow | null = null;
 let playback: PlaybackMount | undefined;
 const SCRATCH = "flow v0\ncolumns main\n\nbox start col=main \"say what happens first\"\nend done \"Finished\"\n\nstart --> done : then\n";
 
-function setScheme(scheme: string) {
+function updateScheme() {
+	const selected = document.querySelector<HTMLInputElement>('input[name="scheme"]:checked')?.value ?? "auto";
+	const scheme = selected === "auto" ? (systemScheme.matches ? "dark" : "light") : selected;
 	const palette: Record<string, string> = scheme === "dark" ? DARK : LIGHT;
 	for (const [key, value] of Object.entries(palette)) host.style.setProperty(`--ab-${key}`, value);
 	document.documentElement.dataset.scheme = scheme;
@@ -193,13 +196,14 @@ editor.addEventListener("keydown", (event) => {
 	}
 });
 grid.addEventListener("change", draw);
-for (const input of document.querySelectorAll<HTMLInputElement>('input[name="scheme"]')) input.addEventListener("change", () => setScheme(input.value));
+for (const input of document.querySelectorAll<HTMLInputElement>('input[name="scheme"]')) input.addEventListener("change", updateScheme);
+systemScheme.addEventListener("change", updateScheme);
 for (const input of document.querySelectorAll<HTMLInputElement>('input[name="host"]')) input.addEventListener("change", () => host.classList.toggle("column", input.value === "column"));
 window.addEventListener("hashchange", open);
 window.addEventListener("beforeunload", (event) => {
 	if (current && editor.value !== saved) event.preventDefault();
 });
 
-setScheme("light");
+updateScheme();
 await sidebar();
 await open();
