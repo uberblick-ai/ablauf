@@ -811,6 +811,22 @@ export function segments(r: Route): [Point, Point][] {
 	return out;
 }
 
+// Only the common suffix of final straight runs into a decision's top port
+// may coincide. Return its start so static drawing and diagnostics agree.
+export function sharedDecisionTail(a: Route, b: Route, nodes: Placed[]): Point | null {
+	if (a.edge.to !== b.edge.to || a.tone !== b.tone || a.edge.dashed !== b.edge.dashed)
+		return null;
+	const target = nodes.find(p => p.node.id === a.edge.to);
+	if (target?.node.kind !== "decision") return null;
+	const [p, q] = a.points.slice(-2);
+	const [r, s] = b.points.slice(-2);
+	const x = q[0];
+	if (s[0] !== x || q[1] !== target.y || s[1] !== target.y ||
+		p[0] !== x || r[0] !== x || p[1] >= q[1] || r[1] >= s[1]) return null;
+	const y = Math.max(p[1], r[1]);
+	return q[1] - y > 0.5 ? [x, y] : null;
+}
+
 function segRect([a, b]: [Point, Point], r: Rect): boolean {
 	const x1 = Math.min(a[0], b[0]);
 	const x2 = Math.max(a[0], b[0]);
@@ -869,9 +885,12 @@ function check(
 	}
 	for (let i = 0; i < routes.length; i++) {
 		for (let j = i + 1; j < routes.length; j++) {
+			const shared = sharedDecisionTail(routes[i], routes[j], nodes);
 			for (const s of segments(routes[i])) {
 				for (const t of segments(routes[j])) {
 					const hit = segSeg(s, t);
+					if (hit === "overlap" && shared &&
+						s[1] === routes[i].points.at(-1) && t[1] === routes[j].points.at(-1)) continue;
 					if (hit) {
 						const e1 = routes[i].edge;
 						const e2 = routes[j].edge;

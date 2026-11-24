@@ -1,0 +1,20 @@
+flow v0
+columns left middle right
+box first col=left "First input"
+box second col=right row=first "Second input"
+decision check col=middle "Allowed?"
+end done col=middle "Continue"
+
+first --> check from=bottom to=top
+second --> check from=bottom to=top
+check --> done
+
+play "First input"
+  step first
+  step check
+  step done
+
+play "Second input"
+  step second
+  step check
+  step done

@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+- Draw `fan-out v1` with up to three outcome levels, shared outcomes and
+  skipped steps. Indented declarations fix placement; refs add edges to one
+  drawn outcome. Invalid source stays visible with line-numbered diagnostics.
+  v0 playback remains supported; v1 playback follows separately.
+  ([#162](https://github.com/uberblick-ai/ablauf/issues/162))
+
+- Allow matching-tone, matching-dash inputs to share the final straight portion
+  into one decision's top port without an overlap diagnostic. Static flows
+  stroke that portion once with one arrowhead; playable flows retain each
+  complete incoming edge and arrowhead for independent highlighting. Earlier
+  overlaps and mismatched styles remain diagnosed. Crossing knockouts follow
+  the painted portions so omitted shared tails cannot erase a crossing.
+  ([#172](https://github.com/uberblick-ai/ablauf/issues/172))
+
+- Play fan-out outcomes by their exact text in both branches and ladder styles,
+  with shared scenarios, controls, completion/Replay, current outcome glow and
+  separate off-path shape/text fading. Ambiguous or unknown targets diagnose
+  their play step and are skipped. Static fan-out SVG bytes stay unchanged.
+  ([#68](https://github.com/uberblick-ai/ablauf/issues/68))
+
 - Playback completion now retains `step >= 0` with status `ended`, the completed
   path, last captions and controls, instead of restoring the full figure at
   `step: -1`. Replay starts at the first step; reduced-motion Replay resets to

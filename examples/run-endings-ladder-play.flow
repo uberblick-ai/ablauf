@@ -1,0 +1,19 @@
+fan-out v0
+style ladder
+step "Record how the run ended"
+
+outcome "Success" reason="The work and required checks finished" destination="Hand off for review" tone="done"
+outcome "Blocked" reason="A person must resolve a decision or missing access" destination="Ask a maintainer" tone="stop"
+outcome "Crash" reason="The process ended before it could report" destination="Retry the run" tone="rework"
+outcome "Retries exhausted" reason="The run used every permitted retry" destination="Ask a maintainer" tone="stop"
+
+play "Compare endings"
+ tempo 2.4s
+ step "Success" "The completed work is ready for review."
+ step "Blocked" "A person must clear the blocker."
+ step "Crash" "The run can be retried."
+ step "Retries exhausted" "A maintainer must decide what comes next."
+play "Completed run"
+ step "Success" "Hand the work off for review."
+play "Retry needed"
+ step "Crash" actor="Launcher" "Retry after the unexpected exit."

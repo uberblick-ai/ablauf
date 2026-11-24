@@ -20,6 +20,7 @@ import {
 	panelLines,
 	segments,
 	segSeg,
+	sharedDecisionTail,
 	wrap,
 } from "./grid.ts";
 import type { Tone } from "./parse.ts";
@@ -138,12 +139,12 @@ export const markerPrefix = (options: SvgOptions) =>
 // Flow playback fades unplayed shapes and text, preserving gaps and knockouts.
 // Parts keep their own tone colours in every state; the current step stands
 // out by glow and a heavier stroke. Geometry and draw order never change.
-export function playStyle(mode: "auto" | "light" | "dark", id: string, kind: "flow" | "sequence" = "flow"): string {
+export function playStyle(mode: "auto" | "light" | "dark", id: string, kind: "flow" | "sequence" | "fan-out" = "flow"): string {
 	const colors = (dark: boolean) => `--play:var(--ab-play,${dark ? "#6ff0cf" : "#0a7a60"});`;
 	const defaults = mode === "auto"
 		? `.ab.ab-auto{${colors(false)}}@media (prefers-color-scheme:dark){.ab.ab-auto{${colors(true)}}}`
 		: `.ab.ab-${mode}{${colors(mode === "dark")}}`;
-	const unplayed = `.ab[data-ab-play="${id}"].ab-in-progress [data-ab-part]:where(:not(.ab-current):not(.ab-played))`;
+	const unplayed = `.ab[data-ab-play="${id}"].ab-in-progress [data-ab-part]${kind === "fan-out" ? '[data-ab-part^="outcome-"]' : ""}:where(:not(.ab-current):not(.ab-played))`;
 	// Fade individual elements so text never inherits a group opacity. Opacity
 	// accepts numbers/percentages and clamps in CSS; marker carriers fade heads.
 	// Sequence playback retains its existing group fade and overlay ordering.
@@ -153,7 +154,7 @@ export function playStyle(mode: "auto" | "light" | "dark", id: string, kind: "fl
 		: `${unplayed} ${FADE_SHAPES}{opacity:var(--ab-play-unreached-opacity,.3)}`
 			+ `${unplayed} text{opacity:var(--ab-play-unreached-text-opacity,.8)}`
 			+ `@media (prefers-contrast:more),(forced-colors:active){${unplayed} text{opacity:1}}`;
-	return `${defaults}${fade}\n${kind === "sequence" ? sequencePlayEffects(id) : playEffects(id)}`;
+	return `${defaults}${fade}\n${kind === "sequence" ? sequencePlayEffects(id) : playEffects(id, kind === "fan-out")}`;
 }
 
 // Toned shapes glow in their own tone; untoned ones in the play colour.
@@ -199,32 +200,36 @@ function sequencePlayEffects(id: string): string {
 	].join("");
 }
 
-function playEffects(id: string): string {
+function playEffects(id: string, fanout = false): string {
 	const root = `.ab[data-ab-play="${id}"]`;
 	const playing = `${root}.ab-playing`;
+	// Fan-out shared parts stay fully visible and never get current emphasis.
+	const part = fanout ? '[data-ab-part^="outcome-"]' : "[data-ab-part]";
 	// Encode every code unit so the name is a CSS identifier even for prefixes
 	// containing dots, leading digits or non-ASCII. Names remain figure-local.
 	const run = `ab-run-${Array.from(id, c => c.charCodeAt(0).toString(16)).join("-")}`;
-	const shapes = ":is(rect:not(.gap),.decision,.e)";
-	const edge = `${playing} [data-ab-part].ab-current .e`;
-	const fades = `${playing} [data-ab-part] ${FADE_SHAPES}`;
+	const shapes = fanout ? ":is(rect,.e,circle)" : ":is(rect:not(.gap),.decision,.e)";
+	const edge = `${playing} ${part}.ab-current .e`;
+	const fades = `${playing} ${part} ${FADE_SHAPES}`;
 	// The glow reads currentColor: the play colour by default, a pill's dot
 	// tone for the whole pill, and a shape's own tone for toned outlines/edges.
 	const glowColors = [
 		`${root} [data-ab-part]{color:var(--play)}`,
 		...GLOW_TONES.map(t => `${root} [data-ab-part]:has(circle.t-${t}){color:var(--${t})}`),
+		...(fanout ? [...GLOW_TONES.map(t => `${root} ${part}:has(rect.k-${t}){color:var(--${t})}`), `${root} ${part}:has(:is(rect.k-ink,rect.k-muted,circle.t-ink,circle.t-muted)){color:var(--muted)}`] : []),
 		...GLOW_TONES.map(t => `${root} :is(.k-${t},.e-${t}){color:var(--${t})}`),
 	];
 	return [
 		...glowColors,
 		// Filter individual outlines/strokes only, never groups, text, gaps or
 		// marker carriers. A literal zero blur leaves no outward glow.
-		`${root} [data-ab-part].ab-current ${shapes}{filter:drop-shadow(0 0 var(--ab-play-glow,6px) color-mix(in srgb,currentColor 55%,transparent));stroke-width:2.2}`,
+		`${root} ${part}.ab-current ${shapes}{filter:drop-shadow(0 0 var(--ab-play-glow,6px) color-mix(in srgb,currentColor 55%,transparent));${fanout ? "" : "stroke-width:2.2"}}`,
+		...(fanout ? [`${root} ${part}.ab-current :is(rect,.e){stroke-width:2.2}`] : []),
 		`${edge}{stroke-dasharray:8 6;animation:${run} .7s linear infinite}`,
 		// Offset decreases by exactly one dash period, flowing source to target.
 		`@keyframes ${run}{from{stroke-dashoffset:0}to{stroke-dashoffset:-14}}`,
 		`${fades}{transition:opacity .35s ease}`,
-		`@media (prefers-reduced-motion:reduce){${edge}{animation:none}${fades}{transition:none}}`,
+		`@media (prefers-reduced-motion:reduce){${edge}{animation:none${fanout ? ";stroke-dasharray:none" : ""}}${fades}{transition:none}}`,
 	].join("");
 }
 
@@ -263,14 +268,31 @@ export function toSvg(layout: Layout, options: SvgOptions = {}, playable = false
 	}
 	out.push("</defs>");
 	const part = (name: string, svg: string) => playable ? `<g data-ab-part="${name}">${svg}</g>` : svg;
+	// Earlier matching inputs already stroke a suffix and own its arrowhead.
+	// Keep the full authored routes in layout and in every playback part.
+	const tails = layout.routes.map((r, i) => playable ? [] : layout.routes.slice(0, i)
+		.flatMap(other => {
+			const start = sharedDecisionTail(r, other, layout.nodes);
+			return start ? [start] : [];
+		}));
+	const strokes = layout.routes.map((r, i) => {
+		let points = r.points;
+		if (tails[i].length) {
+			const start = tails[i].reduce((a, b) => a[1] < b[1] ? a : b);
+			points = r.points.slice(0, -1);
+			if (start[1] > (points.at(-1) as Point)[1]) points.push(start);
+		}
+		return { ...r, points };
+	});
 	for (const b of layout.bands) out.push(band(b, layout.width));
-	for (let i = 0; i < layout.routes.length; i++) {
-		const r = layout.routes[i];
-		out.push(...knockouts(r, layout.routes.slice(0, i), layout.bands));
-		out.push(part(edgePart(i), route(r)));
+	for (const [i, r] of strokes.entries()) {
+		// Only painted segments participate: an omitted suffix must neither
+		// erase a crossing nor receive a second knockout from a later edge.
+		out.push(...knockouts(r, strokes.slice(0, i), layout.bands));
+		if (r.points.length > 1) out.push(part(edgePart(i), route(r)));
 	}
 	// Knockouts affect edge strokes only; all foreground content follows them.
-	for (const [i, r] of layout.routes.entries()) out.push(part(edgePart(i), arrow(r, id)));
+	for (const [i, r] of layout.routes.entries()) if (!tails[i].length) out.push(part(edgePart(i), arrow(r, id)));
 	for (const b of layout.bands)
 		out.push(`<text x="20" y="${b.y + 22}" class="cap">${esc(b.label.toUpperCase())}</text>`);
 	for (const [i, p] of layout.nodes.entries()) out.push(part(nodePart(i), node(p, layout.typography)));

@@ -5,9 +5,11 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
 import { render } from "../src/index.ts";
+import { buildFixture } from "./build-fixture.ts";
 
 test("the packed package works for an isolated production consumer", (t) => {
 	const root = resolve(import.meta.dirname, "..");
+	const build = buildFixture(t);
 	const consumer = mkdtempSync(join(process.env.UB_AGENTS_SCRATCH ?? tmpdir(), "ablauf-consumer-"));
 	t.after(() => rmSync(consumer, { recursive: true, force: true }));
 	const run = (command: string, args: string[], cwd = consumer, status = 0) => {
@@ -17,7 +19,7 @@ test("the packed package works for an isolated production consumer", (t) => {
 		return result;
 	};
 	// Exercise prepack too: consumers must never need a build or a TS loader.
-	run("npm", ["pack", "--pack-destination", consumer], root);
+	run("npm", ["pack", "--pack-destination", consumer], build);
 	const tarballs = readdirSync(consumer).filter((name) => name.endsWith(".tgz"));
 	assert.equal(tarballs.length, 1);
 	writeFileSync(join(consumer, "package.json"), JSON.stringify({ private: true, type: "module" }));

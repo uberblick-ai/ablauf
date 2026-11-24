@@ -3,8 +3,8 @@
 You choose placement; the renderer sizes and draws without moving nodes or
 rerouting edges. Save as `.flow`. [Renderer details](plan.md).
 
-[Flows and sequences support play sections and timelines](plan.md#playback).
-The browser player and built-in controls play either kind.
+[Flows, sequences and fan-outs support play sections and timelines](plan.md#playback).
+The browser player and built-in controls play all three kinds (fan-out v0 only).
 
 ## Flow syntax and nodes
 
@@ -62,6 +62,15 @@ unnumbered to keep it centred; other entries use off-centre slots.
 Unnumbered entries use available slots in source order, favouring the side
 facing their other node when a main edge reserves the centre.
 Decisions have one midpoint port per side: omit slot numbers.
+
+Inputs to one decision's top port may share only the coincident portion of
+their final straight segments entering from above, including unequal-length
+segments, when their tone and solid/dashed style match. Earlier overlaps on
+those paths, other targets or ports, and mismatched styles still diagnose.
+Static figures stroke the shared portion once with one matching arrowhead;
+with `play` sections, each incoming edge keeps its complete stroke and
+arrowhead in its own playback part, so either path highlights independently.
+Placement, routes and labels stay as authored; no extra syntax is needed.
 
 `label=start` (default) sits beside the source segment; `label=end` beside
 the target segment. `label=inline` makes a gap on the longest segment; use
@@ -171,9 +180,8 @@ use seconds or milliseconds (`2.4s`, `800ms`), from 100ms to 60s; default
 tempo is 1.6s. Invalid durations diagnose and use the tempo. Omitted actors
 use the node's title; omitted captions are empty. `render()` returns the
 resolved `timelines` and a full static SVG with parts the existing browser
-player and controls can highlight. Fan-out playback is not supported yet and
-diagnoses on each `play` line. See [loop-play.flow](../examples/loop-play.flow)
-for three flow scenarios, and the sequence form below.
+player and controls can highlight. See [loop-play.flow](../examples/loop-play.flow)
+for three flow scenarios, and the fan-out and sequence forms below.
 
 ## Fan-out
 
@@ -226,6 +234,32 @@ invalid outcome text draws `[missing outcome]`, with children still attached.
 Over-depth subtrees and invalid refs draw no boxes or edges. Reorder outcomes
 to fix slot-clearance or skip-run diagnostics; the renderer never moves them.
 `style ladder` is v0 only; v1 `style map` and playback are planned separately.
+
+Append play sections to either v0 style, targeting the exact parsed outcome text
+(case and whitespace included). This complete form is copyable:
+
+```text
+fan-out v0
+style branches
+step "Record the result"
+outcome "Success" reason="Checks passed" destination="Review" tone="done"
+outcome "Blocked" reason="A decision is needed" destination="Ask a person" tone="stop"
+
+play "Compare outcomes"
+  tempo 2.4s
+  step "Success" "The work is ready for review"
+  step "Blocked" actor="Maintainer" "Resolve the decision"
+play "Successful run"
+  step "Success"
+```
+
+Unknown or duplicate-text ambiguous targets diagnose the play step's line and
+skip it. Missing/whitespace-only outcomes and their synthetic placeholders are
+not targets. Actors default to outcome text. Each step lights its complete
+outcome and effect; the shared step and ladder rail always stay visible.
+Outcomes are independent, with no path qualification; v1 playback is planned
+separately. See [approvals-play.flow](../examples/approvals-play.flow)
+and [run-endings-ladder-play.flow](../examples/run-endings-ladder-play.flow).
 
 ## Sequence
 

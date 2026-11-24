@@ -33,6 +33,19 @@ test("multi-step examples draw each declared box once with zero diagnostics in e
 	}
 });
 
+test("v1 play sections remain diagnosed without changing the static figure or returning timelines", () => {
+	for (const header of ["fan-out v1", "fan-out v2"]) {
+		const input = `${header}\nstep "A"\noutcome "B"\n  outcome "C"\n`;
+		const result = render(`${input}play "First"\n step "B"\nplay "Second"\n step "C"\n`);
+		assert.equal(result.svg, render(input).svg);
+		assert.deepEqual(result.timelines, []);
+		assert.deepEqual(result.diagnostics.filter(d => /playback is not supported/.test(d.message)), [
+			{ line: 5, severity: "error", message: "fan-out playback is not supported yet" },
+			{ line: 7, severity: "error", message: "fan-out playback is not supported yet" },
+		]);
+	}
+});
+
 test("columns, envelopes, rounding, v0 curves and skip runs have exact source coordinates", () => {
 	const { svg, layout } = render(example("fanout-shared"));
 	assert.deepEqual(boxes(svg).map(({ line, x, y, width, height }) => ({ line, x, y, width, height })), [

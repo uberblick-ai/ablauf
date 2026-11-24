@@ -40,3 +40,13 @@ test("a bare first step still rejects the second step and every later outcome", 
 		assert.doesNotMatch(svg, /NaN|Infinity/);
 	}
 });
+
+test("v0 playback cannot target an outcome rejected after a second step", () => {
+	for (const style of ["branches", "ladder"]) {
+		const input = `fan-out v0\nstyle ${style}\nstep "First"\noutcome "Before" reason="Why" destination="Here"\nstep "Second"\noutcome "After"\n`;
+		const result = render(`${input}play\n step "Before"\n step "After"\n`);
+		assert.deepEqual(result.timelines[0].steps.map(s => s.target), ["Before"]);
+		assert.ok(result.diagnostics.some(d => d.line === 9 && /unknown fan-out playback target/.test(d.message)));
+		assert.doesNotMatch(result.svg, /<g data-line="6"/);
+	}
+});

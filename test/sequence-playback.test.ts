@@ -59,7 +59,7 @@ test("pre-sequence examples retain SVG bytes apart from the separately tested fl
 	assert.equal(baseline.fixtures.length, 19);
 	// These examples were added after this immutable 19-example capture;
 	// their feature tests cover the new output separately.
-	const later = ["claim-play.flow", "fanout-shared.flow", "run-endings-multi-step.flow"];
+	const later = ["claim-play.flow", "fanout-shared.flow", "run-endings-multi-step.flow", "approvals-play.flow", "run-endings-ladder-play.flow", "decision-inputs.flow", "decision-inputs-play.flow"];
 	assert.deepEqual(baseline.fixtures.map(f => f.file), readdirSync(new URL("../examples", import.meta.url)).filter(f => f.endsWith(".flow") && !later.includes(f)).sort());
 	for (const { file, outputs } of baseline.fixtures) {
 		for (const [i, scheme] of schemes.entries()) {
